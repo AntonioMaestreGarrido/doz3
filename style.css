@@ -94,7 +94,23 @@ table.tbl td.hit{background:#e6b84a;color:#000;font-weight:900;outline:2px solid
 .good{color:#9bd68a}.bad{color:#ff8a76}
 .endcard{text-align:center;max-width:560px}
 .endcard h2{font:900 34px Impact;letter-spacing:2px}
-@media (max-width:1000px){main{flex-direction:column}#side{width:auto;border-left:0;border-top:1px solid var(--line)}}
+@media (max-width:1000px){
+  #app{height:auto;min-height:100vh}
+  header{flex-wrap:wrap;gap:6px;padding:6px 10px}
+  nav{flex-wrap:wrap;gap:6px}
+  main{flex:none;flex-direction:column}
+  #mapwrap{flex:none;width:100%;aspect-ratio:2000/1545;padding:3px}
+  #side{width:auto;flex:none;overflow:visible;border-left:0;border-top:1px solid var(--line)}
+  #logbox{min-height:140px}
+  #log{max-height:240px}
+  #evimg{width:min(62%,260px)}
+}
+@media (max-width:640px){
+  header h1{font-size:18px}
+  #modalbox{padding:12px;max-width:100vw}
+  #modalbox .cardrow{flex-direction:column;align-items:center}
+  #modalbox .cardrow img{max-width:min(70vw,260px)}
+}
 
 #zoom{position:fixed;z-index:200;pointer-events:none;display:flex;gap:12px;background:rgba(14,11,8,.97);border:2px solid var(--gold);border-radius:10px;padding:10px;box-shadow:0 10px 40px #000;max-width:min(680px,96vw)}
 #zoom[hidden]{display:none}
