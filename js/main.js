@@ -74,9 +74,11 @@ const UI_ = ui;
 window.addEventListener('load', async () => {
   bindUI(ui); window.UI = ui;
   await ui.init();
-  const saved = loadSave();
-  if (saved && await ui.askContinue(saved)) { playGame(null, saved); return; }
-  clearSave();
-  const setup = await ui.setupScreen();
-  playGame(setup);
+  while (true) {
+    const a = await ui.titleScreen();
+    if (a === 'load') { const saved = loadSave(); if (saved) { playGame(null, saved); return; } continue; }
+    if (loadSave() && !(await ui.choose({ title: 'Nueva partida', text: 'Ya hay una partida guardada. Si empiezas otra, la guardada se borrará.', options: [{ label: 'Empezar nueva', value: true }, { label: 'Cancelar', value: false }] }))) continue;
+    const setup = await ui.setupScreen();
+    if (setup) { clearSave(); playGame(setup); return; }
+  }
 });

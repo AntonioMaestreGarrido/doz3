@@ -156,3 +156,17 @@ select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);bo
 /* Táctil */
 .bcancel{display:none;margin-left:12px;pointer-events:auto;padding:6px 12px}
 @media (pointer:coarse){.bcancel{display:inline-block}[data-zoom]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}}
+
+/* Portada */
+#title{position:fixed;inset:0;z-index:40;background:#000 url(assets/portada.jpg) center/cover no-repeat;display:flex;align-items:flex-end;justify-content:center;padding:0 12px 12vh}
+#title::after{content:"";position:absolute;inset:auto 0 0 0;height:34%;background:linear-gradient(transparent,rgba(0,0,0,.65));pointer-events:none}
+#title .tbtns{position:relative;z-index:1;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:1000px}
+#title .tbtns button{font:800 clamp(14px,1.7vw,19px) Impact,"Arial Black",sans-serif;letter-spacing:1px;text-transform:uppercase;min-width:190px;padding:12px 22px;background:rgba(14,11,8,.82);border:2px solid var(--gold);color:var(--ink);backdrop-filter:blur(2px);box-shadow:0 4px 18px #000}
+#title .tbtns button.primary{background:rgba(142,27,18,.9);border-color:#e8452f}
+#title .tbtns button:hover:not(:disabled){background:rgba(122,42,27,.95);color:#fff}
+#title .tbtns button small{display:block;font:600 11px "Segoe UI";letter-spacing:0;text-transform:none;color:var(--mut);margin-top:3px}
+@media (max-width:640px){#title .tbtns{display:grid;grid-template-columns:1fr 1fr;width:100%}#title .tbtns button{min-width:0;padding:10px 8px}}
+.toptbl{border-collapse:collapse;width:100%;font-size:13px}
+.toptbl th,.toptbl td{padding:5px 9px;border-bottom:1px solid var(--line);text-align:left}
+.toptbl th{color:var(--gold);font-size:12px}
+.toppanel{min-width:min(640px,94vw)}

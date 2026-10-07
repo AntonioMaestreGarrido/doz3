@@ -81,3 +81,15 @@ function loadSave() {
 }
 function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
 function applySave(s) { restoreState(s.G); UID = s.uid; rngRestore(s.rng); }
+
+/* Ranking local de partidas terminadas (victorias primero, luego por puntos). */
+const TOP_KEY = 'doz3.top.v1';
+function loadTop() { try { const l = JSON.parse(localStorage.getItem(TOP_KEY) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
+function saveTop(r) {
+  try {
+    const l = loadTop(); l.push(r);
+    l.sort((a, b) => (b.win - a.win) || (b.score - a.score) || (a.turns - b.turns));
+    localStorage.setItem(TOP_KEY, JSON.stringify(l.slice(0, 10)));
+  } catch (e) { console.warn('No se pudo guardar el ranking', e); }
+}
+function clearTop() { try { localStorage.removeItem(TOP_KEY); } catch (e) { } }

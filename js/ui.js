@@ -30,7 +30,7 @@ const ui = {
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
     $('rulesBtn').addEventListener('click', () => ui.showRules());
     $('cardsBtn').addEventListener('click', () => ui.showHeroCards());
-    $('newBtn').addEventListener('click', () => { if (confirm('¿Empezar una partida nueva? Se perderá la actual.')) { clearSave(); location.reload(); } });
+    $('newBtn').addEventListener('click', () => { if (confirm('¿Volver al menú principal? La partida se guarda al terminar cada acción: lo que hayas hecho en la acción en curso se perderá.')) location.reload(); });
     this.arrange();
   },
   /* Táctil: los ratones emulados tras un toque se ignoran; pulsación larga sobre [data-zoom] amplía, toque sobre una unidad del mapa la amplía; cualquier otro toque cierra. */
@@ -391,7 +391,8 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label>Héroe personal: <select id="heroSel"></select></label></div><div class="opts"><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label>Héroe personal: <select id="heroSel"></select></label></div><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      $('backBtn').onclick = () => { ui._close(); res(null); };
       const upd = () => {
         const n = +b.querySelector('input[name=lv]:checked').value, L = LEVELS[n];
         $('lenSel').innerHTML = L.lengths.map((x, i) => '<option value="' + i + '">' + x.name + '</option>').join('');
@@ -402,9 +403,33 @@ const ui = {
       $('goBtn').onclick = () => { const n = +b.querySelector('input[name=lv]:checked').value, len = +$('lenSel').value, hero = $('heroSel').value || null; const ex = [1, 2, 3].filter(k => $('x' + k).checked); ui._close(); res({ level: n, len, hero, exps: ex }); };
     });
   },
-  askContinue(s) {
-    const lv = LEVELS[s.G.lv];
-    return this.choose({ title: 'Partida guardada', text: lv.name + ' — turno ' + s.G.turnNo + '. ¿Quieres continuarla?', options: [{ label: 'Continuar partida', value: true }, { label: 'Nueva partida (se borra la guardada)', value: false }] });
+  /* Portada: devuelve 'new' o 'load'. */
+  titleScreen() {
+    return new Promise(res => {
+      const sv = loadSave(), t = document.createElement('div'); t.id = 'title';
+      const info = sv ? LEVELS[sv.G.lv].name + ' · turno ' + sv.G.turnNo : 'No hay partida guardada';
+      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="credits">Créditos</button></div>';
+      document.body.appendChild(t);
+      t.querySelectorAll('button').forEach(bt => bt.onclick = () => {
+        const a = bt.dataset.a;
+        if (a === 'top') return ui.showTop();
+        if (a === 'credits') return ui.showCredits();
+        t.remove(); res(a);
+      });
+      const first = t.querySelector('button'); if (first) first.focus();
+    });
+  },
+  showTop() {
+    const list = loadTop(), fmt = d => new Date(d).toLocaleDateString('es-ES');
+    const rows = list.length ? list.map((r, i) => '<tr><td>' + (i + 1) + '</td><td class="' + (r.win ? 'good' : 'bad') + '">' + (r.win ? 'Victoria' : 'Derrota') + '</td><td><b>' + r.score + '</b></td><td>' + r.lv + ' · ' + r.len + '</td><td>' + r.turns + '</td><td>' + r.killed + '</td><td>' + fmt(r.date) + '</td></tr>').join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--mut)">Aún no hay partidas terminadas.</td></tr>';
+    this._modal('<h2>Top supervivientes</h2><table class="toptbl"><tr><th>#</th><th>Resultado</th><th>Puntos</th><th>Partida</th><th>Turnos</th><th>Zeds</th><th>Fecha</th></tr>' + rows + '</table><div class="opts">' + (list.length ? '<button id="topclr">Borrar</button>' : '') + '<button class="primary" id="xb">Cerrar</button></div>', 'toppanel');
+    $('xb').onclick = () => this._close();
+    if ($('topclr')) $('topclr').onclick = () => { if (confirm('¿Borrar todo el ranking?')) { clearTop(); this.showTop(); } };
+  },
+  showCredits() {
+    this._modal('<h2>Créditos</h2><p><b>Dawn of the Zeds</b> (3.ª edición)<br>Diseño del juego original: <b>Hermann Luttmann</b><br>Editorial: Victory Point Games</p><p>Esta adaptación web en solitario es un proyecto de aficionados, sin ánimo de lucro y no oficial. Las ilustraciones, cartas y marcas pertenecen a sus respectivos autores y editores.</p><p style="color:var(--mut);font-size:13px">Adaptación y programación: Antonio Maestre Garrido, con la ayuda de Claude.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');
+    $('xb').onclick = () => this._close();
   },
   async endScreen() {
     const s = scoreGame(), win = G.over === 'win';
@@ -414,6 +439,7 @@ const ui = {
     const refTxt = s.soft === 0 ? 'Ningún refugiado superviviente' : s.soft <= 2 ? 'Unos pocos refugiados supervivientes' : 'Muchos refugiados supervivientes';
     const why = G.loseWhy === 'caos' ? 'Habéis perdido por el Caos.' : 'Un Zed ha entrado en el Centro de la Ciudad.';
     G.phase = 'end'; this.updateStats();
+    saveTop({ win, score: s.total, lv: G.lv.name, len: G.len.name, turns: G.turnNo, killed: G.stats.killed, date: Date.now() });
     this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button class="primary" id="nb">Nueva partida</button></div></div>');
     $('nb').onclick = () => location.reload();
   }
