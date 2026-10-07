@@ -155,10 +155,10 @@ Object.assign(ui, {
     await this.fxWait(700);
   },
   /* Disparo: trazadora del tirador al objetivo, fogonazo en la boca y destello al llegar */
-  async fxShot(u, targetId) {
-    if (this.fast) return; const p1 = this.unitXY(u), tz = zedsAt(targetId)[0], p2 = tz ? this.unitXY(tz) : (G.spaces[targetId] && { x: G.spaces[targetId].x, y: G.spaces[targetId].y });
-    if (!p1 || !p2) return;
-    this.fxFocus(targetId, 1.7); await this.fxWait(250);
+  async fxShot(u, targetId, dist) {
+    if (this.fast) { Sfx.shot(dist); return; } const p1 = this.unitXY(u), tz = zedsAt(targetId)[0], p2 = tz ? this.unitXY(tz) : (G.spaces[targetId] && { x: G.spaces[targetId].x, y: G.spaces[targetId].y });
+    if (!p1 || !p2) { Sfx.shot(dist); return; }
+    this.fxFocus(targetId, 1.7); await this.fxWait(250); Sfx.shot(dist);
     this.fx.push({ kind: 'tracer', x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, t0: this.now(), d: this.D(700) });
     await this.fxWait(700);
   },

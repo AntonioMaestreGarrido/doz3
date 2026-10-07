@@ -28,6 +28,7 @@ const ui = {
     window.addEventListener('resize', () => this.arrange());
     $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
+    $('sfxChk').checked = Sfx.enabled(); $('sfxChk').addEventListener('change', e => { Sfx.setEnabled(e.target.checked); if (e.target.checked) Sfx.warm(); });
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
     $('cancelBtn').addEventListener('click', () => ui.cancelMode());
     $('rulesBtn').addEventListener('click', () => ui.showRules());

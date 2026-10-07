@@ -622,7 +622,7 @@ function fireStrength(u, d) {
 }
 async function doFire(u, targetId, dist, opts) {
   opts = opts || {};
-  await UI.fxShot(u, targetId);
+  await UI.fxShot(u, targetId, dist);
   const zs = zedsAt(targetId); let target = zs[0];
   if (zs.length > 1) { const v = await UI.choose({ title: 'Objetivo', text: 'Elige la unidad Zed objetivo.', options: zs.map(z => ({ label: z.name + ' ' + strength(z) + (z.hits ? ' (' + z.hits + ' ♥)' : ''), value: z.id })) }); target = G.units[v]; }
   let str = opts.str || fireStrength(u, dist); const shifts = [];
