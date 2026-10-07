@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dawn of the Zeds</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>DAWN <span>of the</span> ZEDS <small>Solitario</small></h1>
+    <nav>
+      <label class="chk"><input type="checkbox" id="camChk" checked> Cámara guiada</label>
+      <label class="chk"><input type="checkbox" id="fastChk"> Animaciones rápidas</label>
+      <button id="rulesBtn">Reglas</button>
+      <button id="cardsBtn">Cartas de Héroe</button>
+      <button id="newBtn">Nueva partida</button>
+    </nav>
+  </header>
+  <main>
+    <aside id="left">
+      <section id="actbox"></section>
+      <section id="unitbox"></section>
+      <section id="handbox"><div class="lbl">Cartas de Destino guardadas</div><div id="hand"></div></section>
+    </aside>
+    <div id="mapwrap">
+      <canvas id="map" width="2000" height="1545"></canvas>
+      <div id="banner" hidden></div>
+      <div id="toast"></div>
+      <div id="tip" hidden></div>
+    </div>
+    <aside id="side">
+      <section id="status"></section>
+      <section id="eventbox"><div class="lbl">Carta de Evento en curso</div><img id="evimg" alt="" title="Pulsa para ampliar"></section>
+      <section id="logbox"><div id="log"></div></section>
+    </aside>
+  </main>
+</div>
+<div id="zoom" hidden></div>
+<div id="modal" hidden><div id="modalbox"></div></div>
+<script src="js/data.js"></script>
+<script src="js/events.js"></script>
+<script src="js/dest.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/game.js"></script>
+<script src="js/phases.js"></script>
+<script src="js/actions.js"></script>
+<script src="js/cardtext.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/anim.js"></script>
+<script src="js/expansions.js"></script>
+<script src="js/expansions2.js"></script>
+<script src="js/main.js"></script>
+<script src="js/bot.js"></script>
+</body>
+</html>
