@@ -51,6 +51,8 @@ const heroCard = k => CARD_IMGS.includes(k) ? 'assets/cartas/h_' + k + '.jpg' : 
 const heroBack = k => CARD_IMGS.includes(k) ? 'assets/cartas/hb_' + k + '.jpg' : null;
 const heroTok = k => TOKEN_IMGS.includes(k) ? 'assets/tokens/' + k + '.png' : null;
 /* Imagen del tooltip: la ficha del personaje; si no tiene ficha propia, el frente de su carta. */
+const heroOpt = k => ({ value: k, label: HEROES[k].name, img: heroCard(k) || heroTok(k), sub: HEROES[k].cls + ' · ' + HEROES[k].full + '/' + HEROES[k].red });
+const unitOpt = (u, extra) => ({ value: u.id, label: u.name + (extra || ''), img: u.key && HEROES[u.key] ? (heroCard(u.key) || heroTok(u.key)) : null, sub: u.space ? spaceLabel(u.space) : '' });
 function heroImg(k) { return heroTok(k) || heroCard(k); }
 const HERO_HINT = k => heroCard(k) ? '<div class="zrow small">Selecciona la unidad (o abre «Cartas de Héroe») para ver la carta entera y su trasfondo.</div>' : '';
 

@@ -149,7 +149,7 @@ async function placeZedAt(id, why, zed) {
     target = zedBack(id);
     if (target === null) { target = firstOpenInitial(); if (!target) { returnZed(zed); LOG('No hay sitio para un Zed nuevo.'); return null; } }
   }
-  putUnit(zed, target); UI.pulseSpace(target, '#ff4a3a'); UI.toast('Nuevo Zed en ' + spaceLabel(target), '#ff4a3a', 1100);
+  if (!UI.fast) Sfx.zed(); putUnit(zed, target); UI.pulseSpace(target, '#ff4a3a'); UI.toast('Nuevo Zed en ' + spaceLabel(target), '#ff4a3a', 1100);
   LOG('Nuevo ' + (zed.type === 'super' ? 'Súper Zed (' + zed.name + ')' : 'Zed (' + zed.full + ')') + ' en ' + spaceLabel(target) + (why ? ' — ' + why : '') + '.', 'zed');
   UI.redraw();
   if (plAt(target).length || softAt(target).length) { if (!blocked(target)) await zedAttack([zed], target, prevToward(target)); }
@@ -207,7 +207,7 @@ async function hitZed(t) {
   UI.redraw();
 }
 async function zedDies(t) {
-  G.stats.killed++;
+  G.stats.killed++; Voz.say('muerte_zed', .1);
   if (t.type === 'spreader') {
     const r = d6(); const rt = routeOfZ(t);
     if (r <= 3 && rt) { await UI.fxResist(t, r, 'Huye'); t.hits = 0; t.flipped = false; putUnit(t, rt + '0'); LOG(t.name + ' vuelve al espacio Inicial (tirada ' + r + ').'); }
@@ -234,6 +234,7 @@ async function hitPlayer(u, n) {
     if (r === 'flip') { LOG(u.name + ' queda con Fuerza reducida (' + u.red + ').', 'bad'); await UI.fxFlip(u, before); }
     else if (r === 'hit') await UI.fxHit(u);
     else if (r === 'dead') { if (u.space && sp(u.space).kind === 'bed') await sendCemetery(u, 'recibe su último Impacto en el Hospital'); else await unitDown(u); return; }
+    if (u.type === 'hero') Voz.say('herido');
     UI.redraw();
   }
 }
@@ -271,8 +272,7 @@ async function unitDown(u) {
     if (u.type === 'refugee' || u.type === 'aldeano') u.type = 'refugee';
     const bed = freeBed();
     if (!bed) {
-      const v = await UI.choose({ title: 'Hospital lleno', text: u.name + ' se ha salvado pero no hay Camas libres.', options: [{ label: 'Mandar al Cementerio', value: 'c' }, { label: 'Dar de alta a otra unidad para hacer sitio', value: 'a' }] });
-      if (v === 'a' && await dischargeSomeone(true)) { return unitDown2(u, where); }
+      if (await dischargeSomeone(true, { title: 'Hospital lleno', text: u.name + ' se ha salvado pero no hay Camas libres. Elige a quién dar de alta para hacer sitio (sin ECG: al Centro; con ECG: Cementerio) o manda a ' + u.name + ' al Cementerio.', none: 'Mandar a ' + u.name + ' al Cementerio' })) { return unitDown2(u, where); }
       await sendCemetery(u, 'no encuentra cama'); return;
     }
     await unitDown2(u, where);
@@ -293,10 +293,11 @@ async function unitDown2(u, where) {
   if (G.turn.propag && wasCiv && where && isRouteSp(where)) await placeZedAt(where, 'Propagación');
   if (G.turn.outbreakLocal && wasCiv && where && isRouteSp(where)) await placeZedAt(where, 'Brote local');
 }
-async function dischargeSomeone(forceCem) {
+async function dischargeSomeone(forceCem, o) {
   const cands = BEDS.map(b => unitsAt(b)[0]).filter(Boolean);
   if (!cands.length) return false;
-  const v = await UI.choose({ title: 'Dar de alta', text: 'Elige la unidad a dar de alta (sin ECG: al Centro; con ECG: Cementerio).', options: cands.map(u => ({ label: u.name + (u.ecg ? ' (coma → Cementerio)' : ''), value: u.id })) });
+  const v = await UI.chooseCards({ title: (o && o.title) || 'Dar de alta', text: (o && o.text) || 'Elige la unidad a dar de alta (sin ECG: al Centro; con ECG: Cementerio).', options: cands.map(u => unitOpt(u, u.ecg ? ' (coma → Cementerio)' : '')), extra: o && o.none ? [{ label: o.none, value: null }] : null });
+  if (v === null) return false;
   const u = G.units[v];
   if (u.ecg) await sendCemetery(u, 'es dada de alta en coma'); else { putUnit(u, 'C'); LOG(u.name + ' recibe el alta y vuelve al Centro.', 'good'); mayDischargeBonus(u); }
   UI.redraw(); return true;
@@ -305,6 +306,7 @@ async function dischargeSomeone(forceCem) {
 /* ================= RETIRADAS ================= */
 /* dest === 'C' significa «retirarse hacia el Centro» (1 espacio); otro valor es el espacio concreto al que se vuelve. */
 function retreatPlayers(units, dest, back) {
+  if (units.length) Voz.say('retirada');
   for (const u of units) {
     if (!u.space || !G.spaces[u.space] || ['bed', 'office', 'lab', 'camp'].includes(sp(u.space).kind)) continue; let d = dest === 'C' ? (sp(u.space).route ? nextToward(u.space) : 'C') : dest;
     let k = back ? back.indexOf(d) : -1; /* sin sitio: se sigue hacia atrás por el recorrido del Mover, y luego hacia el Centro */
@@ -401,6 +403,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     }
   }
   if (isZedAtk && G.turn.noRetreatOnce) {/* se maneja al final */ }
+  if (!UI.fast) { if (zeds.length > 1) Sfx.horde(); else Sfx.growl(); }
   await UI.fxClash(space, attackerHuman ? fighter : zeds[0], attackerHuman ? zeds[0] : fighter);
   let initialCard = 0;
   const zStr = zeds.reduce((a, z) => a + strength(z), 0), pStr = strength(fighter) + meleeStrengthBonus(fighter, { attacking: attackerHuman });
@@ -650,9 +653,9 @@ async function doFire(u, targetId, dist, opts) {
     if (back && !zedsAt(back).length && !raidAt(back).length) {
       const v = await UI.choose({ title: 'Vigilancia', text: 'Piazza puede retroceder 1 espacio (hacia el Centro) tras disparar.', options: [{ label: 'Retroceder a ' + spaceLabel(back), value: 'y' }, { label: 'Quedarse', value: 'n' }] });
       if (v === 'y') {
-        const from = u.space, mates = unitsAt(from).filter(x => x !== u && isFighter(x) && !x.mount);
+        const from = u.space, mates = unitsAt(from).filter(x => x !== u && (isFighter(x) || isSoft(x)) && !x.mount);
         const go = [u]; for (const m of mates) { const w = await UI.choose({ title: 'Vigilancia', text: '¿' + m.name + ' retrocede con Piazza?', options: [{ label: 'Sí', value: 'y' }, { label: 'No', value: 'n' }] }); if (w === 'y') { go.push(m); } }
-        for (const g of go) { if (back === 'C' || playerRoom(back, g)) { putUnit(g, back); if (g.resist) g.resist = false; } }
+        for (const g of go) { if (back === 'C' || playerRoom(back, g)) { putUnit(g, back); if (g.resist) g.resist = false; if (g.type === 'aldeano') { g.type = 'refugee'; g.name = 'Refugiados'; LOG('Los Aldeanos que acompañan a Piazza pasan a ser Refugiados.'); } } }
         UI.redraw();
       }
     }

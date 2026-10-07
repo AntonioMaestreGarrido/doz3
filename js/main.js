@@ -4,6 +4,9 @@
 async function revealEvent() {
   const id = G.eventDeck.shift(); const ev = EV[id];
   G.event = ev; G.eventsRevealed++; G.turnNo++; G.turn = newTurn();
+  if (G.turnNo > 1) Voz.say('turno');
+  if (G.eventsRevealed >= G.totalEvents - 2) Voz.say('amanece');
+  if (G.ammo <= 1) Voz.say('municion');
   G.pool = { player: 1, event: ev.acc || 0 }; G.charUsed = {}; G.firstFreeUsed = {};
   $('evimg').src = 'assets/cartas/e_' + id + '.jpg'; $('evimg').dataset.zoom = 'e:' + id;
   UI.log('— Turno ' + G.turnNo + ': «' + ev.name + '» —', 'turn'); UI.updateStats();
@@ -12,6 +15,7 @@ const FINISH = () => G.over;
 
 async function playGame(setup, saved) {
   let resume = null;
+  ui.gameMusicOn();
   if (saved) {
     applySave(saved); resume = saved.at;
     ui.setMap(G.lv.board); G.busy = true;
@@ -22,6 +26,7 @@ async function playGame(setup, saved) {
     newGame(setup.level, setup.len, setup.hero, setup.exps);
     ui.setMap(G.lv.board); G.busy = true; UI.updateStats(); UI.updateHand(); UI.redraw();
     UI.log('Partida preparada — ' + G.lv.name + ' (' + G.len.name + '). Héroes: ' + G.heroKeys.map(k => HEROES[k].name).join(', ') + '.', 'turn');
+    Voz.say('inicio');
     await UI.waitAck(G.lv.name, 'Farmingdale está rodeada por ' + G.routes.length + ' rutas por las que avanzan los Zeds. Si <b>un solo Zed</b> entra en el Centro de la Ciudad, pierdes' + (G.lv.fourR ? ' (y también si te quedas sin fichas de Caos)' : '') + '. Sobrevive a las ' + G.totalEvents + ' cartas de Evento y ganarás.<br><br>Pasa el ratón sobre cualquier ficha o carta para ver su texto.');
     saveGame('turn');
   }
@@ -74,6 +79,7 @@ const UI_ = ui;
 window.addEventListener('load', async () => {
   bindUI(ui); window.UI = ui;
   await ui.init();
+  await ui.intro();
   while (true) {
     const a = await ui.titleScreen();
     if (a === 'load') { const saved = loadSave(); if (saved) { ui.musicStop(); ui.hideCover(); playGame(null, saved); return; } continue; }

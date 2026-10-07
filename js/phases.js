@@ -142,7 +142,7 @@ async function cryptExit(z, cer) {
 async function activateRoute(r, cer) {
   if (G.over) return;
   if (G.hand.includes('hipnotizados')) { const v = await UI.choose({ title: 'Zeds hipnotizados', text: '¿Cancelas la activación de ' + ROUTES[r].name + '?', options: [{ label: 'Cancelar la activación', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('hipnotizados'), 1); G.destDiscard.push('hipnotizados'); zenPlayed(); UI.updateHand(); return; } }
-  LOG('Se activa la ' + ROUTES[r].name + '.', 'zed'); UI.flashRoute(r); await UI.announce('Se activa la ' + ROUTES[r].name, ROUTES[r].color, 700);
+  LOG('Se activa la ' + ROUTES[r].name + '.', 'zed'); UI.flashRoute(r); if (!UI.fast) Sfx.ambience(); await UI.announce('Se activa la ' + ROUTES[r].name, ROUTES[r].color, 700);
   const zs = routeZeds(r);
   if (!zs.length) { await placeZedInitial(r); return; }
   zs.forEach(z => { z.moved = false; z.flamedHit = false; });
@@ -151,7 +151,7 @@ async function activateRoute(r, cer) {
   for (let i = L; i >= 0 && !G.over; i--) {
     if (G.hand.includes('picado') && !cer) {
       const gr = zedsAt(r + i).filter(z => !z.moved);
-      if (gr.length) { const v = await UI.choose({ title: '«¡Sí! Han picado…»', text: '¿Cancelas la activación de la unidad/Horda en ' + spaceLabel(r + i) + '?', options: [{ label: 'Cancelar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('picado'), 1); zenPlayed(); UI.updateHand(); if (d6() <= 3) G.destDiscard.push('picado'); else G.hand.push('picado'); UI.updateHand(); gr.forEach(z => z.moved = true); continue; } }
+      if (gr.length) { const v = await UI.choose({ title: '«¡Sí! Han picado…»', text: '¿Cancelas la activación de la unidad/Horda en ' + spaceLabel(r + i) + '?', options: [{ label: 'Cancelar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('picado'), 1); zenPlayed(); UI.updateHand(); if (d6() <= 3) G.destDiscard.push('picado'); else G.hand.push('picado'); UI.updateHand(); gr.forEach(z => z.moved = true); { const hz = gr.find(z => z.hits > 0) || gr.find(z => z.flipped); if (hz) { const bf = { flipped: hz.flipped, hits: hz.hits }; if (hz.hits > 0) hz.hits--; else { hz.flipped = false; hz.hits = Math.max(0, (hz.hf || 1) - 1); } LOG(hz.name + ' recupera 1 Impacto.', 'bad'); if (UI.fxHeal) UI.fxHeal(hz, bf); } } continue; } }
     }
     if (alreadyHas('distraccion')) {
       const gr = zedsAt(r + i).filter(z => !z.moved);

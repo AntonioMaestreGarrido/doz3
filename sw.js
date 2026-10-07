@@ -4,7 +4,7 @@
 const CACHE = 'doz3-v5';
 const SHELL = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'assets/portada.jpg',
   'js/data.js', 'js/events.js', 'js/dest.js', 'js/engine.js', 'js/game.js', 'js/phases.js', 'js/actions.js', 'js/cardtext.js', 'js/ui.js', 'js/anim.js',
-  'js/expansions.js', 'js/expansions2.js', 'js/sfx.js', 'assets/sfx/disparo.mp3', 'assets/sfx/disparo_largo.mp3', 'js/mapzoom.js', 'js/save.js', 'js/main.js', 'js/bot.js'];
+  'js/expansions.js', 'js/expansions2.js', 'js/sfx.js', 'js/sound.js', 'js/voz.js', 'assets/sfx/disparo.mp3', 'assets/sfx/disparo_largo.mp3', 'js/mapzoom.js', 'js/save.js', 'js/main.js', 'js/bot.js'];
 
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {

@@ -6,13 +6,20 @@ const Sfx = {
   ctx: null, bufs: {}, loading: {}, master: null,
   defs: {
     shot: { url: 'assets/sfx/disparo.mp3', from: 0.15, to: 1.35, gain: 0.55 },
-    long: { url: 'assets/sfx/disparo_largo.mp3', from: 0.0, to: 2.6, gain: 0.7 }
+    long: { url: 'assets/sfx/disparo_largo.mp3', from: 0.0, to: 2.6, gain: 0.7 },
+    dice: { url: 'assets/sfx/dados.mp3', from: 0.0, to: 1.05, fade: 0.25, gain: 0.8 },
+    zombi1: { url: 'assets/sfx/zombi1.mp3', from: 0.0, to: 99, gain: 0.55 },
+    zombi2: { url: 'assets/sfx/zombi2.mp3', from: 0.0, to: 99, gain: 0.55 },
+    growl1: { url: 'assets/sfx/growl1.mp3', from: 0.0, to: 2.6, fade: 0.5, gain: 0.6 },
+    growl2: { url: 'assets/sfx/growl2.mp3', from: 0.0, to: 2.6, fade: 0.5, gain: 0.6 },
+    horde: { url: 'assets/sfx/horda_ataque.mp3', from: 0.0, to: 3.8, fade: 0.8, gain: 0.7 },
+    amb: { url: 'assets/sfx/horda_ambiente.mp3', from: 0.0, to: 5.5, fade: 1.2, gain: 0.4 }
   },
-  enabled() { try { return localStorage.getItem('doz3.sfx') !== '0'; } catch (e) { return true; } },
-  setEnabled(v) { try { localStorage.setItem('doz3.sfx', v ? '1' : '0'); } catch (e) { } },
+  last: {},
+  enabled() { return Sound.sfx.on; },
   init() {
     if (this.ctx || !(window.AudioContext || window.webkitAudioContext)) return;
-    try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.master = this.ctx.createGain(); this.master.gain.value = 1; this.master.connect(this.ctx.destination); } catch (e) { this.ctx = null; }
+    try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); this.master = this.ctx.createGain(); this.master.gain.value = Sound.sfx.vol; this.master.connect(this.ctx.destination); } catch (e) { this.ctx = null; }
   },
   async load(k) {
     if (this.bufs[k]) return this.bufs[k];
@@ -28,9 +35,17 @@ const Sfx = {
     const d = this.defs[k], buf = await this.load(k); if (!buf) return false;
     const t = this.ctx.currentTime, len = Math.min(d.to, buf.duration) - d.from;
     const src = this.ctx.createBufferSource(), g = this.ctx.createGain(); src.buffer = buf; src.connect(g); g.connect(this.master);
-    g.gain.setValueAtTime(d.gain, t); g.gain.setValueAtTime(d.gain, t + Math.max(0, len - 0.08)); g.gain.linearRampToValueAtTime(0, t + len);
+    g.gain.setValueAtTime(d.gain, t); const fd = Math.min(d.fade || 0.08, len); g.gain.setValueAtTime(d.gain, t + Math.max(0, len - fd)); g.gain.linearRampToValueAtTime(0, t + len);
     src.start(t, d.from, len); return true;
   },
-  shot(dist) { return this.play(dist > 1 ? 'long' : 'shot'); }
+  /* Evita que un mismo grupo de sonidos se amontone: ms mínimos entre repeticiones. */
+  once(group, ms, k) { const n = performance.now(); if (n - (this.last[group] || -1e9) < ms) return false; this.last[group] = n; return this.play(k); },
+  pick(a) { return a[Math.floor(Math.random() * a.length)]; },
+  shot(dist) { return this.play(dist > 1 ? 'long' : 'shot'); },
+  dice() { return this.once('dice', 200, 'dice'); },
+  zed() { return this.once('zed', 500, this.pick(['zombi1', 'zombi2'])); },
+  growl() { return this.once('zed', 500, this.pick(['growl1', 'growl2'])); },
+  horde() { return this.once('zed', 500, 'horde'); },
+  ambience() { return this.once('amb', 20000, 'amb'); }
 };
 ['pointerdown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => Sfx.warm(), { once: true, capture: true }));

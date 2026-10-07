@@ -111,6 +111,7 @@ Object.assign(ui, {
     for (const id in dang) { const s = G.spaces[id]; c.save(); c.strokeStyle = 'rgba(255,40,30,' + (.35 + .5 * pt) + ')'; c.lineWidth = dang[id] === 2 ? 11 : 6; c.beginPath(); c.arc(s.x, s.y, 74 + pt * 6, 0, 7); c.stroke(); if (dang[id] === 2) { c.fillStyle = 'rgba(255,40,30,' + (.15 + .2 * pt) + ')'; c.fill(); } c.restore(); }
     for (const id in dang) if (dang[id] === 2 && !this.dangerSet[id] && G.turnNo > 0) this.toast('⚠ ¡Peligro! Zeds junto al Centro (' + ROUTES[sp(id).route].short + ')', '#ff3b2a', 2200, true);
     this.dangerSet = dang; this._needLoop = Object.keys(dang).length > 0;
+    this.setDanger(this._needLoop);
   },
   /* ---- efectos de combate ----
      Por unidad (ufx): temblor (Impacto), volteo (cambio de cara) y embestida (inicio del Cuerpo a Cuerpo).
@@ -129,6 +130,7 @@ Object.assign(ui, {
   fxFocus(id, zoom) { if (this.camOn && !this.fast && id && G.spaces[id]) this.focus(id, zoom || 1.9); },
   async fxHit(u) {
     const p = this.unitXY(u); if (!p || this.fast) return;
+    if (isZedSide(u)) Sfx.zed();
     (this.ufx[u.id] = this.ufx[u.id] || {}).shake = { t0: this.now(), d: this.D(420) };
     this.fx.push({ kind: 'flash', x: p.x, y: p.y, col: '255,59,42', t0: this.now(), d: this.D(320) });
     this.fxText(p.x, p.y - 44, '−1', '#ff5a44', 48);
@@ -141,7 +143,7 @@ Object.assign(ui, {
     await this.fxWait(820);
   },
   async fxResist(u, roll, label) {
-    const p = this.unitXY(u); if (!p || this.fast) return;
+    Sfx.dice(); const p = this.unitXY(u); if (!p || this.fast) return;
     this.fx.push({ kind: 'shield', x: p.x, y: p.y, roll, t0: this.now(), d: this.D(900) });
     this.fxText(p.x, p.y - 58, (label || 'Resiste') + ' (' + roll + ')', '#8fd0ff', 32, 1200);
     await this.fxWait(760);
@@ -149,7 +151,7 @@ Object.assign(ui, {
   async fxBoom(u, label) {
     const p = this.unitXY(u); if (!p || this.fast) return;
     const parts = []; for (let i = 0; i < 22; i++) { const a = Math.random() * Math.PI * 2, v = 60 + Math.random() * 110; parts.push({ vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: 5 + Math.random() * 8 }); }
-    const zed = isZedSide(u);
+    const zed = isZedSide(u); if (zed) Sfx.zed();
     this.fx.push({ kind: 'burst', x: p.x, y: p.y, col: zed ? '255,120,60' : '230,230,230', parts, t0: this.now(), d: this.D(800) });
     this.fxText(p.x, p.y - 50, label || (zed ? 'Eliminado' : 'Al Cementerio'), zed ? '#ffd54a' : '#ff7a66', 36, 1300);
     await this.fxWait(700);
@@ -175,7 +177,7 @@ Object.assign(ui, {
   },
   /* Tirada de Salvación: dado con el resultado; verde si se salva, rojo si no */
   async fxSave(u, roll, ok, bonus) {
-    const p = this.unitXY(u); if (!p || this.fast) return;
+    Sfx.dice(); const p = this.unitXY(u); if (!p || this.fast) return;
     this.fx.push({ kind: 'die', x: p.x, y: p.y - 6, roll, ok, t0: this.now(), d: this.D(1100) });
     this.fxText(p.x, p.y - 66, 'Salvación ' + roll + (bonus ? '+' + bonus : '') + (ok ? ' ✓' : ' ✗'), ok ? '#7bd45a' : '#ff5a44', 32, 1300);
     await this.fxWait(950);

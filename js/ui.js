@@ -28,12 +28,12 @@ const ui = {
     window.addEventListener('resize', () => this.arrange());
     $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
-    $('sfxChk').checked = Sfx.enabled(); $('sfxChk').addEventListener('change', e => { Sfx.setEnabled(e.target.checked); if (e.target.checked) Sfx.warm(); });
+    $('soundBtn').addEventListener('click', () => ui.showSound());
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
     $('cancelBtn').addEventListener('click', () => ui.cancelMode());
     $('rulesBtn').addEventListener('click', () => ui.showRules());
     $('cardsBtn').addEventListener('click', () => ui.showHeroCards());
-    $('newBtn').addEventListener('click', () => { if (confirm('¿Volver al menú principal? La partida se guarda al terminar cada acción: lo que hayas hecho en la acción en curso se perderá.')) location.reload(); });
+    $('newBtn').addEventListener('click', () => { if (confirm('¿Volver al menú principal? La partida se guarda al terminar cada acción: lo que hayas hecho en la acción en curso se perderá.')) ui.reloadToMenu(); });
     this.arrange();
   },
   /* Táctil: los ratones emulados tras un toque se ignoran; pulsación larga sobre [data-zoom] o sobre una unidad del mapa amplía; el toque sobre el mapa solo selecciona; cualquier otro toque cierra. */
@@ -125,7 +125,7 @@ const ui = {
     h += '<div class="row total"><span>Para cualquier unidad</span><span>' + gen + '</span></div>';
     h += '<div class="sub">Acciones gratis de unidades</div>';
     h += fr.length ? '<ul>' + fr.map(x => '<li class="sel" data-uid="' + x.id + '"><span>' + x.name + ' <small style="color:var(--mut)">' + spaceLabel(x.space) + '</small></span><span class="r">' + freeLabel(x) + '</span></li>').join('') + '</ul>' : '<div class="none">— ninguna —</div>';
-    const AB = [['schmidt', 'ini', 'Iniciativa', '1 acción para Schmidt'], ['jones', 'planes', 'Sus Propios Planes', '1 acción para Jones'], ['hunt', 'lid', 'Liderazgo', '1 acción a Civiles/Refugiados'],
+    const AB = [['schmidt', 'ini', 'Iniciativa', '1 acción para Schmidt'], ['jones', 'planes', 'Sus Propios Planes', '1 acción para Jones'], ['hunt', 'lid', 'Liderazgo', '1 acción a Civiles/Heroicos/Refugiados'],
       ['hernandez', 'cit', 'Ciudadela', 'disparo gratis desde el Centro'], ['seaver', 'medico', 'Médico', 'Curar en el Hospital'], ['seaver', 'aidseaver', 'Primeros auxilios', 'Curar (1 Sum.)'],
       ['salvacion', 'aidsalvacion', 'Campamento Médico', 'Curar (1 Sum.)'], ['bauer', 'bauer', 'Dispositivos explosivos', '2 Sum. → 1 Mun.'], ['agee', 'boost', 'Madre de la Ciencia', '+1 Acción de Evento (+3 Inf.)'],
       ['wzed', 'wzed', 'Transmisión de Emergencia', '1 acción a Civiles/Refugiados'], ['bomberos', 'libera', 'Autoridad Civil', 'liberar Civiles/Aldeanos'], ['lee', 'pura', 'Purasangre', '1 Mover para Lee'],
@@ -317,6 +317,23 @@ const ui = {
       options.forEach(opt => { const bt = document.createElement('button'); bt.innerHTML = (opt.color ? '<span class="sw" style="background:' + opt.color + '"></span>' : '') + opt.label; bt.onclick = () => { ui._close(); res(opt.value); }; o.appendChild(bt); });
     });
   },
+  /* Elección sobre cartas: rejilla con la imagen de cada opción. options: [{value,label,img?,sub?}]; extra: botones sin carta (p. ej. «Terminar»). */
+  chooseCards({ title, text, options, extra }) {
+    return new Promise(res => {
+      const b = this._modal('<h2>' + title + '</h2><p>' + (text || '') + '</p><div class="pickhint">Toca una carta para elegirla y leerla en grande; pulsa Aceptar para confirmar.</div><div class="cpwrap"><div class="cardpick"></div><div class="cpprev"><div class="cpph">Selecciona una carta para leerla aquí</div></div></div><div class="opts"></div>', 'cardpickbox');
+      const grid = b.querySelector('.cardpick'), ops = b.querySelector('.opts'), prev = b.querySelector('.cpprev'); let cur;
+      const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = 'Aceptar'; ok.disabled = true; ops.appendChild(ok);
+      const sel = i => { cur = i; ok.disabled = false; grid.querySelectorAll('.cpc').forEach(x => x.classList.toggle('on', +x.dataset.i === i)); const o = options[i]; prev.innerHTML = o.img ? '<img src="' + o.img + '" alt=""><div class="cpn">' + o.label + (o.sub ? '<small>' + o.sub + '</small>' : '') + '</div>' : '<div class="cpph"><b>' + o.label + '</b>' + (o.sub ? '<br>' + o.sub : '') + '<br><small>(sin carta ilustrada)</small></div>'; };
+      options.forEach((o, i) => {
+        const d = document.createElement('div'); d.className = 'cpc' + (o.img ? '' : ' noimg'); d.dataset.i = i;
+        d.innerHTML = (o.img ? '<img src="' + o.img + '" alt="">' : '') + '<div class="cpn">' + o.label + (o.sub ? '<small>' + o.sub + '</small>' : '') + '</div>';
+        d.onclick = () => sel(i);
+        grid.appendChild(d);
+      });
+      ok.onclick = () => { if (cur !== undefined) { ui._close(); res(options[cur].value); } };
+      (extra || []).forEach(e => { const bt = document.createElement('button'); bt.textContent = e.label; bt.onclick = () => { ui._close(); res(e.value); }; ops.appendChild(bt); });
+    });
+  },
   confirm(text) { return this.choose({ title: 'Confirmar', text, options: [{ label: 'Sí', value: true }, { label: 'No', value: false }] }); },
   waitAck(title, text, img, spec) {
     return new Promise(res => {
@@ -352,7 +369,7 @@ const ui = {
   },
   _animate(els, vals) {
     return new Promise(res => {
-      els.forEach(e => e.classList.add('roll')); const t = setInterval(() => els.forEach(e => e.textContent = d6()), 70);
+      Sfx.dice(); els.forEach(e => e.classList.add('roll')); const t = setInterval(() => els.forEach(e => e.textContent = d6()), 70);
       setTimeout(() => { clearInterval(t); els.forEach((e, i) => { e.classList.remove('roll'); e.textContent = vals[i]; }); res(); }, this.fast ? 120 : 700);
     });
   },
@@ -446,38 +463,85 @@ const ui = {
   },
   /* Música de menú: suena en portada y selección de partida; el navegador exige un gesto del usuario para arrancar. */
   musicOn() {
-    if (!this._mus) {
-      this._mus = new Audio('assets/musica.mp3'); this._mus.loop = true; this._mus.volume = .5;
-      try { this._muted = localStorage.getItem('doz3.mute') === '1'; } catch (e) { }
-    }
-    if (this._muted) return;
-    const m = this._mus; m.volume = .5; const p = m.play(); if (p && p.catch) p.catch(() => { });
+    if (!this._mus) { this._mus = new Audio('assets/musica.mp3'); this._mus.loop = true; }
+    const m = this._mus; m.volume = .5 * Sound.music.vol;
+    if (!Sound.music.on) { m.pause(); return; }
+    const p = m.play(); if (p && p.catch) p.catch(() => { });
   },
-  musicToggle() {
-    this._muted = !this._muted; try { localStorage.setItem('doz3.mute', this._muted ? '1' : '0'); } catch (e) { }
-    if (this._muted) this._mus.pause(); else this.musicOn();
-    return this._muted;
+  /* Lo llama Sound.set al cambiar música: ajusta volumen o pausa/reanuda lo que esté sonando. */
+  applyMusic() {
+    if (this._mus) this.musicOn();
+    this._gamePlay();
+  },
+  showSound() {
+    const row = (k, name) => { const v = Math.round(Sound[k].vol * 100); return '<div class="snd"><label class="chk"><input type="checkbox" id="on_' + k + '"' + (Sound[k].on ? ' checked' : '') + '> ' + name + '</label><input type="range" min="0" max="100" id="vol_' + k + '" value="' + v + '"' + (Sound[k].on ? '' : ' disabled') + '><span id="pct_' + k + '">' + v + '%</span></div>'; };
+    this._modal('<h2>Sonido</h2><p>Cada canal tiene su propio interruptor y volumen.</p>' + row('music', 'Música') + row('sfx', 'Efectos') + row('voice', 'Voz del líder') + '<div class="opts"><button class="primary" id="sndOk">Cerrar</button></div>', 'sound');
+    ['music', 'sfx', 'voice'].forEach(k => {
+      $('on_' + k).onchange = e => { Sound.set(k, { on: e.target.checked }); $('vol_' + k).disabled = !e.target.checked; if (k === 'sfx' && e.target.checked && typeof Sfx !== 'undefined') Sfx.warm(); };
+      $('vol_' + k).oninput = e => { $('pct_' + k).textContent = e.target.value + '%'; Sound.set(k, { vol: e.target.value / 100 }); };
+    });
+    $('sndOk').onclick = () => ui._close();
   },
   hideCover() { const t = $('title'); if (t) t.remove(); },
+  /* Vuelve al menú de la portada sin repetir la intro. */
+  reloadToMenu() { try { sessionStorage.setItem('doz3.skipIntro', '1'); } catch (e) { } location.reload(); },
+  /* Intro (en cada arranque de la web): imagen sin fondo; al pulsar suenan la música y el vídeo, y al acabar el vídeo aparece la portada. */
+  intro() {
+    return new Promise(res => {
+      /* Se salta solo si la recarga viene de volver al menú desde la partida (reloadToMenu). */
+      try { const skip = sessionStorage.getItem('doz3.skipIntro') === '1'; sessionStorage.removeItem('doz3.skipIntro'); if (skip) return res(); } catch (e) { }
+      const t = document.createElement('div'); t.id = 'intro';
+      t.innerHTML = '<img src="assets/intro.png" alt=""><p>Pulsa para empezar</p>';
+      document.body.appendChild(t);
+      const done = () => { t.remove(); res(); };
+      t.onclick = () => {
+        t.onclick = null; const p0 = t.querySelector('p'); if (p0) p0.remove();
+        this.musicOn();
+        const v = document.createElement('video'); v.id = 'openVid'; v.src = 'assets/opening.mp4'; v.playsInline = true;
+        v.onended = done; v.onerror = done; t.appendChild(v);
+        const p = v.play(); if (p && p.catch) p.catch(done);
+      };
+    });
+  },
   musicStop() {
     const m = this._mus; if (!m || m.paused) return; this._mus = null;
     const f = setInterval(() => { m.volume = Math.max(0, m.volume - .05); if (m.volume <= 0) { clearInterval(f); m.pause(); } }, 80);
   },
+  /* Música de partida: dos temas de fondo que se turnan y un tema de peligro (ver setDanger). */
+  gameMusicOn() {
+    if (this._bg) return;
+    this._bg = [1, 2].map(n => { const a = new Audio('assets/musica_juego' + n + '.mp3'); a.volume = .4; a.onended = () => { a.currentTime = 0; this._bgI = 1 - this._bgI; this._gamePlay(); }; return a; });
+    this._bgI = 0; this._danger = false;
+    this._dg = new Audio('assets/musica_peligro.mp3'); this._dg.loop = true; this._dg.volume = .5;
+    this._gamePlay();
+  },
+  /* Toca el tema que corresponde; el de fondo se reanuda donde se quedó al acabar el peligro. */
+  _gamePlay() {
+    if (!this._bg) return;
+    const bg = this._bg[this._bgI], cur = this._danger ? this._dg : bg, other = this._danger ? bg : this._dg;
+    bg.volume = .4 * Sound.music.vol; this._dg.volume = .5 * Sound.music.vol;
+    other.pause();
+    if (!Sound.music.on) { cur.pause(); return; }
+    const p = cur.play(); if (p && p.catch) p.catch(() => { });
+  },
+  /* Lo llama el mapa: true si hay Zeds en el penúltimo espacio (o junto al Centro). Al entrar en peligro, la voz avisa. */
+  setDanger(v) { v = !!v; if (v === this._danger) return; this._danger = v; if (v) Voz.say('peligro'); this._gamePlay(); },
   /* Portada: devuelve 'new' o 'load'. */
   titleScreen() {
     return new Promise(res => {
       const prev = $('title'); if (prev) prev.remove();
       const sv = loadSave(), t = document.createElement('div'); t.id = 'title';
       const info = sv ? LEVELS[sv.G.lv].name + ' · turno ' + sv.G.turnNo : 'No hay partida guardada';
-      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button>';
+      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="sound">Sonido</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button>';
       document.body.appendChild(t);
       this.musicOn();
-      const mb = $('muteBtn'), paint = () => { mb.textContent = ui._muted ? '🔇' : '🔊'; }; paint();
-      mb.onclick = e => { e.stopPropagation(); ui.musicToggle(); paint(); };
+      const mb = $('muteBtn'), paint = () => { mb.textContent = Sound.music.on ? '🔊' : '🔇'; }; paint();
+      mb.onclick = e => { e.stopPropagation(); Sound.set('music', { on: !Sound.music.on }); paint(); };
       const kick = () => { if (ui._mus && ui._mus.paused) ui.musicOn(); }; ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, kick, { once: true, capture: true }));
       t.querySelectorAll('.tbtns button').forEach(bt => bt.onclick = () => {
         const a = bt.dataset.a;
         if (a === 'top') return ui.showTop();
+        if (a === 'sound') return ui.showSound();
         if (a === 'credits') return ui.showCredits();
         t.classList.add('bg'); t.querySelectorAll('button').forEach(b => b.hidden = true); res(a);
       });
@@ -504,9 +568,10 @@ const ui = {
     const refTxt = s.soft === 0 ? 'Ningún refugiado superviviente' : s.soft <= 2 ? 'Unos pocos refugiados supervivientes' : 'Muchos refugiados supervivientes';
     const why = G.loseWhy === 'caos' ? 'Habéis perdido por el Caos.' : 'Un Zed ha entrado en el Centro de la Ciudad.';
     G.phase = 'end'; this.updateStats();
+    Voz.say(win ? 'victoria' : G.loseWhy === 'caos' ? 'derrota_caos' : 'derrota_centro');
     saveTop({ win, score: s.total, lv: G.lv.name, len: G.len.name, turns: G.turnNo, killed: G.stats.killed, date: Date.now() });
     this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button class="primary" id="nb">Nueva partida</button></div></div>');
-    $('nb').onclick = () => location.reload();
+    $('nb').onclick = () => ui.reloadToMenu();
   }
 };
 function payFire(u) {
