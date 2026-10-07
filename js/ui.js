@@ -33,7 +33,7 @@ const ui = {
     $('newBtn').addEventListener('click', () => { if (confirm('¿Volver al menú principal? La partida se guarda al terminar cada acción: lo que hayas hecho en la acción en curso se perderá.')) location.reload(); });
     this.arrange();
   },
-  /* Táctil: los ratones emulados tras un toque se ignoran; pulsación larga sobre [data-zoom] amplía, toque sobre una unidad del mapa la amplía; cualquier otro toque cierra. */
+  /* Táctil: los ratones emulados tras un toque se ignoran; pulsación larga sobre [data-zoom] o sobre una unidad del mapa amplía; el toque sobre el mapa solo selecciona; cualquier otro toque cierra. */
   recentTouch() { return performance.now() - (this._touchT || 0) < 800; },
   initTouch() {
     let timer = null, start = null;
@@ -42,8 +42,14 @@ const ui = {
       if (e.pointerType !== 'touch') return;
       this._touchT = performance.now(); clear();
       const z = $('zoom'); if (!z.hidden && !z.contains(e.target)) { this._mapZoom = false; this.zoomHide(); }
-      const t = e.target.closest && e.target.closest('[data-zoom]'); if (!t) return;
       start = { x: e.clientX, y: e.clientY };
+      /* Mapa: el toque solo selecciona la unidad; la ficha se amplía con pulsación larga. */
+      if (e.target === this.canvas && G.units) {
+        const uid = this.hitUnit(this.toMap(e)); if (!uid || !G.units[uid]) return;
+        timer = setTimeout(() => { timer = null; this._longT = performance.now(); this._mapZoom = true; this.zoomShow('u:' + uid, { clientX: start.x, clientY: start.y }); }, 450);
+        return;
+      }
+      const t = e.target.closest && e.target.closest('[data-zoom]'); if (!t) return;
       timer = setTimeout(() => { timer = null; this._longT = performance.now(); this.zoomShow(t.dataset.zoom, { clientX: start.x, clientY: start.y }); }, 450);
     });
     document.addEventListener('pointermove', e => { if (timer && start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) clear(); });
@@ -223,7 +229,6 @@ const ui = {
       this.mode = null; this.setBanner(null);
     }
     G.sel = uid || null; this.updateStats(); this.redraw();
-    if (this.recentTouch() && uid && G.units[uid]) { this._mapZoom = true; this.zoomShow('u:' + uid, e); }
   },
   redraw() { if (!this.ctx || !G.spaces) return; cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.draw()); },
   layout() {
