@@ -200,3 +200,6 @@ select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);bo
   #zoom img.tok{width:110px}
   #zoom .zt,#zoom.noimg .zt{width:auto;max-width:100%;font-size:12px}
 }
+/* Selección de partida: la portada queda de fondo, difuminada */
+#title.bg{filter:blur(9px);transform:scale(1.06);overflow:hidden}
+body:has(#title.bg) #modal{background:rgba(0,0,0,.3)}
