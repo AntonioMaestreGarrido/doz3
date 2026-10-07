@@ -376,6 +376,16 @@ const ui = {
     if (extra) { const used = best.slice(); area.querySelectorAll('.die').forEach((e, i) => { const k = used.indexOf(vals[i]); if (k >= 0) used.splice(k, 1); else e.style.opacity = '.35'; }); }
     return best;
   },
+  /* Repite los dados indicados (idx) de una tirada ya mostrada y recoloca el resultado resaltado. */
+  async _rerollIn(b, info, vals, idx) {
+    const area = b.querySelector('.dice'); area.innerHTML = vals.map(d => '<div class="die">' + d + '</div>').join('');
+    const els = [...area.querySelectorAll('.die')], nv = idx.map(() => d6());
+    await this._animate(idx.map(i => els[i]), nv);
+    const out = vals.slice(); idx.forEach((i, k) => out[i] = nv[k]);
+    const col = info.finalCol !== undefined ? info.finalCol : info.col, row = sumRow(out[0] + out[1]);
+    b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + col + '"]'); if (cell) cell.classList.add('hit');
+    return out;
+  },
   combatOpen(info) {
     const zs = info.zeds.map(z => z.name + ' ' + strength(z) + (z.hits ? ' <span class="bad">(' + '♥'.repeat(z.hits) + ')</span>' : '')).join(' + ');
     const sh = info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
@@ -383,6 +393,7 @@ const ui = {
     return {
       roll: async extra => { const best = await ui._rollDice(b, extra); const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.finalCol + '"]'); b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Suma <b>' + (best[0] + best[1]) + '</b>'; return best; },
       ask: (t, o) => ui._ask('rb', t, o),
+      reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
       setResult: (row, col, [zh, ph], zedLoses) => { b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + col + '"]'); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Impactos a los Zeds: <b class="p">' + zh + '</b> · Impactos a tu unidad: <b class="z">' + ph + '</b><br>' + (zedLoses ? '<span class="good">Los Zeds pierden y se retiran.</span>' : '<span class="bad">Tus unidades pierden y se retiran.</span>'); },
       done: async () => { await ui._btn('rb', 'Aplicar resultado'); ui._close(); }
     };
@@ -392,6 +403,8 @@ const ui = {
     const title = info.ground ? 'Ataque sorpresa sobre ' + info.shooter.name : info.shooter.name + ' dispara' + (info.dist ? ' (a ' + info.dist + ' espacio' + (info.dist > 1 ? 's' : '') + ')' : '');
     const b = this._modal('<h2>' + title + '</h2><div class="cols">' + (info.ground ? 'Columna «Igual»' : 'Fuerza de disparo <b>' + info.str + '</b>') + ' · ' + sh + '</div>' + (info.ground ? this._cacTable(3, info.col) : this._fireTable(info.col)) + '<div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
     return {
+      ask: (t, o) => ui._ask('rb', t, o),
+      reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
       roll: async () => { const best = await ui._rollDice(b, 0); const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.col + '"]'); if (cell) cell.classList.add('hit'); return best; },
       setResult: (row, col, hits, _x, ground) => { if (ground) { $('rr').innerHTML = 'Tu unidad sufre <b class="z">' + hits + '</b> Impacto(s).'; return; } $('rr').innerHTML = hits ? 'Impactos al objetivo: <b class="p">' + hits + '</b>' : '<span class="bad">Sin impactos.</span>'; },
       done: async () => { await ui._btn('rb', 'Continuar'); ui._close(); }

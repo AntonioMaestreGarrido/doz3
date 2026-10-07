@@ -1,7 +1,7 @@
 /* Service worker: permite instalar la web como app y jugar sin conexión.
    Código (html/js/css): red primero, con copia local de reserva. Imágenes y audio: caché primero. */
 'use strict';
-const CACHE = 'doz3-v2';
+const CACHE = 'doz3-v3';
 const SHELL = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'assets/portada.jpg',
   'js/data.js', 'js/events.js', 'js/dest.js', 'js/engine.js', 'js/game.js', 'js/phases.js', 'js/actions.js', 'js/cardtext.js', 'js/ui.js', 'js/anim.js',
   'js/expansions.js', 'js/expansions2.js', 'js/mapzoom.js', 'js/save.js', 'js/main.js', 'js/bot.js'];

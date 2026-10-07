@@ -73,3 +73,19 @@ async function startOfActions() {
   // Rumores revelables gratis al inicio por héroes que ya están encima
   for (const s of Object.values(G.spaces)) if (s.rumor && !s.chaos) { const who = unitsAt(s.id).find(u => ['hero', 'civh', 'marine', 'petra'].includes(u.type)); if (who) { const v = await UI.choose({ title: 'Rumor', text: who.name + ' está sobre un Rumor boca abajo. ¿Lo revelas gratis ahora?', options: [{ label: 'Revelar', value: 'y' }, { label: 'Después', value: 'n' }] }); if (v === 'y') await revealRumor(who, true); } }
 }
+
+/* «Pensar fríamente supuso el triunfo» (2.ª opción): repite un resultado de 1 dado o de 2 dados en el que haya un 1; con doble 1 se repiten los dos.
+   `h` es el manejador de la ventana de combate/disparo (si lo hay); si no, se pregunta con un diálogo. */
+async function zenReroll(vals, label, h) {
+  if (!G.hand || !G.hand.includes('pensar') || !vals.includes(1)) return vals;
+  const idx = vals.length === 2 && vals[0] === 1 && vals[1] === 1 ? [0, 1] : [vals.indexOf(1)];
+  const q = 'Pensar fríamente: ' + (label ? label + ' — ' : '') + 'sale ' + vals.join(' y ') + '. ¿Juegas la carta para repetir ' + (idx.length > 1 ? 'los dos dados' : vals.length > 1 ? 'el dado con 1' : 'el dado') + '?';
+  const opts = [{ label: 'Repetir', value: 'y' }, { label: 'No', value: 'n' }];
+  const v = h && h.ask ? await h.ask(q, opts) : await UI.choose({ title: 'Pensar fríamente', text: q, options: opts });
+  if (v !== 'y') return vals;
+  G.hand.splice(G.hand.indexOf('pensar'), 1); G.destDiscard.push('pensar'); zenPlayed(); UI.updateHand();
+  const out = h && h.reroll ? await h.reroll(vals, idx) : vals.map((x, i) => idx.includes(i) ? d6() : x);
+  LOG('Pensar fríamente: se repite ' + (idx.length > 1 ? 'la tirada' : 'el 1') + ' → ' + out.join(' y ') + '.', 'good');
+  return out;
+}
+async function zen1(r, label) { return (await zenReroll([r], label))[0]; }

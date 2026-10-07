@@ -226,7 +226,7 @@ async function hitPlayer(u, n) {
     if (u.type === 'aldeano') return;
     if (u.type === 'refugee') { if (u.space && sp(u.space).kind === 'bed') await sendCemetery(u, 'recibe un Impacto en el Hospital'); else await unitDown(u); return; }
     const th = resistsPl(u);
-    if (th) { const r = d6(); if (r >= th) { LOG(u.name + ' ignora el Impacto (dado ' + r + ').', 'good'); await UI.fxResist(u, r, u.res === 'f' ? 'Reforzada' : 'Resistente'); continue; } }
+    if (th) { const r = await zen1(d6(), 'resistir el Impacto (' + th + '+)'); if (r >= th) { LOG(u.name + ' ignora el Impacto (dado ' + r + ').', 'good'); await UI.fxResist(u, r, u.res === 'f' ? 'Reforzada' : 'Resistente'); continue; } }
     if ((u.chips || []).includes('traje')) { const r = d6(); if (r >= 4) { LOG(u.name + ' (DARPA) ignora el Impacto.', 'good'); await UI.fxResist(u, r, 'DARPA'); continue; } }
     if (u.space && sp(u.space).kind === 'bed' && u.ecg) { await sendCemetery(u, 'recibe un Impacto estando en coma'); return; }
     const before = { flipped: u.flipped, hits: u.hits };
@@ -257,6 +257,7 @@ async function unitDown(u) {
   if (G.lv.infection && u.side === 'pl') { const v = await UI.choose({ title: 'Último Impacto: ' + u.name, text: '¿Haces la tirada de Salvación (4-6: al Hospital, +1 Infección) o la mandas directamente al Cementerio?', options: [{ label: 'Tirada de Salvación', value: 'y' }, { label: 'Al Cementerio', value: 'n' }] }); if (v === 'n') { await sendCemetery(u, 'renuncia a la tirada de Salvación'); return; } }
   let r = d6();
   if (u.key === 'staub' || u.key === 'betty') { const r2 = d6(); r = Math.max(r, r2); }
+  else r = await zen1(r, 'Tirada de Salvación');
   const tot = r + saveBonus();
   if (u.side === 'raid') { await sendCemetery(u, 'es eliminada'); return; }
   LOG(u.name + ' recibe su último Impacto. Tirada de Salvación: ' + r + (saveBonus() ? '+' + saveBonus() : '') + '.', 'bad');
@@ -432,6 +433,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     const again = await h.ask('Artes marciales: ¿repites la tirada?', [{ label: 'Repetir', value: 'y' }, { label: 'Aceptar', value: 'n' }]);
     if (again === 'y') dice = await h.roll(extraDice);
   }
+  dice = await zenReroll(dice, 'combate', h);
   if (medal && dice.some(d => d < 6)) { const v = await h.ask('Medallón místico: ¿cambias un dado a 6?', [{ label: 'Sí', value: 'y' }, { label: 'No', value: 'n' }]); if (v === 'y') { dice = dice.slice().sort((a, b) => a - b); dice[0] = 6; G.turn.medalUsed = true; } }
   const sum = dice[0] + dice[1], row = sumRow(sum);
   let [zh, ph] = CAC[row][finalCol];
@@ -627,7 +629,7 @@ async function doFire(u, targetId, dist, opts) {
   if (G.hand.includes('tiradles')) {/* se usa en combate */ }
   const col = clamp(clamp(str, 1, 7) - 1 + shifts.reduce((a, s) => a + s.v, 0), 0, 6);
   const h = UI.fireOpen({ shooter: u, target, str, shifts, col, dist });
-  const dice = await h.roll(0);
+  let dice = await h.roll(0); dice = await zenReroll(dice, 'disparo', h);
   const row = sumRow(dice[0] + dice[1]); const hits = FIRE[row][col];
   h.setResult(row, col, hits); await h.done();
   if (hits) { await applyZedHits([target], hits); if (hits >= 2 && hasPart('balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }

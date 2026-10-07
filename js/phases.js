@@ -239,7 +239,7 @@ async function phaseInfection() {
   const sps = allUnits(x => x.type === 'spreader' && x.space && isRouteSp(x.space) && !isInit(x.space));
   if (sps.length) { LOG(sps.length + ' Propagador(es) de Enfermedad: +' + sps.length + ' Infección.', 'bad'); await infUp(sps.length); }
   if (G.event.inf === 'B') {
-    const a = d6(), b = d6(); LOG('Tirada de Brote: ' + (a + b) + ' (Infección ' + G.inf + ').');
+    const bd = await zenReroll([d6(), d6()], 'Tirada de Brote'); const a = bd[0], b = bd[1]; LOG('Tirada de Brote: ' + (a + b) + ' (Infección ' + G.inf + ').');
     if (a + b <= G.inf) { LOG('¡Estalla un Brote!', 'bad'); await outbreak(false); }
   }
 }
@@ -248,7 +248,7 @@ async function phaseFeeding() {
   let n = G.event.al; let cost = 0;
   if (n === 'd') {
     const inHosp = BEDS.filter(b => G.spaces[b] && unitsAt(b).length).length + allUnits(x => x.space === 'CAMP').length;
-    const r = d6() + (alive('salvacion') ? 1 : 0); LOG('Tirada de Alimentación: ' + r + ' (unidades necesitadas: ' + inHosp + ').');
+    const r = (await zen1(d6(), 'Tirada de Alimentación')) + (alive('salvacion') ? 1 : 0); LOG('Tirada de Alimentación: ' + r + ' (unidades necesitadas: ' + inHosp + ').');
     cost = r <= inHosp ? 1 : 0;
   } else cost = n;
   if (cost >= 2 && alive('clarin')) { cost--; LOG('El Mensajero del Clarín: el segundo Suministro es gratis.'); }
@@ -264,7 +264,7 @@ function strongestNormalZed() { const zs = allUnits(x => x.type === 'zed' && isR
 async function groundAttack(u) {
   const t = G.turn.noTerrain ? 0 : terrainOf(u.space); const col = clamp(3 + t, 0, 6);
   const h = UI.fireOpen({ ground: true, shooter: u, str: strength(u), shifts: t ? [{ label: 'Terreno', v: t }] : [], col });
-  const dice = await h.roll(0); const row = sumRow(dice[0] + dice[1]); const ph = CAC[row][col][1]; h.setResult(row, col, ph, null, true); await h.done();
+  let dice = await h.roll(0); dice = await zenReroll(dice, 'ataque sorpresa', h); const row = sumRow(dice[0] + dice[1]); const ph = CAC[row][col][1]; h.setResult(row, col, ph, null, true); await h.done();
   if (u.resist) u.resist = false;
   await hitPlayer(u, ph);
 }
