@@ -28,6 +28,7 @@ const ui = {
     $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
+    $('cancelBtn').addEventListener('click', () => ui.cancelMode());
     $('rulesBtn').addEventListener('click', () => ui.showRules());
     $('cardsBtn').addEventListener('click', () => ui.showHeroCards());
     $('newBtn').addEventListener('click', () => { if (confirm('¿Volver al menú principal? La partida se guarda al terminar cada acción: lo que hayas hecho en la acción en curso se perderá.')) location.reload(); });
@@ -166,9 +167,9 @@ const ui = {
     ui.updateStats(); ui.updateHand(); ui.redraw();
   },
   setBanner(t) {
-    const b = $('banner'); if (!t) { b.hidden = true; return; }
+    const b = $('banner'), c = $('cancelBtn'); if (!t) { b.hidden = true; if (c) c.hidden = true; return; }
     b.textContent = t; b.hidden = false;
-    if (this.mode && this.mode.type !== 'pick') { const c = document.createElement('button'); c.className = 'bcancel'; c.textContent = 'Cancelar'; c.onclick = () => ui.cancelMode(); b.appendChild(c); }
+    if (c) c.hidden = !(this.mode && this.mode.type !== 'pick');
   },
   cancelMode() { if (this.mode && this.mode.type !== 'pick') { this.mode = null; this.setBanner(null); this.redraw(); } },
   renderUnitBox() {
@@ -322,15 +323,14 @@ const ui = {
     });
   },
   /* Elegir unidad: panel inferior que no tapa el mapa. Un toque sobre una opción (o sobre la unidad en el mapa) la resalta y centra la cámara;
-     un segundo toque sobre la misma (doble clic) o el botón Aceptar confirma. */
+     solo el botón Aceptar confirma. */
   pickUnit(units, text) {
     return new Promise(res => {
-      const b = this._modal('<h2>Elige una unidad</h2><p>' + text + '</p><div class="pickhint">Toca una opción para verla en el mapa; tócala otra vez (doble clic) o pulsa Aceptar para confirmar.</div><div class="pickopts"></div><div class="opts"><button class="primary" id="pkok" disabled>Aceptar</button></div>', 'pickpanel');
+      const b = this._modal('<h2>Elige una unidad</h2><p>' + text + '</p><div class="pickhint">Toca una opción (o la unidad en el mapa) para verla; pulsa Aceptar para confirmar.</div><div class="pickopts"></div><div class="opts"><button class="primary" id="pkok" disabled>Aceptar</button></div>', 'pickpanel');
       $('modal').classList.add('pick');
       const box = b.querySelector('.pickopts'); let cur = null, focused = false;
       const done = id => { this._pick = null; this.hl = null; if (focused) this.release(); this._close(); this.redraw(); res(id); };
       const select = id => {
-        if (cur === id) return done(id);
         cur = id; this.hl = id; $('pkok').disabled = false;
         box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.id === id));
         const u = G.units[id]; if (u && u.space) { this.focus(u.space); focused = focused || (this.camOn && !this.fast); this.pulse(G.spaces[u.space].x, G.spaces[u.space].y, '#ffd54a'); }

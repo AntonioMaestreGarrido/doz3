@@ -170,8 +170,7 @@ select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);bo
 .hc2 .acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 
 /* Táctil */
-.bcancel{display:none;margin-left:12px;pointer-events:auto;padding:6px 12px}
-@media (pointer:coarse){.bcancel{display:inline-block}[data-zoom]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}}
+@media (pointer:coarse){[data-zoom]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}}
 
 /* Portada */
 #title{position:fixed;inset:0;z-index:40;background:#000 url(assets/portada.jpg) center/cover no-repeat;display:flex;align-items:flex-end;justify-content:center;padding:0 12px 12vh}
@@ -222,3 +221,5 @@ body:has(#title.bg) #modal{background:rgba(0,0,0,.3)}
 .pickopts{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .pickopts button{flex:1 1 200px;text-align:left}
 .pickopts button.on{border-color:var(--gold);background:#4a3a1c;box-shadow:0 0 0 1px var(--gold) inset}
+#cancelBtn.cancel{background:#7a2a1b;border-color:#e8452f;color:#fff}
+#cancelBtn[hidden]{display:none}
