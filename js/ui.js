@@ -64,7 +64,7 @@ const ui = {
     if (wide !== this._wide) {
       this._wide = wide;
       if (wide) ids.forEach(id => left.appendChild($(id)));
-      else { const ev = $('eventbox'); ids.slice().reverse().forEach(id => side.insertBefore($(id), ev.nextSibling)); }
+      else { const ev = $('eventbox'); side.insertBefore($('actbox'), ev); side.insertBefore($('unitbox'), ev); side.insertBefore($('handbox'), ev.nextSibling); }
       left.hidden = !wide; side.classList.toggle('wide', wide);
     }
     this.fit();
@@ -209,6 +209,7 @@ const ui = {
   },
   onClick(e) {
     if (!G.units) return; const p = this.toMap(e), uid = this.hitUnit(p), sid = this.hitSpace(p), m = this.mode;
+    if (this._pick) { if (uid && this._pick.ids.includes(uid)) this._pick.select(uid); return; }
     if (m && m.type === 'pick') { if (sid && m.ids.includes(sid)) { this.mode = null; this.setBanner(null); this.redraw(); m.resolve(sid); } return; }
     if (G.busy) return;
     if (m && (m.type === 'move' || m.type === 'fire')) {
@@ -271,7 +272,7 @@ const ui = {
     this.drawUnits();
   },
   drawUnit(u, r) {
-    const c = this.ctx, sel = G.sel === u.id;
+    const c = this.ctx, sel = G.sel === u.id || this.hl === u.id;
     c.save(); c.translate(r.x, r.y); if (r.scale && r.scale !== 1) c.scale(r.scale, r.scale); const hw = r.w / 2, hh = r.h / 2;
     if (sel) { c.shadowColor = '#ffd54a'; c.shadowBlur = 26; } else if (r.glow) { c.shadowColor = r.glow; c.shadowBlur = 34; }
     if (u.type === 'train') { c.fillStyle = u.state === 'leaving' ? '#d9822b' : '#3c7fc4'; rr(c, -hw - 8, -hh / 2, r.w + 16, hh, 6); c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.fillText(u.tkey === 'local' ? 'TREN L' : 'TREN M', 0, 4); }
@@ -305,7 +306,7 @@ const ui = {
   flashRoute(r) { this.flash = { r, t0: performance.now() }; this.redraw(); },
 
   _modal(html, cls) { const b = $('modalbox'); b.className = cls || ''; b.innerHTML = html; $('modal').hidden = false; return b; },
-  _close() { $('modal').hidden = true; $('modalbox').innerHTML = ''; },
+  _close() { $('modal').classList.remove('pick'); $('modal').hidden = true; $('modalbox').innerHTML = ''; },
   choose({ title, text, options }) {
     return new Promise(res => {
       const b = this._modal('<h2>' + title + '</h2><p>' + (text || '') + '</p><div class="opts"></div>'); const o = b.querySelector('.opts');
@@ -320,7 +321,26 @@ const ui = {
       $('ackb').onclick = () => { ui._close(); res(); }; $('ackb').focus();
     });
   },
-  pickUnit(units, text) { return this.choose({ title: 'Elige una unidad', text, options: units.map(u => ({ label: u.name + ' — ' + spaceLabel(u.space), value: u.id })) }); },
+  /* Elegir unidad: panel inferior que no tapa el mapa. Un toque sobre una opción (o sobre la unidad en el mapa) la resalta y centra la cámara;
+     un segundo toque sobre la misma (doble clic) o el botón Aceptar confirma. */
+  pickUnit(units, text) {
+    return new Promise(res => {
+      const b = this._modal('<h2>Elige una unidad</h2><p>' + text + '</p><div class="pickhint">Toca una opción para verla en el mapa; tócala otra vez (doble clic) o pulsa Aceptar para confirmar.</div><div class="pickopts"></div><div class="opts"><button class="primary" id="pkok" disabled>Aceptar</button></div>', 'pickpanel');
+      $('modal').classList.add('pick');
+      const box = b.querySelector('.pickopts'); let cur = null, focused = false;
+      const done = id => { this._pick = null; this.hl = null; if (focused) this.release(); this._close(); this.redraw(); res(id); };
+      const select = id => {
+        if (cur === id) return done(id);
+        cur = id; this.hl = id; $('pkok').disabled = false;
+        box.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.id === id));
+        const u = G.units[id]; if (u && u.space) { this.focus(u.space); focused = focused || (this.camOn && !this.fast); this.pulse(G.spaces[u.space].x, G.spaces[u.space].y, '#ffd54a'); }
+        this.redraw();
+      };
+      units.forEach(u => { const bt = document.createElement('button'); bt.dataset.id = u.id; bt.textContent = u.name + ' — ' + spaceLabel(u.space); bt.onclick = () => select(u.id); box.appendChild(bt); });
+      $('pkok').onclick = () => { if (cur) done(cur); };
+      this._pick = { ids: units.map(u => u.id), select };
+    });
+  },
   pickSpace(ids, text) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res }; this.setBanner(text); this.redraw(); }); },
   async rollSimple(label, n) {
     const b = this._modal('<h2>' + label + '</h2><div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div class="opts" id="rb"></div>', 'cbt');
