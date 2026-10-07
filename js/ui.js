@@ -19,10 +19,11 @@ const ui = {
     await loadAssets();
     this.canvas = $('map'); this.ctx = this.canvas.getContext('2d');
     this.canvas.addEventListener('click', e => this.onClick(e));
-    this.canvas.addEventListener('mousemove', e => this.onMove(e));
-    this.canvas.addEventListener('mouseleave', () => { ui._mapZoom = false; ui.zoomHide(); });
-    document.addEventListener('mouseover', e => { const t = e.target.closest && e.target.closest('[data-zoom]'); if (t) ui.zoomShow(t.dataset.zoom, e); });
-    document.addEventListener('mousemove', e => { const t = e.target.closest && e.target.closest('[data-zoom]'); if (t) ui.zoomShow(t.dataset.zoom, e); else if (!ui._mapZoom) ui.zoomHide(); });
+    this.canvas.addEventListener('mousemove', e => { if (!ui.recentTouch()) this.onMove(e); });
+    this.canvas.addEventListener('mouseleave', () => { if (ui.recentTouch()) return; ui._mapZoom = false; ui.zoomHide(); });
+    document.addEventListener('mouseover', e => { if (ui.recentTouch()) return; const t = e.target.closest && e.target.closest('[data-zoom]'); if (t) ui.zoomShow(t.dataset.zoom, e); });
+    document.addEventListener('mousemove', e => { if (ui.recentTouch()) return; const t = e.target.closest && e.target.closest('[data-zoom]'); if (t) ui.zoomShow(t.dataset.zoom, e); else if (!ui._mapZoom) ui.zoomHide(); });
+    this.initTouch();
     window.addEventListener('resize', () => this.arrange());
     $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
@@ -31,6 +32,25 @@ const ui = {
     $('cardsBtn').addEventListener('click', () => ui.showHeroCards());
     $('newBtn').addEventListener('click', () => { if (confirm('¿Empezar una partida nueva? Se perderá la actual.')) location.reload(); });
     this.arrange();
+  },
+  /* Táctil: los ratones emulados tras un toque se ignoran; pulsación larga sobre [data-zoom] amplía, toque sobre una unidad del mapa la amplía; cualquier otro toque cierra. */
+  recentTouch() { return performance.now() - (this._touchT || 0) < 800; },
+  initTouch() {
+    let timer = null, start = null;
+    const clear = () => { clearTimeout(timer); timer = null; };
+    document.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'touch') return;
+      this._touchT = performance.now(); clear();
+      const z = $('zoom'); if (!z.hidden && !z.contains(e.target)) { this._mapZoom = false; this.zoomHide(); }
+      const t = e.target.closest && e.target.closest('[data-zoom]'); if (!t) return;
+      start = { x: e.clientX, y: e.clientY };
+      timer = setTimeout(() => { timer = null; this._longT = performance.now(); this.zoomShow(t.dataset.zoom, { clientX: start.x, clientY: start.y }); }, 450);
+    });
+    document.addEventListener('pointermove', e => { if (timer && start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) clear(); });
+    ['pointerup', 'pointercancel'].forEach(n => document.addEventListener(n, e => { if (e.pointerType === 'touch') { this._touchT = performance.now(); clear(); } }));
+    /* Tras una pulsación larga no debe dispararse la acción del elemento (carta, botón…) ni el menú contextual. */
+    document.addEventListener('click', e => { if (performance.now() - (this._longT || 0) < 600) { e.stopPropagation(); e.preventDefault(); } }, true);
+    document.addEventListener('contextmenu', e => { if (this.recentTouch() && e.target.closest && e.target.closest('[data-zoom]')) e.preventDefault(); });
   },
   /* Tres columnas en pantallas anchas (acciones · mapa · partida); en estrechas, todo en la columna derecha. */
   arrange() {
@@ -138,7 +158,12 @@ const ui = {
     if (G.over && ui._endRes) { const r = ui._endRes; ui._endRes = null; r(); }
     ui.updateStats(); ui.updateHand(); ui.redraw();
   },
-  setBanner(t) { const b = $('banner'); if (t) { b.textContent = t; b.hidden = false; } else b.hidden = true; },
+  setBanner(t) {
+    const b = $('banner'); if (!t) { b.hidden = true; return; }
+    b.textContent = t; b.hidden = false;
+    if (this.mode && this.mode.type !== 'pick') { const c = document.createElement('button'); c.className = 'bcancel'; c.textContent = 'Cancelar'; c.onclick = () => ui.cancelMode(); b.appendChild(c); }
+  },
+  cancelMode() { if (this.mode && this.mode.type !== 'pick') { this.mode = null; this.setBanner(null); this.redraw(); } },
   renderUnitBox() {
     const box = $('unitbox'), u = G.sel && G.units[G.sel];
     let sph = '';
@@ -197,6 +222,7 @@ const ui = {
       this.mode = null; this.setBanner(null);
     }
     G.sel = uid || null; this.updateStats(); this.redraw();
+    if (this.recentTouch() && uid && G.units[uid]) { this._mapZoom = true; this.zoomShow('u:' + uid, e); }
   },
   redraw() { if (!this.ctx || !G.spaces) return; cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.draw()); },
   layout() {

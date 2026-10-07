@@ -152,3 +152,7 @@ select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);bo
 #unitbox .cardbtns{margin-bottom:2px}
 .bigcard{text-align:center}.bigcard img{max-height:76vh;max-width:100%;border-radius:10px;box-shadow:0 3px 14px #000}
 .hc2 .acts{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+
+/* Táctil */
+.bcancel{display:none;margin-left:12px;pointer-events:auto;padding:6px 12px}
+@media (pointer:coarse){.bcancel{display:inline-block}[data-zoom]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}}

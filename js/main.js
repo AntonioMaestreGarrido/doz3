@@ -53,7 +53,7 @@ async function playGame(setup) {
   }
   G.busy = true; G.sel = null; UI.redraw(); await ui.endScreen();
 }
-window.addEventListener('keydown', e => { if (e.key === 'Escape' && ui.mode && ui.mode.type !== 'pick') { ui.mode = null; ui.setBanner(null); ui.redraw(); } });
+window.addEventListener('keydown', e => { if (e.key === 'Escape') ui.cancelMode(); });
 const UI_ = ui;
 window.addEventListener('load', async () => {
   bindUI(ui); window.UI = ui;
