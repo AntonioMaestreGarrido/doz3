@@ -417,6 +417,7 @@ const ui = {
     if (this._muted) this._mus.pause(); else this.musicOn();
     return this._muted;
   },
+  hideCover() { const t = $('title'); if (t) t.remove(); },
   musicStop() {
     const m = this._mus; if (!m || m.paused) return; this._mus = null;
     const f = setInterval(() => { m.volume = Math.max(0, m.volume - .05); if (m.volume <= 0) { clearInterval(f); m.pause(); } }, 80);
@@ -424,6 +425,7 @@ const ui = {
   /* Portada: devuelve 'new' o 'load'. */
   titleScreen() {
     return new Promise(res => {
+      const prev = $('title'); if (prev) prev.remove();
       const sv = loadSave(), t = document.createElement('div'); t.id = 'title';
       const info = sv ? LEVELS[sv.G.lv].name + ' · turno ' + sv.G.turnNo : 'No hay partida guardada';
       t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button>';
@@ -436,7 +438,7 @@ const ui = {
         const a = bt.dataset.a;
         if (a === 'top') return ui.showTop();
         if (a === 'credits') return ui.showCredits();
-        t.remove(); res(a);
+        t.classList.add('bg'); t.querySelectorAll('button').forEach(b => b.hidden = true); res(a);
       });
       const first = t.querySelector('.tbtns button'); if (first) first.focus();
     });

@@ -76,9 +76,9 @@ window.addEventListener('load', async () => {
   await ui.init();
   while (true) {
     const a = await ui.titleScreen();
-    if (a === 'load') { const saved = loadSave(); if (saved) { ui.musicStop(); playGame(null, saved); return; } continue; }
+    if (a === 'load') { const saved = loadSave(); if (saved) { ui.musicStop(); ui.hideCover(); playGame(null, saved); return; } continue; }
     if (loadSave() && !(await ui.choose({ title: 'Nueva partida', text: 'Ya hay una partida guardada. Si empiezas otra, la guardada se borrará.', options: [{ label: 'Empezar nueva', value: true }, { label: 'Cancelar', value: false }] }))) continue;
     const setup = await ui.setupScreen();
-    if (setup) { ui.musicStop(); clearSave(); playGame(setup); return; }
+    if (setup) { ui.musicStop(); ui.hideCover(); clearSave(); playGame(setup); return; }
   }
 });
