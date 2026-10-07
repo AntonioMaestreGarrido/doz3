@@ -24,6 +24,7 @@ const ui = {
     document.addEventListener('mouseover', e => { if (ui.recentTouch()) return; const t = e.target.closest && e.target.closest('[data-zoom]'); if (t) ui.zoomShow(t.dataset.zoom, e); });
     document.addEventListener('mousemove', e => { if (ui.recentTouch()) return; const t = e.target.closest && e.target.closest('[data-zoom]'); if (t) ui.zoomShow(t.dataset.zoom, e); else if (!ui._mapZoom) ui.zoomHide(); });
     this.initTouch();
+    if (this.initMapZoom) this.initMapZoom();
     window.addEventListener('resize', () => this.arrange());
     $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
@@ -75,6 +76,7 @@ const ui = {
     const w = $('mapwrap'); if (!w) return;
     const k = Math.max(0.1, Math.min((w.clientWidth - 12) / 2000, (w.clientHeight - 12) / this.mapH));
     this.canvas.style.width = Math.floor(2000 * k) + 'px'; this.canvas.style.height = Math.floor(this.mapH * k) + 'px';
+    if (this.applyView) { this.clampView(); if (!this.camZoom || this.camZoom <= 1) this.applyView(); }
   },
   zoomShow(spec, e) {
     let info; try { info = zoomInfo(spec); } catch (err) { info = null; }
