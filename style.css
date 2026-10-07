@@ -170,3 +170,4 @@ select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);bo
 .toptbl th,.toptbl td{padding:5px 9px;border-bottom:1px solid var(--line);text-align:left}
 .toptbl th{color:var(--gold);font-size:12px}
 .toppanel{min-width:min(640px,94vw)}
+#title .mute{position:absolute;top:44px;right:12px;z-index:2;font-size:20px;padding:6px 10px;background:rgba(14,11,8,.7);border:1px solid var(--gold);border-radius:8px}

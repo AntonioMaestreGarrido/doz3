@@ -403,20 +403,42 @@ const ui = {
       $('goBtn').onclick = () => { const n = +b.querySelector('input[name=lv]:checked').value, len = +$('lenSel').value, hero = $('heroSel').value || null; const ex = [1, 2, 3].filter(k => $('x' + k).checked); ui._close(); res({ level: n, len, hero, exps: ex }); };
     });
   },
+  /* Música de menú: suena en portada y selección de partida; el navegador exige un gesto del usuario para arrancar. */
+  musicOn() {
+    if (!this._mus) {
+      this._mus = new Audio('assets/musica.mp3'); this._mus.loop = true; this._mus.volume = .5;
+      try { this._muted = localStorage.getItem('doz3.mute') === '1'; } catch (e) { }
+    }
+    if (this._muted) return;
+    const m = this._mus; m.volume = .5; const p = m.play(); if (p && p.catch) p.catch(() => { });
+  },
+  musicToggle() {
+    this._muted = !this._muted; try { localStorage.setItem('doz3.mute', this._muted ? '1' : '0'); } catch (e) { }
+    if (this._muted) this._mus.pause(); else this.musicOn();
+    return this._muted;
+  },
+  musicStop() {
+    const m = this._mus; if (!m || m.paused) return; this._mus = null;
+    const f = setInterval(() => { m.volume = Math.max(0, m.volume - .05); if (m.volume <= 0) { clearInterval(f); m.pause(); } }, 80);
+  },
   /* Portada: devuelve 'new' o 'load'. */
   titleScreen() {
     return new Promise(res => {
       const sv = loadSave(), t = document.createElement('div'); t.id = 'title';
       const info = sv ? LEVELS[sv.G.lv].name + ' · turno ' + sv.G.turnNo : 'No hay partida guardada';
-      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="credits">Créditos</button></div>';
+      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button>';
       document.body.appendChild(t);
-      t.querySelectorAll('button').forEach(bt => bt.onclick = () => {
+      this.musicOn();
+      const mb = $('muteBtn'), paint = () => { mb.textContent = ui._muted ? '🔇' : '🔊'; }; paint();
+      mb.onclick = e => { e.stopPropagation(); ui.musicToggle(); paint(); };
+      const kick = () => { if (ui._mus && ui._mus.paused) ui.musicOn(); }; ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, kick, { once: true, capture: true }));
+      t.querySelectorAll('.tbtns button').forEach(bt => bt.onclick = () => {
         const a = bt.dataset.a;
         if (a === 'top') return ui.showTop();
         if (a === 'credits') return ui.showCredits();
         t.remove(); res(a);
       });
-      const first = t.querySelector('button'); if (first) first.focus();
+      const first = t.querySelector('.tbtns button'); if (first) first.focus();
     });
   },
   showTop() {
