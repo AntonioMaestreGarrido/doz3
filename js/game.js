@@ -56,7 +56,7 @@ function buildResearch(len) {
 
 /* ---------- preparación ---------- */
 function newGame(levelIdx, lenIdx, personal) {
-  UID = 1;
+  UID = 1; rngSeed(crypto.getRandomValues(new Uint32Array(1))[0]);
   const L = LEVELS[levelIdx], len = L.lengths[lenIdx];
   Object.assign(G, {
     lv: L, len, units: {}, cemetery: [], reserve: ZED_TOKENS.map(t => t.slice()), supers: L.infection ? Object.keys(SUPER_ZEDS) : [],

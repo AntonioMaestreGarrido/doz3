@@ -305,21 +305,7 @@ async function eventStart() {
     case 'turba': { const dr = await drawDestiny(); if (dr) { if (G.inf >= 8) await placeZedInitial(dr.route, makeSuper()); else { makeSpecial('vip', dr.route + '0', { name: 'Supervivientes V.I.P.', type: 'refugee' }); LOG('Aparecen los Supervivientes V.I.P.', 'good'); } await resolveTwist(dr); } break; }
     case 'saqueadores': { const rs = SURFACE.map(r => [r, Array.from({ length: lastOf(r) + 1 }, (_, i) => sp(r + i).chaos).reduce((a, b) => a + b, 0)]); const m = Math.max(...rs.map(x => x[1])); const r = await chooseRoute(rs.filter(x => x[1] === m).map(x => x[0]), 'Saqueadores: ruta con más Caos.'); makeSpecial('saqueadores', r + '0'); LOG('¡Aparecen Saqueadores en ' + ROUTES[r].name + '!', 'bad'); break; }
     case 'helicoptero': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && !isInit(x.space) && sp(x.space).route !== 'T').map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, 'Helicóptero: elige un espacio con Zeds.'); const r = d6() + d6(); const n = r <= 5 ? 1 : r <= 9 ? 2 : 3; LOG('Helicóptero: ' + r + ' → ' + n + ' Impacto(s).', 'good'); await applyZedHits(zedsAt(t), n); } break; }
-    case 'eficiencia': G.turn.specials.push({ label: 'Eficiencia en el Hospital: elegir opción', fn: async () => {
-      const v = await UI.choose({ title: 'Eficiencia en el Hospital', text: 'Elige una opción:', options: [{ label: 'a) 2 Curar gratis en el Hospital (sin reducir la Infección)', value: 'a' }, { label: 'b) −2 de Infección', value: 'b' }, { label: 'c) −1 de Infección y 1 Curar gratis en el Hospital (sin reducir la Infección)', value: 'c' }] });
-      if (v === 'a') G.turn.freeHealNoInf = (G.turn.freeHealNoInf || 0) + 2; else if (v === 'b') infDown(2); else { infDown(1); G.turn.freeHealNoInf = (G.turn.freeHealNoInf || 0) + 1; } } }); break;
-    case 'jornada': { let n = 0; const sp1 = { label: 'Jornada doble: +1 Infección → Curar o Investigar gratis', fn: async () => {
-      const lab = G.res && !G.turn.researched ? unitsAt('LAB').filter(x => x.sci && canAct(x)) : [];
-      const opts = [{ label: 'a) 1 Acción de Curar gratis', value: 'h' }].concat(lab.length ? [{ label: 'b) 1 Acción de Investigar gratis', value: 'i' }] : []).concat([{ label: 'Cancelar', value: '' }]);
-      const v = await UI.choose({ title: 'Trabajando una jornada doble (' + (n + 1) + '/3)', text: 'Aumentas la Infección en 1 a cambio de:', options: opts });
-      if (!v) { G.turn.specials.push(sp1); return; }
-      n++; await infUp(1); if (G.over) return;
-      if (v === 'h') G.turn.freeHeal = (G.turn.freeHeal || 0) + 1; else await doInvestigate(lab.length === 1 ? lab[0] : G.units[await UI.pickUnit(lab, 'Elige quién investiga.')], true);
-      if (n < 3) G.turn.specials.push(sp1); } }; G.turn.specials.push(sp1); break; }
-    case 'monstruo': { let n = 0; const sp1 = { label: '¿Verdadero monstruo?: paciente al Cementerio → Investigación', fn: async () => {
-      const c = BEDS.map(b => G.spaces[b] && unitsAt(b)[0]).filter(Boolean); if (!c.length) { LOG('No hay nadie en el Hospital.'); G.turn.specials.push(sp1); return; }
-      const v = await UI.pickUnit(c, 'Elige la unidad que «das de alta» al Cementerio.'); n++; await sendCemetery(G.units[v], 'es «dada de alta» al Cementerio'); if (G.res) await revealResearch();
-      if (n < 2) G.turn.specials.push(sp1); } }; G.turn.specials.push(sp1); break; }
+    case 'eficiencia': case 'jornada': case 'monstruo': G.turn.specials.push(mkSpecial(id)); break;
     case 'oh_malo': { const dr = await drawDestiny(); if (dr) { await placeZedAt(dr.route + '1', 'Oh, esto es malo'); await resolveTwist(dr); } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'que_demonios': { G.inf = 13; await outbreak(true, true); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'donde_todos': { for (const r of G.routes) for (let i = 1; i <= lastOf(r); i++) if (sp(r + i).kind === 'pueblo' && controlled(r + i)) await placeZedAt(r + i, '¿De dónde salen todos?'); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
@@ -347,7 +333,7 @@ async function eventStart() {
     case 'oh_no': { const t = strongestNormalZed(); if (t) { const up = ['smart', 'fast', 'toxic', 'leader', 'zresist'][rnd(5)]; t[up] = true; LOG('Una mejora Zed (' + up + ') se coloca sobre un Zed de Fuerza ' + strength(t) + '.', 'bad'); } break; }
     case 'desde_lab': { const t = 'T4'; if (G.routes.includes('T')) { const sup = allUnits(x => x.type === 'super').length; await placeZedAt(t, 'Desde el laboratorio', sup ? makeZed() : makeSuper()); } break; }
     case 'hinchados': { const dr = await drawDestiny(); if (dr) { const zs = routeZeds(dr.route).sort((a, b) => sp(b.space).i - sp(a.space).i); if (zs.length) { const sid = zs[0].space; const z = zs[0]; if (z.type === 'super') { removeUnit(z); delete G.units[z.id]; } else if (z.type === 'spreader') { removeUnit(z); delete G.units[z.id]; } else discardZed(z); for (const nb of adjacentIds(sid)) { if (isInit(nb)) continue; const col = 3, a = d6(), b = d6(), hits = FIRE[sumRow(a + b)][col]; const tg = unitsAt(nb); for (const t of tg) { if (isZedSide(t)) await applyZedHits([t], hits); else if (t.side === 'pl' || t.side === 'raid') await hitPlayer(t, hits); } } } await resolveTwist(dr); } break; }
-    case 'atajos': G.turn.specials.push({ label: 'Atajos: 1 Impacto a un Héroe del Laboratorio → Investigación', fn: async () => { const h = unitsAt('LAB').filter(isFighter)[0]; if (!h) { LOG('No hay nadie en el Laboratorio.'); return; } await hitPlayer(h, 1); if (d6() >= 2) await revealResearch(); } }); break;
+    case 'atajos': G.turn.specials.push(mkSpecial('atajos')); break;
     case 'feria': break;
     case 'conductos': case 'alcantarilla': case 'irrupcion': break;
     default: break;

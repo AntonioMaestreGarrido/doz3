@@ -4,7 +4,12 @@
 const G = {};
 let UI = null;
 function bindUI(u) { UI = u; }
-function rnd(n) { return Math.floor(Math.random() * n); }
+/* Generador con semilla (mulberry32): su estado se guarda con la partida para que repetir una acción dé las mismas tiradas. */
+let RNG_S = 1;
+function rngSeed(v) { RNG_S = v >>> 0; }
+function rngState() { return RNG_S; }
+function rngRestore(v) { RNG_S = v >>> 0; }
+function rnd(n) { RNG_S = (RNG_S + 0x6D2B79F5) >>> 0; let t = RNG_S; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return Math.floor(((t ^ (t >>> 14)) >>> 0) / 4294967296 * n); }
 function d6() { return 1 + rnd(6); }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }

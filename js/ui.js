@@ -30,7 +30,7 @@ const ui = {
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
     $('rulesBtn').addEventListener('click', () => ui.showRules());
     $('cardsBtn').addEventListener('click', () => ui.showHeroCards());
-    $('newBtn').addEventListener('click', () => { if (confirm('¿Empezar una partida nueva? Se perderá la actual.')) location.reload(); });
+    $('newBtn').addEventListener('click', () => { if (confirm('¿Empezar una partida nueva? Se perderá la actual.')) { clearSave(); location.reload(); } });
     this.arrange();
   },
   /* Táctil: los ratones emulados tras un toque se ignoran; pulsación larga sobre [data-zoom] amplía, toque sobre una unidad del mapa la amplía; cualquier otro toque cierra. */
@@ -155,6 +155,7 @@ const ui = {
     try { await fn(); } catch (e) { console.error(e); ui.log('Error: ' + e.message, 'bad'); }
     G.busy = false;
     if (G.sel && !G.units[G.sel]) G.sel = null;
+    if (G.phase === 'actions' && !G.over && !G.event.cer) saveGame('actions');
     if (G.over && ui._endRes) { const r = ui._endRes; ui._endRes = null; r(); }
     ui.updateStats(); ui.updateHand(); ui.redraw();
   },
@@ -400,6 +401,10 @@ const ui = {
       b.querySelectorAll('input[name=lv], #x1, #x2, #x3').forEach(i => i.onchange = upd); upd();
       $('goBtn').onclick = () => { const n = +b.querySelector('input[name=lv]:checked').value, len = +$('lenSel').value, hero = $('heroSel').value || null; const ex = [1, 2, 3].filter(k => $('x' + k).checked); ui._close(); res({ level: n, len, hero, exps: ex }); };
     });
+  },
+  askContinue(s) {
+    const lv = LEVELS[s.G.lv];
+    return this.choose({ title: 'Partida guardada', text: lv.name + ' — turno ' + s.G.turnNo + '. ¿Quieres continuarla?', options: [{ label: 'Continuar partida', value: true }, { label: 'Nueva partida (se borra la guardada)', value: false }] });
   },
   async endScreen() {
     const s = scoreGame(), win = G.over === 'win';

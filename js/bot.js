@@ -8,7 +8,7 @@
   const oe = console.error; console.error = (...a) => { __errs.push(a.map(x => x && x.stack || x).join(' ').slice(0, 500)); oe(...a); };
   const [lv, len, exs] = q.split(','); const EXS = (exs || '').split('').filter(Boolean);
   window.addEventListener('load', () => setTimeout(() => {
-    ui.fast = true; document.querySelector('input[name=lv][value="' + lv + '"]').click(); document.getElementById('lenSel').value = '' + (len || 0); EXS.forEach(k => document.getElementById('x' + k).checked = true); document.getElementById('lenSel').dispatchEvent(new Event('change')); document.getElementById('goBtn').click();
+    ui.fast = true; if (lv === 'resume') { const c = [...document.querySelectorAll('#modal button')].find(b => /Continuar partida/.test(b.textContent)); if (c) c.click(); } else { document.querySelector('input[name=lv][value="' + lv + '"]').click(); document.getElementById('lenSel').value = '' + (len || 0); EXS.forEach(k => document.getElementById('x' + k).checked = true); document.getElementById('lenSel').dispatchEvent(new Event('change')); document.getElementById('goBtn').click(); }
     window.__auto = setInterval(() => {
       const m = document.getElementById('modal');
       if (!m.hidden) { const bs = [...m.querySelectorAll('button')]; if (document.getElementById('nb')) { clearInterval(__auto); window.__done = true; return; } const pr = bs.find(b => b.id === 'rollb' || b.id === 'ackb') || bs.find(b => b.classList.contains('primary')); const b = pr || bs[Math.floor(Math.random() * bs.length)]; if (b) b.click(); }
