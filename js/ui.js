@@ -221,7 +221,7 @@ const ui = {
         if (m.type === 'move') ui.guard(async () => {
           if (!moveIsFree(u, sid)) spendActions(u, 1, 'move'); if (m.extra && dist > u.mp) G.turn.vehicle = 0;
           if (G.turn.heli && u.type === 'hero') { G.turn.heli = false; putUnit(u, sid); LOG(u.name + ' es recogido por el helicóptero.'); ui.redraw(); return; }
-          await doMove(u, sid);
+          await doMove(u, sid, pathTo(m.opts.prev, u.space, sid));
         });
         else ui.guard(async () => {
           if (m.free) { G.ammo--; G.charUsed.cit = true; await doFire(u, sid, dist, { shift: 1, shiftLabel: 'Ciudadela' }); }

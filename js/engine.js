@@ -304,10 +304,11 @@ async function dischargeSomeone(forceCem) {
 
 /* ================= RETIRADAS ================= */
 /* dest === 'C' significa «retirarse hacia el Centro» (1 espacio); otro valor es el espacio concreto al que se vuelve. */
-function retreatPlayers(units, dest) {
+function retreatPlayers(units, dest, back) {
   for (const u of units) {
     if (!u.space || !G.spaces[u.space] || ['bed', 'office', 'lab', 'camp'].includes(sp(u.space).kind)) continue; let d = dest === 'C' ? (sp(u.space).route ? nextToward(u.space) : 'C') : dest;
-    while (d !== 'C' && (!playerRoom(d, u) || blocked(d) || (u.type === 'petra' && false))) d = nextToward(d);
+    let k = back ? back.indexOf(d) : -1; /* sin sitio: se sigue hacia atrás por el recorrido del Mover, y luego hacia el Centro */
+    while (d !== 'C' && (!playerRoom(d, u) || blocked(d) || (u.type === 'petra' && false))) d = (k >= 0 && k + 1 < back.length) ? back[++k] : nextToward(d);
     putUnit(u, d); LOG(u.name + ' se retira a ' + spaceLabel(d) + '.');
   }
   UI.redraw();
@@ -464,7 +465,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     const pep = arr.find(u => u.key === 'pepinillos' && u !== fighter);
     if (pep && !attackerHuman) { const r = d6(); if (r >= 2) { arr = arr.filter(u => u !== pep); LOG('Sigilo de Pepinillos (' + r + '): se queda en ' + spaceLabel(space) + '.', 'good'); } }
     const pl = arr.filter(u => u.side === 'pl');
-    if (attackerHuman) await retreatAndFight(pl, o.from || 'C');
+    if (attackerHuman) await retreatAndFight(pl, o.from || 'C', o.back);
     else if (arr.some(u => u.side === 'raid')) retreatRaiders(arr.filter(u => u.side === 'raid'));
     else await retreatAndFight(arr, 'C');
   }
@@ -472,7 +473,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   return { zedWon: !zedLoses, humanWon: zedLoses, fighter };
 }
 /* Retirada de unidades de jugador; si alguna acaba en un espacio con Zeds, entabla un nuevo combate como atacante (6.4.3). */
-async function retreatAndFight(units, dest) {
+async function retreatAndFight(units, dest, back) {
   units = units.filter(u => u.space && G.spaces[u.space]);
   if (units.length > 1) {
     const u0 = units[0], first = dest === 'C' ? (sp(u0.space).route ? nextToward(u0.space) : 'C') : dest;
@@ -484,7 +485,7 @@ async function retreatAndFight(units, dest) {
       }
     }
   }
-  retreatPlayers(units, dest);
+  retreatPlayers(units, dest, back);
   for (const u of units) {
     if (G.over || !u.space || u.space === 'C' || !G.spaces[u.space] || !zedsAt(u.space).length) continue;
     LOG(u.name + ' se retira a un espacio con Zeds y tiene que combatir.', 'bad');
@@ -556,7 +557,7 @@ function shortcuts(u, cur) {
 function reachable(u, extra) {
   const out = {}; if (!canAct(u) || u.resist || u.type === 'aldeano') return out;
   if (G.turn.noSurfaceMove && isSurface(u.space)) return out;
-  const mp = u.mp + (extra || 0), best = { [u.space]: 0 }, q = [u.space];
+  const mp = u.mp + (extra || 0), best = { [u.space]: 0 }, q = [u.space], prev = {};
   while (q.length) {
     const cur = q.shift();
     if (cur !== u.space && (zedsAt(cur).length || raidAt(cur).length)) continue;
@@ -573,23 +574,31 @@ function reachable(u, extra) {
       if (isSoft(u) && (zedsAt(n).length)) continue;
       const c = best[cur] + (G.spaces[n] ? moveCost(u, n) : 1);
       if (c > mp) continue;
-      if (best[n] === undefined || c < best[n]) { best[n] = c; q.push(n); }
+      if (best[n] === undefined || c < best[n]) { best[n] = c; prev[n] = cur; q.push(n); }
     }
   }
   for (const id in best) if (id !== u.space && canStop(u, id)) out[id] = best[id];
+  Object.defineProperty(out, 'prev', { value: prev, enumerable: false });
   return out;
 }
-async function doMove(u, dest) {
-  const from = u.space; putUnit(u, dest); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
+/* Recorrido (origen … destino) reconstruido con los predecesores de reachable(). */
+function pathTo(prev, start, dest) {
+  if (!prev) return null; const p = [dest]; let c = dest;
+  for (let i = 0; i < 60 && c !== start && prev[c] !== undefined; i++) { c = prev[c]; p.push(c); }
+  return c === start ? p.reverse() : null;
+}
+/* path: recorrido de la acción de Mover. Si se pierde el combate, la unidad se retira UN espacio (al anterior del recorrido). */
+async function doMove(u, dest, path) {
+  const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
   if (isSoft(u)) { if (dest === 'C') await refugeeArrives(u); return; }
   if (dest === 'C' && u.space === 'C') {/* ok */ }
   const zs = zedsAt(dest), rs = raidAt(dest);
   if (zs.length) {
     let assassin = false;
     if (u.key === 'darling') { const r = d6(); LOG('Ataque asesino: ' + r); if (r >= 3) assassin = true; else if (r === 1) {/* combate normal */} else { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { putUnit(u, from); return; } } }
-    const rr0 = await melee({ zeds: zs, hum: [u], space: dest, attacker: 'h', from, assassin, noInf: assassin });
+    const rr0 = await melee({ zeds: zs, hum: [u], space: dest, attacker: 'h', from: prevSp, back, assassin, noInf: assassin });
     if (u.key === 'betty' && rr0.humanWon) await bettyChain(u);
-  } else if (rs.length) { await melee({ zeds: rs, hum: [u], space: dest, attacker: 'h', from }); }
+  } else if (rs.length) { await melee({ zeds: rs, hum: [u], space: dest, attacker: 'h', from: prevSp, back }); }
   if (dest === 'C' && u.space === 'C') { /* nada */ }
 }
 
