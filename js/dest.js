@@ -78,6 +78,7 @@ res('heroe_c', 'Llega un Héroe Científico', 'adv', 5, 1, 0, 'Coge una nueva un
 res('atascada', 'Investigación atascada', 'adv', 4, 1, 0, 'Sin Evento Especial.');
 res('antidoto', 'Avances en el Antídoto', 'spe', 6, 1, 0, 'Si el Componente Final no está en el Laboratorio, colócalo y baraja esta carta de nuevo en el mazo de Investigación. Si ya estaba, dale la vuelta (Antídoto): reduce la Infección en 1 al final de cada fase de Mantenimiento.');
 for (let k = 1; k <= 4; k++) res('arma' + k, 'Función para la Súper Arma', 'spe', 5, 1, 0, 'Elige un Componente de la Súper Arma y ponlo en juego. Si solo te falta el cuarto Componente, lo recibes únicamente si la Profesora Agee está en el Laboratorio.');
+const WEAPON_EXT = { granada: '.jpg', rifle: '.jpg' };
 const WEAPON_PARTS = {
   nudillos: { name: 'Nudillos Zeds', txt: '1 columna a favor en tus ataques Cuerpo a Cuerpo (no al defender).' },
   rifle:    { name: 'Rifle Hipno-Z', txt: '1 columna a favor en todos tus ataques con Arma de Fuego.' },

@@ -22,7 +22,7 @@ function zoomInfo(spec) {
     const r = RES[key]; if (!r) return null;
     return { img: 'assets/cartas/i_' + key + '.jpg', title: r.name, html: '<div class="zk">Carta de Investigación' + (r.perm ? ' · efecto mientras sea la carta en curso' : '') + '</div>' + li([r.txt]) + '<div class="zrow"><b>Para avanzar:</b> tirada de ' + r.th + (r.th < 6 ? '+' : '') + (r.sup ? ' y 1 Suministro' : '') + '</div>' };
   }
-  if (kind === 'k') { const k = RUMORS[key]; if (!k) return null; return { img: null, title: k.name, html: '<div class="zk">Ficha de Rumor · ' + ({ C: 'Colocar', G: 'Guardar', U: 'Unir' }[k.t]) + '</div>' + li([k.txt]) }; }
+  if (kind === 'k') { const k = RUMORS[key]; if (!k) return null; return { img: 'assets/tokens/rumores/' + key + '.png', title: k.name, html: '<div class="zk">Ficha de Rumor · ' + ({ C: 'Colocar', G: 'Guardar', U: 'Unir' }[k.t]) + '</div>' + li([k.txt]) }; }
   if (kind === 'h') {
     const h = HEROES[key]; if (!h) return null;
     return { img: heroImg(key), title: h.name, tok: heroTok(key) ? 1 : 0, html: '<div class="zk">' + h.cls + '</div><div class="zrow">Fuerza <b>' + h.full + '</b> (reducida <b>' + h.red + '</b>) · Movimiento <b>' + h.mp + '</b></div>' + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(key) };
@@ -46,7 +46,7 @@ function zoomInfo(spec) {
 
 /* Cartas de personaje: frente (h_*.jpg) y trasera con el trasfondo (hb_*.jpg). */
 const CARD_IMGS = ['piazza','hernandez','schmidt','hunt','furias','seaver','pepinillos','horacio','carter','betty','lee','may','jaque','darling','jones','wright','division12','santana','bauer','kingman','antidist','agee','hauser','clarin','wilson','bomberos','salvacion','johnson','staub','wzed'];
-const TOKEN_IMGS = ['agee','betty','carter','darling','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','santana','schmidt','seaver','staub','wilson','wright'];
+const TOKEN_IMGS = ['agee','betty','carter','darling','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','santana','schmidt','seaver','staub','wilson','wright','furias','bomberos','bauer','antidist','salvacion','clarin','wzed','division12'];
 const heroCard = k => CARD_IMGS.includes(k) ? 'assets/cartas/h_' + k + '.jpg' : null;
 const heroBack = k => CARD_IMGS.includes(k) ? 'assets/cartas/hb_' + k + '.jpg' : null;
 const heroTok = k => TOKEN_IMGS.includes(k) ? 'assets/tokens/' + k + '.png' : null;
