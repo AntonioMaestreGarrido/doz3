@@ -143,7 +143,7 @@ const HEROES = {
   salvacion: { name: 'Tropas de Salvación',  type: 'civh', cls: 'Civiles Heroicos', full: 2, red: 1, mp: 3, img: 'salvacion', lv: 2, hf: 2, hr: 2,
     txt: ['<b>Al entrar en juego:</b> 2 Suministros.', '<b>Campamento Médico:</b> Acción de Personaje (1 Suministro): cura a una unidad en su espacio o adyacente.', '+1 a la tirada de Alimentación.'] },
   clarin:    { name: 'Mensajero del Clarín', type: 'civh', cls: 'Civiles Heroicos', full: 1, red: 1, mp: 3, img: 'clarin', lv: 2, hf: 2, hr: 2,
-    txt: ['Al entrar en juego trae otras Civiles Heroicos. Mientras esté en juego un Zed que llega al Centro no gana automáticamente: tiene que ganar un combate. El segundo Suministro gastado cada fase es gratis.'] },
+    txt: ['Al entrar en juego trae otras Civiles Heroicos. Mientras esté en juego un Zed que llega al Centro no gana automáticamente: tiene que ganar un combate. Solo si hay unidades de jugador en el Centro; ese combate cuenta con +2 de Terreno para los defensores (Centro de la Ciudad). El segundo Suministro gastado cada fase es gratis.'] },
   wzed:      { name: 'WZED Farmingdale',   type: 'civh', cls: 'Civiles Heroicos', full: 1, red: 1, mp: 3, img: 'wzed', lv: 2, hf: 2, hr: 2,
     txt: ['<b>Transmisión de Emergencia:</b> Acción de Personaje: 1 Acción gratis a una Civil Normal o Refugiados en la superficie.', 'Al defender en la Ciudad o el Centro tiras 1 dado extra y eliges los mejores.'] },
   division12:{ name: '12.ª División de Veteranos', type: 'civh', cls: 'Civiles Heroicos', full: 3, red: 2, mp: 3, img: 'division12', lv: 1, hf: 2, hr: 2,
