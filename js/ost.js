@@ -4,7 +4,7 @@
 
 const Ost = {
   TEMAS: [
-    { file: 'musica_menu.mp3', nombre: 'Menú principal' },
+    { file: 'musica_menu.mp3', nombre: 'Menú principal', letra: 'musica_menu.txt' },
     { file: 'musica_juego1.mp3', nombre: 'Partida 1' },
     { file: 'musica_juego2.mp3', nombre: 'Partida 2' },
     { file: 'musica_peligro.mp3', nombre: 'Peligro' },
