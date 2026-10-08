@@ -395,8 +395,9 @@ const ui = {
       const rb = $('rb'); rb.innerHTML = '';
       const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = 'Continuar';
       const dbg = document.createElement('button'); dbg.textContent = '🐞 Debug';
-      dbg.onclick = () => { dbg.disabled = true; dbg.textContent = '🐞 Pulsa un dado para cambiarlo';
-        els.forEach((e, i) => { e.style.cursor = 'pointer'; e.style.outline = '2px dashed #ffd54a'; e.onclick = () => { vals[i] = vals[i] % 6 + 1; e.textContent = vals[i]; if (onChange) onChange(); }; }); };
+      dbg.onclick = () => { dbg.disabled = true; dbg.textContent = '🐞 Debug activo';
+        els.forEach((e, i) => { e.style.cursor = 'pointer'; e.style.outline = '2px dashed #ffd54a'; e.onclick = ev => { const left = ev.offsetX < e.offsetWidth / 2; vals[i] = left ? (vals[i] + 4) % 6 + 1 : vals[i] % 6 + 1; e.textContent = vals[i]; if (onChange) onChange(); }; });
+        const hint = document.createElement('div'); hint.style.cssText = 'width:100%;font-size:12px;color:#ffd54a;margin-top:4px'; hint.textContent = 'Mitad izquierda del dado: −1 · mitad derecha: +1'; rb.appendChild(hint); };
       ok.onclick = () => { els.forEach(e => { e.onclick = null; e.style.outline = ''; }); rb.innerHTML = ''; res(); };
       rb.append(ok, dbg); ok.focus();
     });
