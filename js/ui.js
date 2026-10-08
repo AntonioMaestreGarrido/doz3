@@ -390,7 +390,7 @@ const ui = {
   },
   _animate(els, vals) {
     return new Promise(res => {
-      Sfx.dice(); els.forEach(e => e.classList.add('roll')); const t = setInterval(() => els.forEach(e => e.textContent = d6()), 70);
+      Sfx.dice(); els.forEach(e => e.classList.add('roll')); const t = setInterval(() => els.forEach(e => e.textContent = fxD6()), 70);
       setTimeout(() => { clearInterval(t); els.forEach((e, i) => { e.classList.remove('roll'); e.textContent = vals[i]; }); res(); }, this.fast ? 120 : 700);
     });
   },
@@ -470,7 +470,7 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label>Héroe personal: <select id="heroSel"></select></label></div><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label></div><div class="row"><label><input type="checkbox" id="dbgDice"> Debug: elegir el valor de cada dado</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label>Héroe personal: <select id="heroSel"></select></label></div><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       const upd = () => {
         const n = +b.querySelector('input[name=lv]:checked').value, L = LEVELS[n];
@@ -479,7 +479,7 @@ const ui = {
         $('heroSel').innerHTML = n === 0 ? '<option value="">(los 4 Héroes básicos)</option>' : '<option value="">Al azar</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join('');
       };
       b.querySelectorAll('input[name=lv], #x1, #x2, #x3').forEach(i => i.onchange = upd); upd();
-      $('goBtn').onclick = () => { const n = +b.querySelector('input[name=lv]:checked').value, len = +$('lenSel').value, hero = $('heroSel').value || null; const ex = [1, 2, 3].filter(k => $('x' + k).checked); ui._close(); res({ level: n, len, hero, exps: ex }); };
+      $('goBtn').onclick = () => { const n = +b.querySelector('input[name=lv]:checked').value, len = +$('lenSel').value, hero = $('heroSel').value || null; const ex = [1, 2, 3].filter(k => $('x' + k).checked); DEBUG_DICE = $('dbgDice').checked; ui._close(); res({ level: n, len, hero, exps: ex }); };
     });
   },
   /* Música de menú: suena en portada y selección de partida; el navegador exige un gesto del usuario para arrancar. */

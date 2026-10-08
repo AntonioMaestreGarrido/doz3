@@ -10,7 +10,15 @@ function rngSeed(v) { RNG_S = v >>> 0; }
 function rngState() { return RNG_S; }
 function rngRestore(v) { RNG_S = v >>> 0; }
 function rnd(n) { RNG_S = (RNG_S + 0x6D2B79F5) >>> 0; let t = RNG_S; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return Math.floor(((t ^ (t >>> 14)) >>> 0) / 4294967296 * n); }
-function d6() { return 1 + rnd(6); }
+/* Modo debug (se activa al empezar la partida): cada dado que se tira pregunta qué valor debe salir. */
+let DEBUG_DICE = false;
+function d6() {
+  const r = 1 + rnd(6); if (!DEBUG_DICE) return r;
+  const m = (new Error().stack || '').split('\n').slice(2, 4).map(l => (l.match(/at (?:async )?([\w.$]+)/) || [])[1]).filter(f => f && f !== 'Array.from' && f !== 'map').join(' ← ');
+  for (;;) { const v = window.prompt('DEBUG · Tirada de dado' + (m ? ' (' + m + ')' : '') + '\nValor 1-6 (vacío o Cancelar = ' + r + '):', ''); if (v === null || v.trim() === '') return r; const n = parseInt(v, 10); if (n >= 1 && n <= 6) return n; }
+}
+/* Dado aleatorio solo para la animación (no consume la secuencia ni pregunta). */
+const fxD6 = () => 1 + Math.floor(Math.random() * 6);
 /* Tirada de 1 dado visible: se muestra el dado y el resultado y hay que confirmar con un clic. fn(r) devuelve el texto del resultado. */
 async function rollShown(label, fn) { const [r] = await UI.rollSimple(label, 1, d => fn(d[0])); return r; }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
