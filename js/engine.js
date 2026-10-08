@@ -607,6 +607,10 @@ async function doMove(u, dest, path) {
   if (isSoft(u)) { if (dest === 'C') await refugeeArrives(u); return; }
   if (dest === 'C' && u.space === 'C') {/* ok */ }
   const zs = zedsAt(dest), rs = raidAt(dest);
+  if (u.key === 'pepinillos' && (zs.length || rs.length)) {
+    const r = await rollShown('Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido, convive con ellos sin combate' : '<b>' + r + '</b>: lo descubren, combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos al entrar en ' + spaceLabel(dest) + ': ' + r);
+    if (r >= 2) { LOG('Pepinillos pasa desapercibido.', 'good'); return; }
+  }
   if (zs.length) {
     let assassin = false;
     if (u.key === 'darling') { const r = await rollShown('Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r); if (r >= 3) assassin = true; else if (r === 1) {/* combate normal */} else { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { putUnit(u, from); return; } } }
