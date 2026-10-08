@@ -385,8 +385,21 @@ const ui = {
   async rollSimple(label, n, resultFn) {
     const b = this._modal('<h2>' + label + '</h2><div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div id="rres" style="text-align:center;margin:8px 0;font-size:15px"></div><div class="opts" id="rb"></div>', 'cbt');
     const dice = Array.from({ length: n }, d6); await this._animate(b.querySelectorAll('.die'), dice);
-    if (resultFn) $('rres').innerHTML = resultFn(dice);
-    await this._btn('rb', 'Continuar'); this._close(); return dice;
+    const show = () => { if (resultFn) $('rres').innerHTML = resultFn(dice); }; show();
+    if (DEBUG_DICE) await this._dbgDice([...b.querySelectorAll('.die')], dice, show); else await this._btn('rb', 'Continuar');
+    this._close(); return dice;
+  },
+  /* Debug: botones Continuar / Debug. Con Debug, cada clic sobre un dado le sube el valor (1→6→1). Modifica vals en el sitio. */
+  _dbgDice(els, vals, onChange) {
+    return new Promise(res => {
+      const rb = $('rb'); rb.innerHTML = '';
+      const ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = 'Continuar';
+      const dbg = document.createElement('button'); dbg.textContent = '🐞 Debug';
+      dbg.onclick = () => { dbg.disabled = true; dbg.textContent = '🐞 Pulsa un dado para cambiarlo';
+        els.forEach((e, i) => { e.style.cursor = 'pointer'; e.style.outline = '2px dashed #ffd54a'; e.onclick = () => { vals[i] = vals[i] % 6 + 1; e.textContent = vals[i]; if (onChange) onChange(); }; }); };
+      ok.onclick = () => { els.forEach(e => { e.onclick = null; e.style.outline = ''; }); rb.innerHTML = ''; res(); };
+      rb.append(ok, dbg); ok.focus();
+    });
   },
   _animate(els, vals) {
     return new Promise(res => {
@@ -411,6 +424,7 @@ const ui = {
     $('rb').innerHTML = '';
     const area = b.querySelector('.dice'); area.innerHTML = '<div class="die"></div>'.repeat(2 + (extra || 0));
     const vals = Array.from({ length: 2 + (extra || 0) }, d6); await ui._animate(area.querySelectorAll('.die'), vals);
+    if (DEBUG_DICE) await ui._dbgDice([...area.querySelectorAll('.die')], vals);
     const best = vals.slice().sort((a, c) => c - a).slice(0, 2);
     if (extra) { const used = best.slice(); area.querySelectorAll('.die').forEach((e, i) => { const k = used.indexOf(vals[i]); if (k >= 0) used.splice(k, 1); else e.style.opacity = '.35'; }); }
     return best;
@@ -420,6 +434,7 @@ const ui = {
     const area = b.querySelector('.dice'); area.innerHTML = vals.map(d => '<div class="die">' + d + '</div>').join('');
     const els = [...area.querySelectorAll('.die')], nv = idx.map(() => d6());
     await this._animate(idx.map(i => els[i]), nv);
+    if (DEBUG_DICE) await this._dbgDice(idx.map(i => els[i]), nv);
     const out = vals.slice(); idx.forEach((i, k) => out[i] = nv[k]);
     const col = info.finalCol !== undefined ? info.finalCol : info.col, row = sumRow(out[0] + out[1]);
     b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + col + '"]'); if (cell) cell.classList.add('hit');
@@ -470,7 +485,7 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label></div><div class="row"><label><input type="checkbox" id="dbgDice"> Debug: elegir el valor de cada dado</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label>Héroe personal: <select id="heroSel"></select></label></div><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label></div><div class="row"><label><input type="checkbox" id="dbgDice"> Debug: botón para cambiar los dados tras cada tirada</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label>Héroe personal: <select id="heroSel"></select></label></div><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       const upd = () => {
         const n = +b.querySelector('input[name=lv]:checked').value, L = LEVELS[n];
