@@ -1,7 +1,7 @@
 /* Service worker: permite instalar la web como app y jugar sin conexión.
    Código (html/js/css): red primero, con copia local de reserva. Imágenes y audio: caché primero. */
 'use strict';
-const CACHE = 'doz3-v5';
+const CACHE = 'doz3-v6';
 const SHELL = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'assets/portada.jpg',
   'js/data.js', 'js/events.js', 'js/dest.js', 'js/engine.js', 'js/game.js', 'js/phases.js', 'js/actions.js', 'js/cardtext.js', 'js/ui.js', 'js/anim.js',
   'js/expansions.js', 'js/expansions2.js', 'js/sfx.js', 'js/sound.js', 'js/voz.js', 'assets/sfx/disparo.mp3', 'assets/sfx/disparo_largo.mp3', 'js/mapzoom.js', 'js/save.js', 'js/main.js', 'js/bot.js'];
@@ -17,6 +17,7 @@ self.addEventListener('fetch', e => {
   if (isCode) {
     e.respondWith(fetch(req).then(r => { if (r.ok) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); } return r; }).catch(() => caches.match(req).then(r => r || caches.match('index.html'))));
   } else {
-    e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(r => { if (r.ok && r.status === 200) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); } return r; })));
+    const get = () => fetch(req).then(r => { if (r.ok && r.status === 200) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)).catch(() => { }); } return r; });
+    e.respondWith(caches.match(req).then(hit => hit || get().catch(() => new Promise(res => setTimeout(res, 500)).then(get))).catch(() => caches.match(req)));
   }
 });

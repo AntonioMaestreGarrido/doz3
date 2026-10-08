@@ -13,6 +13,15 @@ async function revealEvent() {
 }
 const FINISH = () => G.over;
 
+/* Descarga en segundo plano las cartas de Evento del mazo para que queden en la caché de la app. */
+async function warmEventCards() {
+  for (const id of [...new Set((G.eventDeck || []).concat(G.event ? [G.event.id] : []))]) {
+    if (G.over) return;
+    try { await fetch('assets/cartas/e_' + id + '.jpg'); } catch (e) { /* sin red: se reintenta al mostrarla */ }
+    await new Promise(r => setTimeout(r, 150));
+  }
+}
+
 async function playGame(setup, saved) {
   let resume = null;
   ui.gameMusicOn();
@@ -20,11 +29,11 @@ async function playGame(setup, saved) {
     applySave(saved); resume = saved.at;
     ui.setMap(G.lv.board); G.busy = true;
     if (G.event) { $('evimg').src = 'assets/cartas/e_' + G.event.id + '.jpg'; $('evimg').dataset.zoom = 'e:' + G.event.id; }
-    UI.updateStats(); UI.updateHand(); UI.redraw();
+    UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     UI.log('Partida recuperada — ' + G.lv.name + ' (' + G.len.name + '), turno ' + G.turnNo + '.', 'turn');
   } else {
     newGame(setup.level, setup.len, setup.hero, setup.exps);
-    ui.setMap(G.lv.board); G.busy = true; UI.updateStats(); UI.updateHand(); UI.redraw();
+    ui.setMap(G.lv.board); G.busy = true; UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     UI.log('Partida preparada — ' + G.lv.name + ' (' + G.len.name + '). Héroes: ' + G.heroKeys.map(k => HEROES[k].name).join(', ') + '.', 'turn');
     Voz.say('inicio');
     await UI.waitAck(G.lv.name, 'Farmingdale está rodeada por ' + G.routes.length + ' rutas por las que avanzan los Zeds. Si <b>un solo Zed</b> entra en el Centro de la Ciudad, pierdes' + (G.lv.fourR ? ' (y también si te quedas sin fichas de Caos)' : '') + '. Sobrevive a las ' + G.totalEvents + ' cartas de Evento y ganarás.<br><br>Pasa el ratón sobre cualquier ficha o carta para ver su texto.');

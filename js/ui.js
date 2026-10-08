@@ -27,6 +27,12 @@ const ui = {
     document.addEventListener('mouseover', e => { if (ui.recentTouch()) return; const t = e.target.closest && e.target.closest('[data-zoom]'); if (t) ui.zoomShow(t.dataset.zoom, e); });
     document.addEventListener('mousemove', e => { if (ui.recentTouch()) return; const t = e.target.closest && e.target.closest('[data-zoom]'); if (t) ui.zoomShow(t.dataset.zoom, e); else if (!ui._mapZoom) ui.zoomHide(); });
     this.initTouch();
+    /* Imágenes de cartas que fallan (tablet, red o caché inestable): reintento automático con otra URL. */
+    document.addEventListener('error', e => {
+      const t = e.target; if (!t || t.tagName !== 'IMG' || !/assets\/cartas\//.test(t.getAttribute('src') || '')) return;
+      const base = t.getAttribute('src').split('?')[0], n = +(t.dataset.retry || 0); if (n >= 4) return; t.dataset.retry = n + 1;
+      setTimeout(() => { t.src = base + '?r=' + Date.now(); }, 400 * (n + 1));
+    }, true);
     if (this.initMapZoom) this.initMapZoom();
     window.addEventListener('resize', () => this.arrange());
     $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
