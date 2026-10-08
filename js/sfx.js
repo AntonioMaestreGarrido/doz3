@@ -5,15 +5,15 @@
 const Sfx = {
   ctx: null, bufs: {}, loading: {}, master: null,
   defs: {
-    shot: { url: 'assets/sfx/disparo.mp3', from: 0.15, to: 1.35, gain: 0.55 },
-    long: { url: 'assets/sfx/disparo_largo.mp3', from: 0.0, to: 2.6, gain: 0.7 },
-    dice: { url: 'assets/sfx/dados.mp3', from: 0.0, to: 1.05, fade: 0.25, gain: 0.8 },
-    zombi1: { url: 'assets/sfx/zombi1.mp3', from: 0.0, to: 99, gain: 0.55 },
-    zombi2: { url: 'assets/sfx/zombi2.mp3', from: 0.0, to: 99, gain: 0.55 },
-    growl1: { url: 'assets/sfx/growl1.mp3', from: 0.0, to: 2.6, fade: 0.5, gain: 0.6 },
-    growl2: { url: 'assets/sfx/growl2.mp3', from: 0.0, to: 2.6, fade: 0.5, gain: 0.6 },
-    horde: { url: 'assets/sfx/horda_ataque.mp3', from: 0.0, to: 3.8, fade: 0.8, gain: 0.7 },
-    amb: { url: 'assets/sfx/horda_ambiente.mp3', from: 0.0, to: 5.5, fade: 1.2, gain: 0.4 }
+    shot: { url: 'assets/sonidos/efectos/sfx_disparo.mp3', from: 0.15, to: 1.35, gain: 0.55 },
+    long: { url: 'assets/sonidos/efectos/sfx_disparo_largo.mp3', from: 0.0, to: 2.6, gain: 0.7 },
+    dice: { url: 'assets/sonidos/efectos/sfx_dados.mp3', from: 0.0, to: 1.05, fade: 0.25, gain: 0.8 },
+    zombi1: { url: 'assets/sonidos/efectos/sfx_zombi1.mp3', from: 0.0, to: 99, gain: 0.55 },
+    zombi2: { url: 'assets/sonidos/efectos/sfx_zombi2.mp3', from: 0.0, to: 99, gain: 0.55 },
+    growl1: { url: 'assets/sonidos/efectos/sfx_growl1.mp3', from: 0.0, to: 2.6, fade: 0.5, gain: 0.6 },
+    growl2: { url: 'assets/sonidos/efectos/sfx_growl2.mp3', from: 0.0, to: 2.6, fade: 0.5, gain: 0.6 },
+    horde: { url: 'assets/sonidos/efectos/sfx_horda_ataque.mp3', from: 0.0, to: 3.8, fade: 0.8, gain: 0.7 },
+    amb: { url: 'assets/sonidos/efectos/sfx_horda_ambiente.mp3', from: 0.0, to: 5.5, fade: 1.2, gain: 0.4 }
   },
   last: {},
   enabled() { return Sound.sfx.on; },

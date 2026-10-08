@@ -1,6 +1,6 @@
-/* Voz del líder: frases grabadas (assets/voz/lider_NN.mp3) en momentos concretos de la partida.
+/* Voz del líder: frases grabadas (assets/sonidos/voces/voz_lider_NN.mp3) en momentos concretos de la partida.
    Suena una a la vez, con un intervalo mínimo entre frases (salvo las de final de partida).
-   Cada grupo se recorre al azar sin repetir hasta agotarlo. Los números son los de assets/voz/lider_labels.json. */
+   Cada grupo se recorre al azar sin repetir hasta agotarlo. Los números son los de assets/sonidos/voces/lider_labels.json. */
 'use strict';
 
 const Voz = {
@@ -15,7 +15,7 @@ const Voz = {
     if (prob !== undefined && prob !== null && Math.random() >= prob) return;
     if (this.cur) this.cur.pause();
     const n = this.pick(grupo);
-    const a = this.audio[n] || (this.audio[n] = new Audio('assets/voz/lider_' + String(n).padStart(2, '0') + '.mp3'));
+    const a = this.audio[n] || (this.audio[n] = new Audio('assets/sonidos/voces/voz_lider_' + String(n).padStart(2, '0') + '.mp3'));
     a.volume = Sound.voice.vol; this.cur = a;
     try { a.currentTime = 0; } catch (e) { }
     const p = a.play(); if (p && p.catch) p.catch(() => { });

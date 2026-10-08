@@ -5,7 +5,7 @@
 async function outbreak(wild, noReduce) {
   if (!G.lv.infection) return;
   if (alreadyHas('medio')) { G.inf = 2; LOG('A medio convertir: la Infección baja a 2.'); }
-  else if (!noReduce) { const a = d6(), b = d6(); LOG('Tirada de Brote: ' + (a + b) + '. La Infección baja.', 'good'); infDown(a + b); }
+  else if (!noReduce) { const [a, b] = await UI.rollSimple('Tirada de Brote: la Infección baja', 2, d => 'Total <b>' + (d[0] + d[1]) + '</b>: la Infección baja ' + (d[0] + d[1]) + '.'); LOG('Tirada de Brote: ' + (a + b) + '. La Infección baja.', 'good'); infDown(a + b); }
   const dr = await drawDestiny(); if (!dr) return;
   const r = dr.route; let target;
   if (r === 'T' || alreadyHas('vacunas')) target = r + '0';
@@ -50,7 +50,9 @@ async function handleArrival(zs, dest, from) {
 }
 async function mineAttack(dest, movers) {
   const s = sp(dest); if (!s.mine) return; const str = s.mine === 1 ? 7 : 4;
-  const col = clamp(str - 1, 0, 6), a = d6(), b = d6(); const hits = FIRE[sumRow(a + b)][col];
+  const col = clamp(str - 1, 0, 6);
+  const [a, b] = await UI.rollSimple('¡Campo de Minas! Ataque de Fuerza ' + str, 2, d => { const h = FIRE[sumRow(d[0] + d[1])][col]; return 'Total <b>' + (d[0] + d[1]) + '</b>: <b>' + h + '</b> Impacto(s) contra los Zeds que entran.'; });
+  const hits = FIRE[sumRow(a + b)][col];
   LOG('¡Campo de Minas! Ataque de Fuerza ' + str + ' (' + (a + b) + '): ' + hits + ' Impacto(s).', 'good');
   s.mine = s.mine === 1 ? 2 : 0; await applyZedHits(movers.filter(z => z.space === dest), hits);
 }
@@ -127,10 +129,10 @@ async function stepSpace(id, cer, second) {
 async function cryptExit(z, cer) {
   const from = z.space;
   if (!z.dr && !(SUPER_ZEDS[z.key] && false)) {
-    const r = d6(); LOG('Tirada de Cripta: ' + r);
+    const r = await rollShown('Tirada de Cripta', v => v >= 4 && v <= 5 ? '<b>' + v + '</b>: el Zed se queda en la Cripta' : v === 6 ? '<b>6</b>: el Zed se pierde en el Túnel (nueva tirada)' : '<b>' + v + '</b>: el Zed sale de la Cripta'); LOG('Tirada de Cripta: ' + r);
     if (r >= 4 && r <= 5) { z.moved = true; return; }
     if (r === 6) {
-      const r2 = d6(); const idx = lastOf('T') - r2; LOG('¡Perdido! Nueva tirada: ' + r2);
+      const r2 = await rollShown('Zed perdido: nueva tirada', v => '<b>' + v + '</b>: aparece en el Túnel, espacio n.º ' + v); const idx = lastOf('T') - r2; LOG('¡Perdido! Nueva tirada: ' + r2);
       if (idx === sp(from).i || idx < 1 || idx > lastOf('T')) { LOG('El Zed se pierde para siempre.', 'good'); if (z.type === 'super') { removeUnit(z); delete G.units[z.id]; } else discardZed(z); return; }
       const t = 'T' + idx;
       if (normalZedsAt(t).length >= zedCap(t) && sp(t).kind !== 'crypt') { z.moved = true; return; }
@@ -295,10 +297,11 @@ async function eventStart() {
     case 'odio': { const zs = allUnits(x => x.type === 'zed' && strength(x) <= 3 && isRouteSp(x.space)).sort((a, b) => sp(b.space).i - sp(a.space).i); let n = 0; for (const z of zs) { const w = z.space; discardZed(z); const nz = makeZed(); if (nz) { putUnit(nz, w); n++; } } LOG(n + ' Zeds débiles sustituidos por Zeds de Fuerza completa.', 'bad'); break; }
     case 'heroe_b': case 'heroe_g': { const k = randomAvailableHero(); if (k) { const inits = ['C'].concat(G.routes.map(r => r + '0')); const w = await UI.pickSpace(inits, 'Llega un Héroe: elige el espacio (Centro o un Inicial).'); await spawnHero(k, w); } else LOG('No quedan Héroes disponibles.'); break; }
     case 'keepcalm': { const hs = allUnits(x => x.type === 'hero' && x.space); if (hs.length) { const v = await UI.pickUnit(hs, '«Keep calm»: elige un Héroe (2 columnas a favor al atacar).'); G.units[v].keepCalm = true; } break; }
-    case 'mina': { const mid = 'M3'; G.turn.block.push(mid); for (const u of plAt(mid)) { await hitPlayer(u, 1); if (u.space === mid) retreatPlayers([u], 'C'); } break; }
+    case 'mina': { const mid = 'M3'; G.turn.block.push(mid); for (const u of plAt(mid)) { await hitPlayer(u, 1); if (u.space === mid) retreatPlayers([u], 'C'); }
+      for (const z of zedsAt(mid).slice()) { if (!G.units[z.id] || z.space !== mid) continue; await hitZed(z); if (G.units[z.id] && z.space === mid) await retreatZeds([z], zedOrigin(z)); } break; }
     case 'resistentes': { await placeZedAt('M0', 'Zeds Resistentes'); const t = strongestNormalZed(); if (t) { t.zresist = true; LOG('Resistentes en un Zed de Fuerza ' + strength(t) + '.', 'bad'); } break; }
     case 'cerebros_b1': case 'cerebros_b2': break;
-    case 'agua': await lossChoice(d6(), ['s', 'p']); break;
+    case 'agua': await lossChoice(await rollShown('Agua contaminada: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' (Suministros o Impactos).'), ['s', 'p']); break;
     case 'marines': { const dr = await drawDestiny(); if (dr) { const m = makeSpecial('marines', dr.route + '0'); G.ammo = Math.min(20, G.ammo + 4); LOG('Llegan los Marines (+4 Munición).', 'good'); await resolveTwist(dr); } break; }
     case 'toxicos': { await placeZedAt('A0', 'Zeds Tóxicos'); const t = strongestNormalZed(); if (t) t.toxic = true; break; }
     case 'rapidos': { await placeZedAt('B0', 'Zeds Rápidos'); const t = strongestNormalZed(); if (t) t.fast = true; break; }
@@ -321,7 +324,7 @@ async function eventStart() {
     case 'frenesi': case 'super_enloq': break;
     case 'misiles': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && sp(x.space).route !== 'T').map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, 'Misiles: elige un espacio con Zeds.'); const r = d6(); const n = r <= 2 ? 1 : r <= 4 ? 2 : 3; await applyZedHits(zedsAt(t), n); } break; }
     case 'contaminacion': case 'doc_problema': { let n = 0; for (const b of BEDS) if (G.spaces[b]) n += unitsAt(b).length; for (const o of ['O1', 'O2']) if (G.spaces[o]) n += unitsAt(o).length; await infUp(n); if (G.berra) { G.berra = false; LOG('Se retira a Elwood Berra.', 'bad'); } break; }
-    case 'accidente': case 'experimentos': { const r = d6(); if (r <= 5) pushInitialResearch(1); if (id === 'experimentos') await infUp(d6()); break; }
+    case 'accidente': case 'experimentos': { const r = await rollShown(id === 'experimentos' ? 'Experimentos: investigación' : 'Accidente: investigación', v => v <= 5 ? '<b>' + v + '</b>: se aplica el efecto de investigación' : '<b>' + v + '</b>: sin efecto'); if (r <= 5) pushInitialResearch(1); if (id === 'experimentos') await infUp(await rollShown('Experimentos: Infección', v => '<b>' + v + '</b>: +' + v + ' de Infección')); break; }
     case 'elwood': G.berra = true; LOG('Elwood Berra reduce la Infección 1 cada turno.', 'good'); break;
     case 'hace_falta': { const c = allUnits(x => (x.type === 'refugee' || x.type === 'aldeano' || x.type === 'civ') && x.space && isRouteSp(x.space) && sp(x.space).route !== 'T'); if (c.length) { const v = await UI.pickUnit(c, 'Hace falta un Pueblo: elige la unidad que será sustituida por un Zed.'); const u = G.units[v], w = u.space; putUnit(u, 'C'); const z = makeZed(); if (z) putUnit(z, w); const bed = freeBed(); if (bed && u.type !== 'aldeano') { putUnit(u, bed); u.flipped = true; u.ecg = true; } else if (u.type === 'aldeano') { removeUnit(u); delete G.units[u.id]; } else putUnit(u, 'C'); } break; }
     case 'no_comer': { for (const z of allUnits(x => x.type === 'zed' && x.space && isRouteSp(x.space))) { const nb = adjacentIds(z.space).concat([z.space]); if (nb.some(i => (sp(i).kind === 'city' || sp(i).kind === 'pueblo') && !plAt(i).length)) { if (z.hits > 0) z.hits--; else if (z.flipped) { z.flipped = false; z.hits = 2; } } } break; }
@@ -329,10 +332,10 @@ async function eventStart() {
     case 'civ_heroicos': { const k = pickCivh(); if (k) await spawnHero(k, 'C'); break; }
     case 'murcielagos': { const us = allUnits(x => isFighter(x) && x.space && isRouteSp(x.space) && sp(x.space).route === 'T').sort((a, b) => sp(a.space).i - sp(b.space).i); if (us.length) { const u = us[0]; await infUp(1); await hitPlayer(u, 1); if (u.space && isRouteSp(u.space)) retreatPlayers([u], 'C'); } break; }
     case 'brote_local': break;
-    case 'artefacto': { const dr = await drawDestiny(); if (dr) { const n = d6(); const t = dr.route + clamp(lastOf(dr.route) - n, 1, lastOf(dr.route) - 1); await placeZedAt(t, 'Artefacto', makeSuper()); await revealResearch(); await resolveTwist(dr); } break; }
+    case 'artefacto': { const dr = await drawDestiny(); if (dr) { const n = await rollShown('Artefacto: ¿dónde aparece?', v => 'Aparece el Súper Zed en el espacio n.º ' + v + ' de la ruta'); const t = dr.route + clamp(lastOf(dr.route) - n, 1, lastOf(dr.route) - 1); await placeZedAt(t, 'Artefacto', makeSuper()); await revealResearch(); await resolveTwist(dr); } break; }
     case 'oh_no': { const t = strongestNormalZed(); if (t) { const up = ['smart', 'fast', 'toxic', 'leader', 'zresist'][rnd(5)]; t[up] = true; LOG('Una mejora Zed (' + up + ') se coloca sobre un Zed de Fuerza ' + strength(t) + '.', 'bad'); } break; }
     case 'desde_lab': { const t = 'T4'; if (G.routes.includes('T')) { const sup = allUnits(x => x.type === 'super').length; await placeZedAt(t, 'Desde el laboratorio', sup ? makeZed() : makeSuper()); } break; }
-    case 'hinchados': { const dr = await drawDestiny(); if (dr) { const zs = routeZeds(dr.route).sort((a, b) => sp(b.space).i - sp(a.space).i); if (zs.length) { const sid = zs[0].space; const z = zs[0]; if (z.type === 'super') { removeUnit(z); delete G.units[z.id]; } else if (z.type === 'spreader') { removeUnit(z); delete G.units[z.id]; } else discardZed(z); for (const nb of adjacentIds(sid)) { if (isInit(nb)) continue; const col = 3, a = d6(), b = d6(), hits = FIRE[sumRow(a + b)][col]; const tg = unitsAt(nb); for (const t of tg) { if (isZedSide(t)) await applyZedHits([t], hits); else if (t.side === 'pl' || t.side === 'raid') await hitPlayer(t, hits); } } } await resolveTwist(dr); } break; }
+    case 'hinchados': { const dr = await drawDestiny(); if (dr) { const zs = routeZeds(dr.route).sort((a, b) => sp(b.space).i - sp(a.space).i); if (zs.length) { const sid = zs[0].space; const z = zs[0]; if (z.type === 'super') { removeUnit(z); delete G.units[z.id]; } else if (z.type === 'spreader') { removeUnit(z); delete G.units[z.id]; } else discardZed(z); for (const nb of adjacentIds(sid)) { if (isInit(nb)) continue; const col = 3; const [a, b] = await UI.rollSimple('Zed hinchado: explosión en ' + spaceLabel(nb), 2, d => 'Total <b>' + (d[0] + d[1]) + '</b>: <b>' + FIRE[sumRow(d[0] + d[1])][col] + '</b> Impacto(s).'); const hits = FIRE[sumRow(a + b)][col]; const tg = unitsAt(nb); for (const t of tg) { if (isZedSide(t)) await applyZedHits([t], hits); else if (t.side === 'pl' || t.side === 'raid') await hitPlayer(t, hits); } } } await resolveTwist(dr); } break; }
     case 'atajos': G.turn.specials.push(mkSpecial('atajos')); break;
     case 'feria': break;
     case 'conductos': case 'alcantarilla': case 'irrupcion': break;
@@ -347,14 +350,14 @@ async function eventAfterZeds() {
     case 'que_olor': { const c = allUnits(x => isFighter(x) && x.space && x.space !== 'C' && sp(x.space).kind !== 'bed' && !sp(x.space).kind.match(/office|lab|camp/) && !isInit(x.space) && x.side === 'pl'); if (c.length) { const v = await UI.pickUnit(c, '¿Qué es ese olor?: elige la unidad que será atacada.'); const u = G.units[v]; const z = makeZed(); if (z) { z.flipped = true; putUnit(z, u.space); const r = await melee({ zeds: [z], hum: [u], space: u.space, attacker: 'z', from: prevToward(u.space) }); if (z.space && r.zedWon) { z.flipped = false; z.hits = Math.min(z.hits, 2); } } } break; }
     case 'frenesi': case 'super_enloq': { G.turn.frenzy = true; const sups = allUnits(x => x.type === 'super' && x.space && isRouteSp(x.space)).sort((a, b) => (lastOf(sp(a.space).route) - sp(a.space).i) - (lastOf(sp(b.space).route) - sp(b.space).i)); sups.forEach(z => z.moved = false); for (const z of sups) { if (z.space && G.units[z.id]) await moveGroup([z], z.space); if (G.over) return; } G.turn.frenzy = false; break; }
     case 'inteligentes': { await placeZedAt('F0', 'Zeds Inteligentes'); const t = strongestNormalZed(); if (t) t.smart = true; break; }
-    case 'feria': { for (const r of ['T']) for (const i of [3, 5]) { const id2 = 'T' + i; if (!G.spaces[id2]) continue; const n = d6(); const k = n === 1 ? 2 : n <= 5 ? 1 : 0; for (let j = 0; j < k; j++) await placeZedAt(id2, 'La feria de las tinieblas'); } break; }
-    case 'conductos': for (const i of [3, 5]) { const id2 = 'T' + i; if (!G.spaces[id2]) continue; for (const z of zedsAt(id2).slice()) { const n = d6(); if (n <= 2) await sewerMove(z, 'A4'); else if (n <= 5) await sewerMove(z, 'B4'); } } break;
+    case 'feria': { for (const r of ['T']) for (const i of [3, 5]) { const id2 = 'T' + i; if (!G.spaces[id2]) continue; const n = await rollShown('La feria de las tinieblas (' + spaceLabel(id2) + ')', v => '<b>' + v + '</b>: ' + (v === 1 ? '2 Zeds' : v <= 5 ? '1 Zed' : 'ningún Zed')); const k = n === 1 ? 2 : n <= 5 ? 1 : 0; for (let j = 0; j < k; j++) await placeZedAt(id2, 'La feria de las tinieblas'); } break; }
+    case 'conductos': for (const i of [3, 5]) { const id2 = 'T' + i; if (!G.spaces[id2]) continue; for (const z of zedsAt(id2).slice()) { const n = await rollShown('Conductos del vapor', v => v <= 2 ? '<b>' + v + '</b>: el Zed intenta entrar en la Central Nuclear' : v <= 5 ? '<b>' + v + '</b>: el Zed intenta entrar en la Granja' : '<b>' + v + '</b>: no pasa nada'); if (n <= 2) await sewerMove(z, 'A4'); else if (n <= 5) await sewerMove(z, 'B4'); } } break;
     case 'alcantarilla': case 'irrupcion': { const map = { 1: 'F3', 2: 'A4', 4: 'M3', 3: 'B4', 5: 'B4' }; const tm = { 7: 'F3', 6: 'A4', 4: 'M3', 3: 'B4', 5: 'B4' }; for (const n of [7, 6, 5, 4, 3]) { const id2 = 'T' + (lastOf('T') - n); if (!G.spaces[id2]) continue; for (const z of zedsAt(id2).slice()) await sewerMove(z, tm[n]); } break; }
   }
 }
 async function sewerMove(z, tgt) {
   if (!z.space || !G.units[z.id]) return;
-  if (sp(z.space).kind === 'crypt') { const r = d6(); if (r >= 4) return; }
+  if (sp(z.space).kind === 'crypt') { const r = await rollShown('Zed en la Cripta', v => v >= 4 ? '<b>' + v + '</b>: se queda en la Cripta' : '<b>' + v + '</b>: sale de la Cripta'); if (r >= 4) return; }
   if (normalZedsAt(tgt).length >= zedCap(tgt)) return;
   putUnit(z, tgt); LOG('Un Zed emerge del Túnel en ' + spaceLabel(tgt) + '.', 'bad'); z.moved = true;
   if (plAt(tgt).length) await zedAttack([z], tgt, prevToward(tgt)); else await zedsOccupy([z], tgt);
@@ -366,10 +369,10 @@ async function eventEnd() {
   switch (id) {
     case 'cabana': if (pl('M5')) { G.ammo = Math.min(20, G.ammo + 2); LOG('Botín de la cabaña: +2 Munición.', 'good'); } break;
     case 'despensa': if (pl('B7')) { G.supplies = Math.min(20, G.supplies + 4); LOG('Botín de la despensa: +4 Suministros.', 'good'); } break;
-    case 'granero': if (pl('B4')) { const n = d6(); G.supplies = Math.min(20, G.supplies + n); LOG('Granero: +' + n + ' Suministros.', 'good'); } break;
+    case 'granero': if (pl('B4')) { const n = await rollShown('Granero: Suministros', v => '<b>' + v + '</b>: +' + v + ' Suministros'); G.supplies = Math.min(20, G.supplies + n); LOG('Granero: +' + n + ' Suministros.', 'good'); } break;
     case 'descubrimiento': if (pl('F3')) await revealResearch(); break;
     case 'materiales': if (pl('A4')) await revealResearch(); break;
-    case 'soldados': { await lossChoice(d6(), ['s', 'p']); break; }
+    case 'soldados': { await lossChoice(await rollShown('Soldados de fortuna: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' (Suministros o Impactos).'), ['s', 'p']); break; }
     case 'bomberos': { let n = 0; for (const s of Object.values(G.spaces)) if (s.kind === 'pueblo' && s.chaos) { const v = await UI.choose({ title: 'Bomberos', text: '¿Retiras el Caos de ' + spaceLabel(s.id) + ' (+1 Infección)?', options: [{ label: 'Retirar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { s.chaos = 0; G.chaosLeft++; await infUp(1); n++; } } break; }
   }
 }

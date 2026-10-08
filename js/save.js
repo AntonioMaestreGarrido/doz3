@@ -38,7 +38,7 @@ function mkSpecial(kind, n) {
       break;
     case 'atajos':
       s.label = 'Atajos: 1 Impacto a un Héroe del Laboratorio → Investigación';
-      s.fn = async () => { const h = unitsAt('LAB').filter(isFighter)[0]; if (!h) { LOG('No hay nadie en el Laboratorio.'); return; } await hitPlayer(h, 1); if (d6() >= 2) await revealResearch(); };
+      s.fn = async () => { const h = unitsAt('LAB').filter(isFighter)[0]; if (!h) { LOG('No hay nadie en el Laboratorio.'); return; } await hitPlayer(h, 1); if ((await rollShown('Laboratorio: investigación', v => v >= 2 ? '<b>' + v + '</b>: se revela la investigación' : '<b>' + v + '</b>: sin efecto (necesita 2-6)')) >= 2) await revealResearch(); };
       break;
     case 'necesidad':
       s.label = 'Necesidad: 2 Suministros → 1 Munición';

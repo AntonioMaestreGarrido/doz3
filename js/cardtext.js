@@ -22,6 +22,14 @@ function zoomInfo(spec) {
     const r = RES[key]; if (!r) return null;
     return { img: 'assets/cartas/i_' + key + '.jpg', title: r.name, html: '<div class="zk">Carta de Investigación' + (r.perm ? ' · efecto mientras sea la carta en curso' : '') + '</div>' + li([r.txt]) + '<div class="zrow"><b>Para avanzar:</b> tirada de ' + r.th + (r.th < 6 ? '+' : '') + (r.sup ? ' y 1 Suministro' : '') + '</div>' };
   }
+  if (kind === 'm') { /* marcadores del tablero: Bastión / Barricada y Campo de Minas (spec «m:<espacio>») */
+    const s = G.spaces[key]; if (!s || !(s.bar || s.mine)) return null;
+    const parts = [], imgs = [];
+    if (s.bar === 2) { parts.push('<b>Bastión</b> (Terreno 3, permanente): los defensores de este espacio reciben el Modificador de Terreno 3. Lo levantó Kingman con 1 Acción y 3 Suministros.'); imgs.push('bastion'); }
+    else if (s.bar === 1) { parts.push('<b>Barricada</b> (Terreno 2): los defensores de este espacio reciben el Modificador de Terreno 2.'); imgs.push('barricada'); }
+    if (s.mine) { parts.push('<b>Campo de Minas</b>: cuando un Zed entra en este espacio, explota con Fuerza ' + (s.mine === 1 ? '7' : '4') + ' (tirada de 2 dados). ' + (s.mine === 1 ? 'Tras la explosión queda con Fuerza 4.' : 'Tras esta explosión desaparece.')); imgs.push(s.mine === 1 ? 'mina_7' : 'mina_4'); }
+    return { img: 'assets/tokens/marcadores/' + imgs[0] + '.png', title: s.name || spaceLabel(key), html: li(parts) };
+  }
   if (kind === 'k') { const k = RUMORS[key]; if (!k) return null; return { img: 'assets/tokens/rumores/' + key + '.png', title: k.name, html: '<div class="zk">Ficha de Rumor · ' + ({ C: 'Colocar', G: 'Guardar', U: 'Unir' }[k.t]) + '</div>' + li([k.txt]) }; }
   if (kind === 'h') {
     const h = HEROES[key]; if (!h) return null;

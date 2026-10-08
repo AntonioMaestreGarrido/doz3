@@ -34,6 +34,7 @@ async function playGame(setup, saved) {
   } else {
     newGame(setup.level, setup.len, setup.hero, setup.exps); G.saveId = newSaveId();
     ui.setMap(G.lv.board); G.busy = true; UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
+    if (G.setupRoll) { const [a, b] = G.setupRoll; G.setupRoll = null; await UI.waitAck('Suministros y munición iniciales', 'Tirada de 2 dados: <b>' + a + '</b> y <b>' + b + '</b>.<br>Suministros: <b>' + (a + b) + '</b> · Munición: <b>' + (6 - Math.min(a, b)) + '</b>.'); }
     UI.log('Partida preparada — ' + G.lv.name + ' (' + G.len.name + '). Héroes: ' + G.heroKeys.map(k => HEROES[k].name).join(', ') + '.', 'turn');
     Voz.say('inicio');
     await UI.waitAck(G.lv.name, 'Farmingdale está rodeada por ' + G.routes.length + ' rutas por las que avanzan los Zeds. Si <b>un solo Zed</b> entra en el Centro de la Ciudad, pierdes' + (G.lv.fourR ? ' (y también si te quedas sin fichas de Caos)' : '') + '. Sobrevive a las ' + G.totalEvents + ' cartas de Evento y ganarás.<br><br>Pasa el ratón sobre cualquier ficha o carta para ver su texto.');
@@ -50,12 +51,10 @@ async function playGame(setup, saved) {
       G.phase = 'fourR'; UI.updateStats(); await phase4R(); if (G.over) break;
       G.phase = 'infection'; UI.updateStats(); await phaseInfection(); if (G.over) break;
       G.phase = 'feeding'; UI.updateStats(); await phaseFeeding(); if (G.over) break;
-      if (ev.fin && ev.id !== 'fin_b2') { G.over = 'win'; break; }
       G.phase = 'zeds'; UI.updateStats();
       await eventStart(); if (G.over) break;
       await phaseZeds(); if (G.over) break;
       await eventAfterZeds(); UI.release(); if (G.over) break;
-      if (ev.fin) { G.over = 'win'; break; }
     } else ev = G.event;
     const resumed = resume === 'actions'; resume = null;
     if (!ev.cer) {
@@ -75,6 +74,7 @@ async function playGame(setup, saved) {
       }
       if (G.over) break;
       await eventEnd();
+      if (ev.fin) { G.over = 'win'; break; }
     } else UI.log('¡CEREBROS!: no hay fase de Acciones.', 'bad');
     if (G.over) break;
     G.phase = 'maint'; await maintenance();

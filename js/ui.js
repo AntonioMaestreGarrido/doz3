@@ -218,7 +218,10 @@ const ui = {
   onMove(e) {
     if (!G.units) return; const p = this.toMap(e), uid = this.hitUnit(p);
     this.canvas.style.cursor = (uid || (this.mode && this.hitSpace(p))) ? 'pointer' : 'default';
-    if (uid && G.units[uid]) { this._mapZoom = true; this.zoomShow('u:' + uid, e); } else if (this._mapZoom) { this._mapZoom = false; this.zoomHide(); }
+    const sid = !uid ? this.hitSpace(p) : null, ms = sid && G.spaces[sid];
+    if (uid && G.units[uid]) { this._mapZoom = true; this.zoomShow('u:' + uid, e); }
+    else if (ms && (ms.bar || ms.mine)) { this._mapZoom = true; this.zoomShow('m:' + sid, e); }
+    else if (this._mapZoom) { this._mapZoom = false; this.zoomHide(); }
   },
   onClick(e) {
     if (!G.units) return; const p = this.toMap(e), uid = this.hitUnit(p), sid = this.hitSpace(p), m = this.mode;
@@ -236,7 +239,7 @@ const ui = {
         else ui.guard(async () => {
           if (m.free) { G.ammo--; G.charUsed.cit = true; await doFire(u, sid, dist, { shift: 1, shiftLabel: 'Ciudadela' }); }
           else if (m.fab) { spendActions(u, 2, 'fire'); await doFire(u, sid, dist); }
-          else { spendActions(u, 1, 'fire'); payFire(u); await doFire(u, sid, dist); }
+          else { spendActions(u, 1, 'fire'); await payFire(u); await doFire(u, sid, dist); }
         });
         return;
       }
@@ -386,6 +389,19 @@ const ui = {
     const b = this._modal('<h2>' + label + '</h2><div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div id="rres" style="text-align:center;margin:8px 0;font-size:15px"></div><div class="opts" id="rb"></div>', 'cbt');
     const dice = Array.from({ length: n }, d6); await this._animate(b.querySelectorAll('.die'), dice);
     const show = () => { if (resultFn) $('rres').innerHTML = resultFn(dice); }; show();
+    /* Pensar fríamente: se puede repetir cualquier dado con un 1 (con doble 1 se repiten los dos), igual que en combate. */
+    if (G.hand && G.hand.includes('pensar') && dice.includes(1)) {
+      const idx = dice.length === 2 && dice[0] === 1 && dice[1] === 1 ? [0, 1] : [dice.indexOf(1)];
+      const v = await this._ask('rb', 'Pensar fríamente: ¿repites ' + (idx.length > 1 ? 'los dos dados' : 'el dado con 1') + '?', [{ label: 'Repetir (juega la carta)', value: 'y' }, { label: 'No', value: 'n' }]);
+      if (v === 'y') {
+        G.hand.splice(G.hand.indexOf('pensar'), 1); G.destDiscard.push('pensar'); zenPlayed(); this.updateHand();
+        idx.forEach(i => dice[i] = d6());
+        const els = [...b.querySelectorAll('.die')];
+        await this._animate(idx.map(i => els[i]), idx.map(i => dice[i]));
+        LOG('Pensar fríamente: se repite ' + (idx.length > 1 ? 'la tirada' : 'el 1') + ' → ' + dice.join(' y ') + '.', 'good');
+        show();
+      }
+    }
     if (DEBUG_DICE) await this._dbgDice([...b.querySelectorAll('.die')], dice, show); else await this._btn('rb', 'Continuar');
     this._close(); return dice;
   },
@@ -500,7 +516,7 @@ const ui = {
   },
   /* Música de menú: suena en portada y selección de partida; el navegador exige un gesto del usuario para arrancar. */
   musicOn() {
-    if (!this._mus) { this._mus = new Audio('assets/musica.mp3'); this._mus.loop = true; }
+    if (!this._mus) { this._mus = new Audio('assets/sonidos/musica/musica_menu.mp3'); this._mus.loop = true; }
     const m = this._mus; m.volume = .5 * Sound.music.vol;
     if (!Sound.music.on) { m.pause(); return; }
     const p = m.play(); if (p && p.catch) p.catch(() => { });
@@ -547,9 +563,9 @@ const ui = {
   /* Música de partida: dos temas de fondo que se turnan y un tema de peligro (ver setDanger). */
   gameMusicOn() {
     if (this._bg) return;
-    this._bg = [1, 2].map(n => { const a = new Audio('assets/musica_juego' + n + '.mp3'); a.volume = .4; a.onended = () => { a.currentTime = 0; this._bgI = 1 - this._bgI; this._gamePlay(); }; return a; });
+    this._bg = [1, 2].map(n => { const a = new Audio('assets/sonidos/musica/musica_juego' + n + '.mp3'); a.volume = .4; a.onended = () => { a.currentTime = 0; this._bgI = 1 - this._bgI; this._gamePlay(); }; return a; });
     this._bgI = 0; this._danger = false;
-    this._dg = new Audio('assets/musica_peligro.mp3'); this._dg.loop = true; this._dg.volume = .5;
+    this._dg = new Audio('assets/sonidos/musica/musica_peligro.mp3'); this._dg.loop = true; this._dg.volume = .5;
     this._gamePlay();
   },
   /* Toca el tema que corresponde; el de fondo se reanuda donde se quedó al acabar el peligro. */
@@ -569,7 +585,7 @@ const ui = {
       const prev = $('title'); if (prev) prev.remove();
       const sv = listSaves(), t = document.createElement('div'); t.id = 'title';
       const info = sv.length ? sv.length + (sv.length === 1 ? ' partida' : ' partidas') + ' · ' + LEVELS[sv[0].G.lv].name + ', turno ' + sv[0].G.turnNo : 'No hay partidas guardadas';
-      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv.length ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="sound">Sonido</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button><div id="buildTag">' + (typeof BUILD_TIME !== 'undefined' ? 'build ' + BUILD_TIME : '') + '</div>';
+      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv.length ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="sound">Sonido</button><button data-a="ost">OST</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button><div id="buildTag">' + (typeof BUILD_TIME !== 'undefined' ? 'build ' + BUILD_TIME : '') + '</div>';
       document.body.appendChild(t);
       this.musicOn();
       const mb = $('muteBtn'), paint = () => { mb.textContent = Sound.music.on ? '🔊' : '🔇'; }; paint();
@@ -579,6 +595,7 @@ const ui = {
         const a = bt.dataset.a;
         if (a === 'top') return ui.showTop();
         if (a === 'sound') return ui.showSound();
+        if (a === 'ost') return Ost.open();
         if (a === 'credits') return ui.showCredits();
         t.classList.add('bg'); t.querySelectorAll('button').forEach(b => b.hidden = true); res(a);
       });

@@ -141,11 +141,11 @@ function bettyCol(f) { return f.flipped ? 5 : 6; }
 
 /* ---------- guardado de Munición (May) ---------- */
 const _payFire = payFire;
-payFire = function (u) {
+payFire = async function (u) {
   const may = alive('may');
   if (u.key === 'may' && !G.firstFreeUsed.may) { G.firstFreeUsed.may = true; return; }
   const before = G.ammo; _payFire(u);
-  if (may && may.space && isCity(may.space) && G.ammo < before && !G.turn.mercs) { const r = d6(); if (r >= 5) { G.ammo = before; LOG('May ahorra la Munición (' + r + ').', 'good'); UI.updateStats(); } }
+  if (may && may.space && isCity(may.space) && G.ammo < before && !G.turn.mercs) { const r = await rollShown('May ahorra Munición', v => v >= 5 ? '<b>' + v + '</b>: no gastas la Munición' : '<b>' + v + '</b>: se gasta la Munición (necesita 5-6)'); if (r >= 5) { G.ammo = before; LOG('May ahorra la Munición (' + r + ').', 'good'); UI.updateStats(); } }
 };
 
 /* ---------- Rumores: llegada de Refugiados ---------- */
@@ -256,7 +256,7 @@ async function carterMove(u, dest, info) {
     const zs = zedsAt(n);
     if (zs.length) {
       const nextCost = !last ? 1 : 99;
-      if (!last && mp >= 1) { const r = d6(); LOG('Barrer Zeds (' + r + ')', r >= 4 ? 'good' : 'bad'); if (r >= 4) { for (const z of zs.slice()) await hitZed(z); continue; } }
+      if (!last && mp >= 1) { const r = await rollShown('Barrer Zeds', v => v >= 4 ? '<b>' + v + '</b>: eliminas a los Zeds del espacio' : '<b>' + v + '</b>: no lo consigues (necesita 4-6)'); LOG('Barrer Zeds (' + r + ')', r >= 4 ? 'good' : 'bad'); if (r >= 4) { for (const z of zs.slice()) await hitZed(z); continue; } }
       await melee({ zeds: zedsAt(n), hum: [u], space: n, attacker: 'h', from: here, noInf: true }); return;
     }
     here = n;

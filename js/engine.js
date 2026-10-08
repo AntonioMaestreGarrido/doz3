@@ -685,13 +685,25 @@ function searchBonus(u) {
   if (alreadyHas('ahora')) b++;
   return b;
 }
+/* Qué se obtiene al Buscar con un resultado final (mismo criterio que doSearch). */
+function searchOutcome(u, res) {
+  if (res < 4) return 'no encuentras nada';
+  const s = sp(u.space), nm = s.name || '', big = res >= 6;
+  let txt;
+  if (isCity(u.space)) txt = big ? '1 Suministro <b>o</b> 1 Munición (tú eliges)' : '+1 Suministro';
+  else if (nm === 'Granja') txt = '+' + (big ? 2 : 1) + ' Suministro(s)';
+  else if (nm === 'Mina Lucky Strike' || nm === 'Garita de Seguridad') txt = '+' + (big ? 2 : 1) + ' Munición';
+  else txt = big ? '+1 Munición' : '+1 Suministro';
+  if (!G.lv.supplies && txt.includes('Suministro')) txt += ' (no se usan en el Juego Básico)';
+  return txt;
+}
 async function doSearch(u) {
   const s = sp(u.space); const bonus = searchBonus(u);
   let dice = []; const two = u.rapi && !(u.key === 'pepinillos' && controlled(u.space));
   const n = two ? 2 : 1;
   const rolled = await UI.rollSimple('Buscar en ' + spaceLabel(u.space) + (two ? ' (Rapiñador: 2 dados)' : ''), n, d => {
     const top = Math.max(...d), fin = Math.min(6, top + bonus), dbl = d.length === 2 && d[0] === d[1];
-    return (d.length === 2 ? 'Se usa el <b>mejor dado</b> (no la suma): <b>' + top + '</b>' : 'Dado: <b>' + top + '</b>') + (bonus ? ' +' + bonus + ' = <b>' + fin + '</b>' : '') + ' → ' + (fin >= 6 ? 'resultado alto' : fin >= 4 ? 'encuentras algo' : 'no encuentras nada') + (dbl ? '<br>¡Dobles! Se busca 2 veces.' : '');
+    return (d.length === 2 ? 'Se usa el <b>mejor dado</b> (no la suma): <b>' + top + '</b>' : 'Dado: <b>' + top + '</b>') + (bonus ? ' +' + bonus + ' = <b>' + fin + '</b>' : '') + ' → ' + searchOutcome(u, fin) + (dbl ? '<br>¡Dobles! Se busca 2 veces.' : '');
   });
   let results = rolled.map(r => [r, Math.min(6, r + bonus)]);
   let best = results.slice().sort((a, b) => b[1] - a[1])[0];
