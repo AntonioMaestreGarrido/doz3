@@ -32,7 +32,7 @@ async function playGame(setup, saved) {
     UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     UI.log('Partida recuperada — ' + G.lv.name + ' (' + G.len.name + '), turno ' + G.turnNo + '.', 'turn');
   } else {
-    newGame(setup.level, setup.len, setup.hero, setup.exps);
+    newGame(setup.level, setup.len, setup.hero, setup.exps); G.saveId = newSaveId();
     ui.setMap(G.lv.board); G.busy = true; UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     UI.log('Partida preparada — ' + G.lv.name + ' (' + G.len.name + '). Héroes: ' + G.heroKeys.map(k => HEROES[k].name).join(', ') + '.', 'turn');
     Voz.say('inicio');
@@ -81,7 +81,7 @@ async function playGame(setup, saved) {
     saveGame('turn');
     G.sel = G.sel && G.units[G.sel] ? G.sel : null; UI.updateStats(); UI.redraw();
   }
-  clearSave(); G.busy = true; G.sel = null; UI.redraw(); await ui.endScreen();
+  deleteSave(G.saveId); G.busy = true; G.sel = null; UI.redraw(); await ui.endScreen();
 }
 window.addEventListener('keydown', e => { if (e.key === 'Escape') ui.cancelMode(); });
 const UI_ = ui;
@@ -91,9 +91,9 @@ window.addEventListener('load', async () => {
   await ui.intro();
   while (true) {
     const a = await ui.titleScreen();
-    if (a === 'load') { const saved = loadSave(); if (saved) { ui.musicStop(); ui.hideCover(); playGame(null, saved); return; } continue; }
-    if (loadSave() && !(await ui.choose({ title: 'Nueva partida', text: 'Ya hay una partida guardada. Si empiezas otra, la guardada se borrará.', options: [{ label: 'Empezar nueva', value: true }, { label: 'Cancelar', value: false }] }))) continue;
+    if (a === 'load') { const id = await ui.slotsScreen(); const saved = id && loadSave(id); if (saved) { ui.musicStop(); ui.hideCover(); playGame(null, saved); return; } continue; }
+    if (listSaves().length >= MAX_SLOTS) { const id = await ui.slotsScreen('full'); if (!id) continue; }
     const setup = await ui.setupScreen();
-    if (setup) { ui.musicStop(); ui.hideCover(); clearSave(); playGame(setup); return; }
+    if (setup) { ui.musicStop(); ui.hideCover(); playGame(setup); return; }
   }
 });

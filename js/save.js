@@ -66,21 +66,49 @@ function restoreState(g) {
   G.turn.specials = g.turn.specials.map(s => mkSpecial(s.kind, s.n));
 }
 
+/* Slots: hasta MAX_SLOTS partidas en curso, una ranura por partida (G.saveId). El guardado automático solo pisa la ranura de su partida.
+   Claves: doz3.slot.<id> (instantánea) y doz3.slots.idx (lista de ids, la más reciente primero). */
+const MAX_SLOTS = 10, SLOT_PREFIX = 'doz3.slot.', SLOT_IDX = 'doz3.slots.idx';
+function slotIds() { try { const l = JSON.parse(localStorage.getItem(SLOT_IDX) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } }
+function setSlotIds(l) { try { localStorage.setItem(SLOT_IDX, JSON.stringify(l)); } catch (e) { } }
+function newSaveId() { return 's' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36); }
+/* Migra la partida del sistema antiguo (una sola ranura) si existe. */
+function migrateOldSave() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY); if (!raw) return;
+    const s = JSON.parse(raw); localStorage.removeItem(SAVE_KEY);
+    if (!s || s.v !== 1 || !s.G || !LEVELS[s.G.lv]) return;
+    const id = newSaveId(); s.G.saveId = id; s.meta = slotMeta(s.G);
+    localStorage.setItem(SLOT_PREFIX + id, JSON.stringify(s)); setSlotIds([id].concat(slotIds()));
+  } catch (e) { }
+}
+function slotMeta(g) {
+  const lv = LEVELS[g.lv];
+  return { lv: lv.name, len: lv.lengths[g.len] ? lv.lengths[g.len].name : '', turn: g.turnNo, heroes: (g.heroKeys || []).map(k => HEROES[k] ? HEROES[k].name : k), date: Date.now() };
+}
 /* at: 'actions' (a mitad de la fase de Acciones) o 'turn' (al empezar un turno). */
 function saveGame(at) {
   try {
     if (!G.lv || G.over) return;
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), G: snapshotState() }));
+    if (!G.saveId) G.saveId = newSaveId();
+    const snap = snapshotState();
+    localStorage.setItem(SLOT_PREFIX + G.saveId, JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), G: snap, meta: slotMeta(snap) }));
+    const ids = slotIds(); if (ids[0] !== G.saveId) setSlotIds([G.saveId].concat(ids.filter(x => x !== G.saveId)));
   } catch (e) { console.warn('No se pudo guardar la partida', e); }
 }
-function loadSave() {
-  try {
-    const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-    return s && s.v === 1 && s.G && LEVELS[s.G.lv] ? s : null;
-  } catch (e) { return null; }
+/* Lista de partidas guardadas (la más reciente primero). */
+function listSaves() {
+  migrateOldSave();
+  const out = [], ids = slotIds();
+  for (const id of ids) {
+    try { const s = JSON.parse(localStorage.getItem(SLOT_PREFIX + id) || 'null'); if (s && s.v === 1 && s.G && LEVELS[s.G.lv]) { s.id = id; out.push(s); } } catch (e) { }
+  }
+  if (out.length !== ids.length) setSlotIds(out.map(s => s.id));
+  return out;
 }
-function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
-function applySave(s) { restoreState(s.G); UID = s.uid; rngRestore(s.rng); }
+function loadSave(id) { return listSaves().find(s => s.id === id) || null; }
+function deleteSave(id) { if (!id) return; try { localStorage.removeItem(SLOT_PREFIX + id); } catch (e) { } setSlotIds(slotIds().filter(x => x !== id)); }
+function applySave(s) { restoreState(s.G); G.saveId = s.id || G.saveId; UID = s.uid; rngRestore(s.rng); }
 
 /* Ranking local de partidas terminadas (victorias primero, luego por puntos). */
 const TOP_KEY = 'doz3.top.v1';

@@ -567,9 +567,9 @@ const ui = {
   titleScreen() {
     return new Promise(res => {
       const prev = $('title'); if (prev) prev.remove();
-      const sv = loadSave(), t = document.createElement('div'); t.id = 'title';
-      const info = sv ? LEVELS[sv.G.lv].name + ' · turno ' + sv.G.turnNo : 'No hay partida guardada';
-      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="sound">Sonido</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button>';
+      const sv = listSaves(), t = document.createElement('div'); t.id = 'title';
+      const info = sv.length ? sv.length + (sv.length === 1 ? ' partida' : ' partidas') + ' · ' + LEVELS[sv[0].G.lv].name + ', turno ' + sv[0].G.turnNo : 'No hay partidas guardadas';
+      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv.length ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="sound">Sonido</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button><div id="buildTag">' + (typeof BUILD_TIME !== 'undefined' ? 'build ' + BUILD_TIME : '') + '</div>';
       document.body.appendChild(t);
       this.musicOn();
       const mb = $('muteBtn'), paint = () => { mb.textContent = Sound.music.on ? '🔊' : '🔇'; }; paint();
@@ -583,6 +583,25 @@ const ui = {
         t.classList.add('bg'); t.querySelectorAll('button').forEach(b => b.hidden = true); res(a);
       });
       const first = t.querySelector('.tbtns button'); if (first) first.focus();
+    });
+  },
+  /* Lista de partidas guardadas. Devuelve el id elegido (o null). mode 'full': ya hay MAX_SLOTS y hay que borrar una para empezar otra (devuelve true). */
+  slotsScreen(mode) {
+    return new Promise(res => {
+      const full = mode === 'full', fmt = d => { const x = new Date(d); return x.toLocaleDateString('es-ES') + ' ' + x.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); };
+      const draw = () => {
+        const l = listSaves();
+        if (!l.length && !full) { this._close(); return res(null); }
+        const rows = l.map(s => '<div class="slot"><div><b>' + s.meta.lv + '</b> · ' + s.meta.len + ' · turno ' + s.meta.turn + '<small>' + (s.meta.heroes || []).join(', ') + ' · ' + fmt(s.meta.date) + '</small></div><div class="sbt">' + (full ? '' : '<button class="primary" data-load="' + s.id + '">Cargar</button>') + '<button data-del="' + s.id + '">' + (full ? 'Borrar y empezar nueva' : 'Borrar') + '</button></div></div>').join('');
+        const b = this._modal('<h2>' + (full ? 'Partidas guardadas (máximo ' + MAX_SLOTS + ')' : 'Cargar partida') + '</h2>' + (full ? '<p>Has llegado al máximo. Borra una partida para empezar otra.</p>' : '') + '<div class="slots">' + rows + '</div><div class="opts"><button id="slotx">' + (full ? 'Cancelar' : 'Volver') + '</button></div>', 'toppanel');
+        $('slotx').onclick = () => { this._close(); res(null); };
+        b.querySelectorAll('[data-load]').forEach(bt => bt.onclick = () => { this._close(); res(bt.dataset.load); });
+        b.querySelectorAll('[data-del]').forEach(bt => bt.onclick = () => {
+          if (!confirm('¿Borrar esta partida guardada?')) return;
+          deleteSave(bt.dataset.del); if (full) { this._close(); res(true); } else draw();
+        });
+      };
+      draw();
     });
   },
   showTop() {
