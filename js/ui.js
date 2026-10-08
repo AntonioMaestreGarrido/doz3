@@ -128,14 +128,14 @@ const ui = {
     h += '<div class="row total"><span>Para cualquier unidad</span><span>' + gen + '</span></div>';
     h += '<div class="sub">Acciones gratis de unidades</div>';
     h += fr.length ? '<ul>' + fr.map(x => '<li class="sel" data-uid="' + x.id + '"><span>' + x.name + ' <small style="color:var(--mut)">' + spaceLabel(x.space) + '</small></span><span class="r">' + freeLabel(x) + '</span></li>').join('') + '</ul>' : '<div class="none">— ninguna —</div>';
-    const AB = [['schmidt', 'ini', 'Iniciativa', '1 acción para Schmidt'], ['jones', 'planes', 'Sus Propios Planes', '1 acción para Jones'], ['hunt', 'lid', 'Liderazgo', '1 acción a Civiles/Heroicos/Refugiados'],
+    const AB = [['schmidt', 'ini', 'Iniciativa', '1 acción para Schmidt'], ['jones', 'planes', 'Sus Propios Planes', '1 acción para Jones'], ['hunt', 'lid', 'Liderazgo', '1 acción a Civiles/Refugiados'],
       ['hernandez', 'cit', 'Ciudadela', 'disparo gratis desde el Centro'], ['seaver', 'medico', 'Médico', 'Curar en el Hospital'], ['seaver', 'aidseaver', 'Primeros auxilios', 'Curar (1 Sum.)'],
       ['salvacion', 'aidsalvacion', 'Campamento Médico', 'Curar (1 Sum.)'], ['bauer', 'bauer', 'Dispositivos explosivos', '2 Sum. → 1 Mun.'], ['agee', 'boost', 'Madre de la Ciencia', '+1 Acción de Evento (+3 Inf.)'],
       ['wzed', 'wzed', 'Transmisión de Emergencia', '1 acción a Civiles/Refugiados'], ['bomberos', 'libera', 'Autoridad Civil', 'liberar Civiles/Aldeanos'], ['lee', 'pura', 'Purasangre', '1 Mover para Lee'],
       ['darling', 'zen', 'Zen', '1 acción al jugar «Guardar»'], ['carter', 'crepair', 'Reparar camión', '1 Impacto por turno']];
-    const ab = AB.filter(([k]) => alive(k)).map(([k, f, n, d]) => '<li class="sel' + (G.charUsed[f] ? ' used' : '') + '" data-uid="' + alive(k).id + '"><span>' + n + '</span><span class="r">' + d + '</span></li>');
-    if (alive('hernandez')) ab.push('<li class="sel' + (G.speechUsed ? ' used' : '') + '" data-uid="' + alive('hernandez').id + '"><span>Discurso Motivador</span><span class="r">1 por partida</span></li>');
-    if (alive('kingman')) { const k = alive('kingman').id; ab.push('<li class="sel' + (G.once.bast ? ' used' : '') + '" data-uid="' + k + '"><span>Bastión</span><span class="r">1 por partida</span></li>', '<li class="sel' + (G.once.mines ? ' used' : '') + '" data-uid="' + k + '"><span>Campo de Minas</span><span class="r">1 por partida</span></li>'); }
+    const ab = AB.filter(([k]) => alive(k)).map(([k, f, n, d]) => '<li class="sel' + (G.charUsed[f] ? ' used' : '') + '" data-uid="' + alive(k).id + '"><span>' + alive(k).name + ' — ' + n + '</span><span class="r">' + d + '</span></li>');
+    if (alive('hernandez')) ab.push('<li class="sel' + (G.speechUsed ? ' used' : '') + '" data-uid="' + alive('hernandez').id + '"><span>' + alive('hernandez').name + ' — Discurso Motivador</span><span class="r">1 por partida</span></li>');
+    if (alive('kingman')) { const k = alive('kingman').id; ab.push('<li class="sel' + (G.once.bast ? ' used' : '') + '" data-uid="' + k + '"><span>' + alive('kingman').name + ' — Bastión</span><span class="r">1 por partida</span></li>', '<li class="sel' + (G.once.mines ? ' used' : '') + '" data-uid="' + k + '"><span>' + alive('kingman').name + ' — Campo de Minas</span><span class="r">1 por partida</span></li>'); }
     h += '<div class="sub">Habilidades de personaje</div>' + (ab.length ? '<ul>' + ab.join('') + '</ul>' : '<div class="none">— ninguna en juego —</div>');
     const T = G.turn || {}, ex = [];
     if (T.freeHeal) ex.push(['Curar gratis', T.freeHeal]);
@@ -376,9 +376,10 @@ const ui = {
     });
   },
   pickSpace(ids, text) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res }; this.setBanner(text); this.redraw(); }); },
-  async rollSimple(label, n) {
-    const b = this._modal('<h2>' + label + '</h2><div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div class="opts" id="rb"></div>', 'cbt');
+  async rollSimple(label, n, resultFn) {
+    const b = this._modal('<h2>' + label + '</h2><div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div id="rres" style="text-align:center;margin:8px 0;font-size:15px"></div><div class="opts" id="rb"></div>', 'cbt');
     const dice = Array.from({ length: n }, d6); await this._animate(b.querySelectorAll('.die'), dice);
+    if (resultFn) $('rres').innerHTML = resultFn(dice);
     await this._btn('rb', 'Continuar'); this._close(); return dice;
   },
   _animate(els, vals) {

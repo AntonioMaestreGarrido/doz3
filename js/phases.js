@@ -79,9 +79,9 @@ async function moveGroup(movers, from, opts) {
   if (isRouteSp(dest) && sp(dest).route === 'T' && sp(dest).kind !== 'crypt' && plAt(dest).length && false) go = [];
   if (!go.length) { LOG('Los Zeds en ' + spaceLabel(from) + ' no pueden avanzar (límite de agrupamiento).'); return { moved: false }; }
   // Perímetro de Kingman
-  if (perimeterBlocks(from, dest)) { const r = d6(); if (r >= 5) { LOG('El Perímetro Defensivo de Kingman detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
+  if (perimeterBlocks(from, dest)) { const r = await rollShown('Perímetro Defensivo de Kingman', r => r >= 5 ? '<b>' + r + '</b>: los Zeds se detienen' : '<b>' + r + '</b>: los Zeds avanzan (necesita 5-6)'); if (r >= 5) { LOG('El Perímetro Defensivo de Kingman detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
   // Ladrido de Pepinillos
-  const pep = unitsAt(from).find(u => u.key === 'pepinillos'); if (pep && !isInit(from)) { const r = d6(); if (r >= 4) { LOG('El ladrido de Pepinillos detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
+  const pep = unitsAt(from).find(u => u.key === 'pepinillos'); if (pep && !isInit(from)) { const r = await rollShown('Ladrido de Pepinillos', r => r >= 4 ? '<b>' + r + '</b>: los Zeds se detienen' : '<b>' + r + '</b>: los Zeds avanzan (necesita 4-6)'); if (r >= 4) { LOG('El ladrido de Pepinillos detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
   // Evento de Adiós: Barricada
   if (sp(from).bar === 1) { sp(from).bar = 0; LOG('¡Los Zeds destruyen la Barricada de ' + spaceLabel(from) + '!', 'bad'); }
   const leavingChaos = sp(from).chaos > 0;

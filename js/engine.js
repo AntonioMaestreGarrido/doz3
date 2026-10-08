@@ -11,6 +11,8 @@ function rngState() { return RNG_S; }
 function rngRestore(v) { RNG_S = v >>> 0; }
 function rnd(n) { RNG_S = (RNG_S + 0x6D2B79F5) >>> 0; let t = RNG_S; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return Math.floor(((t ^ (t >>> 14)) >>> 0) / 4294967296 * n); }
 function d6() { return 1 + rnd(6); }
+/* Tirada de 1 dado visible: se muestra el dado y el resultado y hay que confirmar con un clic. fn(r) devuelve el texto del resultado. */
+async function rollShown(label, fn) { const [r] = await UI.rollSimple(label, 1, d => fn(d[0])); return r; }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -394,11 +396,16 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
       if (v === 'y') { retreatPlayers([fighter], 'C'); return { evaded: true }; }
     }
     if (fighter.key === 'pepinillos') {
-      const r = d6(); LOG('Sigilo de Pepinillos: ' + r);
+      const r = await rollShown('Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido' : '<b>' + r + '</b>: combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos: ' + r);
       if (r >= 2) { LOG('Pepinillos pasa desapercibido.', 'good'); return { evaded: true }; }
     }
+    if (fighter.key === 'darling') {
+      const r = await rollShown('Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r);
+      if (r >= 3) { o.assassin = true; o.noInf = true; }
+      else if (r === 2) { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { retreatPlayers([fighter], 'C'); return { evaded: true }; } }
+    }
     if (fighter.key === 'johnson') {
-      const r = d6(); LOG('Trampas de Johnson: ' + r);
+      const r = await rollShown('Trampas de Johnson', r => r >= 4 ? '<b>' + r + '</b>: las trampas funcionan' : '<b>' + r + '</b>: las trampas fallan (necesita 4-6)'); LOG('Trampas de Johnson: ' + r);
       if (r >= 4) { await hitZed(zeds[0]); retreatPlayers(unitsAt(space).filter(x => isFighter(x) && x.key !== 'pepinillos'), 'C'); LOG('Johnson retrocede (las trampas funcionan).', 'good'); return { evaded: true }; }
     }
   }
@@ -420,7 +427,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   }
   if (o.assassin && !betty) shifts.push({ label: 'Ataque asesino (Darling)', v: 2 });
   if (attackerHuman && fighter.key === 'santana' && zeds.every(z => z.type === 'zed')) {
-    const r = d6(); LOG('Carga del Toro: ' + r);
+    const r = await rollShown('Carga del Toro', r => r >= 4 ? '<b>' + r + '</b>: ¡los Zeds retroceden!' : '<b>' + r + '</b>: sin efecto (necesita 4-6)'); LOG('Carga del Toro: ' + r);
     if (r >= 4) { await hitZed(zeds[0]); const zl = zeds.filter(z => z.space); if (zl.length) await retreatZeds(zl, zedOrigin(zl[0])); LOG('¡La Carga hace retroceder a los Zeds!', 'good'); return { humanWon: true }; }
   }
   const extraShifts = fighter.side === 'pl' ? await offerCards(fighter, { attacking: attackerHuman }) : [];
@@ -466,7 +473,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     const extra = unitsAt(space).filter(u => isFighter(u) || u.side === 'raid');
     let arr = [...new Set(all.concat(extra))];
     const pep = arr.find(u => u.key === 'pepinillos' && u !== fighter);
-    if (pep && !attackerHuman) { const r = d6(); if (r >= 2) { arr = arr.filter(u => u !== pep); LOG('Sigilo de Pepinillos (' + r + '): se queda en ' + spaceLabel(space) + '.', 'good'); } }
+    if (pep && !attackerHuman) { const r = await rollShown('Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: se queda sin retroceder' : '<b>' + r + '</b>: retrocede con los demás'); if (r >= 2) { arr = arr.filter(u => u !== pep); LOG('Sigilo de Pepinillos (' + r + '): se queda en ' + spaceLabel(space) + '.', 'good'); } }
     const pl = arr.filter(u => u.side === 'pl');
     if (attackerHuman) await retreatAndFight(pl, o.from || 'C', o.back);
     else if (arr.some(u => u.side === 'raid')) retreatRaiders(arr.filter(u => u.side === 'raid'));
@@ -598,7 +605,7 @@ async function doMove(u, dest, path) {
   const zs = zedsAt(dest), rs = raidAt(dest);
   if (zs.length) {
     let assassin = false;
-    if (u.key === 'darling') { const r = d6(); LOG('Ataque asesino: ' + r); if (r >= 3) assassin = true; else if (r === 1) {/* combate normal */} else { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { putUnit(u, from); return; } } }
+    if (u.key === 'darling') { const r = await rollShown('Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r); if (r >= 3) assassin = true; else if (r === 1) {/* combate normal */} else { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { putUnit(u, from); return; } } }
     const rr0 = await melee({ zeds: zs, hum: [u], space: dest, attacker: 'h', from: prevSp, back, assassin, noInf: assassin });
     if (u.key === 'betty' && rr0.humanWon) await bettyChain(u);
   } else if (rs.length) { await melee({ zeds: rs, hum: [u], space: dest, attacker: 'h', from: prevSp, back }); }
@@ -674,7 +681,10 @@ async function doSearch(u) {
   const s = sp(u.space); const bonus = searchBonus(u);
   let dice = []; const two = u.rapi && !(u.key === 'pepinillos' && controlled(u.space));
   const n = two ? 2 : 1;
-  const rolled = await UI.rollSimple('Buscar en ' + spaceLabel(u.space) + (two ? ' (Rapiñador: 2 dados)' : ''), n);
+  const rolled = await UI.rollSimple('Buscar en ' + spaceLabel(u.space) + (two ? ' (Rapiñador: 2 dados)' : ''), n, d => {
+    const top = Math.max(...d), fin = Math.min(6, top + bonus), dbl = d.length === 2 && d[0] === d[1];
+    return (d.length === 2 ? 'Se usa el <b>mejor dado</b> (no la suma): <b>' + top + '</b>' : 'Dado: <b>' + top + '</b>') + (bonus ? ' +' + bonus + ' = <b>' + fin + '</b>' : '') + ' → ' + (fin >= 6 ? 'resultado alto' : fin >= 4 ? 'encuentras algo' : 'no encuentras nada') + (dbl ? '<br>¡Dobles! Se busca 2 veces.' : '');
+  });
   let results = rolled.map(r => [r, Math.min(6, r + bonus)]);
   let best = results.slice().sort((a, b) => b[1] - a[1])[0];
   const doubles = two && rolled[0] === rolled[1];
