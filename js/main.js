@@ -51,10 +51,12 @@ async function playGame(setup, saved) {
       G.phase = 'fourR'; UI.updateStats(); await phase4R(); if (G.over) break;
       G.phase = 'infection'; UI.updateStats(); await phaseInfection(); if (G.over) break;
       G.phase = 'feeding'; UI.updateStats(); await phaseFeeding(); if (G.over) break;
+      if (ev.fin && ev.id !== 'fin_b2') { G.over = 'win'; break; }  /* «Al inicio de esta fase: ¡habéis ganado!» */
       G.phase = 'zeds'; UI.updateStats();
       await eventStart(); if (G.over) break;
       await phaseZeds(); if (G.over) break;
       await eventAfterZeds(); UI.release(); if (G.over) break;
+      if (ev.fin) { G.over = 'win'; break; }  /* fin_b2: al inicio de la fase de Acciones, si seguís vivos */
     } else ev = G.event;
     const resumed = resume === 'actions'; resume = null;
     if (!ev.cer) {
@@ -74,7 +76,6 @@ async function playGame(setup, saved) {
       }
       if (G.over) break;
       await eventEnd();
-      if (ev.fin) { G.over = 'win'; break; }
     } else UI.log('¡CEREBROS!: no hay fase de Acciones.', 'bad');
     if (G.over) break;
     G.phase = 'maint'; await maintenance();

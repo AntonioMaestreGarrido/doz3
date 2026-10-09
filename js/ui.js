@@ -570,6 +570,15 @@ const ui = {
     this._dg = new Audio('assets/sonidos/musica/musica_peligro.mp3'); this._dg.loop = true; this._dg.volume = .5;
     this._gamePlay();
   },
+  /* Fin de partida: para la música de fondo y el tema de peligro y toca el tema de victoria o derrota. */
+  gameMusicEnd(win) {
+    if (this._bg) { this._bg.forEach(a => { a.onended = null; a.pause(); }); this._dg.pause(); this._bg = null; }
+    this._danger = false;
+    try { if (this._endMus) this._endMus.pause(); } catch (e) { }
+    if (!Sound.music.on) return;
+    const a = this._endMus = new Audio('assets/sonidos/musica/' + (win ? 'musica_victoria' : 'musica_derrota') + '.mp3'); a.volume = .6 * Sound.music.vol;
+    const p = a.play(); if (p && p.catch) p.catch(() => { });
+  },
   /* Toca el tema que corresponde; el de fondo se reanuda donde se quedó al acabar el peligro. */
   _gamePlay() {
     if (!this._bg) return;
@@ -580,7 +589,7 @@ const ui = {
     const p = cur.play(); if (p && p.catch) p.catch(() => { });
   },
   /* Lo llama el mapa: true si hay Zeds en el penúltimo espacio (o junto al Centro). Al entrar en peligro, la voz avisa. */
-  setDanger(v) { v = !!v; if (v === this._danger) return; this._danger = v; if (v) Voz.say('peligro'); this._gamePlay(); },
+  setDanger(v) { if (G && G.phase === 'end') return; v = !!v; if (v === this._danger) return; this._danger = v; if (v) Voz.say('peligro'); this._gamePlay(); },
   /* Portada: devuelve 'new' o 'load'. */
   titleScreen() {
     return new Promise(res => {
@@ -642,7 +651,7 @@ const ui = {
     const ch = chaosOnMap(), chTxt = ch <= 6 ? 'Poco Caos en el mapa' : ch <= 9 ? 'Mucha ruina a vuestro paso' : 'Una devastación infernal';
     const refTxt = s.soft === 0 ? 'Ningún refugiado superviviente' : s.soft <= 2 ? 'Unos pocos refugiados supervivientes' : 'Muchos refugiados supervivientes';
     const why = G.loseWhy === 'caos' ? 'Habéis perdido por el Caos.' : 'Un Zed ha entrado en el Centro de la Ciudad.';
-    G.phase = 'end'; this.updateStats();
+    G.phase = 'end'; this.updateStats(); this.gameMusicEnd(win);
     Voz.say(win ? 'victoria' : G.loseWhy === 'caos' ? 'derrota_caos' : 'derrota_centro');
     saveTop({ win, score: s.total, lv: G.lv.name, len: G.len.name, turns: G.turnNo, killed: G.stats.killed, date: Date.now() });
     this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button class="primary" id="nb">Nueva partida</button></div></div>');
