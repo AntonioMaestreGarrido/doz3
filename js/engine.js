@@ -379,6 +379,12 @@ async function offerCards(f, o) {
     const r = await UI.choose({ title: DEST[k].name, text: '¿Juegas la carta?', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
     if (r === 'y') { G.hand.splice(i, 1); G.destDiscard.push(k); zenPlayed(); out.push({ label: lab, v }); if (k === 'trago') o.trago = true; UI.updateHand(); }
   }
+  /* Algunos civiles se organizan: se puede jugar antes del combate sobre una unidad de Civiles Normales (la que combate). */
+  const li = G.hand.indexOf('civiles');
+  if (li >= 0 && f.side === 'pl' && f.type === 'civ' && !f.leader && f.space) {
+    const r = await UI.choose({ title: DEST.civiles.name, text: '¿Juegas la carta sobre ' + f.name + ' antes de tirar los dados? Recibe la ficha de Líder Civil: 1 columna a favor en este combate y en los siguientes (cuerpo a cuerpo y disparos).', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
+    if (r === 'y') { G.hand.splice(li, 1); G.destDiscard.push('civiles'); zenPlayed(); f.leader = true; out.push({ label: 'Líder Civil', v: 1 }); LOG('Algunos civiles se organizan: ' + f.name + ' recibe la ficha de Líder Civil.', 'good'); UI.updateHand(); UI.redraw(); }
+  }
   return out;
 }
 async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCol, noInf, assassin }

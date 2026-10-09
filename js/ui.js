@@ -181,9 +181,9 @@ const ui = {
   setBanner(t) {
     const b = $('banner'), c = $('cancelBtn'); if (!t) { b.hidden = true; if (c) c.hidden = true; return; }
     b.textContent = t; b.hidden = false;
-    if (c) c.hidden = !(this.mode && this.mode.type !== 'pick');
+    if (c) c.hidden = !(this.mode && (this.mode.type !== 'pick' || this.mode.cancel));
   },
-  cancelMode() { if (this.mode && this.mode.type !== 'pick') { this.mode = null; this.setBanner(null); this.redraw(); } },
+  cancelMode() { if (this.mode && this.mode.type === 'pick' && this.mode.cancel) { const r = this.mode.resolve; this.mode = null; this.setBanner(null); this.redraw(); r(null); } else if (this.mode && this.mode.type !== 'pick') { this.mode = null; this.setBanner(null); this.redraw(); } },
   renderUnitBox() {
     const box = $('unitbox'), u = G.sel && G.units[G.sel];
     let sph = '';
@@ -334,10 +334,11 @@ const ui = {
 
   _modal(html, cls) { const b = $('modalbox'); b.className = cls || ''; b.innerHTML = html; $('modal').hidden = false; return b; },
   _close() { $('modal').classList.remove('pick'); $('modal').hidden = true; $('modalbox').innerHTML = ''; },
-  choose({ title, text, options }) {
+  choose({ title, text, options, cancel }) {
     return new Promise(res => {
       const b = this._modal('<h2>' + title + '</h2><p>' + (text || '') + '</p><div class="opts"></div>'); const o = b.querySelector('.opts');
       options.forEach(opt => { const bt = document.createElement('button'); bt.innerHTML = (opt.color ? '<span class="sw" style="background:' + opt.color + '"></span>' : '') + opt.label; bt.onclick = () => { ui._close(); res(opt.value); }; o.appendChild(bt); });
+      if (cancel) { const bt = document.createElement('button'); bt.textContent = 'Cancelar'; bt.onclick = () => { ui._close(); res(null); }; o.appendChild(bt); }
     });
   },
   /* Elección sobre cartas: rejilla con la imagen de cada opción. options: [{value,label,img?,sub?}]; extra: botones sin carta (p. ej. «Terminar»). */
@@ -367,9 +368,9 @@ const ui = {
   },
   /* Elegir unidad: panel inferior que no tapa el mapa. Un toque sobre una opción (o sobre la unidad en el mapa) la resalta y centra la cámara;
      solo el botón Aceptar confirma. */
-  pickUnit(units, text) {
+  pickUnit(units, text, cancel) {
     return new Promise(res => {
-      const b = this._modal('<h2>Elige una unidad</h2><p>' + text + '</p><div class="pickhint">Toca una opción (o la unidad en el mapa) para verla; pulsa Aceptar para confirmar.</div><div class="pickopts"></div><div class="opts"><button class="primary" id="pkok" disabled>Aceptar</button></div>', 'pickpanel');
+      const b = this._modal('<h2>Elige una unidad</h2><p>' + text + '</p><div class="pickhint">Toca una opción (o la unidad en el mapa) para verla; pulsa Aceptar para confirmar.</div><div class="pickopts"></div><div class="opts"><button class="primary" id="pkok" disabled>Aceptar</button>' + (cancel ? '<button id="pkcancel">Cancelar</button>' : '') + '</div>', 'pickpanel');
       $('modal').classList.add('pick');
       const box = b.querySelector('.pickopts'); let cur = null, focused = false;
       const done = id => { this._pick = null; this.hl = null; if (focused) this.release(); this._close(); this.redraw(); res(id); };
@@ -381,10 +382,11 @@ const ui = {
       };
       units.forEach(u => { const bt = document.createElement('button'); bt.dataset.id = u.id; bt.textContent = u.name + ' — ' + spaceLabel(u.space); bt.onclick = () => select(u.id); box.appendChild(bt); });
       $('pkok').onclick = () => { if (cur) done(cur); };
+      if (cancel) $('pkcancel').onclick = () => done(null);
       this._pick = { ids: units.map(u => u.id), select };
     });
   },
-  pickSpace(ids, text) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res }; this.setBanner(text); this.redraw(); }); },
+  pickSpace(ids, text, cancel) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res, cancel: !!cancel }; this.setBanner(text); this.redraw(); }); },
   async rollSimple(label, n, resultFn) {
     const b = this._modal('<h2>' + label + '</h2><div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div id="rres" style="text-align:center;margin:8px 0;font-size:15px"></div><div class="opts" id="rb"></div>', 'cbt');
     const dice = Array.from({ length: n }, d6); await this._animate(b.querySelectorAll('.die'), dice);
