@@ -77,7 +77,7 @@ const ui = {
     if (wide !== this._wide) {
       this._wide = wide;
       if (wide) ids.forEach(id => left.appendChild($(id)));
-      else { const ev = $('eventbox'); side.insertBefore($('actbox'), ev); side.insertBefore($('unitbox'), ev); side.insertBefore($('handbox'), ev.nextSibling); }
+      else { const ev = $('eventbox'); side.insertBefore($('unitbox'), ev); side.insertBefore($('actbox'), ev); side.insertBefore($('handbox'), ev.nextSibling); }
       left.hidden = !wide; side.classList.toggle('wide', wide);
     }
     this.fit();
