@@ -312,3 +312,6 @@ body:has(#title.bg) #modalbox.setup{background:rgba(14,11,8,.62)}
   #title.bgnew::before,#title.bgnew::after{background-image:url(assets/fondo_nueva.webp)}
   #title.bgrank::before,#title.bgrank::after{background-image:url(assets/fondo_ranking.webp)}
 }
+/* Ranking y nueva partida: paneles translúcidos que dejan ver el fondo, con el mismo estilo */
+body:has(#title.bgrank) #modal{background:rgba(0,0,0,.12)}
+body:has(#title.bgrank) #modalbox.toppanel,body:has(#title.bgnew) #modalbox.setup{background:rgba(14,11,8,.62);border-color:rgba(200,160,70,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
