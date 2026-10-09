@@ -1,8 +1,8 @@
 /* Preparación, mazos, Destino, Investigación y utilidades de partida. */
 'use strict';
 
-const MAX_HERO_LV = [0, 1, 1, 2, 3, 3];
-const MAX_CIVH_LV = [0, 1, 2, 2, 2, 2];
+const MAX_HERO_LV = [0, 1, 2, 3, 4, 5];  /* nivel de héroe (color de la carta: azul 1, verde 2, amarillo 3, naranja 4) permitido en cada nivel de partida */
+const MAX_CIVH_LV = [0, 1, 2, 3, 4, 5];
 
 function heroPoolFor(level) { return Object.keys(HEROES).filter(k => HEROES[k].type === 'hero' || k === 'horacio').filter(k => HEROES[k].lv <= MAX_HERO_LV[level]); }
 
