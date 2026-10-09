@@ -327,3 +327,15 @@ body:has(#title.bgnew) #modalbox.setup .lvl{padding:4px 8px;background:rgba(14,1
 body:has(#title.bgnew) #modalbox.setup .lvl span span{font-size:11px}
 body:has(#title.bgnew) #modalbox.setup .row{gap:6px 14px;margin:3px 0;font-size:13px}
 body:has(#title.bgnew) #modalbox.setup .opts{margin-top:6px}
+
+/* Cartas de la mano en la ventana de combate, antes de tirar */
+.hcards{margin:8px 0}
+.hcards:empty{display:none}
+.hcards .hlbl{font-size:13px;color:var(--mut);margin-bottom:4px}
+.hcards .cardpick{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin:0}
+.hcards .cpc .cpn{font-size:12px}
+.hprev{display:flex;gap:12px;align-items:flex-start;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px}
+.hprev img{height:230px;width:auto;max-width:45%;border-radius:8px;flex:0 0 auto;box-shadow:0 3px 14px #000}
+.hprev b{font-size:15px;color:var(--gold)}
+.hprev p{font-size:13px;margin:6px 0 0}
+@media (max-width:600px){.hprev{flex-direction:column;align-items:center}.hprev img{width:auto;height:200px;max-width:none}}

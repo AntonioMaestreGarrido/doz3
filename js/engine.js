@@ -370,21 +370,19 @@ function zedShifts(zs, o) {
   if (G.turn.frenzy) s.push({ label: 'Súper Zeds enloquecidos', v: -2 });
   return s;
 }
-async function offerCards(f, o) {
+/* Cartas de la mano que se pueden jugar en este combate (antes de tirar los dados). Cada una trae apply(): la juega y devuelve sus columnas a favor. */
+function combatCards(f, attacking, o) {
+  if (f.side !== 'pl') return [];
   const out = [];
-  if (!o.attackerIsHuman && !o.attacking) {/* defendiendo */ }
-  for (const [k, lab, v, extra] of [['excavadora', 'Excavadora asesina (2►)', 2, o.attacking], ['sin_nombre', 'El Hombre sin nombre (3►)', 3, true], ['trago', 'Un trago para coger fuerzas (2►, 1 Impacto después)', 2, true]]) {
-    if (!extra || f.side !== 'pl') continue;
-    const i = G.hand.indexOf(k); if (i < 0) continue;
-    const r = await UI.choose({ title: DEST[k].name, text: '¿Juegas la carta?', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
-    if (r === 'y') { G.hand.splice(i, 1); G.destDiscard.push(k); zenPlayed(); out.push({ label: lab, v }); if (k === 'trago') o.trago = true; UI.updateHand(); }
-  }
-  /* Algunos civiles se organizan: se puede jugar antes del combate sobre una unidad de Civiles Normales (la que combate). */
-  const li = G.hand.indexOf('civiles');
-  if (li >= 0 && f.side === 'pl' && f.type === 'civ' && !f.leader && f.space) {
-    const r = await UI.choose({ title: DEST.civiles.name, text: '¿Juegas la carta sobre ' + f.name + ' antes de tirar los dados? Recibe la ficha de Líder Civil: 1 columna a favor en este combate y en los siguientes (cuerpo a cuerpo y disparos).', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
-    if (r === 'y') { G.hand.splice(li, 1); G.destDiscard.push('civiles'); zenPlayed(); f.leader = true; out.push({ label: 'Líder Civil', v: 1 }); LOG('Algunos civiles se organizan: ' + f.name + ' recibe la ficha de Líder Civil.', 'good'); UI.updateHand(); UI.redraw(); }
-  }
+  const offer = (k, label, v, extra, after) => {
+    if (!extra || G.hand.indexOf(k) < 0) return;
+    out.push({ key: k, name: DEST[k].name, label, img: destImg(k), txt: DEST[k].txt, apply() { G.hand.splice(G.hand.indexOf(k), 1); G.destDiscard.push(k); zenPlayed(); UI.updateHand(); if (after) after(); return v; } });
+  };
+  offer('excavadora', 'Excavadora asesina (2►)', 2, attacking);
+  offer('sin_nombre', 'El Hombre sin nombre (3►)', 3, true);
+  offer('trago', 'Un trago para coger fuerzas (2►, 1 Impacto después)', 2, true, () => { o.trago = true; });
+  /* Algunos civiles se organizan: sobre una unidad de Civiles Normales (la que combate). */
+  offer('civiles', 'Líder Civil (1►)', 1, f.type === 'civ' && !f.leader && f.space, () => { f.leader = true; LOG('Algunos civiles se organizan: ' + f.name + ' recibe la ficha de Líder Civil.', 'good'); });
   return out;
 }
 async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCol, noInf, assassin }
@@ -440,16 +438,16 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     const r = await rollShown('Carga del Toro', r => r >= 4 ? '<b>' + r + '</b>: ¡los Zeds retroceden!' : '<b>' + r + '</b>: sin efecto (necesita 4-6)'); LOG('Carga del Toro: ' + r);
     if (r >= 4) { let tz = zeds[0]; if (zeds.length > 1) tz = G.units[await UI.choose({ title: 'Carga del Toro', text: '¿Qué Zed recibe el Impacto?', options: zeds.map((z, i) => ({ label: 'Zed ' + (i + 1) + ' — Fuerza ' + strength(z) + (z.hits ? ' (' + '♥'.repeat(z.hits) + ')' : '') + (z.flipped ? ' · cara reducida' : ''), value: z.id })) })]; await hitZed(tz); const zl = zeds.filter(z => z.space); if (zl.length) await retreatZeds(zl, zedOrigin(zl[0])); LOG('¡La Carga hace retroceder a los Zeds!', 'good'); return { humanWon: true }; }
   }
-  const extraShifts = fighter.side === 'pl' ? await offerCards(fighter, { attacking: attackerHuman }) : [];
-  for (const e of extraShifts) shifts.push(e);
-  const total = shifts.reduce((a, s) => a + s.v, 0);
-  const finalCol = clamp(initCol + total, 0, 6);
+  const cards = combatCards(fighter, attackerHuman, o);
   const medal = (fighter.chips || []).includes('medallon') && !G.turn.medalUsed;
   const wilsonBuddy = fighter.side === 'pl' && unitsAt(fighter.space).some(u => u.key === 'wilson' && u !== fighter) && fighter.space !== 'C';
   const wzed = !attackerHuman && fighter.side === 'pl' && alive('wzed') && isCity(space);
   let extraDice = (wilsonBuddy ? 1 : 0) + (wzed ? 1 : 0);
-  const h = UI.combatOpen({ title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice });
-  let dice = await h.roll(extraDice);
+  const info = { title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol: clamp(initCol + shifts.reduce((a, s) => a + s.v, 0), 0, 6), extraDice };
+  const h = UI.combatOpen(info);
+  await h.hand(cards); /* juega aquí las cartas que quiera y luego pulsa Tirar */
+  const finalCol = info.finalCol;
+  let dice = await h.roll(extraDice, true);
   if (fighter.key === 'schmidt' || fighter.key === 'hunt' || fighter.key === 'horacio') {
     const again = await h.ask('Artes marciales: ¿repites la tirada?', [{ label: 'Repetir', value: 'y' }, { label: 'Aceptar', value: 'n' }]);
     if (again === 'y') dice = await h.roll(extraDice);

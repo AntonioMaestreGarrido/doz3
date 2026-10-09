@@ -456,8 +456,9 @@ const ui = {
     FIRE.forEach((row, r) => { h += '<tr data-r="' + r + '"><td class="rowh">' + CAC_ROWS[r] + '</td>' + row.map((c, i) => '<td data-c="' + i + '" class="' + (i === col ? 'c-final' : '') + '">' + c + '</td>').join('') + '</tr>'; });
     return h + '</table>';
   },
-  async _rollDice(b, extra, onChange) {
-    await new Promise(r => { $('rb').innerHTML = '<button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>'; $('rollb').onclick = () => r(); $('rollb').focus(); if (ui.fast) r(); });
+  /* ready: el botón Tirar ya lo mostró la fase de cartas (_handPhase); aquí solo se tira. */
+  async _rollDice(b, extra, onChange, ready) {
+    if (!ready) await new Promise(r => { $('rb').innerHTML = '<button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>'; $('rollb').onclick = () => r(); $('rollb').focus(); if (ui.fast) r(); });
     $('rb').innerHTML = '';
     const area = b.querySelector('.dice'); area.innerHTML = '<div class="die"></div>'.repeat(2 + (extra || 0));
     const vals = Array.from({ length: 2 + (extra || 0) }, d6); await ui._animate(area.querySelectorAll('.die'), vals);
@@ -479,18 +480,47 @@ const ui = {
     return out;
   },
   combatOpen(info) {
-    const zs = info.zeds.map(z => z.name + ' ' + strength(z) + (z.hits ? ' <span class="bad">(' + '♥'.repeat(z.hits) + ')</span>' : '')).join(' + ');
-    const sh = info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
-    const b = this._modal('<h2>' + info.title + '</h2><div class="sides"><div class="side z"><div>' + (info.zeds.length > 1 ? 'Horda' : 'Atacantes / Zeds') + '</div><div class="big" style="color:#ff8a76">' + info.zStr + '</div><div style="font-size:12px">' + zs + '</div></div><div class="vs">VS</div><div class="side"><div>' + info.fighter.name + '</div><div class="big" style="color:#9bd68a">' + info.pStr + '</div><div style="font-size:12px">Fuerza ' + (info.fighter.flipped ? 'reducida' : 'completa') + '</div></div></div><div class="cols">Columna inicial: <b>' + CAC_COLS[info.initCol] + '</b><ul style="margin:2px 0 2px 18px;padding:0">' + sh + '</ul>' + (info.extraDice ? '<div>+' + info.extraDice + ' dado(s) extra: se usan los 2 mejores.</div>' : '') + 'Columna final: <b style="color:var(--gold)">' + CAC_COLS[info.finalCol] + '</b></div>' + this._cacTable(info.initCol, info.finalCol) + '<div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
+    /* Se vuelve a pintar al jugar una carta de la mano antes de tirar (cambian las columnas). */
+    const html = () => {
+      const zs = info.zeds.map(z => z.name + ' ' + strength(z) + (z.hits ? ' <span class="bad">(' + '♥'.repeat(z.hits) + ')</span>' : '')).join(' + ');
+      const sh = info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
+      return '<h2>' + info.title + '</h2><div class="sides"><div class="side z"><div>' + (info.zeds.length > 1 ? 'Horda' : 'Atacantes / Zeds') + '</div><div class="big" style="color:#ff8a76">' + info.zStr + '</div><div style="font-size:12px">' + zs + '</div></div><div class="vs">VS</div><div class="side"><div>' + info.fighter.name + '</div><div class="big" style="color:#9bd68a">' + info.pStr + '</div><div style="font-size:12px">Fuerza ' + (info.fighter.flipped ? 'reducida' : 'completa') + '</div></div></div><div class="cols">Columna inicial: <b>' + CAC_COLS[info.initCol] + '</b><ul style="margin:2px 0 2px 18px;padding:0">' + sh + '</ul>' + (info.extraDice ? '<div>+' + info.extraDice + ' dado(s) extra: se usan los 2 mejores.</div>' : '') + 'Columna final: <b style="color:var(--gold)">' + CAC_COLS[info.finalCol] + '</b></div>' + this._cacTable(info.initCol, info.finalCol) + '<div class="hcards" id="cbhand"></div><div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>';
+    };
+    const b = this._modal(html(), 'cbt');
+    const paint = () => { b.innerHTML = html(); };
     const mark = best => { const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.finalCol + '"]'); b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Suma <b>' + (best[0] + best[1]) + '</b>'; };
     return {
       mark,
-      roll: async extra => { const best = await ui._rollDice(b, extra, mark); mark(best); return best; },
+      hand: cards => this._handPhase(info, cards, paint),
+      roll: async (extra, ready) => { const best = await ui._rollDice(b, extra, mark, ready); mark(best); return best; },
       ask: (t, o) => ui._ask('rb', t, o),
       reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
       setResult: (row, col, [zh, ph], zedLoses) => { b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + col + '"]'); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Impactos a los Zeds: <b class="p">' + zh + '</b> · Impactos a tu unidad: <b class="z">' + ph + '</b><br>' + (zedLoses ? '<span class="good">Los Zeds pierden y se retiran.</span>' : '<span class="bad">Tus unidades pierden y se retiran.</span>'); },
       done: async () => { await ui._btn('rb', 'Aplicar resultado'); ui._close(); }
     };
+  },
+  /* Cartas de la mano que se pueden jugar en este combate: se listan en miniatura en la ventana, antes de tirar. Un toque la abre en grande con «Jugar carta» o «Volver».
+     Cada carta trae apply(): la juega y devuelve sus columnas a favor. Resuelve cuando se pulsa Tirar. */
+  _handPhase(info, cards, paint) {
+    if (ui.fast && !cards.length) return Promise.resolve();
+    return new Promise(res => {
+      let pending = cards.slice();
+      const show = () => {
+        const area = $('cbhand'), rb = $('rb');
+        area.innerHTML = pending.length ? '<div class="hlbl">Cartas que puedes jugar antes de tirar (toca una para verla):</div><div class="cardpick">' + pending.map((c, i) => '<div class="cpc" data-i="' + i + '"><img src="' + c.img + '" alt=""><div class="cpn">' + c.name + '</div></div>').join('') + '</div>' : '';
+        area.querySelectorAll('.cpc').forEach(el => el.onclick = () => preview(pending[+el.dataset.i]));
+        rb.innerHTML = '<button class="primary" id="rollb">🎲 Tirar ' + (2 + (info.extraDice || 0)) + ' dados</button>';
+        $('rollb').onclick = () => { area.innerHTML = ''; rb.innerHTML = ''; res(); };
+        $('rollb').focus();
+      };
+      const preview = c => {
+        $('cbhand').innerHTML = '<div class="hprev"><img src="' + c.img + '" alt=""><div><b>' + c.name + '</b><p>' + c.txt + '</p></div></div>';
+        $('rb').innerHTML = '<button class="primary" id="pjug">Jugar carta</button><button id="pvol">Volver</button>';
+        $('pjug').onclick = () => { const v = c.apply(); pending = pending.filter(x => x !== c); info.shifts.push({ label: c.label, v }); info.finalCol = clamp(info.initCol + info.shifts.reduce((a, s) => a + s.v, 0), 0, 6); paint(); show(); };
+        $('pvol').onclick = show;
+      };
+      show();
+    });
   },
   fireOpen(info) {
     const sh = info.shifts.length ? info.shifts.map(s => s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄')).join(', ') : 'sin modificadores';
