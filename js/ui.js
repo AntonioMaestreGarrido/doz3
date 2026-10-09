@@ -136,7 +136,7 @@ const ui = {
     h += '<div class="row total"><span>Para cualquier unidad</span><span>' + gen + '</span></div>';
     h += '<div class="sub">Acciones gratis de unidades</div>';
     h += fr.length ? '<ul>' + fr.map(x => '<li class="sel" data-uid="' + x.id + '"><span>' + x.name + ' <small style="color:var(--mut)">' + spaceLabel(x.space) + '</small></span><span class="r">' + freeLabel(x) + '</span></li>').join('') + '</ul>' : '<div class="none">— ninguna —</div>';
-    const AB = [['schmidt', 'ini', 'Iniciativa', '1 acción para Schmidt'], ['jones', 'planes', 'Sus Propios Planes', '1 acción para Jones'], ['hunt', 'lid', 'Liderazgo', '1 acción a Civiles/Refugiados'],
+    const AB = [['schmidt', 'ini', 'Iniciativa', '1 acción para Schmidt'], ['jones', 'planes', 'Sus Propios Planes', '1 acción para Jones'], ['hunt', 'lid', 'Liderazgo', '1 acción a Civiles o Marines'],
       ['hernandez', 'cit', 'Ciudadela', 'disparo gratis desde el Centro'], ['seaver', 'medico', 'Médico', 'Curar en el Hospital'], ['seaver', 'aidseaver', 'Primeros auxilios', 'Curar (1 Sum.)'],
       ['salvacion', 'aidsalvacion', 'Campamento Médico', 'Curar (1 Sum.)'], ['bauer', 'bauer', 'Dispositivos explosivos', '2 Sum. → 1 Mun.'], ['agee', 'boost', 'Madre de la Ciencia', '+1 Acción de Evento (+3 Inf.)'],
       ['wzed', 'wzed', 'Transmisión de Emergencia', '1 acción a Civiles/Refugiados'], ['bomberos', 'libera', 'Autoridad Civil', 'liberar Civiles/Aldeanos'], ['lee', 'pura', 'Purasangre', '1 Mover para Lee'],
