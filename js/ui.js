@@ -708,8 +708,16 @@ const ui = {
     G.phase = 'end'; this.updateStats(); this.gameMusicEnd(win);
     Voz.say(win ? 'victoria' : G.loseWhy === 'caos' ? 'derrota_caos' : 'derrota_centro');
     saveTop({ win, score: s.total, lv: G.lv.name, len: G.len.name, turns: G.turnNo, killed: G.stats.killed, date: Date.now() });
-    this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button class="primary" id="nb">Nueva partida</button></div></div>');
+    const openEnd = () => this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button id="vb">Ver tablero y log</button><button class="primary" id="nb">Nueva partida</button></div></div>');
+    openEnd();
     $('nb').onclick = () => ui.reloadToMenu();
+    $('vb').onclick = () => { ui._close(); ui._endRecall(openEnd); };
+  },
+  /* Tras la puntuación: el tablero y el log quedan libres; este botón vuelve a abrir la puntuación. */
+  _endRecall(openEnd) {
+    const b = document.createElement('button'); b.id = 'endRecall'; b.className = 'primary'; b.textContent = '🏁 Volver a la puntuación';
+    b.onclick = () => { b.remove(); openEnd(); };
+    document.body.appendChild(b);
   }
 };
 function payFire(u) {
