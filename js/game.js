@@ -35,7 +35,10 @@ function heroAllowed(key) {
 }
 async function spawnHero(key, where) {
   if (!heroAllowed(key)) { LOG('«' + HEROES[key].name + '» no puede entrar en una partida de este nivel.', 'bad'); return null; }
-  const u = makeHero(key, where); await heroEnters(u); LOG('Entra en juego: ' + u.name + '.', 'good'); UI.redraw(); return u; }
+  const u = makeHero(key, where);
+  const isCiv = HEROES[key].type === 'civh' || CIVH_POOL.includes(key);
+  await UI.waitAck(isCiv ? '¡Llega un Civil Heroico!' : '¡Llega un Héroe!', '<b>' + HEROES[key].name + '</b> entra en juego en ' + spaceLabel(where) + '.', 'assets/cartas/' + (HEROES[key].card || 'h_' + key) + '.jpg', 'h:' + key);
+  await heroEnters(u); LOG('Entra en juego: ' + u.name + '.', 'good'); UI.redraw(); return u; }
 function randomAvailableHero() {
   const pool = heroPoolFor(G.lv.n).filter(k => !hero(k) && !G.cemetery.some(u => u.key === k));
   return pool.length ? pool[rnd(pool.length)] : null;

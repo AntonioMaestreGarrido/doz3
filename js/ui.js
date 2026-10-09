@@ -352,9 +352,9 @@ const ui = {
 
   _modal(html, cls) { const b = $('modalbox'); b.className = cls || ''; b.innerHTML = html; $('modal').hidden = false; return b; },
   _close() { $('modal').classList.remove('pick'); $('modal').hidden = true; $('modalbox').innerHTML = ''; },
-  choose({ title, text, options, cancel }) {
+  choose({ title, text, options, cancel, img }) {
     return new Promise(res => {
-      const b = this._modal('<h2>' + title + '</h2><p>' + (text || '') + '</p><div class="opts"></div>'); const o = b.querySelector('.opts');
+      const b = this._modal('<h2>' + title + '</h2>' + (img ? '<div class="cardrow"><img src="' + img + '" alt=""><div><p>' + (text || '') + '</p></div></div>' : '<p>' + (text || '') + '</p>') + '<div class="opts"></div>'); const o = b.querySelector('.opts');
       options.forEach(opt => { const bt = document.createElement('button'); bt.innerHTML = (opt.color ? '<span class="sw" style="background:' + opt.color + '"></span>' : '') + opt.label; bt.onclick = () => { ui._close(); res(opt.value); }; o.appendChild(bt); });
       if (cancel) { const bt = document.createElement('button'); bt.textContent = 'Cancelar'; bt.onclick = () => { ui._close(); res(null); }; o.appendChild(bt); }
     });
@@ -456,13 +456,14 @@ const ui = {
     FIRE.forEach((row, r) => { h += '<tr data-r="' + r + '"><td class="rowh">' + CAC_ROWS[r] + '</td>' + row.map((c, i) => '<td data-c="' + i + '" class="' + (i === col ? 'c-final' : '') + '">' + c + '</td>').join('') + '</tr>'; });
     return h + '</table>';
   },
-  async _rollDice(b, extra) {
+  async _rollDice(b, extra, onChange) {
     await new Promise(r => { $('rb').innerHTML = '<button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>'; $('rollb').onclick = () => r(); $('rollb').focus(); if (ui.fast) r(); });
     $('rb').innerHTML = '';
     const area = b.querySelector('.dice'); area.innerHTML = '<div class="die"></div>'.repeat(2 + (extra || 0));
     const vals = Array.from({ length: 2 + (extra || 0) }, d6); await ui._animate(area.querySelectorAll('.die'), vals);
-    if (DEBUG_DICE) await ui._dbgDice([...area.querySelectorAll('.die')], vals);
-    const best = vals.slice().sort((a, c) => c - a).slice(0, 2);
+    const topTwo = () => vals.slice().sort((a, c) => c - a).slice(0, 2);
+    if (DEBUG_DICE) await ui._dbgDice([...area.querySelectorAll('.die')], vals, () => { if (onChange) onChange(topTwo()); });
+    const best = topTwo();
     if (extra) { const used = best.slice(); area.querySelectorAll('.die').forEach((e, i) => { const k = used.indexOf(vals[i]); if (k >= 0) used.splice(k, 1); else e.style.opacity = '.35'; }); }
     return best;
   },
@@ -481,8 +482,10 @@ const ui = {
     const zs = info.zeds.map(z => z.name + ' ' + strength(z) + (z.hits ? ' <span class="bad">(' + '♥'.repeat(z.hits) + ')</span>' : '')).join(' + ');
     const sh = info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
     const b = this._modal('<h2>' + info.title + '</h2><div class="sides"><div class="side z"><div>' + (info.zeds.length > 1 ? 'Horda' : 'Atacantes / Zeds') + '</div><div class="big" style="color:#ff8a76">' + info.zStr + '</div><div style="font-size:12px">' + zs + '</div></div><div class="vs">VS</div><div class="side"><div>' + info.fighter.name + '</div><div class="big" style="color:#9bd68a">' + info.pStr + '</div><div style="font-size:12px">Fuerza ' + (info.fighter.flipped ? 'reducida' : 'completa') + '</div></div></div><div class="cols">Columna inicial: <b>' + CAC_COLS[info.initCol] + '</b><ul style="margin:2px 0 2px 18px;padding:0">' + sh + '</ul>' + (info.extraDice ? '<div>+' + info.extraDice + ' dado(s) extra: se usan los 2 mejores.</div>' : '') + 'Columna final: <b style="color:var(--gold)">' + CAC_COLS[info.finalCol] + '</b></div>' + this._cacTable(info.initCol, info.finalCol) + '<div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
+    const mark = best => { const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.finalCol + '"]'); b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Suma <b>' + (best[0] + best[1]) + '</b>'; };
     return {
-      roll: async extra => { const best = await ui._rollDice(b, extra); const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.finalCol + '"]'); b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Suma <b>' + (best[0] + best[1]) + '</b>'; return best; },
+      mark,
+      roll: async extra => { const best = await ui._rollDice(b, extra, mark); mark(best); return best; },
       ask: (t, o) => ui._ask('rb', t, o),
       reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
       setResult: (row, col, [zh, ph], zedLoses) => { b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + col + '"]'); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Impactos a los Zeds: <b class="p">' + zh + '</b> · Impactos a tu unidad: <b class="z">' + ph + '</b><br>' + (zedLoses ? '<span class="good">Los Zeds pierden y se retiran.</span>' : '<span class="bad">Tus unidades pierden y se retiran.</span>'); },
@@ -493,10 +496,12 @@ const ui = {
     const sh = info.shifts.length ? info.shifts.map(s => s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄')).join(', ') : 'sin modificadores';
     const title = info.ground ? 'Ataque sorpresa sobre ' + info.shooter.name : info.shooter.name + ' dispara' + (info.dist ? ' (a ' + info.dist + ' espacio' + (info.dist > 1 ? 's' : '') + ')' : '');
     const b = this._modal('<h2>' + title + '</h2><div class="cols">' + (info.ground ? 'Columna «Igual»' : 'Fuerza de disparo <b>' + info.str + '</b>') + ' · ' + sh + '</div>' + (info.ground ? this._cacTable(3, info.col) : this._fireTable(info.col)) + '<div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
+    const mark = best => { const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.col + '"]'); b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); if (cell) cell.classList.add('hit'); };
     return {
+      mark,
       ask: (t, o) => ui._ask('rb', t, o),
       reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
-      roll: async () => { const best = await ui._rollDice(b, 0); const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.col + '"]'); if (cell) cell.classList.add('hit'); return best; },
+      roll: async () => { const best = await ui._rollDice(b, 0, mark); mark(best); return best; },
       setResult: (row, col, hits, _x, ground) => { if (ground) { $('rr').innerHTML = 'Tu unidad sufre <b class="z">' + hits + '</b> Impacto(s).'; return; } $('rr').innerHTML = hits ? 'Impactos al objetivo: <b class="p">' + hits + '</b>' : '<span class="bad">Sin impactos.</span>'; },
       done: async () => { await ui._btn('rb', 'Continuar'); ui._close(); }
     };

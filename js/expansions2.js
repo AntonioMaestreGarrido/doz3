@@ -37,7 +37,7 @@ DEST_FX = async function (id, route) {
 const _resolveTwist = resolveTwist;
 resolveTwist = async function (dr) {
   if (dr && !DEST[dr.id].keep && G.hand.includes('pensar')) {
-    const v = await UI.choose({ title: 'Pensar fríamente', text: 'Acaba de salir «' + DEST[dr.id].name + '». ¿Cancelas este evento?', options: [{ label: 'Cancelarlo', value: 'y' }, { label: 'No', value: 'n' }] });
+    const v = await UI.choose({ title: 'Pensar fríamente', text: 'Acaba de salir «' + DEST[dr.id].name + '». ¿Cancelas este evento?', img: destImg(dr.id), options: [{ label: 'Cancelarlo', value: 'y' }, { label: 'No', value: 'n' }] });
     if (v === 'y') { G.hand.splice(G.hand.indexOf('pensar'), 1); G.destDiscard.push('pensar', dr.id); zenPlayed(); UI.updateHand(); return; }
   }
   return _resolveTwist(dr);
@@ -81,6 +81,7 @@ async function zenReroll(vals, label, h) {
   const idx = vals.length === 2 && vals[0] === 1 && vals[1] === 1 ? [0, 1] : [vals.indexOf(1)];
   const q = 'Pensar fríamente: ' + (label ? label + ' — ' : '') + 'sale ' + vals.join(' y ') + '. ¿Juegas la carta para repetir ' + (idx.length > 1 ? 'los dos dados' : vals.length > 1 ? 'el dado con 1' : 'el dado') + '?';
   const opts = [{ label: 'Repetir', value: 'y' }, { label: 'No', value: 'n' }];
+  if (h && h.mark) h.mark(vals); /* antes de decidir: se marca la casilla del resultado actual */
   const v = h && h.ask ? await h.ask(q, opts) : await UI.choose({ title: 'Pensar fríamente', text: q, options: opts });
   if (v !== 'y') return vals;
   G.hand.splice(G.hand.indexOf('pensar'), 1); G.destDiscard.push('pensar'); zenPlayed(); UI.updateHand();
