@@ -88,6 +88,16 @@ async function moveGroup(movers, from, opts) {
   if (sp(from).bar === 1) { sp(from).bar = 0; LOG('¡Los Zeds destruyen la Barricada de ' + spaceLabel(from) + '!', 'bad'); }
   const leavingChaos = sp(from).chaos > 0;
   if (sp(dest).bar === 1 && G.turn.smash) { sp(dest).bar = 0; LOG('Los Zeds destruyen la Barricada de ' + spaceLabel(dest) + '.', 'bad'); }
+  /* ¡Los urbanistas contraatacan!: se puede jugar al avanzar un Zed hacia un espacio de Ciudad, antes del combate. */
+  if (isCity(dest) && G.hand.includes('urbanistas') && go.length) {
+    const r = await UI.choose({ title: DEST.urbanistas.name, text: (go.length > 1 ? 'Una Horda Zed' : go[0].name + ' (Fuerza ' + strength(go[0]) + ')') + ' en ' + spaceLabel(from) + ' intenta entrar en ' + spaceLabel(dest) + '. ¿Juegas la carta para eliminar una unidad Zed?', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
+    if (r === 'y') {
+      const t = go.length === 1 ? go[0] : G.units[await UI.pickUnit(go, 'Urbanistas: elige la unidad Zed que se elimina.')];
+      G.hand.splice(G.hand.indexOf('urbanistas'), 1); G.destDiscard.push('urbanistas'); zenPlayed(); UI.updateHand();
+      LOG('¡Los urbanistas contraatacan! Se elimina ' + t.name + ' (Fuerza ' + strength(t) + ').', 'good'); await zedDies(t);
+      go = go.filter(z => z.space && G.units[z.id]); if (!go.length) { UI.redraw(); return { moved: true }; }
+    }
+  }
   UI.focus(dest); for (const z of go) { putUnit(z, dest); z.moved = true; }
   LOG((go.length > 1 ? 'Horda Zed (' + go.map(strength).join('+') + ')' : go[0].name + ' (' + strength(go[0]) + ')') + ' avanza a ' + spaceLabel(dest) + '.', 'zed');
   UI.redraw(); await UI.settle();

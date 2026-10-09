@@ -183,6 +183,7 @@ function healUnit(u) {
   if (u.ecg) { u.ecg = false; if (u.flipped) u.hits = Math.max(0, capOf(u) - 1); ok = true; }
   else if (u.hits > 0) { u.hits--; ok = true; }
   else if (u.flipped) { u.flipped = false; u.hits = (u.hf || 1) - 1; ok = true; }
+  if (ok) u.curedTurn = G.turnNo;
   if (ok && typeof UI !== 'undefined' && UI.fxHeal) UI.fxHeal(u, before);
   return ok;
 }
