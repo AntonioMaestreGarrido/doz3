@@ -292,6 +292,7 @@ const ui = {
     if (m && m.type === 'move') for (const id in m.opts) ring(id, controlled(id) ? '#ff5a44' : '#7bd45a', 7);
     if (m && m.type === 'fire') for (const id in m.opts) ring(id, '#ff5a44', 8);
     if (m && m.type === 'pick') for (const id of m.ids) ring(id, '#ffd54a', 8, [14, 8]);
+    if (this.marks) for (const id of this.marks) ring(id, '#3ad6ff', 8, [10, 6]);
     for (const id in G.spaces) {
       const s = G.spaces[id];
       if (s.chaos && IMG.m_caos) { c.save(); c.drawImage(IMG.m_caos, s.x - 66, s.y - 66, 44, 42); if (s.chaos > 1) { c.font = '900 18px Impact'; c.fillStyle = '#fff'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.textBaseline = 'middle'; c.strokeText('x' + s.chaos, s.x - 44, s.y - 28); c.fillText('x' + s.chaos, s.x - 44, s.y - 28); } c.restore(); }
@@ -374,6 +375,16 @@ const ui = {
       });
       ok.onclick = () => { if (cur !== undefined) { ui._close(); res(options[cur].value); } };
       (extra || []).forEach(e => { const bt = document.createElement('button'); bt.textContent = e.label; bt.onclick = () => { ui._close(); res(e.value); }; ops.appendChild(bt); });
+    });
+  },
+  /* Pregunta sobre Zeds concretos: panel inferior (no tapa el mapa) y los espacios de los grupos en cuestión marcados en azul. */
+  askZeds({ title, text, spaces, options }) {
+    return new Promise(res => {
+      this.marks = spaces; this.redraw();
+      const done = v => { ui._close(); ui.marks = null; ui.redraw(); res(v); };
+      const b = this._modal('<h2>' + title + '</h2><p>' + text + '</p><div class="opts"></div>', 'pickpanel'); $('modal').classList.add('pick');
+      const o = b.querySelector('.opts');
+      options.forEach(opt => { const bt = document.createElement('button'); bt.textContent = opt.label; bt.onclick = () => done(opt.value); o.appendChild(bt); });
     });
   },
   confirm(text) { return this.choose({ title: 'Confirmar', text, options: [{ label: 'Sí', value: true }, { label: 'No', value: false }] }); },

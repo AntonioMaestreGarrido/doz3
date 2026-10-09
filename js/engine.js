@@ -83,6 +83,9 @@ function putUnit(u, id) {
 function removeUnit(u) { if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); } u.space = null; }
 function unitsAt(id) { return sp(id).units.map(x => G.units[x]).filter(Boolean); }
 const zedsAt = id => unitsAt(id).filter(isZedSide);
+/* Nombres inequívocos para preguntas: un Zed o una Horda, con su fuerza y su espacio. */
+function zedGroupName(zs, id) { return (zs.length > 1 ? 'Horda de ' + zs.length + ' Zeds (fuerza ' + zs.map(strength).join('+') + ')' : zs[0].name + ' (fuerza ' + strength(zs[0]) + ')') + ' en ' + spaceLabel(id); }
+function zedLabel(z) { return z.name + ' (fuerza ' + strength(z) + ')' + (z.hits ? ' ' + '♥'.repeat(z.hits) : '') + (z.flipped ? ' · cara reducida' : '') + ' en ' + spaceLabel(z.space); }
 const normalZedsAt = id => zedsAt(id).filter(u => u.type !== 'spreader');
 const plAt = id => unitsAt(id).filter(isFighter);
 const softAt = id => unitsAt(id).filter(isSoft);
@@ -197,7 +200,7 @@ async function applyZedHits(zeds, n) {
     let pool = zeds.filter(z => z.type !== 'spreader'); if (!pool.length) pool = zeds;
     let t = pool[0];
     if (pool.length > 1) {
-      const v = await UI.choose({ title: 'Impacto ' + (k + 1) + ' de ' + n, text: 'Elige a qué unidad Zed aplicas este Impacto.', options: pool.map(z => ({ label: z.name + ' ' + strength(z) + (z.hits ? ' (' + z.hits + ' ♥)' : '') + (z.flipped ? ' · reducido' : ''), value: z.id })) });
+      const v = await UI.askZeds({ title: 'Impacto ' + (k + 1) + ' de ' + n, text: 'Elige a qué unidad Zed aplicas este Impacto.', spaces: pool.map(z => z.space), options: pool.map(z => ({ label: zedLabel(z), value: z.id })) });
       t = G.units[v];
     }
     await hitZed(t);
@@ -436,7 +439,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if (o.assassin && !betty) shifts.push({ label: 'Ataque asesino (Darling)', v: 2 });
   if (attackerHuman && fighter.key === 'santana' && zeds.every(z => z.type === 'zed')) {
     const r = await rollShown('Carga del Toro', r => r >= 4 ? '<b>' + r + '</b>: ¡los Zeds retroceden!' : '<b>' + r + '</b>: sin efecto (necesita 4-6)'); LOG('Carga del Toro: ' + r);
-    if (r >= 4) { let tz = zeds[0]; if (zeds.length > 1) tz = G.units[await UI.choose({ title: 'Carga del Toro', text: '¿Qué Zed recibe el Impacto?', options: zeds.map((z, i) => ({ label: 'Zed ' + (i + 1) + ' — Fuerza ' + strength(z) + (z.hits ? ' (' + '♥'.repeat(z.hits) + ')' : '') + (z.flipped ? ' · cara reducida' : ''), value: z.id })) })]; await hitZed(tz); const zl = zeds.filter(z => z.space); if (zl.length) await retreatZeds(zl, zedOrigin(zl[0])); LOG('¡La Carga hace retroceder a los Zeds!', 'good'); return { humanWon: true }; }
+    if (r >= 4) { let tz = zeds[0]; if (zeds.length > 1) tz = G.units[await UI.askZeds({ title: 'Carga del Toro', text: '¿Qué Zed recibe el Impacto?', spaces: zeds.map(z => z.space), options: zeds.map(z => ({ label: zedLabel(z), value: z.id })) })]; await hitZed(tz); const zl = zeds.filter(z => z.space); if (zl.length) await retreatZeds(zl, zedOrigin(zl[0])); LOG('¡La Carga hace retroceder a los Zeds!', 'good'); return { humanWon: true }; }
   }
   const cards = combatCards(fighter, attackerHuman, o);
   const medal = (fighter.chips || []).includes('medallon') && !G.turn.medalUsed;
@@ -498,7 +501,7 @@ async function retreatAndFight(units, dest, back) {
     if (first !== 'C' && G.spaces[first]) {
       const room = playerCap(first) - unitsAt(first).filter(x => (isFighter(x) || x.side === 'raid') && !units.includes(x)).length;
       if (room > 0 && room < units.length) {
-        const v = await UI.choose({ title: 'Retirada', text: 'No hay sitio para todas en ' + spaceLabel(first) + '. ¿Qué unidad se queda ahí? (las demás siguen retirándose)', options: units.map(x => ({ label: x.name, value: x.id })) });
+        const v = await UI.choose({ title: 'Retirada', text: 'No hay sitio para todas en ' + spaceLabel(first) + '. ¿Qué unidad se queda ahí? (las demás siguen retirándose)', options: units.map(x => ({ label: x.name + ' ' + x.full + '/' + x.red + ' — ' + spaceLabel(x.space), value: x.id })) });
         units = [G.units[v]].concat(units.filter(x => x.id !== v));
       }
     }
@@ -646,7 +649,7 @@ async function doFire(u, targetId, dist, opts) {
   opts = opts || {};
   await UI.fxShot(u, targetId, dist);
   const zs = zedsAt(targetId); let target = zs[0];
-  if (zs.length > 1) { const v = await UI.choose({ title: 'Objetivo', text: 'Elige la unidad Zed objetivo.', options: zs.map(z => ({ label: z.name + ' ' + strength(z) + (z.hits ? ' (' + z.hits + ' ♥)' : ''), value: z.id })) }); target = G.units[v]; }
+  if (zs.length > 1) { const v = await UI.askZeds({ title: 'Objetivo', text: 'Elige la unidad Zed objetivo.', spaces: zs.map(z => z.space), options: zs.map(z => ({ label: zedLabel(z), value: z.id })) }); target = G.units[v]; }
   let str = opts.str || fireStrength(u, dist); const shifts = [];
   if (G.turn.combineFire && !opts.str) { const mates = unitsAt(u.space).filter(x => x !== u && isFighter(x) && !x.nofire && fireRange(x) >= dist); if (mates.length) { str += mates.reduce((a, x) => a + fireStrength(x, dist), 0); LOG('Plan de guerra negro: ' + mates.map(x => x.name).join(', ') + ' suman su Fuerza (' + str + ').', 'good'); } }
   if (u.armed) shifts.push({ label: 'Bien Armados', v: 1 }); if (u.leader) shifts.push({ label: 'Líder Civil', v: 1 });
