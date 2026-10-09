@@ -61,7 +61,7 @@ async function playGame(setup, saved) {
     const resumed = resume === 'actions'; resume = null;
     if (!ev.cer) {
       if (!resumed) await startOfActions();
-      G.phase = 'actions'; G.busy = false; UI.updateStats(); UI.updateHand(); UI.redraw();
+      UI.undoClear(); G.phase = 'actions'; G.busy = false; UI.updateStats(); UI.updateHand(); UI.redraw();
       if (!resumed && alreadyHas('intoxicados')) {
         const cands = []; for (const u of allUnits(x => ['civ', 'civh', 'hero'].includes(x.type) && x.space && isRouteSp(x.space))) for (const i of [u.space].concat(adjacentIds(u.space))) { const zs = zedsAt(i); if (zs.length) cands.push(...zs); }
         if (cands.length) { const z = cands.sort((a, b) => strength(a) - strength(b))[0]; UI.log('Zeds «intoxicados»: 1 Impacto al Zed más débil.', 'good'); await hitZed(z); }

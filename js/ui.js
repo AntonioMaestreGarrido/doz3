@@ -42,6 +42,7 @@ const ui = {
     $('cancelBtn').addEventListener('click', () => ui.cancelMode());
     $('rulesBtn').addEventListener('click', () => ui.showRules());
     $('cardsBtn').addEventListener('click', () => ui.showHeroCards());
+    if ($('undoBtn')) $('undoBtn').addEventListener('click', () => ui.undo());
     $('newBtn').addEventListener('click', () => { if (confirm('¿Volver al menú principal? La partida se guarda al terminar cada acción: lo que hayas hecho en la acción en curso se perderá.')) ui.reloadToMenu(); });
     this.arrange();
   },
@@ -106,6 +107,7 @@ const ui = {
 
   log(msg, cls) { const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = msg; const l = $('log'); l.appendChild(d); l.scrollTop = l.scrollHeight; },
   updateStats() {
+    this.updateUndo();
     if (!G.lv) return;
     const L = G.lv, done = G.eventsRevealed, tot = G.totalEvents;
     let h = '<div class="big">Turno ' + G.turnNo + ' · ' + ({ setup: 'Preparación', fourR: 'Fase 4R', infection: 'Infección', feeding: 'Alimentación', zeds: 'Fase de los Zeds', actions: 'Fase de Acciones', maint: 'Mantenimiento', end: 'Fin de la partida' }[G.phase] || '') + '</div>';
@@ -168,11 +170,27 @@ const ui = {
     }
     for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
   },
+  _undo: [],
+  _undoSnap() { return { s: JSON.stringify({ rng: rngState(), uid: UID, G: snapshotState() }) }; },
+  undoClear() { this._undo = []; this.updateUndo(); },
+  updateUndo() { const b = $('undoBtn'); if (!b) return; const n = this._undo.length, ok = n > 0 && G.phase === 'actions' && !G.busy && !G.over; b.disabled = !ok; b.textContent = '↶ Deshacer' + (n ? ' (' + n + ')' : ''); },
+  async undo() {
+    if (G.busy || G.phase !== 'actions' || G.over || !this._undo.length) return;
+    const p = this._undo.pop(), s = JSON.parse(p.s);
+    this.mode = null; this.setBanner(null);
+    restoreState(s.G); UID = s.uid; rngRestore(s.rng); G.busy = false; G.sel = null;
+    this.log('↶ Deshacer: se vuelve al estado anterior a la última acción.', 'turn');
+    saveGame('actions'); this.updateStats(); this.updateHand(); this.redraw();
+  },
   async guard(fn) {
     if (G.busy) return;
+    /* Deshacer: se guarda el estado antes de cada acción. Si la acción usa el generador aleatorio (una tirada, robar carta…) ya no se puede volver más atrás de ella. */
+    const undoable = G.phase === 'actions' && !G.over && !(G.event && G.event.cer);
+    const pre = undoable ? ui._undoSnap() : null, rng0 = rngState();
     G.busy = true; ui.mode = null; ui.setBanner(null); ui.updateStats(); ui.updateHand();
     try { await fn(); } catch (e) { console.error(e); ui.log('Error: ' + e.message, 'bad'); }
     G.busy = false;
+    if (pre) { if (rngState() !== rng0) ui._undo = []; else if (!G.over && ui._undoSnap().s !== pre.s) { ui._undo.push(pre); if (ui._undo.length > 60) ui._undo.shift(); } }
     if (G.sel && !G.units[G.sel]) G.sel = null;
     if (G.phase === 'actions' && !G.over && !G.event.cer) saveGame('actions');
     if (G.over && ui._endRes) { const r = ui._endRes; ui._endRes = null; r(); }
