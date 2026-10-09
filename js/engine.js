@@ -438,7 +438,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if (o.assassin && !betty) shifts.push({ label: 'Ataque asesino (Darling)', v: 2 });
   if (attackerHuman && fighter.key === 'santana' && zeds.every(z => z.type === 'zed')) {
     const r = await rollShown('Carga del Toro', r => r >= 4 ? '<b>' + r + '</b>: ¡los Zeds retroceden!' : '<b>' + r + '</b>: sin efecto (necesita 4-6)'); LOG('Carga del Toro: ' + r);
-    if (r >= 4) { await hitZed(zeds[0]); const zl = zeds.filter(z => z.space); if (zl.length) await retreatZeds(zl, zedOrigin(zl[0])); LOG('¡La Carga hace retroceder a los Zeds!', 'good'); return { humanWon: true }; }
+    if (r >= 4) { let tz = zeds[0]; if (zeds.length > 1) tz = G.units[await UI.choose({ title: 'Carga del Toro', text: '¿Qué Zed recibe el Impacto?', options: zeds.map((z, i) => ({ label: 'Zed ' + (i + 1) + ' — Fuerza ' + strength(z) + (z.hits ? ' (' + '♥'.repeat(z.hits) + ')' : '') + (z.flipped ? ' · cara reducida' : ''), value: z.id })) })]; await hitZed(tz); const zl = zeds.filter(z => z.space); if (zl.length) await retreatZeds(zl, zedOrigin(zl[0])); LOG('¡La Carga hace retroceder a los Zeds!', 'good'); return { humanWon: true }; }
   }
   const extraShifts = fighter.side === 'pl' ? await offerCards(fighter, { attacking: attackerHuman }) : [];
   for (const e of extraShifts) shifts.push(e);
