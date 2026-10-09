@@ -40,7 +40,7 @@ async function applyResearch(c) {
     case 'cientificos': { const cs = Object.values(G.spaces).filter(s => s.chaos); if (cs.length) { const t = cs[0]; t.chaos--; G.chaosLeft++; } break; }
     case 'pruebas': if (G.weapon && G.weapon.parts.length) G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); else pushInitialResearch(1); break;
     case 'hormona': break;
-    case 'heroe_c': { const k = Object.keys(HEROES).find(x => HEROES[x].sci && !hero(x)) || Object.keys(HEROES).filter(x => /Cient/.test(HEROES[x].cls) && !hero(x))[0]; if (k) await spawnHero(k, 'C'); break; }
+    case 'heroe_c': { const k = Object.keys(HEROES).find(x => (HEROES[x].sci || /Cient/.test(HEROES[x].cls)) && !hero(x) && !G.cemetery.some(c => c.key === x) && heroAllowed(x)); if (k) await spawnHero(k, 'C'); else LOG('No hay ningún Científico disponible en este nivel.'); break; }
     case 'antidoto': {
       if (!G.finalPlaced) { G.finalPlaced = true; LOG('Componente Final colocado en el Laboratorio.', 'good'); G.res.deck.splice(rnd(G.res.deck.length + 1), 0, 'antidoto'); }
       else { G.antidote = true; LOG('¡Habéis descubierto el Antídoto! La Infección baja 1 cada turno.', 'good'); }

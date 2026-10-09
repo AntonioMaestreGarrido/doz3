@@ -28,7 +28,14 @@ async function heroEnters(u) {
 /* Los Civiles Heroicos de una expansión solo están disponibles si esa expansión está activada. */
 const civhAvail = k => !HEROES[k].exp || (G.expSel || []).includes(HEROES[k].exp);
 function pickCivh() { const pool = CIVH_POOL.filter(k => civhAvail(k) && !hero(k) && HEROES[k].lv <= MAX_CIVH_LV[G.lv.n] && !G.cemetery.some(u => u.key === k)); return pool.length ? pool[rnd(pool.length)] : null; }
-async function spawnHero(key, where) { const u = makeHero(key, where); await heroEnters(u); LOG('Entra en juego: ' + u.name + '.', 'good'); UI.redraw(); return u; }
+/* Regla de niveles: un Héroe o Civil Heroico solo puede entrar si su color de carta está entre los de la partida (y, si es de expansión, esta está activa). */
+function heroAllowed(key) {
+  if (!G.lv || G.lv.n === 0) return true;
+  return CIVH_POOL.includes(key) ? civhAvail(key) && HEROES[key].lv <= MAX_CIVH_LV[G.lv.n] : heroPoolFor(G.lv.n).includes(key);
+}
+async function spawnHero(key, where) {
+  if (!heroAllowed(key)) { LOG('«' + HEROES[key].name + '» no puede entrar en una partida de este nivel.', 'bad'); return null; }
+  const u = makeHero(key, where); await heroEnters(u); LOG('Entra en juego: ' + u.name + '.', 'good'); UI.redraw(); return u; }
 function randomAvailableHero() {
   const pool = heroPoolFor(G.lv.n).filter(k => !hero(k) && !G.cemetery.some(u => u.key === k));
   return pool.length ? pool[rnd(pool.length)] : null;
