@@ -608,7 +608,7 @@ const ui = {
         if (a === 'sound') return ui.showSound();
         if (a === 'ost') return Ost.open();
         if (a === 'credits') return ui.showCredits();
-        t.classList.add('bg'); t.querySelectorAll('button').forEach(b => b.hidden = true); res(a);
+        t.classList.add('bg'); if (a === 'new') t.classList.add('bgnew'); t.querySelectorAll('button').forEach(b => b.hidden = true); res(a);
       });
       const first = t.querySelector('.tbtns button'); if (first) first.focus();
     });
@@ -633,11 +633,12 @@ const ui = {
     });
   },
   showTop() {
+    const tt = $('title'); if (tt) tt.classList.add('bgrank');
     const list = loadTop(), fmt = d => new Date(d).toLocaleDateString('es-ES');
     const rows = list.length ? list.map((r, i) => '<tr><td>' + (i + 1) + '</td><td class="' + (r.win ? 'good' : 'bad') + '">' + (r.win ? 'Victoria' : 'Derrota') + '</td><td><b>' + r.score + '</b></td><td>' + r.lv + ' · ' + r.len + '</td><td>' + r.turns + '</td><td>' + r.killed + '</td><td>' + fmt(r.date) + '</td></tr>').join('')
       : '<tr><td colspan="7" style="text-align:center;color:var(--mut)">Aún no hay partidas terminadas.</td></tr>';
     this._modal('<h2>Top supervivientes</h2><table class="toptbl"><tr><th>#</th><th>Resultado</th><th>Puntos</th><th>Partida</th><th>Turnos</th><th>Zeds</th><th>Fecha</th></tr>' + rows + '</table><div class="opts">' + (list.length ? '<button id="topclr">Borrar</button>' : '') + '<button class="primary" id="xb">Cerrar</button></div>', 'toppanel');
-    $('xb').onclick = () => this._close();
+    $('xb').onclick = () => { this._close(); const t2 = $('title'); if (t2) t2.classList.remove('bgrank'); };
     if ($('topclr')) $('topclr').onclick = () => { if (confirm('¿Borrar todo el ranking?')) { clearTop(); this.showTop(); } };
   },
   showCredits() {

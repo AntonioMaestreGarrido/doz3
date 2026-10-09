@@ -304,3 +304,11 @@ body:has(#title.bg) #modalbox.setup{background:rgba(14,11,8,.62)}
 .ost-vol{font-size:14px;color:var(--mut);display:flex;gap:6px;align-items:center}
 .ost-vol input{width:90px;accent-color:var(--gold)}
 @media (max-width:640px){.ost-prog{order:5;flex-basis:100%}.ost-letra{font-size:clamp(18px,5vw,26px)}}
+
+/* Fondos de la portada según la opción elegida */
+#title.bgnew{background-image:url(assets/fondo_nueva.webp)}
+#title.bgrank{background-image:url(assets/fondo_ranking.webp)}
+@media (max-aspect-ratio:3/5){
+  #title.bgnew::before,#title.bgnew::after{background-image:url(assets/fondo_nueva.webp)}
+  #title.bgrank::before,#title.bgrank::after{background-image:url(assets/fondo_ranking.webp)}
+}
