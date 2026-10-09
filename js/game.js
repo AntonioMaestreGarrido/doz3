@@ -25,7 +25,9 @@ async function heroEnters(u) {
   if (u.key === 'clarin') { const k = pickCivh(); if (k) await spawnHero(k, 'C'); }
   UI.updateStats();
 }
-function pickCivh() { const pool = CIVH_POOL.filter(k => !hero(k) && HEROES[k].lv <= MAX_CIVH_LV[G.lv.n] && !G.cemetery.some(u => u.key === k)); return pool.length ? pool[rnd(pool.length)] : null; }
+/* Los Civiles Heroicos de una expansión solo están disponibles si esa expansión está activada. */
+const civhAvail = k => !HEROES[k].exp || (G.expSel || []).includes(HEROES[k].exp);
+function pickCivh() { const pool = CIVH_POOL.filter(k => civhAvail(k) && !hero(k) && HEROES[k].lv <= MAX_CIVH_LV[G.lv.n] && !G.cemetery.some(u => u.key === k)); return pool.length ? pool[rnd(pool.length)] : null; }
 async function spawnHero(key, where) { const u = makeHero(key, where); await heroEnters(u); LOG('Entra en juego: ' + u.name + '.', 'good'); UI.redraw(); return u; }
 function randomAvailableHero() {
   const pool = heroPoolFor(G.lv.n).filter(k => !hero(k) && !G.cemetery.some(u => u.key === k));
@@ -79,7 +81,7 @@ function newGame(levelIdx, lenIdx, personal) {
     return sel;
   })();
   G.heroKeys = keys;
-  const civhKey = L.n === 0 ? 'furias' : (() => { const p = CIVH_POOL.filter(k => HEROES[k].lv <= MAX_CIVH_LV[L.n]); return p[rnd(p.length)]; })();
+  const civhKey = L.n === 0 ? 'furias' : (() => { const p = CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[L.n]); return p[rnd(p.length)]; })();
   // recursos
   if (L.n === 0) { G.ammo = 4; G.supplies = 0; } else { const a = d6(), b = d6(); G.supplies = a + b; G.ammo = 6 - Math.min(a, b); G.setupRoll = [a, b]; }
   for (const k of keys) { const u = makeHero(k, 'C'); if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); } if (u.key === 'horacio' && L.supplies) G.supplies += 3; }
