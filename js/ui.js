@@ -644,18 +644,19 @@ const ui = {
     const m = this._mus; if (!m || m.paused) return; this._mus = null;
     const f = setInterval(() => { m.volume = Math.max(0, m.volume - .05); if (m.volume <= 0) { clearInterval(f); m.pause(); } }, 80);
   },
-  /* Música de partida: dos temas de fondo que se turnan y un tema de peligro (ver setDanger). */
+  /* Música de partida: dos temas de fondo que se turnan, un tema de peligro y «Last Stand» (ver turnMusic). */
   gameMusicOn() {
     if (this._bg) return;
     this._bg = [1, 2].map(n => { const a = new Audio('assets/sonidos/musica/musica_juego' + n + '.mp3'); a.volume = .4; a.onended = () => { a.currentTime = 0; this._bgI = 1 - this._bgI; this._gamePlay(); }; return a; });
-    this._bgI = 0; this._danger = false;
+    this._bgI = 0; this._danger = false; this._lastStand = false;
     this._dg = new Audio('assets/sonidos/musica/musica_peligro.mp3'); this._dg.loop = true; this._dg.volume = .5;
+    this._ls = new Audio('assets/sonidos/musica/musica_last_stand.mp3'); this._ls.loop = true; this._ls.volume = .5;
     this._gamePlay();
   },
   /* Fin de partida: para la música de fondo y el tema de peligro y toca el tema de victoria o derrota. */
   gameMusicEnd(win) {
-    if (this._bg) { this._bg.forEach(a => { a.onended = null; a.pause(); }); this._dg.pause(); this._bg = null; }
-    this._danger = false;
+    if (this._bg) { this._bg.forEach(a => { a.onended = null; a.pause(); }); this._dg.pause(); this._ls.pause(); this._bg = null; }
+    this._danger = false; this._lastStand = false;
     try { if (this._endMus) this._endMus.pause(); } catch (e) { }
     if (!Sound.music.on) return;
     const a = this._endMus = new Audio('assets/sonidos/musica/' + (win ? 'musica_victoria' : 'musica_derrota') + '.mp3'); a.volume = .6 * Sound.music.vol;
@@ -664,14 +665,25 @@ const ui = {
   /* Toca el tema que corresponde; el de fondo se reanuda donde se quedó al acabar el peligro. */
   _gamePlay() {
     if (!this._bg) return;
-    const bg = this._bg[this._bgI], cur = this._danger ? this._dg : bg, other = this._danger ? bg : this._dg;
-    bg.volume = .4 * Sound.music.vol; this._dg.volume = .5 * Sound.music.vol;
-    other.pause();
+    const bg = this._bg[this._bgI], danger = this._lastStand ? this._ls : this._dg;
+    const cur = this._danger ? danger : bg, others = [bg, this._dg, this._ls].filter(a => a !== cur);
+    bg.volume = .4 * Sound.music.vol; this._dg.volume = .5 * Sound.music.vol; this._ls.volume = .5 * Sound.music.vol;
+    others.forEach(a => a.pause());
     if (!Sound.music.on) { cur.pause(); return; }
     const p = cur.play(); if (p && p.catch) p.catch(() => { });
   },
   /* Lo llama el mapa: true si hay Zeds en el penúltimo espacio (o junto al Centro). Al entrar en peligro, la voz avisa. */
-  setDanger(v) { if (G && G.phase === 'end') return; v = !!v; if (v === this._danger) return; this._danger = v; if (v) Voz.say('peligro'); this._gamePlay(); },
+  setDanger(v) {
+    if (G && G.phase === 'end') return; v = !!v; if (v === this._danger) return;
+    this._danger = v; if (v) { if (!this._lastStand) Voz.say('peligro'); } else this._lastStand = false;
+    this._gamePlay();
+  },
+  /* Al empezar cada turno: si el anterior terminó en peligro y este también empieza en peligro, suena «Last Stand» en vez del tema de peligro. */
+  turnMusic() {
+    const ls = !!G.dangerNext && enPeligro();
+    if (ls && !this._lastStand) this._ls.currentTime = 0;
+    this._lastStand = ls; this._gamePlay();
+  },
   /* Portada: devuelve 'new' o 'load'. */
   titleScreen() {
     return new Promise(res => {
@@ -724,7 +736,7 @@ const ui = {
     if ($('topclr')) $('topclr').onclick = () => { if (confirm('¿Borrar todo el ranking?')) { clearTop(); this.showTop(); } };
   },
   showCredits() {
-    this._modal('<h2>Créditos</h2><p><b>Dawn of the Zeds</b> (3.ª edición)<br>Diseño del juego original: <b>Hermann Luttmann</b><br>Editorial: Victory Point Games</p><p>Esta adaptación web en solitario es un proyecto de aficionados, sin ánimo de lucro y no oficial. Las ilustraciones, cartas y marcas pertenecen a sus respectivos autores y editores.</p><p style="color:var(--mut);font-size:13px">Adaptación y programación: Antonio Maestre Garrido, con la ayuda de Claude.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');
+    this._modal('<h2>Créditos</h2><p><b>Dawn of the Zeds</b> (3.ª edición)<br>Diseño del juego original: <b>Hermann Luttmann</b><br>Editorial: Victory Point Games</p><p>Esta adaptación web en solitario es un proyecto de aficionados, sin ánimo de lucro y no oficial. Las ilustraciones, cartas y marcas pertenecen a sus respectivos autores y editores.</p><p style="color:var(--mut);font-size:13px">Adaptación y programación: Antonio Maestre Garrido, con la ayuda de Claude.<br>' + (typeof BUILD_TIME !== 'undefined' ? 'Build: ' + BUILD_TIME : '') + '</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');
     $('xb').onclick = () => this._close();
   },
   async endScreen() {

@@ -75,7 +75,7 @@ function newGame(levelIdx, lenIdx, personal) {
     lv: L, len, units: {}, cemetery: [], reserve: ZED_TOKENS.map(t => t.slice()), supers: L.infection ? Object.keys(SUPER_ZEDS) : [],
     ammo: 4, supplies: 0, inf: 0, chaosLeft: L.chaos || 0, over: null, turnNo: 0, hand: [], destDiscard: [], event: null, eventsRevealed: 0,
     phase: 'setup', pool: { player: 1, event: 0 }, charUsed: {}, once: {}, sel: null, speechUsed: false, antidote: false, berra: false, finalPlaced: false,
-    weapon: null, res: null, turn: newTurn(), stats: { killed: 0, civLost: 0, heroLost: 0 }, evlog: [], ust: {}, evn: 0, inWild: false, spareCiv: null, upgrades: []
+    weapon: null, res: null, turn: newTurn(), stats: { killed: 0, civLost: 0, heroLost: 0 }, evlog: [], ust: {}, evn: 0, inWild: false, spareCiv: null, upgrades: [], dangerNext: false
   });
   buildBoard();
   for (const r of G.routes) { const z = makeZed(); putUnit(z, r + '0'); }

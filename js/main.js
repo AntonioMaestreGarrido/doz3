@@ -13,6 +13,9 @@ async function revealEvent() {
 }
 const FINISH = () => G.over;
 
+/* Zeds en el penúltimo espacio de alguna ruta o junto al Centro: el tema de peligro suena al empezar el siguiente turno. */
+function enPeligro() { return G.routes.some(rt => { const L = lastOf(rt); return [L, L - 1].some(k => k >= 1 && zedsAt(rt + k).length); }); }
+
 /* Descarga en segundo plano las cartas de Evento del mazo para que queden en la caché de la app. */
 async function warmEventCards() {
   for (const id of [...new Set((G.eventDeck || []).concat(G.event ? [G.event.id] : []))]) {
@@ -42,12 +45,13 @@ async function playGame(setup, saved) {
   }
   while (!G.over) {
     G.busy = true;
+    ui.turnMusic();
     let ev;
     if (resume !== 'actions') {
       await revealEvent(); ev = G.event;
       UI.redraw();
       await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', '<div class="rulebox"><b>Regla</b><br>' + ev.txt.join('<br>') + '</div>' + Preview.block(Preview.event(ev)), 'assets/cartas/e_' + ev.id + '.jpg', 'e:' + ev.id);
-      if (ev.guardia) { G.phase = 'zeds'; await withPeek(eventStart); await maintenance(); saveGame('turn'); continue; }
+      if (ev.guardia) { G.phase = 'zeds'; await withPeek(eventStart); await maintenance(); G.dangerNext = enPeligro(); saveGame('turn'); continue; }
       G.phase = 'fourR'; UI.updateStats(); await phase4R(); if (G.over) break;
       G.phase = 'infection'; UI.updateStats(); await phaseInfection(); if (G.over) break;
       G.phase = 'feeding'; UI.updateStats(); await phaseFeeding(); if (G.over) break;
@@ -79,6 +83,7 @@ async function playGame(setup, saved) {
     } else UI.log('¡CEREBROS!: no hay fase de Acciones.', 'bad');
     if (G.over) break;
     G.phase = 'maint'; await maintenance();
+    G.dangerNext = enPeligro();
     saveGame('turn');
     G.sel = G.sel && G.units[G.sel] ? G.sel : null; UI.updateStats(); UI.redraw();
   }
