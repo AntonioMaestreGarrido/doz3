@@ -128,7 +128,7 @@ function unitActions(u) {
     const cu = k => !G.charUsed[k];
     if (u.key === 'schmidt') A.push({ id: 'ini', label: 'Iniciativa', ok: cu('ini') });
     if (u.key === 'jones') A.push({ id: 'planes', label: 'Sus Propios Planes', ok: cu('planes') });
-    if (u.key === 'jones' && G.res && u.space && sp(u.space).kind === 'office') A.push({ id: 'jhosp', label: 'Sus Propios Planes: paciente al Cementerio + Investigación', ok: cu('planes') && G.res.deck.length > 0 && BEDS.some(b => G.spaces[b] && unitsAt(b).length) });
+    if (u.key === 'jones' && G.res && u.space && sp(u.space).kind === 'office') A.push({ id: 'jhosp', label: 'Sus Propios Planes: paciente al Cementerio + Investigación', ok: cu('planes') && G.res.deck.length > 0 && hospitalUnits(u).length > 0 });
     if (u.key === 'hunt') A.push({ id: 'lid', label: 'Liderazgo', ok: cu('lid') });
     if (u.key === 'hernandez') { A.push({ id: 'cit', label: 'Ciudadela', ok: cu('cit') && G.ammo >= 1 }); A.push({ id: 'spe', label: 'Discurso Motivador', ok: !G.speechUsed }); }
     if (u.key === 'hauser') { A.push({ id: 'train', label: 'Entrenar Civiles (1 acc.)', ok: pay(1) && allUnits(x => x.type === 'civ' && !x.trained && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))).length > 0 }); A.push({ id: 'recruit', label: 'Reclutar (1 Munición)', ok: u.space === 'C' && G.ammo >= 1 && pay(1) }); }
@@ -148,6 +148,8 @@ function unitActions(u) {
 }
 function canBuildBar(u) { const r = sp(u.space).route; for (let i = 0; i <= lastOf(r); i++) if (sp(r + i).bar) return false; return true; }
 
+/* Unidades del Hospital (camas y Oficinas del Personal) a las que Jones puede trasladar al Cementerio; no cuenta él mismo. */
+const hospitalUnits = self => ['H1', 'H2', 'H3', 'H4', 'O1', 'O2'].filter(k => G.spaces[k]).flatMap(k => unitsAt(k)).filter(x => x.id !== self.id);
 async function runAction(u, id) {
   EVT('act', u.id, { id });
   switch (id) {
@@ -160,7 +162,7 @@ async function runAction(u, id) {
     case 'investigate': await doInvestigate(u); break;
     case 'equip': { const cs = G.cemetery.filter(x => x.type === 'civ'); const v = await UI.choose({ title: 'Equipar Refugiados', text: 'Elige la unidad de Civiles Normales que regresa.', options: cs.map(c => ({ label: 'Civiles ' + c.full + '/' + c.red, value: c.id })), cancel: true }); if (v == null) break; const c = G.units[v]; G.cemetery = G.cemetery.filter(x => x !== c); removeUnit(u); delete G.units[u.id]; putUnit(c, 'C'); c.flipped = true; c.hits = 0; G.turn.equipped = true; LOG('Refugiados equipados: Civiles vuelven al Centro.', 'good'); break; }
     case 'ini': G.charUsed.ini = true; u.free++; LOG('Schmidt usa Iniciativa: 1 acción gratis para él.', 'good'); break;
-    case 'jhosp': { const c = BEDS.map(b => G.spaces[b] && unitsAt(b)[0]).filter(Boolean); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
+    case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
     case 'lid': { const c = allUnits(x => (x.type === 'civ' || x.type === 'civh' || x.type === 'marine') && x.key !== 'horacio' && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Liderazgo: elige la unidad que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.lid = true; G.units[v].free++; break; }
     case 'cit': { const sh = unitsAt('C').filter(x => isFighter(x) && x.side === 'pl' && x.id !== u.id && Object.keys(fireTargets(x)).length && !x.nofire); if (!sh.length) { LOG('Ciudadela: ningún tirador del Centro tiene objetivos.'); break; } let s = sh[0]; if (sh.length > 1) { const sv = await UI.pickUnit(sh, 'Ciudadela: elige quién dispara.', true); if (sv == null) break; s = G.units[sv]; } UI.mode = { type: 'fire', unit: s, opts: fireTargets(s), free: true }; UI.setBanner('Ciudadela: elige el objetivo'); UI.redraw(); break; }

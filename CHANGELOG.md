@@ -2,6 +2,23 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 01:10
+
+### Mejoras
+- **Horacio:** ficha vertical como las de los héroes (en el arte alternativo), y su tooltip con el texto al lado.
+- **Civiles Heroicos:** en el tooltip, cuando la ficha es apaisada, el texto va debajo de la imagen.
+- **Brote:** al fallar la tirada de Brote de la fase de Infección, aparece antes una ventana que explica qué va a pasar (cuánto baja la Infección, en qué ruta estalla y qué Zed aparece y dónde). El Zed anunciado es el que se coloca.
+- **Tiradas de Salvación con Debug:** con el modo debug activo, la salvación se muestra como las demás tiradas y se pueden cambiar los dados. Sin debug, sigue igual.
+- **Obituario:** los 5 s fijos muestran la imagen sin efectos; después aparecen el foco y el nombre. En derrota, tras los caídos aparecen los héroes que seguían en pie.
+- **Música:** nuevo tema «Last Stand» (con letra en el panel OST). Suena cuando un turno termina en peligro y el siguiente empieza también en peligro.
+- **Créditos:** muestran la fecha de la build.
+- **Liderazgo:** los beneficiarios siguen la tabla de reglas (Civiles y Refugiados, también en unidades en coma).
+- **Tablet:** el cajón de estado queda fijo y la unidad seleccionada va antes que las acciones.
+- **Preguntas sobre Zeds:** grupo nombrado y marcado en el mapa.
+
+### Fixes
+- **Xeno Jones, Sus Propios Planes en oficina:** la acción de trasladar una unidad al Cementerio ahora considera las unidades de las camas y de las Oficinas del Personal (antes solo la primera de cada cama).
+
 ## 2026-10-10 19:39
 
 ### Mejoras

@@ -274,9 +274,15 @@ function saveBonus() {
 async function unitDown(u) {
   const where = u.space;
   if (G.lv.infection && u.side === 'pl') { const v = await UI.choose({ title: 'Último Impacto: ' + u.name, text: '¿Haces la tirada de Salvación (4-6: al Hospital, +1 Infección) o la mandas directamente al Cementerio?', options: [{ label: 'Tirada de Salvación', value: 'y' }, { label: 'Al Cementerio', value: 'n' }] }); if (v === 'n') { await sendCemetery(u, 'renuncia a la tirada de Salvación'); return; } }
-  let r = d6();
-  if (u.key === 'staub' || u.key === 'betty') { const r2 = d6(); r = Math.max(r, r2); }
-  else r = await zen1(r, 'Tirada de Salvación');
+  let r;
+  if (DEBUG_DICE) { /* con Debug, la tirada se muestra con Continuar y el botón Debug para cambiar los dados */
+    if (u.key === 'staub' || u.key === 'betty') { const dd = await UI.rollSimple('Tirada de Salvación (' + u.name + '): vale el mejor de 2', 2, v => 'Mejor: <b>' + Math.max(v[0], v[1]) + '</b>'); r = Math.max(dd[0], dd[1]); }
+    else { const [x] = await UI.rollSimple('Tirada de Salvación (' + u.name + ')', 1, v => 'Resultado: <b>' + v[0] + '</b>' + (saveBonus() ? ' (+' + saveBonus() + ' de bonificación)' : '') + ' → ' + (v[0] + saveBonus() > 3 ? 'se salva' : 'no se salva')); r = x; }
+  } else {
+    r = d6();
+    if (u.key === 'staub' || u.key === 'betty') { const r2 = d6(); r = Math.max(r, r2); }
+    else r = await zen1(r, 'Tirada de Salvación');
+  }
   const tot = r + saveBonus();
   if (u.side === 'raid') { await sendCemetery(u, 'es eliminada'); return; }
   LOG(u.name + ' recibe su último Impacto. Tirada de Salvación: ' + r + (saveBonus() ? '+' + saveBonus() : '') + '.', 'bad');
