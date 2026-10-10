@@ -327,3 +327,22 @@ body:has(#title.bgnew) #modalbox.setup .lvl{padding:4px 8px;background:rgba(14,1
 body:has(#title.bgnew) #modalbox.setup .lvl span span{font-size:11px}
 body:has(#title.bgnew) #modalbox.setup .row{gap:6px 14px;margin:3px 0;font-size:13px}
 body:has(#title.bgnew) #modalbox.setup .opts{margin-top:6px}
+
+/* Crónica final: premios y una ficha por unidad */
+#modalbox.chron{max-width:min(980px,96vw)}
+.chron .awards{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
+.chron .aw{flex:1 1 200px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;gap:2px}
+.chron .aw b{color:var(--gold);font-size:13px}
+.chron .aw span{font-size:13px;color:var(--ink)}
+.chron .ucards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.chron .ucard{background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.chron .ucard h4{margin:0;font-size:16px;color:var(--gold)}
+.chron .ucard .sub{font-size:12px;color:var(--mut);margin:1px 0 4px}
+.chron .ucard .fate{font-size:12px;margin-bottom:4px}
+.chron .ucard ul{margin:0;padding-left:18px;font-size:13px;line-height:1.45}
+.chron .good{color:#7bd45a}.chron .bad{color:#ff6a55}
+.chron .oth{margin:10px 0 0;font-size:12px;color:var(--mut);text-align:center}
+
+/* Menú de opciones: subtítulos de sección */
+.oph{margin:12px 0 2px;font-size:15px;color:var(--gold);letter-spacing:1px;text-transform:uppercase}
+.ophint{margin:2px 0 4px;font-size:12px;color:var(--mut)}

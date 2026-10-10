@@ -3,7 +3,7 @@
 
 async function revealEvent() {
   const id = G.eventDeck.shift(); const ev = EV[id];
-  G.event = ev; G.eventsRevealed++; G.turnNo++; G.turn = newTurn();
+  G.event = ev; G.eventsRevealed++; G.turnNo++; G.turn = newTurn(); EVT('turn', null, { ev: ev.name });
   if (G.turnNo > 1) Voz.say('turno');
   if (G.eventsRevealed >= G.totalEvents - 2) Voz.say('amanece');
   if (G.ammo <= 1) Voz.say('municion');

@@ -10,7 +10,8 @@ const Ost = {
     { file: 'musica_peligro.mp3', nombre: 'Peligro' },
     { file: 'musica_victoria.mp3', nombre: 'Victoria', letra: 'musica_victoria.txt' },
     { file: 'musica_derrota.mp3', nombre: 'Derrota', letra: 'musica_derrota.txt' },
-    { file: 'musica_himno.mp3', nombre: 'Himno zombie', letra: 'musica_himno.txt' }
+    { file: 'musica_himno.mp3', nombre: 'Himno zombie', letra: 'musica_himno.txt' },
+    { file: 'musica_obituario.m4a', nombre: 'Obituario', letra: 'musica_obituario.txt' }
   ],
   DIR: 'assets/sonidos/musica/', LETRA_DIR: 'assets/sonidos/letras/',
   a: null, i: 0, rep: false, el: null,

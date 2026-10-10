@@ -206,13 +206,14 @@ async function applyZedHits(zeds, n) {
 async function hitZed(t) {
   if (t.zresist || t.resistZ) { const r = d6(); if (r <= 3) { LOG('Resistente: el Impacto se cancela (dado ' + r + ').'); await UI.fxResist(t, r); return; } }
   const before = { flipped: t.flipped, hits: t.hits };
-  const r = hitUnitOnce(t);
+  const r = hitUnitOnce(t); EVT('zhit', ACTOR, { z: t.name, r });
   if (r === 'flip') { LOG(t.name + ' queda con Fuerza reducida (' + t.red + ').'); await UI.fxFlip(t, before); }
   else if (r === 'dead') await zedDies(t);
   else { LOG('Impacto a ' + t.name + ' ' + strength(t) + ' (' + t.hits + ').'); await UI.fxHit(t); }
   UI.redraw();
 }
 async function zedDies(t) {
+  EVT('kill', ACTOR, { z: t.name, ty: t.type, sp: t.space });
   G.stats.killed++; Voz.say('muerte_zed', .1);
   if (t.type === 'spreader') {
     const r = d6(); const rt = routeOfZ(t);
@@ -236,7 +237,7 @@ async function hitPlayer(u, n) {
     if ((u.chips || []).includes('traje')) { const r = d6(); if (r >= 4) { LOG(u.name + ' (DARPA) ignora el Impacto.', 'good'); await UI.fxResist(u, r, 'DARPA'); continue; } }
     if (u.space && sp(u.space).kind === 'bed' && u.ecg) { await sendCemetery(u, 'recibe un Impacto estando en coma'); return; }
     const before = { flipped: u.flipped, hits: u.hits };
-    const r = hitUnitOnce(u);
+    const r = hitUnitOnce(u); EVT('hit', u.id, { r });
     if (r === 'flip') { LOG(u.name + ' queda con Fuerza reducida (' + u.red + ').', 'bad'); await UI.fxFlip(u, before); }
     else if (r === 'hit') await UI.fxHit(u);
     else if (r === 'dead') { if (u.space && sp(u.space).kind === 'bed') await sendCemetery(u, 'recibe su último Impacto en el Hospital'); else await unitDown(u); return; }
@@ -245,6 +246,7 @@ async function hitPlayer(u, n) {
   }
 }
 async function sendCemetery(u, why) {
+  EVT('down', u.id, { why: why || 'muere' });
   LOG(u.name + ' ' + (why || 'muere') + ' → al Cementerio.', 'bad');
   if (u.type === 'hero') G.stats.heroLost++; if (u.type === 'civ') G.stats.civLost++;
   const where = u.space;
@@ -469,9 +471,10 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if ((fighter.chips || []).includes('traje')) zh += 2;
   h.setResult(row, finalCol, [zh, ph], zedLoses);
   await h.done();
+  EVT('melee', fighter.id, { at: attackerHuman ? 'h' : 'z', sp: space, zs: zeds.length, row, col: finalCol, zh, ph, win: zedLoses ? 1 : 0 });
   if (!o.noInf && G.lv.infection && !vsPl) await infUp(meleeInfection(zeds, fighter));
-  await applyZedHits(zeds, zh);
-  if (hasPart('cebo') && !attackerHuman) await applyZedHits(zeds, 1);
+  ACTOR = fighter.side === 'pl' ? fighter.id : null;
+  try { await applyZedHits(zeds, zh); if (hasPart('cebo') && !attackerHuman) await applyZedHits(zeds, 1); } finally { ACTOR = null; }
   if (fighter.space) { if (fighter.side === 'raid') await hitRaider(fighter, ph); else await hitPlayer(fighter, ph); }
   if (o.trago || false) { if (fighter.space) await hitPlayer(fighter, 1); }
   if (isZedAtk && G.turn.noRetreatOnce && !G.turn.noRetreatDone) { G.turn.noRetreatDone = true; return { again: true, zedWon: !zedLoses }; }
@@ -609,7 +612,7 @@ function pathTo(prev, start, dest) {
 }
 /* path: recorrido de la acción de Mover. Si se pierde el combate, la unidad se retira UN espacio (al anterior del recorrido). */
 async function doMove(u, dest, path) {
-  const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
+  const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); EVT('move', u.id, { from, to: dest }); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
   if (isSoft(u)) { if (dest === 'C') await refugeeArrives(u); return; }
   if (dest === 'C' && u.space === 'C') {/* ok */ }
   const zs = zedsAt(dest), rs = raidAt(dest);
@@ -665,7 +668,8 @@ async function doFire(u, targetId, dist, opts) {
   let dice = await h.roll(0); dice = await zenReroll(dice, 'disparo', h);
   const row = sumRow(dice[0] + dice[1]); const hits = FIRE[row][col];
   h.setResult(row, col, hits); await h.done();
-  if (hits) { await applyZedHits([target], hits); if (hits >= 2 && hasPart('balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
+  EVT('shot', u.id, { to: targetId, d: dist, hits });
+  if (hits) { ACTOR = u.id; try { await applyZedHits([target], hits); } finally { ACTOR = null; } if (hits >= 2 && hasPart('balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
   else LOG('El disparo no impacta.');
   if (u.key === 'piazza' && u.space && u.space !== 'C' && !opts.noVig) {
     // Retroceder = alejarse del objetivo, es decir, hacia el Centro (índice mayor en la ruta).

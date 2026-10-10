@@ -4,6 +4,12 @@
 const $ = id => document.getElementById(id);
 const IMG = {};
 function loadImg(k, src) { return new Promise(res => { const i = new Image(); i.onload = () => { IMG[k] = i; res(); }; i.onerror = () => res(); i.src = src; }); }
+/* Arte alternativo del mapa: fichas de dos caras (completa y reducida). Solo se carga si la opción está activada; si algo falla, el mapa usa las fichas originales. */
+async function loadAltArt() {
+  if (typeof Opciones === 'undefined' || !Opciones.artAlt || typeof ALT_KEYS === 'undefined') return;
+  const list = []; for (const k of ALT_KEYS) { if (!IMG['alt_' + k]) list.push(['alt_' + k, 'assets/arte_alt/tokens/' + k + '.webp']); if (!IMG['alt_' + k + '_r']) list.push(['alt_' + k + '_r', 'assets/arte_alt/tokens/' + k + '_r.webp']); }
+  await Promise.all(list.map(([k, src]) => loadImg(k, src)));
+}
 async function loadAssets() {
   const list = [['mapA', 'assets/mapa.jpg'], ['mapB', 'assets/mapaB.jpg'], ['zed', 'assets/tokens/zed.png']];
   for (const k of Object.keys(HEROES)) if (HEROES[k].img) list.push([HEROES[k].img, 'assets/tokens/' + HEROES[k].img + '.png']);
@@ -19,7 +25,7 @@ const SIDE_COL = { train: '#555', civ: '#2b5c85', civh: '#5a2a7a', hero: '#1d3a2
 const ui = {
   fast: false, mode: null, rects: [], flash: null, canvas: null, ctx: null, mapH: 1545,
   async init() {
-    await loadAssets();
+    await loadAssets(); await loadAltArt();
     this.canvas = $('map'); this.ctx = this.canvas.getContext('2d');
     this.canvas.addEventListener('click', e => this.onClick(e));
     this.canvas.addEventListener('mousemove', e => { if (!ui.recentTouch()) this.onMove(e); });
@@ -29,7 +35,10 @@ const ui = {
     this.initTouch();
     /* Imágenes de cartas que fallan (tablet, red o caché inestable): reintento automático con otra URL. */
     document.addEventListener('error', e => {
-      const t = e.target; if (!t || t.tagName !== 'IMG' || !/assets\/cartas\//.test(t.getAttribute('src') || '')) return;
+      const t = e.target;
+      /* Arte alternativo que no carga: vuelve a la imagen original. */
+      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(h_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
+      if (!t || t.tagName !== 'IMG' || !/assets\/cartas\//.test(t.getAttribute('src') || '')) return;
       const base = t.getAttribute('src').split('?')[0], n = +(t.dataset.retry || 0); if (n >= 4) return; t.dataset.retry = n + 1;
       setTimeout(() => { t.src = base + '?r=' + Date.now(); }, 400 * (n + 1));
     }, true);
@@ -38,6 +47,7 @@ const ui = {
     $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
     $('soundBtn').addEventListener('click', () => ui.showSound());
+    $('logBtn').addEventListener('click', () => downloadLog());
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
     $('cancelBtn').addEventListener('click', () => ui.cancelMode());
     $('rulesBtn').addEventListener('click', () => ui.showRules());
@@ -284,7 +294,9 @@ const ui = {
         else { x = s.x + (k - (big.length - 1) / 2) * 66; y = s.y; }
         if (u.type === 'train') { rects.push({ id: u.id, x: s.x + (k - (big.length - 1) / 2) * 66, y: s.y - 52, w: 52, h: 34 }); return; }
         const z = isZedSide(u); const w = z ? 62 : u.side === 'raid' ? 60 : (u.type === 'civ' ? 56 : 58), h = z ? 62 : (u.type === 'civ' ? 56 : u.type === 'hero' ? 76 : 60);
-        rects.push({ id: u.id, x, y, w, h });
+        let rw = w, rh = h; const altI = !z && Opciones.artAlt && u.key && IMG['alt_' + u.key];
+        if (altI) { if (altI.width > altI.height) { rw = 76; rh = Math.round(76 * altI.height / altI.width); } else { rh = 88; rw = Math.round(88 * altI.width / altI.height); } }
+        rects.push({ id: u.id, x, y, w: rw, h: rh });
       });
       soft.forEach((u, k) => { if (s.kind === 'camp') rects.push({ id: u.id, x: s.x + ((k % 8) - 3.5) * 36, y: s.y + 30 + Math.floor(k / 8) * 34, w: 30, h: 30 }); else rects.push({ id: u.id, x: s.x + 38 + k * 30, y: s.y + 46, w: 30, h: 30 }); });
     }
@@ -337,19 +349,25 @@ const ui = {
       c.beginPath(); c.arc(0, 0, hw, 0, 7); c.fillStyle = u.type === 'aldeano' ? '#d4a017' : '#2f9a55'; c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 4 : 2.5; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.fillText(u.type === 'aldeano' ? 'ALD' : u.vip ? 'VIP' : 'REF', 0, 4);
     } else {
       const col = SIDE_COL[u.type] || '#2b5c85'; const img = u.img && IMG[u.img] || (u.skey === 'petra' && IMG.u_petra);
+      const altImg = Opciones.artAlt && u.key && IMG['alt_' + u.key + (u.flipped ? '_r' : '')] || null;
       const civIm = u.type === 'civ' && IMG['u_civ' + (1 + (parseInt(String(u.id).replace(/\D/g, ''), 10) || 0) % 3)];
       if (civIm) { c.beginPath(); c.arc(0, 0, hw, 0, 7); c.fillStyle = col; c.fill(); c.save(); c.beginPath(); c.arc(0, 0, hw - 2, 0, 7); c.clip(); c.drawImage(civIm, 0, 0, civIm.width * 0.78, civIm.height * 0.82, -hw, -hw * 0.7, r.w, r.w * 0.82); c.restore(); c.beginPath(); c.arc(0, 0, hw, 0, 7); c.strokeStyle = sel ? '#ffd54a' : '#0c1a26'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; }
       else if (u.type === 'civ') { c.beginPath(); c.arc(0, 0, hw, 0, 7); c.fillStyle = col; c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#0c1a26'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#cfe6f7'; c.font = '700 13px Segoe UI'; c.textAlign = 'center'; c.fillText('CIV', 0, -8); }
+      else if (altImg) {
+        const rad = Math.min(hw, hh) * 0.2;
+        c.save(); rr(c, -hw, -hh, r.w, r.h, rad); c.clip(); c.drawImage(altImg, -hw, -hh, r.w, r.h); c.restore();
+        c.shadowBlur = 0; if (sel || u.ecg) { c.strokeStyle = sel ? '#ffd54a' : '#6fd3ff'; c.lineWidth = sel ? 5 : 3; rr(c, -hw, -hh, r.w, r.h, rad); c.stroke(); }
+      }
       else {
         c.beginPath(); c.ellipse(0, 0, hw, hh, 0, 0, 7); c.fillStyle = col; c.fill();
         if (img) { c.save(); c.beginPath(); c.ellipse(0, 0, hw - 2, hh - 2, 0, 0, 7); c.clip(); c.drawImage(img, 0, 0, img.width, img.height * (img.width === img.height ? 1 : 0.86), -hw, -hh, r.w, r.h); c.restore(); }
         else { c.fillStyle = '#e8d3ff'; c.font = '800 10px Segoe UI'; c.textAlign = 'center'; u.name.split(' ').slice(0, 3).forEach((t, i) => c.fillText(t.slice(0, 9), 0, -8 + i * 12)); }
         c.beginPath(); c.ellipse(0, 0, hw, hh, 0, 0, 7); c.strokeStyle = sel ? '#ffd54a' : (u.ecg ? '#6fd3ff' : u.flipped ? '#9b2c1f' : '#e8dcb5'); c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0;
       }
-      if (u.flipped && !u.ecg) { c.font = '700 11px Segoe UI'; c.fillStyle = '#ff8a76'; c.textAlign = 'center'; c.strokeStyle = '#000'; c.lineWidth = 3; c.strokeText('herido', 0, -hh + 10); c.fillText('herido', 0, -hh + 10); }
+      if (u.flipped && !u.ecg && !altImg) { c.font = '700 11px Segoe UI'; c.fillStyle = '#ff8a76'; c.textAlign = 'center'; c.strokeStyle = '#000'; c.lineWidth = 3; c.strokeText('herido', 0, -hh + 10); c.fillText('herido', 0, -hh + 10); }
       if (u.ecg) { if (IMG.m_ecg) c.drawImage(IMG.m_ecg, -16, -hh - 4, 32, 32); else tag(c, 0, -hh + 8, 'ECG', '#2a8fc2'); }
       if (u.hits) { c.font = '700 14px Segoe UI'; c.fillStyle = '#ff6b6b'; c.strokeStyle = '#000'; c.lineWidth = 3; c.textAlign = 'left'; const t = '♥'.repeat(u.hits); c.strokeText(t, -hw + 2, hh - 12); c.fillText(t, -hw + 2, hh - 12); }
-      badge(c, 0, hh - 8, String(strength(u)), u.flipped ? '#7a1d12' : '#2f6b3a', '#fff');
+      if (!altImg || strength(u) !== (u.flipped ? u.red : u.full)) badge(c, 0, hh - 8, String(strength(u)), u.flipped ? '#7a1d12' : '#2f6b3a', '#fff');
       if (u.resist) tag(c, -hw + 4, -hh + 8, 'RES', '#c2a000'); if (u.armed) tag(c, hw - 4, -hh + 8, 'ARM', '#c2561a'); if (u.leader) tag(c, hw - 4, -hh + 24, 'LÍD', '#8a3fc2'); if (u.keepCalm) tag(c, -hw + 4, -hh + 24, '2►', '#2a7fc2'); if (u.trained) tag(c, hw - 4, -hh + 40, '+2', '#2a9f5a'); if (freeTotal(u)) tag(c, hw - 4, hh - 30, '+' + freeTotal(u), '#2a9f5a');
     }
     c.restore();
@@ -557,13 +575,29 @@ const ui = {
     if (this._mus) this.musicOn();
     this._gamePlay();
   },
-  showSound() {
+  /* Filas de sonido (una por canal) y sus controles; las comparten el panel de Sonido y el de Opciones. */
+  _soundRows() {
     const row = (k, name) => { const v = Math.round(Sound[k].vol * 100); return '<div class="snd"><label class="chk"><input type="checkbox" id="on_' + k + '"' + (Sound[k].on ? ' checked' : '') + '> ' + name + '</label><input type="range" min="0" max="100" id="vol_' + k + '" value="' + v + '"' + (Sound[k].on ? '' : ' disabled') + '><span id="pct_' + k + '">' + v + '%</span></div>'; };
-    this._modal('<h2>Sonido</h2><p>Cada canal tiene su propio interruptor y volumen.</p>' + row('music', 'Música') + row('sfx', 'Efectos') + row('voice', 'Voz del líder') + '<div class="opts"><button class="primary" id="sndOk">Cerrar</button></div>', 'sound');
+    return row('music', 'Música') + row('sfx', 'Efectos') + row('voice', 'Voz del líder');
+  },
+  _bindSound() {
     ['music', 'sfx', 'voice'].forEach(k => {
       $('on_' + k).onchange = e => { Sound.set(k, { on: e.target.checked }); $('vol_' + k).disabled = !e.target.checked; if (k === 'sfx' && e.target.checked && typeof Sfx !== 'undefined') Sfx.warm(); };
       $('vol_' + k).oninput = e => { $('pct_' + k).textContent = e.target.value + '%'; Sound.set(k, { vol: e.target.value / 100 }); };
     });
+  },
+  showSound() {
+    this._modal('<h2>Sonido</h2><p>Cada canal tiene su propio interruptor y volumen.</p>' + this._soundRows() + '<div class="opts"><button class="primary" id="sndOk">Cerrar</button></div>', 'sound');
+    this._bindSound(); $('sndOk').onclick = () => ui._close();
+  },
+  /* Menú de opciones de la portada: sonido y arte alternativo. */
+  showOptions() {
+    this._modal('<h2>Opciones</h2><h3 class="oph">Sonido</h3><p>Cada canal tiene su propio interruptor y volumen.</p>' + this._soundRows() +
+      '<h3 class="oph">Arte</h3><div class="snd"><label class="chk"><input type="checkbox" id="optArt"' + (Opciones.artAlt ? ' checked' : '') + '> Usar arte alternativo</label></div>' +
+      '<p class="ophint">Las ilustraciones alternativas de cartas y fichas se aplicarán cuando estén disponibles.</p>' +
+      '<div class="opts"><button class="primary" id="sndOk">Cerrar</button></div>', 'sound');
+    this._bindSound();
+    $('optArt').onchange = e => { Opciones.set({ artAlt: e.target.checked }); loadAltArt().then(() => ui.redraw()); };
     $('sndOk').onclick = () => ui._close();
   },
   hideCover() { const t = $('title'); if (t) t.remove(); },
@@ -625,7 +659,7 @@ const ui = {
       const prev = $('title'); if (prev) prev.remove();
       const sv = listSaves(), t = document.createElement('div'); t.id = 'title';
       const info = sv.length ? sv.length + (sv.length === 1 ? ' partida' : ' partidas') + ' · ' + LEVELS[sv[0].G.lv].name + ', turno ' + sv[0].G.turnNo : 'No hay partidas guardadas';
-      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv.length ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="sound">Sonido</button><button data-a="ost">OST</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button><div id="buildTag">' + (typeof BUILD_TIME !== 'undefined' ? 'build ' + BUILD_TIME : '') + '</div>';
+      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv.length ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="options">Opciones</button><button data-a="ost">OST</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button><div id="buildTag">' + (typeof BUILD_TIME !== 'undefined' ? 'build ' + BUILD_TIME : '') + '</div>';
       document.body.appendChild(t);
       this.musicOn();
       const mb = $('muteBtn'), paint = () => { mb.textContent = Sound.music.on ? '🔊' : '🔇'; }; paint();
@@ -634,7 +668,7 @@ const ui = {
       t.querySelectorAll('.tbtns button').forEach(bt => bt.onclick = () => {
         const a = bt.dataset.a;
         if (a === 'top') return ui.showTop();
-        if (a === 'sound') return ui.showSound();
+        if (a === 'options') return ui.showOptions();
         if (a === 'ost') return Ost.open();
         if (a === 'credits') return ui.showCredits();
         t.classList.add('bg'); if (a === 'new') t.classList.add('bgnew'); t.querySelectorAll('button').forEach(b => b.hidden = true); res(a);
@@ -681,11 +715,54 @@ const ui = {
     const ch = chaosOnMap(), chTxt = ch <= 6 ? 'Poco Caos en el mapa' : ch <= 9 ? 'Mucha ruina a vuestro paso' : 'Una devastación infernal';
     const refTxt = s.soft === 0 ? 'Ningún refugiado superviviente' : s.soft <= 2 ? 'Unos pocos refugiados supervivientes' : 'Muchos refugiados supervivientes';
     const why = G.loseWhy === 'caos' ? 'Habéis perdido por el Caos.' : 'Un Zed ha entrado en el Centro de la Ciudad.';
-    G.phase = 'end'; this.updateStats(); this.gameMusicEnd(win);
+    G.phase = 'end'; EVT('end', null, { over: G.over, why: G.loseWhy || null }); this.updateStats(); this.gameMusicEnd(win);
     Voz.say(win ? 'victoria' : G.loseWhy === 'caos' ? 'derrota_caos' : 'derrota_centro');
     saveTop({ win, score: s.total, lv: G.lv.name, len: G.len.name, turns: G.turnNo, killed: G.stats.killed, date: Date.now() });
-    this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button class="primary" id="nb">Nueva partida</button></div></div>');
+    this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button id="chrBtn">Crónica de la partida</button><button id="logBtn2">Registro</button><button class="primary" id="nb">Nueva partida</button></div></div>');
+    this._endHtml = $('modalbox').innerHTML; this._bindEnd();
+  },
+  _bindEnd() {
     $('nb').onclick = () => ui.reloadToMenu();
+    $('chrBtn').onclick = () => ui.showChronicle();
+    $('logBtn2').onclick = () => downloadLog();
+  },
+  /* Crónica final: qué ha hecho cada unidad, con premios y un epíteto por unidad (a partir de G.ust, ver evlog.js). */
+  showChronicle() {
+    const ust = G.ust || {}, N = (u, k) => (ust[u.id] && ust[u.id][k]) || 0;
+    const units = Object.values(G.units || {}).filter(u => u.side === 'pl' && !isSoft(u) && ust[u.id]);
+    const tot = {}, cnt = {}, labels = {};
+    units.forEach(u => { tot[u.name] = (tot[u.name] || 0) + 1; });
+    units.forEach(u => { labels[u.id] = tot[u.name] > 1 ? u.name + ' ' + (cnt[u.name] = (cnt[u.name] || 0) + 1) : u.name; });
+    const where = u => u.space === 'CEM' ? 'En el Cementerio' : u.space && G.spaces[u.space] ? 'Terminó en ' + spaceLabel(u.space) : '';
+    const clsOf = u => (HEROES[u.key] && HEROES[u.key].cls) || ({ hero: 'Héroe', civh: 'Civiles Heroicos', civ: 'Civiles', marine: 'Marines' }[u.type] || '');
+    const best = (k, label, fmt) => { let b = null, bv = 0; for (const u of units) { const v = N(u, k); if (v > bv) { bv = v; b = u; } } return b ? '<div class="aw"><b>' + label + '</b><span>' + labels[b.id] + ' · ' + fmt(bv) + '</span></div>' : ''; };
+    const awards = best('kills', '🏆 Más Zeds eliminados', v => v + ' Zeds') + best('shotHits', '🎯 Mejor puntería', v => v + ' disparos certeros') + best('meleeWins', '⚔️ Rey del cuerpo a cuerpo', v => v + ' combates ganados') + best('taken', '🛡️ El más castigado', v => v + ' Impactos') + best('moves', '🥾 El que más caminó', v => v + ' casillas');
+    const epithet = u => {
+      if (N(u, 'kills') >= 8) return 'Azote de los Zeds';
+      if (N(u, 'meleeWins') >= 4) return 'Un muro en el cuerpo a cuerpo';
+      if (N(u, 'shotHits') >= 5) return 'Puntería de manual';
+      if (N(u, 'taken') >= 6) return 'Aguantó lo indecible';
+      if (N(u, 'moves') >= 12) return 'Siempre en movimiento';
+      if (N(u, 'acts_search') >= 3) return 'Olfato para los suministros';
+      return N(u, 'acts') + N(u, 'moves') + N(u, 'shots') === 0 ? 'Se guardó para el final' : 'Hizo su parte';
+    };
+    const card = u => {
+      const l = [];
+      if (N(u, 'kills')) l.push('Eliminó <b>' + N(u, 'kills') + '</b> Zed' + (N(u, 'kills') > 1 ? 's' : '') + (N(u, 'superKills') ? ' (' + N(u, 'superKills') + ' Súper Zed)' : ''));
+      if (N(u, 'dealt')) l.push('Infligió <b>' + N(u, 'dealt') + '</b> Impactos');
+      if (N(u, 'shots')) l.push('<b>' + N(u, 'shots') + '</b> disparos, <b>' + N(u, 'shotHits') + '</b> certeros');
+      if (N(u, 'melees')) l.push('Ganó <b>' + N(u, 'meleeWins') + '</b> de <b>' + N(u, 'melees') + '</b> combates');
+      if (N(u, 'taken')) l.push('Recibió <b>' + N(u, 'taken') + '</b> Impactos');
+      if (N(u, 'moves')) l.push('Recorrió <b>' + N(u, 'moves') + '</b> movimientos');
+      const acts = []; for (const k of Object.keys(ust[u.id])) if (k.indexOf('act_') === 0) acts.push(k.slice(4) + ' ×' + ust[u.id][k]);
+      if (acts.length) l.push('Acciones: ' + acts.join(', '));
+      const d = ust[u.id].diedT; const fate = d ? '<span class="bad">Cayó en el turno ' + d + '</span>' : '<span class="good">Sobrevivió</span>';
+      return '<div class="ucard"><h4>' + labels[u.id] + '</h4><div class="sub">' + [clsOf(u), epithet(u), where(u)].filter(Boolean).join(' · ') + '</div><div class="fate">' + fate + '</div><ul>' + (l.length ? l.map(x => '<li>' + x + '</li>').join('') : '<li>Sin acciones registradas.</li>') + '</ul></div>';
+    };
+    units.sort((a, b) => N(b, 'kills') - N(a, 'kills') || N(b, 'acts') - N(a, 'acts'));
+    const otros = ust._otros && ust._otros.kills ? '<p class="oth">Otros ' + ust._otros.kills + ' Zeds cayeron por eventos, minas o cartas.</p>' : '';
+    this._modal('<h2>Crónica de la partida</h2><div class="awards">' + (awards || '<div class="aw"><span>Sin hazañas destacadas.</span></div>') + '</div><div class="ucards">' + (units.map(card).join('') || '<p>No hay unidades registradas.</p>') + '</div>' + otros + '<div class="opts" style="justify-content:center"><button class="primary" id="chrBack">Volver</button></div>', 'chron');
+    $('chrBack').onclick = () => { this._modal(this._endHtml); this._bindEnd(); };
   }
 };
 function payFire(u) {

@@ -19,6 +19,7 @@ function makeSpecial(key, where, extra) {
   putUnit(u, where); return u;
 }
 async function heroEnters(u) {
+  EVT('enter', u.id, { name: u.name });
   if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (G.lv.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); LOG('Johnson aporta 3 de Munición' + (G.lv.supplies ? ' y 2 Suministros' : '') + '.', 'good'); }
   if (u.key === 'horacio' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 3); LOG('Horacio trae 3 Suministros.', 'good'); }
   if (u.key === 'salvacion' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 2); }
@@ -74,7 +75,7 @@ function newGame(levelIdx, lenIdx, personal) {
     lv: L, len, units: {}, cemetery: [], reserve: ZED_TOKENS.map(t => t.slice()), supers: L.infection ? Object.keys(SUPER_ZEDS) : [],
     ammo: 4, supplies: 0, inf: 0, chaosLeft: L.chaos || 0, over: null, turnNo: 0, hand: [], destDiscard: [], event: null, eventsRevealed: 0,
     phase: 'setup', pool: { player: 1, event: 0 }, charUsed: {}, once: {}, sel: null, speechUsed: false, antidote: false, berra: false, finalPlaced: false,
-    weapon: null, res: null, turn: newTurn(), stats: { killed: 0, civLost: 0, heroLost: 0 }, inWild: false, spareCiv: null, upgrades: []
+    weapon: null, res: null, turn: newTurn(), stats: { killed: 0, civLost: 0, heroLost: 0 }, evlog: [], ust: {}, evn: 0, inWild: false, spareCiv: null, upgrades: []
   });
   buildBoard();
   for (const r of G.routes) { const z = makeZed(); putUnit(z, r + '0'); }

@@ -148,6 +148,7 @@ function unitActions(u) {
 function canBuildBar(u) { const r = sp(u.space).route; for (let i = 0; i <= lastOf(r); i++) if (sp(r + i).bar) return false; return true; }
 
 async function runAction(u, id) {
+  EVT('act', u.id, { id });
   switch (id) {
     case 'search': spendActions(u, 1); await doSearch(u); break;
     case 'cure': { if (G.turn.freeHealNoInf > 0) { G.turn.freeHealNoInf--; await doCure(u, true, true); } else if (G.turn.freeHeal > 0) { G.turn.freeHeal--; await doCure(u, true); } else await doCure(u, false); break; }

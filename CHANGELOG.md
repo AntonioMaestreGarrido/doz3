@@ -2,6 +2,22 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-10 11:27
+
+### Mejoras
+- **Arte alternativo:** nuevas cartas y fichas ilustradas para 26 personajes (héroes y civiles heroicos). Cada ficha tiene dos caras (completa y reducida) y se muestra en el mapa, en el zoom, en la lista de héroes y en «Carta entera». Se activa en Opciones → «Usar arte alternativo». Sin arte alternativo (May, Betty, Carter y Lee) o si una imagen falla, se usa siempre la original.
+- **Menú Opciones:** el botón «Sonido» de la portada pasa a ser «Opciones», con el sonido (música, efectos y voz) y la casilla del arte alternativo.
+- **Crónica de la partida:** nueva pantalla tras el final con premios y una ficha por unidad (Zeds eliminados, disparos, combates, Impactos, movimientos y si sobrevivió).
+- **Registro de la partida:** botón «Registro» (cabecera y pantalla final) que descarga un JSON con el estado y los eventos de la partida, para depurar.
+
+### Fixes
+- Service worker: sube la versión de la caché para que los navegadores descarguen los ficheros nuevos.
+
+## 2026-10-10 10:06
+
+### Mejoras
+- **Banda sonora:** nuevo tema «Obituario» en el panel OST (audio `assets/sonidos/musica/musica_obituario.m4a`, con su letra en `assets/sonidos/letras/musica_obituario.txt`).
+
 ## 2026-10-10 04:03
 
 ### Documentación
