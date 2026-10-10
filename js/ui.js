@@ -149,7 +149,7 @@ const ui = {
     h += '<div class="row total"><span>Para cualquier unidad</span><span>' + gen + '</span></div>';
     h += '<div class="sub">Acciones gratis de unidades</div>';
     h += fr.length ? '<ul>' + fr.map(x => '<li class="sel" data-uid="' + x.id + '"><span>' + x.name + ' <small style="color:var(--mut)">' + spaceLabel(x.space) + '</small></span><span class="r">' + freeLabel(x) + '</span></li>').join('') + '</ul>' : '<div class="none">— ninguna —</div>';
-    const AB = [['schmidt', 'ini', 'Iniciativa', '1 acción para Schmidt'], ['jones', 'planes', 'Sus Propios Planes', '1 acción para Jones'], ['hunt', 'lid', 'Liderazgo', '1 acción a Civiles/Refugiados'],
+    const AB = [['schmidt', 'ini', 'Iniciativa', '1 acción para Schmidt'], ['jones', 'planes', 'Sus Propios Planes', '1 acción para Jones'], ['hunt', 'lid', 'Liderazgo', '1 acción a Civiles o Marines'],
       ['hernandez', 'cit', 'Ciudadela', 'disparo gratis desde el Centro'], ['seaver', 'medico', 'Médico', 'Curar en el Hospital'], ['seaver', 'aidseaver', 'Primeros auxilios', 'Curar (1 Sum.)'],
       ['salvacion', 'aidsalvacion', 'Campamento Médico', 'Curar (1 Sum.)'], ['bauer', 'bauer', 'Dispositivos explosivos', '2 Sum. → 1 Mun.'], ['agee', 'boost', 'Madre de la Ciencia', '+1 Acción de Evento (+3 Inf.)'],
       ['wzed', 'wzed', 'Transmisión de Emergencia', '1 acción a Civiles/Refugiados'], ['bomberos', 'libera', 'Autoridad Civil', 'liberar Civiles/Aldeanos'], ['lee', 'pura', 'Purasangre', '1 Mover para Lee'],
@@ -313,6 +313,7 @@ const ui = {
     if (m && m.type === 'move') for (const id in m.opts) ring(id, controlled(id) ? '#ff5a44' : '#7bd45a', 7);
     if (m && m.type === 'fire') for (const id in m.opts) ring(id, '#ff5a44', 8);
     if (m && m.type === 'pick') for (const id of m.ids) ring(id, '#ffd54a', 8, [14, 8]);
+    if (this.marks) for (const id of this.marks) ring(id, '#3ad6ff', 8, [10, 6]);
     for (const id in G.spaces) {
       const s = G.spaces[id];
       if (s.chaos && IMG.m_caos) { c.save(); c.drawImage(IMG.m_caos, s.x - 66, s.y - 66, 44, 42); if (s.chaos > 1) { c.font = '900 18px Impact'; c.fillStyle = '#fff'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.textBaseline = 'middle'; c.strokeText('x' + s.chaos, s.x - 44, s.y - 28); c.fillText('x' + s.chaos, s.x - 44, s.y - 28); } c.restore(); }
@@ -402,6 +403,16 @@ const ui = {
       });
       ok.onclick = () => { if (cur !== undefined) { ui._close(); res(options[cur].value); } };
       (extra || []).forEach(e => { const bt = document.createElement('button'); bt.textContent = e.label; bt.onclick = () => { ui._close(); res(e.value); }; ops.appendChild(bt); });
+    });
+  },
+  /* Pregunta sobre Zeds concretos: panel inferior (no tapa el mapa) y los espacios de los grupos en cuestión marcados en azul. */
+  askZeds({ title, text, spaces, options }) {
+    return new Promise(res => {
+      this.marks = spaces; this.redraw();
+      const done = v => { ui._close(); ui.marks = null; ui.redraw(); res(v); };
+      const b = this._modal('<h2>' + title + '</h2><p>' + text + '</p><div class="opts"></div>', 'pickpanel'); $('modal').classList.add('pick');
+      const o = b.querySelector('.opts');
+      options.forEach(opt => { const bt = document.createElement('button'); bt.textContent = opt.label; bt.onclick = () => done(opt.value); o.appendChild(bt); });
     });
   },
   confirm(text) { return this.choose({ title: 'Confirmar', text, options: [{ label: 'Sí', value: true }, { label: 'No', value: false }] }); },

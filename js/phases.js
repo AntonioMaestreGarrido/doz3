@@ -154,7 +154,7 @@ async function cryptExit(z, cer) {
 }
 async function activateRoute(r, cer) {
   if (G.over) return;
-  if (G.hand.includes('hipnotizados')) { const v = await UI.choose({ title: 'Zeds hipnotizados', text: '¿Cancelas la activación de ' + ROUTES[r].name + '?', options: [{ label: 'Cancelar la activación', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('hipnotizados'), 1); G.destDiscard.push('hipnotizados'); zenPlayed(); UI.updateHand(); return; } }
+  if (G.hand.includes('hipnotizados')) { const occ = []; for (let i = 0; i <= lastOf(r); i++) if (zedsAt(r + i).length) occ.push(r + i); const v = await UI.askZeds({ title: 'Zeds hipnotizados', text: '¿Cancelas la activación de la ' + ROUTES[r].name + '? Se activarían: ' + (occ.map(id => zedGroupName(zedsAt(id), id)).join(' · ') || 'ninguno (entra un Zed nuevo en el Inicial)') + '.', spaces: occ, options: [{ label: 'Cancelar la activación', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('hipnotizados'), 1); G.destDiscard.push('hipnotizados'); zenPlayed(); UI.updateHand(); return; } }
   LOG('Se activa la ' + ROUTES[r].name + '.', 'zed'); UI.flashRoute(r); if (!UI.fast) Sfx.ambience(); await UI.announce('Se activa la ' + ROUTES[r].name, ROUTES[r].color, 700);
   const zs = routeZeds(r);
   if (!zs.length) { await placeZedInitial(r); return; }
@@ -164,12 +164,12 @@ async function activateRoute(r, cer) {
   for (let i = L; i >= 0 && !G.over; i--) {
     if (G.hand.includes('picado') && !cer) {
       const gr = zedsAt(r + i).filter(z => !z.moved);
-      if (gr.length) { const v = await UI.choose({ title: '«¡Sí! Han picado…»', text: '¿Cancelas la activación de la unidad/Horda en ' + spaceLabel(r + i) + '?', options: [{ label: 'Cancelar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('picado'), 1); zenPlayed(); UI.updateHand(); if (d6() <= 3) G.destDiscard.push('picado'); else G.hand.push('picado'); UI.updateHand(); gr.forEach(z => z.moved = true); { const hz = gr.find(z => z.hits > 0) || gr.find(z => z.flipped); if (hz) { const bf = { flipped: hz.flipped, hits: hz.hits }; if (hz.hits > 0) hz.hits--; else { hz.flipped = false; hz.hits = Math.max(0, (hz.hf || 1) - 1); } LOG(hz.name + ' recupera 1 Impacto.', 'bad'); if (UI.fxHeal) UI.fxHeal(hz, bf); } } continue; } }
+      if (gr.length) { const v = await UI.askZeds({ title: '«¡Sí! Han picado…»', text: '¿Cancelas la activación de ' + zedGroupName(gr, r + i) + '?', spaces: [r + i], options: [{ label: 'Cancelar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('picado'), 1); zenPlayed(); UI.updateHand(); if (d6() <= 3) G.destDiscard.push('picado'); else G.hand.push('picado'); UI.updateHand(); gr.forEach(z => z.moved = true); { const hz = gr.find(z => z.hits > 0) || gr.find(z => z.flipped); if (hz) { const bf = { flipped: hz.flipped, hits: hz.hits }; if (hz.hits > 0) hz.hits--; else { hz.flipped = false; hz.hits = Math.max(0, (hz.hf || 1) - 1); } LOG(hz.name + ' recupera 1 Impacto.', 'bad'); if (UI.fxHeal) UI.fxHeal(hz, bf); } } continue; } }
     }
     if (alreadyHas('distraccion')) {
       const gr = zedsAt(r + i).filter(z => !z.moved);
       const civs = gr.length ? adjacentIds(r + i).filter(id => G.spaces[id] && isRouteSp(id)).flatMap(id => unitsAt(id).filter(x => x.type === 'civ' && !x.ecg)) : [];
-      if (civs.length) { const v = await UI.choose({ title: '¡Mira! ¡Una distracción!', text: '¿Unas Civiles Normales adyacentes sufren 1 Impacto y se retiran para que los Zeds de ' + spaceLabel(r + i) + ' no avancen?', options: civs.map(c => ({ label: 'Sí: ' + c.name + ' en ' + spaceLabel(c.space), value: c.id })).concat([{ label: 'No', value: '' }]) });
+      if (civs.length) { const v = await UI.askZeds({ title: '¡Mira! ¡Una distracción!', text: '¿Unas Civiles Normales adyacentes sufren 1 Impacto y se retiran para que ' + zedGroupName(gr, r + i) + ' no avance?', spaces: [r + i].concat(civs.map(c => c.space)), options: civs.map(c => ({ label: 'Sí: ' + c.name + ' en ' + spaceLabel(c.space), value: c.id })).concat([{ label: 'No', value: '' }]) });
         if (v) { const c = G.units[v]; await hitPlayer(c, 1); if (c.space && isRouteSp(c.space) && c.space !== 'CEM') retreatPlayers([c], nextToward(c.space)); gr.forEach(z => z.moved = true); LOG('Distracción: los Zeds de ' + spaceLabel(r + i) + ' no avanzan.', 'good'); continue; } }
     }
     await stepSpace(r + i, cer, false);
