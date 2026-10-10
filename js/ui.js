@@ -585,7 +585,7 @@ const ui = {
     const m = this._mus; if (!m || m.paused) return; this._mus = null;
     const f = setInterval(() => { m.volume = Math.max(0, m.volume - .05); if (m.volume <= 0) { clearInterval(f); m.pause(); } }, 80);
   },
-  /* Música de partida: dos temas de fondo que se turnan y un tema de peligro (ver setDanger). */
+  /* Música de partida: dos temas de fondo que se turnan y un tema de peligro (ver turnMusic). */
   gameMusicOn() {
     if (this._bg) return;
     this._bg = [1, 2].map(n => { const a = new Audio('assets/sonidos/musica/musica_juego' + n + '.mp3'); a.volume = .4; a.onended = () => { a.currentTime = 0; this._bgI = 1 - this._bgI; this._gamePlay(); }; return a; });
@@ -611,8 +611,11 @@ const ui = {
     if (!Sound.music.on) { cur.pause(); return; }
     const p = cur.play(); if (p && p.catch) p.catch(() => { });
   },
-  /* Lo llama el mapa: true si hay Zeds en el penúltimo espacio (o junto al Centro). Al entrar en peligro, la voz avisa. */
-  setDanger(v) { if (G && G.phase === 'end') return; v = !!v; if (v === this._danger) return; this._danger = v; if (v) Voz.say('peligro'); this._gamePlay(); },
+  /* Al empezar cada turno: suena el tema de peligro si el turno anterior terminó con Zeds junto al Centro (G.dangerNext). La voz avisa al entrar. */
+  turnMusic() {
+    const v = !!G.dangerNext; if (v === this._danger) return;
+    this._danger = v; if (v) Voz.say('peligro'); this._gamePlay();
+  },
   /* Portada: devuelve 'new' o 'load'. */
   titleScreen() {
     return new Promise(res => {
