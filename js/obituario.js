@@ -1,7 +1,8 @@
 /* Obituario: al terminar la partida, un ciclo a pantalla completa con cada baja (héroes y civiles heroicos del Cementerio).
    Por baja: la ilustración entra a color con un foco de luz sobre el personaje y su nombre; pasa a blanco y negro; se apaga a negro;
    y todo se funde para dar paso a la siguiente. Suena el tema «Obituario» y se repite el ciclo hasta que acaba la canción
-   o el jugador pulsa Salir (Esc). Sin música (canal apagado) se hace un solo ciclo. */
+   o el jugador pulsa Salir (Esc). Cada imagen se queda fija unos 5 s entre transiciones. Sin música (canal apagado) el ciclo
+   se repite durante lo que dura el tema. */
 'use strict';
 
 const Obit = {
@@ -10,6 +11,9 @@ const Obit = {
   FOCO_Y: 42,
   MUSICA: 'assets/sonidos/musica/musica_obituario.m4a',
   vel: 1,            /* factor de tiempo (1 = real); lo usan las pruebas */
+  /* Tiempos de cada baja, en segundos: entra la imagen, se queda FIJA, pasa a blanco y negro, se apaga a negro y se funde el nombre. */
+  T_ENTRA: 1.2, T_FIJA: 5, T_BN: 2.4, T_BN_FIJA: 0.8, T_NEGRO: 1.6, T_NOMBRE_FUERA: 1.2, T_PAUSA: 0.4,
+  DURACION: 239.56,  /* duración del tema «Obituario»: si no suena, el ciclo dura igual */
   run: 0, fin: false, activo: false, audio: null, _pend: [],
 
   /* Bajas con ilustración, por orden de caída. */
@@ -45,14 +49,15 @@ const Obit = {
     if (Sound.music.on) {
       const a = this.audio = new Audio(this.MUSICA); a.volume = Math.min(1, .9 * Sound.music.vol);
       a.onended = () => { this.fin = true; this._cancelaEsperas(); };
-      const p = a.play(); if (p && p.catch) p.catch(() => { });
+      const p = a.play(); if (p && p.catch) p.catch(() => { if (this.audio === a) this.audio = null; });   /* si el navegador no deja sonar, manda el temporizador */
     }
+    const t0 = Date.now();
     this.el.style.opacity = 0; this.el.style.transition = 'opacity ' + (0.8 * this.vel) + 's'; void this.el.offsetWidth; this.el.style.opacity = 1;
     let i = 0;
     while (this.run === run && !this.fin) {
       await this.slide(list[i % list.length], run, list[(i + 1) % list.length]);
       i++;
-      if (!this.audio && i >= list.length) break;       /* sin música: un solo ciclo */
+      if (!this.audio && Date.now() - t0 >= this.DURACION * 1000 * this.vel) break;   /* sin música: se repite lo que dura el tema */
     }
     await this.cerrar(run);
   },
@@ -74,15 +79,14 @@ const Obit = {
     if (!(img.complete && img.naturalWidth)) await Promise.race([cargada, new Promise(r => setTimeout(r, 4000))]);   /* tope: la imagen nunca bloquea el ciclo */
     if (next && next.key !== u.key) { const pre = new Image(); pre.src = this.url(next.key); }
     if (this.run !== run || this.fin) return;
-    const zoom = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches ? 'none' : 'transform ' + T(11) + ' linear, ';
     void img.offsetWidth;
-    img.style.transition = (zoom === 'none' ? '' : zoom) + 'opacity ' + T(1.2) + ' ease, filter ' + T(2.4) + ' ease';
-    img.style.opacity = 1; if (zoom !== 'none') img.style.transform = 'scale(1.1)';
-    if (!await this.wait(900, run)) return;  txt.classList.add('on');                                   /* aparece el nombre */
-    if (!await this.wait(2700, run)) return; img.style.filter = 'grayscale(1) brightness(.9)';            /* a blanco y negro */
-    if (!await this.wait(2800, run)) return; img.style.transition = 'filter ' + T(1.6) + ' ease, transform ' + T(11) + ' linear'; img.style.filter = 'grayscale(1) brightness(0)'; /* a negro */
-    if (!await this.wait(1700, run)) return; txt.classList.remove('on');                                  /* se funde el nombre */
-    await this.wait(1500, run);                                                                           /* y entra la siguiente */
+    img.style.transition = 'opacity ' + T(this.T_ENTRA) + ' ease, filter ' + T(this.T_BN) + ' ease';
+    img.style.opacity = 1;                                                                                    /* entra la imagen y se queda fija */
+    if (!await this.wait(900, run)) return;  txt.classList.add('on');                                         /* aparece el nombre */
+    if (!await this.wait(this.T_ENTRA * 1000 - 900 + this.T_FIJA * 1000, run)) return; img.style.filter = 'grayscale(1) brightness(.92)';   /* tras 5 s fija: a blanco y negro */
+    if (!await this.wait((this.T_BN + this.T_BN_FIJA) * 1000, run)) return; img.style.transition = 'filter ' + T(this.T_NEGRO) + ' ease'; img.style.filter = 'grayscale(1) brightness(0)';   /* a negro */
+    if (!await this.wait(this.T_NEGRO * 1000 + 100, run)) return; txt.classList.remove('on');                  /* se funde el nombre */
+    await this.wait((this.T_NOMBRE_FUERA + this.T_PAUSA) * 1000, run);                                         /* y entra la siguiente */
   },
 
   salir() { this.fin = true; this._cancelaEsperas(); },

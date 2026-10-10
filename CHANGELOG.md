@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-10 18:28
+
+### Mejoras
+- **Obituario:** cada imagen se queda fija unos 5 segundos (sin zoom) entre las transiciones, y el ciclo de bajas se repite en bucle hasta que acaba la canción (o se pulsa «Salir»). Con la Música apagada, el bucle dura lo mismo que el tema. Cada baja dura unos 12 s en total.
+
 ## 2026-10-10 18:23
 
 ### Mejoras
