@@ -159,7 +159,7 @@ const ui = {
     h += '<div class="sub">Extras del turno</div>' + (ex.length ? '<ul>' + ex.map(([a, b]) => '<li><span>' + a + '</span><span class="r">' + b + '</span></li>').join('') + '</ul>' : '<div class="none">— ninguno —</div>');
     h += '<div class="row total"><span>Total aproximado</span><span>' + (gen + frN) + (ab.length ? ' + habilidades' : '') + '</span></div>';
     box.innerHTML = h;
-    box.querySelectorAll('[data-uid]').forEach(li => li.onclick = () => { if (!G.units[li.dataset.uid]) return; G.sel = li.dataset.uid; ui.updateStats(); ui.redraw(); });
+    box.querySelectorAll('[data-uid]').forEach(li => li.onclick = () => { if (!G.units[li.dataset.uid]) return; ui.selectUnit(li.dataset.uid); });
   },
   updateHand() {
     const h = $('hand'); h.innerHTML = '';
@@ -212,7 +212,7 @@ const ui = {
     h += tags.map(t => '<span class="pill">' + t + '</span>').join('');
     if (u.key && heroCard(u.key)) h += '<div class="acts cardbtns"><button data-card="front">Ver carta entera</button><button data-card="back">Ver trasera (trasfondo)</button></div>';
     const acts = unitActions(u);
-    if (acts.length) h += '<div class="acts">' + acts.map(a => '<button data-act="' + a.id + '" ' + (a.ok ? '' : 'disabled') + '>' + a.label + '</button>').join('') + '</div>';
+    if (acts.length) h += '<div class="acts">' + acts.map(a => '<button data-act="' + a.id + '" class="' + (a.id === 'move' && a.ok ? 'primary' : '') + '" ' + (a.ok ? '' : 'disabled') + '>' + a.label + '</button>').join('') + '</div>';
     box.innerHTML = h + sph;
     box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => ui.doAct(u, b.dataset.act));
     box.querySelectorAll('[data-card]').forEach(b => b.onclick = () => ui.showHeroCard(u.key, b.dataset.card));
@@ -263,7 +263,13 @@ const ui = {
       }
       this.mode = null; this.setBanner(null);
     }
+    this.selectUnit(uid);
+  },
+  /* Al elegir una unidad en la fase de acciones se entra directamente en Mover (si está disponible). */
+  selectUnit(uid) {
     G.sel = uid || null; this.updateStats(); this.redraw();
+    const u = uid && G.units[uid]; if (!u || G.phase !== 'actions' || G.busy) return;
+    const mv = unitActions(u).find(a => a.id === 'move'); if (mv && mv.ok) this.doAct(u, 'move');
   },
   redraw() { if (!this.ctx || !G.spaces) return; cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.draw()); },
   layout() {
