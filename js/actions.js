@@ -59,7 +59,7 @@ function agee_inLab() { const a = hero('agee'); return a && a.space === 'LAB'; }
 async function doInvestigate(u, free) {
   const c = G.res.cur;
   let usingSup = false;
-  if (!free && alreadyHas('escasean') && G.supplies >= 1 + (c.sup ? 1 : 0)) usingSup = !canPay(u, 1) || (await UI.choose({ title: 'Escasean materiales', text: '¿Cómo pagas la Investigación?', options: [{ label: '1 Acción', value: 'a' }, { label: '1 Suministro', value: 's' }] })) === 's';
+  if (!free && alreadyHas('escasean') && G.supplies >= 1 + (c.sup ? 1 : 0)) usingSup = !canPay(u, 1) || (await UI.choose({ title: 'Escasean materiales', text: '¿Cómo pagas la Investigación?', options: [{ label: '1 Acción', value: 'a' }, { label: '1 Suministro (tienes ' + G.supplies + ')', value: 's' }] })) === 's';
   if (G.supplies < (usingSup ? 1 : 0) + (c.sup ? 1 : 0)) { LOG('Te faltan Suministros para investigar.', 'bad'); return false; }
   if (usingSup) { G.supplies--; } else if (!free) spendActions(u, 1);
   if (c.sup) G.supplies--;
@@ -134,7 +134,8 @@ function unitActions(u) {
     if (u.key === 'hauser') { A.push({ id: 'train', label: 'Entrenar Civiles (1 acc.)', ok: pay(1) && allUnits(x => x.type === 'civ' && !x.trained && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))).length > 0 }); A.push({ id: 'recruit', label: 'Reclutar (1 Munición)', ok: u.space === 'C' && G.ammo >= 1 && pay(1) }); }
     if (u.key === 'seaver' && u.space && sp(u.space).kind === 'office') A.push({ id: 'medico', label: 'Médico: curar en el Hospital (gratis)', ok: cu('medico') && BEDS.some(b => G.spaces[b] && unitsAt(b)[0] && curable(unitsAt(b)[0])) });
     if (u.key === 'johnson' || u.key === 'salvacion' || u.key === 'seaver') A.push({ id: 'firstaid', label: u.key === 'johnson' ? 'Curar (1 acc., 1 Suministro)' : 'Primeros auxilios (1 Suministro)', ok: (u.key === 'johnson' ? pay(1) : cu('aid' + u.key)) && G.supplies >= 1 && G.lv.infection && allUnits(x => isFighter(x) && x.space && curable(x) && (x.space === u.space || adjacentIds(u.space).includes(x.space) || (u.key === 'seaver' && (u.space === 'C' || sp(u.space).kind === 'office') && sp(x.space).kind === 'bed'))).length > 0 });
-    if (u.key === 'bauer' && u.space && sp(u.space).bridge === 'down') A.push({ id: 'puente', label: 'Reparar el puente (1 acc.)', ok: pay(1) });
+    if (u.key === 'bauer' && u.space && sp(u.space).bridge) A.push({ id: 'puente', label: 'Retirar la ficha del puente (1 acc.)', ok: pay(1) });
+    if (sp('F6') && sp('F6').bridge === 'down' && (u.space === 'F6' || adjacentIds(u.space).includes('F6')) && !isSoft(u)) A.push({ id: 'ferry', label: 'Dar la vuelta al Puente (Ferry, 1 acc.)', ok: pay(1) });
     if (u.key === 'bauer') A.push({ id: 'ammo', label: '2 Suministros → 1 Munición', ok: cu('bauer') && G.supplies >= 2 });
     if (u.key === 'wright') A.push({ id: 'peek', label: 'Mirar carta de Evento', ok: pay(1) });
     if (u.key === 'agee') A.push({ id: 'boost', label: '+3 Infección → +1 Acción', ok: cu('boost') && G.pool.event < 4 });
@@ -154,7 +155,8 @@ async function runAction(u, id) {
     case 'cure': { if (G.turn.freeHealNoInf > 0) { G.turn.freeHealNoInf--; await doCure(u, true, true); } else if (G.turn.freeHeal > 0) { G.turn.freeHeal--; await doCure(u, true); } else await doCure(u, false); break; }
     case 'discharge': { if (u.ecg) { if (await UI.confirm('Dar de alta con ECG supone enviarla al Cementerio. ¿Seguro?')) await sendCemetery(u, 'es dada de alta en coma'); } else { putUnit(u, 'C'); LOG(u.name + ' recibe el alta.', 'good'); mayDischargeBonus(u); } UI.redraw(); break; }
     case 'build': { const ts = barTargets(u); if (!ts.length) break; const w = ts.length === 1 ? ts[0] : await UI.pickSpace(ts, 'Barricada: elige el espacio.', true); if (w == null) break; spendActions(u, 1); await doBuild(u, false, w); break; }
-    case 'puente': spendActions(u, 1); sp(u.space).bridge = null; LOG('La Cuadrilla de Bob Bauer repara el Puente colgante.', 'good'); UI.redraw(); break;
+    case 'puente': spendActions(u, 1); sp(u.space).bridge = null; LOG('La Cuadrilla de Bob Bauer retira la ficha del Puente colgante.', 'good'); UI.redraw(); break;
+    case 'ferry': spendActions(u, 1); sp('F6').bridge = 'ferry'; LOG(u.name + ' da la vuelta al Puente: ahora es un Ferry.', 'good'); UI.redraw(); break;
     case 'investigate': await doInvestigate(u); break;
     case 'equip': { const cs = G.cemetery.filter(x => x.type === 'civ'); const v = await UI.choose({ title: 'Equipar Refugiados', text: 'Elige la unidad de Civiles Normales que regresa.', options: cs.map(c => ({ label: 'Civiles ' + c.full + '/' + c.red, value: c.id })), cancel: true }); if (v == null) break; const c = G.units[v]; G.cemetery = G.cemetery.filter(x => x !== c); removeUnit(u); delete G.units[u.id]; putUnit(c, 'C'); c.flipped = true; c.hits = 0; G.turn.equipped = true; LOG('Refugiados equipados: Civiles vuelven al Centro.', 'good'); break; }
     case 'ini': G.charUsed.ini = true; u.free++; LOG('Schmidt usa Iniciativa: 1 acción gratis para él.', 'good'); break;
@@ -220,7 +222,7 @@ async function maintenance() {
     for (const s of Object.values(G.spaces)) {
       if (!s.chaos) continue;
       const rs = unitsAt(s.id).filter(u => (isFighter(u) || u.side === 'raid') && !['pepinillos', 'horacio'].includes(u.key) && !u.ecg && u.type !== 'refugee');
-      if (rs.length) { s.chaos--; G.chaosLeft++; LOG('Se restaura el orden en ' + spaceLabel(s.id) + '.', 'good'); if (!rs.some(u => u.key === 'antidist')) { if (G.weapon && alive('agee')) infDown(2); else await infUp(1); } }
+      if (rs.length) { s.chaos--; G.chaosLeft++; LOG('Se restaura el orden en ' + spaceLabel(s.id) + ' (−1 Caos' + (rs.some(u => u.key === 'antidist') ? ', sin Infección' : ', +1 Infección') + ').', 'good'); UI.pulseSpace(s.id, '#7bd45a'); UI.toast('Orden restaurado en ' + spaceLabel(s.id) + ': −1 Caos', '#7bd45a', 1600); if (!rs.some(u => u.key === 'antidist')) { if (G.weapon && alive('agee')) infDown(2); else await infUp(1); } }
     }
   }
   if (G.antidote) { infDown(1); LOG('El Antídoto reduce la Infección en 1.', 'good'); }

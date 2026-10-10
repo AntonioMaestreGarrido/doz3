@@ -87,7 +87,7 @@ const ui = {
     if (wide !== this._wide) {
       this._wide = wide;
       if (wide) ids.forEach(id => left.appendChild($(id)));
-      else { const ev = $('eventbox'); side.insertBefore($('actbox'), ev); side.insertBefore($('unitbox'), ev); side.insertBefore($('handbox'), ev.nextSibling); }
+      else { const ev = $('eventbox'); side.insertBefore($('unitbox'), ev); side.insertBefore($('actbox'), ev); side.insertBefore($('handbox'), ev.nextSibling); }
       left.hidden = !wide; side.classList.toggle('wide', wide);
     }
     this.fit();
@@ -322,6 +322,7 @@ const ui = {
       else if (s.rumor) { c.save(); c.fillStyle = '#2a7a4a'; c.strokeStyle = '#000'; c.lineWidth = 3; c.beginPath(); c.arc(s.x - 50, s.y + 40, 14, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#fff'; c.font = '900 16px Impact'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', s.x - 50, s.y + 41); c.restore(); }
       if (s.cem || s.base || s.tall || s.registro) { c.save(); c.fillStyle = '#7a4aa8'; c.strokeStyle = '#000'; c.lineWidth = 3; c.beginPath(); c.arc(s.x - 50, s.y + 40, 14, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(s.cem ? 'CEM' : s.base ? 'AIR' : s.tall ? 'TM' : 'REG', s.x - 50, s.y + 41); c.restore(); }
       if (s.bridge === 'down' && IMG.m_puente) { c.save(); c.drawImage(IMG.m_puente, s.x - 28, s.y + 46, 56, 52); c.font = '900 16px Impact'; c.fillStyle = '#ff3b2a'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('ROTO', s.x, s.y + 112); c.fillText('ROTO', s.x, s.y + 112); c.restore(); }
+      else if (s.bridge === 'ferry') { c.save(); c.font = '900 18px Impact'; c.fillStyle = '#7bd4ff'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('FERRY', s.x, s.y + 62); c.fillText('FERRY', s.x, s.y + 62); c.restore(); }
       else if (s.bridge === 'down') { c.save(); c.font = '900 20px Impact'; c.fillStyle = '#ff3b2a'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('PUENTE ROTO', s.x, s.y + 62); c.fillText('PUENTE ROTO', s.x, s.y + 62); c.restore(); }
     }
     if (this.flash) { const t = (performance.now() - this.flash.t0) / 900; if (t < 1) { const r = this.flash.r; c.save(); c.globalAlpha = 1 - t; c.strokeStyle = ROUTES[r].color; c.lineWidth = 16; c.lineCap = 'round'; c.beginPath(); ROUTES[r].spaces.forEach((s, i) => i ? c.lineTo(s.x, s.y) : c.moveTo(s.x, s.y)); c.lineTo(CENTRO.x, CENTRO.y); c.stroke(); c.restore(); this.redraw(); } else this.flash = null; }
@@ -480,8 +481,18 @@ const ui = {
     FIRE.forEach((row, r) => { h += '<tr data-r="' + r + '"><td class="rowh">' + CAC_ROWS[r] + '</td>' + row.map((c, i) => '<td data-c="' + i + '" class="' + (i === col ? 'c-final' : '') + '">' + c + '</td>').join('') + '</tr>'; });
     return h + '</table>';
   },
-  async _rollDice(b, extra, onChange) {
-    await new Promise(r => { $('rb').innerHTML = '<button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>'; $('rollb').onclick = () => r(); $('rollb').focus(); if (ui.fast) r(); });
+  async _rollDice(b, extra, onChange, cardApi) {
+    await new Promise(r => {
+      $('rb').innerHTML = '<div id="cbcards"></div><button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>';
+      const hasCards = !!(cardApi && cardApi.cards.length);
+      if (hasCards) cardApi.cards.forEach(c => {
+        const bt = document.createElement('button'); bt.className = 'cardbtn'; bt.textContent = '🃏 Jugar «' + DEST[c.key].name + '» (' + c.tag + ')';
+        bt.onclick = async () => { bt.disabled = true; await cardApi.use(c); bt.remove(); };
+        $('cbcards').appendChild(bt);
+      });
+      $('rollb').onclick = () => r(); $('rollb').focus();
+      if (ui.fast && !hasCards) r(); /* con cartas disponibles no se tira solo: hay que poder jugarlas */
+    });
     $('rb').innerHTML = '';
     const area = b.querySelector('.dice'); area.innerHTML = '<div class="die"></div>'.repeat(2 + (extra || 0));
     const vals = Array.from({ length: 2 + (extra || 0) }, d6); await ui._animate(area.querySelectorAll('.die'), vals);
@@ -504,12 +515,17 @@ const ui = {
   },
   combatOpen(info) {
     const zs = info.zeds.map(z => z.name + ' ' + strength(z) + (z.hits ? ' <span class="bad">(' + '♥'.repeat(z.hits) + ')</span>' : '')).join(' + ');
-    const sh = info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
-    const b = this._modal('<h2>' + info.title + '</h2><div class="sides"><div class="side z"><div>' + (info.zeds.length > 1 ? 'Horda' : 'Atacantes / Zeds') + '</div><div class="big" style="color:#ff8a76">' + info.zStr + '</div><div style="font-size:12px">' + zs + '</div></div><div class="vs">VS</div><div class="side"><div>' + info.fighter.name + '</div><div class="big" style="color:#9bd68a">' + info.pStr + '</div><div style="font-size:12px">Fuerza ' + (info.fighter.flipped ? 'reducida' : 'completa') + '</div></div></div><div class="cols">Columna inicial: <b>' + CAC_COLS[info.initCol] + '</b><ul style="margin:2px 0 2px 18px;padding:0">' + sh + '</ul>' + (info.extraDice ? '<div>+' + info.extraDice + ' dado(s) extra: se usan los 2 mejores.</div>' : '') + 'Columna final: <b style="color:var(--gold)">' + CAC_COLS[info.finalCol] + '</b></div>' + this._cacTable(info.initCol, info.finalCol) + '<div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
+    const shHtml = () => info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
+    const colsInner = () => 'Columna inicial: <b>' + CAC_COLS[info.initCol] + '</b><ul style="margin:2px 0 2px 18px;padding:0">' + shHtml() + '</ul>' + (info.extraDice ? '<div>+' + info.extraDice + ' dado(s) extra: se usan los 2 mejores.</div>' : '') + 'Columna final: <b style="color:var(--gold)">' + CAC_COLS[info.finalCol] + '</b>';
+    const b = this._modal('<h2>' + info.title + '</h2><div class="sides"><div class="side z"><div>' + (info.zeds.length > 1 ? 'Horda' : 'Atacantes / Zeds') + '</div><div class="big" style="color:#ff8a76">' + info.zStr + '</div><div style="font-size:12px">' + zs + '</div></div><div class="vs">VS</div><div class="side"><div>' + info.fighter.name + '</div><div class="big" style="color:#9bd68a">' + info.pStr + '</div><div style="font-size:12px">Fuerza ' + (info.fighter.flipped ? 'reducida' : 'completa') + '</div></div></div><div class="cols" id="ccols">' + colsInner() + '</div><div id="ctab">' + this._cacTable(info.initCol, info.finalCol) + '</div><div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
     const mark = best => { const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.finalCol + '"]'); b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Suma <b>' + (best[0] + best[1]) + '</b>'; };
     return {
       mark,
-      roll: async extra => { const best = await ui._rollDice(b, extra, mark); mark(best); return best; },
+      roll: async extra => {
+        /* Cartas jugables antes de tirar: botones en esta ventana. Al jugar una, se recalcula la columna final. */
+        const cardApi = info.cards && info.cards.length ? { cards: info.cards, use: async c => { await info.useCard(c); $('ccols').innerHTML = colsInner(); $('ctab').innerHTML = ui._cacTable(info.initCol, info.finalCol); } } : null;
+        const best = await ui._rollDice(b, extra, mark, cardApi); mark(best); return best;
+      },
       ask: (t, o) => ui._ask('rb', t, o),
       reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
       setResult: (row, col, [zh, ph], zedLoses) => { b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + col + '"]'); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Impactos a los Zeds: <b class="p">' + zh + '</b> · Impactos a tu unidad: <b class="z">' + ph + '</b><br>' + (zedLoses ? '<span class="good">Los Zeds pierden y se retiran.</span>' : '<span class="bad">Tus unidades pierden y se retiran.</span>'); },
@@ -718,13 +734,25 @@ const ui = {
     G.phase = 'end'; EVT('end', null, { over: G.over, why: G.loseWhy || null }); this.updateStats(); this.gameMusicEnd(win);
     Voz.say(win ? 'victoria' : G.loseWhy === 'caos' ? 'derrota_caos' : 'derrota_centro');
     saveTop({ win, score: s.total, lv: G.lv.name, len: G.len.name, turns: G.turnNo, killed: G.stats.killed, date: Date.now() });
-    this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button id="chrBtn">Crónica de la partida</button><button id="logBtn2">Registro</button><button class="primary" id="nb">Nueva partida</button></div></div>');
+    this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button id="revBtn">Revisar el tablero</button><button id="chrBtn">Crónica de la partida</button><button id="logBtn2">Registro</button><button class="primary" id="nb">Nueva partida</button></div></div>');
     this._endHtml = $('modalbox').innerHTML; this._bindEnd();
   },
   _bindEnd() {
     $('nb').onclick = () => ui.reloadToMenu();
     $('chrBtn').onclick = () => ui.showChronicle();
     $('logBtn2').onclick = () => downloadLog();
+    $('revBtn').onclick = () => ui.reviewBoard();
+  },
+  /* Revisar el tablero tras el final: se oculta el resumen y el mapa queda libre (zoom, arrastre, fichas con su ficha ampliada). Una barra permite volver. */
+  reviewBoard() {
+    $('modal').hidden = true;
+    let bar = $('revbar'); if (bar) bar.remove();
+    bar = document.createElement('div'); bar.id = 'revbar';
+    bar.innerHTML = '<span>Partida terminada · revisando el tablero</span><button id="revBack" class="primary">Volver al resumen</button><button id="revNew">Nueva partida</button>';
+    document.body.appendChild(bar);
+    $('revBack').onclick = () => { bar.remove(); ui._modal(ui._endHtml); ui._bindEnd(); };
+    $('revNew').onclick = () => ui.reloadToMenu();
+    ui.redraw();
   },
   /* Crónica final: qué ha hecho cada unidad, con premios y un epíteto por unidad (a partir de G.ust, ver evlog.js). */
   showChronicle() {

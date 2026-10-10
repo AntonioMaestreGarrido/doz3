@@ -38,7 +38,7 @@ async function spawnHero(key, where) {
   if (!heroAllowed(key)) { LOG('«' + HEROES[key].name + '» no puede entrar en una partida de este nivel.', 'bad'); return null; }
   const u = makeHero(key, where);
   const isCiv = HEROES[key].type === 'civh' || CIVH_POOL.includes(key);
-  await UI.waitAck(isCiv ? '¡Llega un Civil Heroico!' : '¡Llega un Héroe!', '<b>' + HEROES[key].name + '</b> entra en juego en ' + spaceLabel(where) + '.', 'assets/cartas/' + (HEROES[key].card || 'h_' + key) + '.jpg', 'h:' + key);
+  await UI.waitAck(isCiv ? '¡Llega un Civil Heroico!' : '¡Llega un Héroe!', '<b>' + HEROES[key].name + '</b> entra en juego en ' + spaceLabel(where) + '.', heroCard(key) || 'assets/cartas/' + (HEROES[key].card || 'h_' + key) + '.jpg', 'h:' + key);
   await heroEnters(u); LOG('Entra en juego: ' + u.name + '.', 'good'); UI.redraw(); return u; }
 function randomAvailableHero() {
   const pool = heroPoolFor(G.lv.n).filter(k => !hero(k) && !G.cemetery.some(u => u.key === k));
@@ -136,8 +136,10 @@ async function resolveTwist(dr) {
     await UI.waitAck('Destino: ' + d.name, 'Guardar para más tarde — se añade a tu mano.<br>' + d.txt, destImg(dr.id), 'd:' + dr.id);
     return;
   }
-  await UI.waitAck('Destino: ' + d.name, 'Juega esta carta: ' + d.txt, destImg(dr.id), 'd:' + dr.id);
-  await DEST_FX(dr.id, dr.route);
+  const saved = { q: G.turn.peekQ, on: G.turn.peekOn }; G.turn.peekQ = { zed: [], sup: [] };
+  await UI.waitAck('Destino: ' + d.name, '<div class="rulebox"><b>Regla</b><br>' + d.txt + '</div>' + Preview.block(Preview.destiny(dr.id, dr.route)), destImg(dr.id), 'd:' + dr.id);
+  G.turn.peekOn = true;
+  try { await DEST_FX(dr.id, dr.route); } finally { G.turn.peekQ = saved.q; G.turn.peekOn = saved.on; }
   G.destDiscard.push(dr.id);
 }
 async function lossChoice(n, opts) { // pierdes n en combinación de opciones: s (Suministros), a (Munición), i (Infección), p (Impactos)

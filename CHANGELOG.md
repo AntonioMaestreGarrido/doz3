@@ -2,6 +2,24 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-10 18:00
+
+### Mejoras
+- **Cartas de Evento y de Destino:** además de la regla, un bloque aparte «Lo que va a pasar» con el resultado concreto según el estado de la partida (por ejemplo, qué Zed o Súper Zed aparece y en qué espacio). La ficha anunciada es la que de verdad se coloca. Cubre unos 20 eventos y 13 cartas de Destino; el resto sigue mostrando solo la regla. Los Brotes anuncian qué aparece y dónde.
+- **Cartas en el combate:** «El Hombre sin nombre», «Un trago para coger fuerzas», «Excavadora asesina» y «Algunos civiles se organizan» ya no preguntan cada vez: salen como botones en la ventana de resolución, antes de tirar los dados.
+- **Revisar el tablero:** nuevo botón en la pantalla final que oculta el resumen y deja el mapa libre, con una barra para volver.
+- **Tablet:** el contador de Acciones, Munición, Suministros e Infección queda fijo al hacer scroll y el panel de acciones de la unidad pasa a ir primero.
+- **Fase 4R:** Marines y Guardia Nacional centran la cámara antes de preguntar por su movimiento.
+- **Elecciones de recursos:** Buscar, Escasean materiales, Reparar camión y Tall-Mart muestran cuántos Suministros y Munición tienes.
+- **Restaurar el orden:** al quitar Caos en Mantenimiento sale un aviso verde en el mapa y el registro indica el efecto en la Infección.
+- **Acción Ferry:** con el Puente colgante derrumbado, una unidad en él o adyacente puede darle la vuelta (1 acción). En Ferry entran las unidades que no son Zed, pero su Mover termina ahí. La Cuadrilla de Bob Bauer retira la ficha desde el propio espacio.
+- **OST:** las letras van incrustadas en un script, de modo que también se ven al abrir el juego sin servidor.
+
+### Fixes
+- **Héroe que llega a la partida:** la pantalla de llegada respeta el arte alternativo.
+- **«Un trago para coger fuerzas»:** el Impacto posterior al combate no se aplicaba nunca; ahora sí.
+- Service worker: sube la versión de la caché.
+
 ## 2026-10-10 11:27
 
 ### Mejoras

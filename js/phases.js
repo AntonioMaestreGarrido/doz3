@@ -16,7 +16,8 @@ async function outbreak(wild, noReduce) {
     if (!target) target = r + '0';
   }
   const z = wild ? makeSuper() : makeZed();
-  LOG('¡Brote' + (wild ? ' Descontrolado' : '') + ' en ' + ROUTES[r].name + '!', 'bad'); UI.toast('¡Brote' + (wild ? ' Descontrolado' : '') + ' en ' + ROUTES[r].short + '!', '#ff3b2a', 1800, true);
+  const que = z ? ' Aparece ' + (z.type === 'super' ? z.name : 'un Zed de Fuerza ' + z.full) + ' en ' + spaceLabel(target) + '.' : '';
+  LOG('¡Brote' + (wild ? ' Descontrolado' : '') + ' en ' + ROUTES[r].name + '!' + que, 'bad'); UI.toast('¡Brote' + (wild ? ' Descontrolado' : '') + ' en ' + ROUTES[r].short + '!' + que, '#ff3b2a', 2600, true);
   if (z) await placeZedAt(target, 'Brote', z);
   await resolveTwist(dr);
 }
@@ -221,6 +222,7 @@ async function phase4R() {
     if (G.over) return;
   }
   for (const u of allUnits(x => x.type === 'marine' && x.space && isRouteSp(x.space))) {
+    UI.focus(u.space, 1.7); UI.redraw(); await UI.settle();
     const v = await UI.choose({ title: 'Marines', text: 'Los Marines pueden mover 1 espacio sin coste.', options: [{ label: 'Hacia el Centro', value: 'f' }, { label: 'Hacia atrás', value: 'b' }, { label: 'Quedarse', value: 'n' }] });
     const dest = v === 'f' ? nextToward(u.space) : v === 'b' ? prevToward(u.space) : null;
     if (dest && !isInit(dest) && playerRoom(dest, u)) { await doMove(u, dest); }
@@ -239,6 +241,7 @@ async function phase4R() {
     allUnits(x => x.movedR).forEach(x => x.movedR = false);
   }
   for (const u of allUnits(x => x.type === 'guard' && x.space && isRouteSp(x.space))) {
+    UI.focus(u.space, 1.7); UI.redraw(); await UI.settle();
     const v = await UI.choose({ title: 'Guardia Nacional', text: 'La Guardia puede mover 1 espacio sin coste.', options: [{ label: 'Hacia el Centro', value: 'f' }, { label: 'Hacia atrás', value: 'b' }, { label: 'Quedarse', value: 'n' }] });
     const dest = v === 'f' ? nextToward(u.space) : v === 'b' ? prevToward(u.space) : null;
     if (dest && !isInit(dest) && dest !== 'C' && playerRoom(dest, u)) await doMove(u, dest);

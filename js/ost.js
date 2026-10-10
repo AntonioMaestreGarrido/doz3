@@ -71,7 +71,10 @@ const Ost = {
     const box = this.$('ostLetra');
     if (!t.letra) { box.classList.add('vacia'); box.textContent = 'Esta canción no tiene letra.'; return; }
     box.classList.remove('vacia'); box.textContent = 'Cargando letra…';
-    fetch(this.LETRA_DIR + t.letra).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    /* Primero las letras incrustadas (letras.js: funcionan también abriendo el juego como fichero); si no están, se piden como fichero. */
+    const embebida = window.LETRAS && window.LETRAS[t.letra];
+    const pedir = embebida !== undefined ? Promise.resolve(embebida) : fetch(this.LETRA_DIR + t.letra).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); });
+    pedir
       .then(s => { if (this.TEMAS[this.i] === t) box.textContent = s; })
       .catch(() => {
         if (this.TEMAS[this.i] !== t) return;
