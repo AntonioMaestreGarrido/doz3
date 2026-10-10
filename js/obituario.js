@@ -1,7 +1,7 @@
 /* Obituario: al terminar la partida, un ciclo a pantalla completa con cada baja (héroes y civiles heroicos del Cementerio).
-   Por baja: la ilustración entra a color con un foco de luz sobre el personaje y su nombre; pasa a blanco y negro; se apaga a negro;
-   y todo se funde para dar paso a la siguiente. Suena el tema «Obituario» y se repite el ciclo hasta que acaba la canción
-   o el jugador pulsa Salir (Esc). Cada imagen se queda fija unos 5 s entre transiciones. Sin música (canal apagado) el ciclo
+   Por baja: la ilustración entra y se queda 5 s tal cual, sin ningún efecto; después aparecen el foco de luz sobre el personaje y su nombre;
+   pasa a blanco y negro; se apaga a negro; y todo se funde para dar paso a la siguiente. Suena el tema «Obituario» y se repite el ciclo hasta que acaba la canción
+   o el jugador pulsa Salir (Esc). Sin música (canal apagado) el ciclo
    se repite durante lo que dura el tema. */
 'use strict';
 
@@ -11,8 +11,8 @@ const Obit = {
   FOCO_Y: 42,
   MUSICA: 'assets/sonidos/musica/musica_obituario.m4a',
   vel: 1,            /* factor de tiempo (1 = real); lo usan las pruebas */
-  /* Tiempos de cada baja, en segundos: entra la imagen, se queda FIJA, pasa a blanco y negro, se apaga a negro y se funde el nombre. */
-  T_ENTRA: 1.2, T_FIJA: 5, T_BN: 2.4, T_BN_FIJA: 0.8, T_NEGRO: 1.6, T_NOMBRE_FUERA: 1.2, T_PAUSA: 0.4,
+  /* Tiempos de cada baja, en segundos: entra la imagen, se queda FIJA y limpia, aparecen foco y nombre, pasa a blanco y negro, se apaga a negro y se funde el nombre. */
+  T_ENTRA: 1.2, T_FIJA: 5, T_LUZ: 1.2, T_LUZ_FIJA: 2.5, T_BN: 2.4, T_BN_FIJA: 0.8, T_NEGRO: 1.6, T_NOMBRE_FUERA: 1.2, T_PAUSA: 0.4,
   DURACION: 239.56,  /* duración del tema «Obituario»: si no suena, el ciclo dura igual */
   run: 0, fin: false, activo: false, audio: null, _pend: [],
 
@@ -70,7 +70,8 @@ const Obit = {
     el.querySelector('.ob-name').textContent = h.name.replace(/\s*\(.*?\)/, '');
     el.querySelector('.ob-sub').textContent = h.cls + (st.diedT ? ' · cayó en el turno ' + st.diedT : '');
     el.querySelector('.ob-epi').textContent = kills ? 'Eliminó ' + kills + ' Zed' + (kills > 1 ? 's' : '') + ' antes de caer.' : 'Sostuvo la línea hasta el final.';
-    txt.classList.remove('on'); txt.style.transition = 'opacity ' + T(1.2);
+    txt.classList.remove('on'); txt.style.transition = 'opacity ' + T(this.T_LUZ);
+    spot.style.transition = 'none'; spot.style.opacity = 0;   /* foco apagado: la imagen sale sin efectos */
     spot.style.background = 'radial-gradient(ellipse 36% 58% at ' + fx + '% ' + fy + '%, rgba(0,0,0,0) 0%, rgba(0,0,0,.32) 55%, rgba(0,0,0,.9) 100%)';
     img.style.transition = 'none'; img.style.opacity = 0; img.style.filter = 'grayscale(0) brightness(1)'; img.style.transform = 'scale(1)';
     img.style.objectPosition = fx + '% ' + fy + '%'; img.style.transformOrigin = fx + '% ' + fy + '%';
@@ -82,8 +83,9 @@ const Obit = {
     void img.offsetWidth;
     img.style.transition = 'opacity ' + T(this.T_ENTRA) + ' ease, filter ' + T(this.T_BN) + ' ease';
     img.style.opacity = 1;                                                                                    /* entra la imagen y se queda fija */
-    if (!await this.wait(900, run)) return;  txt.classList.add('on');                                         /* aparece el nombre */
-    if (!await this.wait(this.T_ENTRA * 1000 - 900 + this.T_FIJA * 1000, run)) return; img.style.filter = 'grayscale(1) brightness(.92)';   /* tras 5 s fija: a blanco y negro */
+    if (!await this.wait((this.T_ENTRA + this.T_FIJA) * 1000, run)) return;                                    /* 5 s fija, tal cual, sin foco ni texto */
+    spot.style.transition = 'opacity ' + T(this.T_LUZ); spot.style.opacity = 1; txt.classList.add('on');       /* aparecen el foco de luz y el nombre */
+    if (!await this.wait((this.T_LUZ + this.T_LUZ_FIJA) * 1000, run)) return; img.style.filter = 'grayscale(1) brightness(.92)';   /* y a blanco y negro */
     if (!await this.wait((this.T_BN + this.T_BN_FIJA) * 1000, run)) return; img.style.transition = 'filter ' + T(this.T_NEGRO) + ' ease'; img.style.filter = 'grayscale(1) brightness(0)';   /* a negro */
     if (!await this.wait(this.T_NEGRO * 1000 + 100, run)) return; txt.classList.remove('on');                  /* se funde el nombre */
     await this.wait((this.T_NOMBRE_FUERA + this.T_PAUSA) * 1000, run);                                         /* y entra la siguiente */

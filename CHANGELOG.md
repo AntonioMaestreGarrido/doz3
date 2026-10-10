@@ -2,6 +2,13 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-10 19:39
+
+### Mejoras
+- **Obituario:** durante los 5 segundos fijos, la ilustración se ve tal cual, sin foco de luz ni texto. Pasado ese tiempo aparecen el foco y el nombre, y después el blanco y negro, el negro y el siguiente.
+- **Música de peligro:** nuevo tema «Last Stand» (con letra en el panel OST). Suena cuando un turno termina en peligro y el siguiente empieza también en peligro; el tema de peligro «Apocalyptic Slide» sigue sonando como antes en los demás casos.
+- **Créditos:** muestran la fecha de la build.
+
 ## 2026-10-10 18:28
 
 ### Mejoras
