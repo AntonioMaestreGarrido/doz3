@@ -1,0 +1,162 @@
+==== HÉROES ====
+
+Capitana Piazza (Militar)
+  1. Francotiradora de élite: disparos de Largo Alcance hasta 3 espacios (no a través del Centro). Fuerza 2 a 1 espacio, 4 a 2 espacios, 3 a 3 espacios.
+  2. Vigilancia: tras disparar puede retroceder 1 espacio (con las unidades que quiera de su espacio).
+  3. Fabricar Munición: gasta 2 Acciones para disparar sin gastar Munición.
+
+Alcalde Hernández (Ciudadano)
+  1. Llaves de la Ciudad: +1 a las tiradas de Buscar de cualquier unidad en espacios de Ciudad y en el Centro.
+  2. Control del tráfico: entrar en el Centro cuesta 0 de Movimiento.
+  3. Ciudadela: Acción de Personaje: una unidad del Centro realiza un disparo gratis (1 Munición) con 1 columna a favor.
+  4. Discurso Motivador: una vez por partida: cada unidad de jugador en la Ciudad o el Centro recibe 1 Acción gratis.
+
+Ayudante Schmidt (Policía)
+  1. Iniciativa: una Acción de Personaje por fase de Acciones, solo para su unidad.
+  2. Boy Scout de rango Águila: 1 columna a favor en combates Cuerpo a Cuerpo.
+  3. Resistente: cada Impacto se ignora con 4-6.
+  4. Artes marciales: en cada combate Cuerpo a Cuerpo puede repetir la tirada (la segunda es definitiva).
+
+Sheriff Hunt (Policía)
+  1. Liderazgo: Acción de Personaje: da 1 Acción gratis a una unidad de Civiles (también Civiles Heroicos) o Refugiados en su espacio o adyacente.
+  2. Largo Alcance: dispara a 2 espacios con 1 columna en contra.
+  3. Resistente: cada Impacto se ignora con 4-6.
+  4. Artes marciales: puede repetir la tirada de combate Cuerpo a Cuerpo.
+
+Otto «Sargento» Hauser (Militar)
+  1. Entrenar: como una Acción: una unidad de Civiles Normales en su espacio o adyacente recibe +2 de Fuerza (hasta ser eliminada).
+  2. Reclutar: en el Centro, como una Acción y por 1 Munición retira 1 Impacto a unas Civiles Normales del mapa (no del Hospital).
+  3. Buscar: +1 a sus tiradas de Buscar.
+  4. Resistente: ignora Impactos con 4-6.
+
+Sr. Johnson (Rapiñador)
+  1. Al entrar en juego: obtienes 2 Suministros y 3 de Munición.
+  2. Rapiñador: tira 2 dados al Buscar y elige el mejor (dobles naturales: resultado doble).
+  3. Armas: sus ataques con Arma de Fuego tienen 2 columnas a favor.
+  4. Trampas: cuando una unidad Zed entra en su espacio tira 1 dado: 1-3 combate normal; 4-6 el Zed sufre 1 Impacto y Johnson retrocede.
+  5. Curar: Acción (1 Suministro) para Curar a una unidad en su espacio o adyacente.
+
+Coronel Kingman (Militar)
+  1. Bastión: una vez por partida, 1 Acción + 3 Suministros: ficha de Bastión (Terreno 3, permanente).
+  2. Campo de Minas: una vez por partida, 1 Acción + 2 Suministros + 1 Munición.
+  3. Defensor: 1 columna a favor al defender.
+  4. Perímetro Defensivo: cuando un Zed se mueve a su espacio o a uno adyacente: tira 1 dado, con 5-6 el movimiento se cancela.
+
+Pepinillos (pastor alemán) (Rapiñador)
+  1. Rápido: mueve 6 espacios y no lo detiene el Caos.
+  2. Rapiñador: tira 2 dados al Buscar (solo 1 en espacios controlados por Zeds, donde sí puede buscar).
+  3. Sigilo: al coincidir con Zeds o Saqueadores tira 1 dado: 1 combate Cuerpo a Cuerpo; 2-6 sigiloso, las unidades coexisten sin efecto.
+  4. Ladrido ruidoso: cuando un Zed o Saqueador intenta salir de su espacio: 4-6 cancela el movimiento.
+  5. Perruno: no dispara, construye, usa vehículos, restaura el orden ni arresta; el Caos no lo detiene.
+
+Miguel «El Toro Loco» Santana (Luchador)
+  1. Carga del Toro: al atacar Cuerpo a Cuerpo a Zeds normales: 1-3 combate normal; 4-6 el Zed sufre 1 Impacto y se retira sin combate (sin Infección).
+  2. Fuerza 6/4 en combate pero solo 3/2 al disparar. Mueve 3 espacios.
+
+Alyssa Darling (Ciudadana)
+  1. Ataque asesino: al entrar con Zeds (o al entrar ellos) tira 1 dado: 1 combate normal; 2 puedes retroceder 1 espacio o luchar; 3-6 ataque con 2 columnas a favor, sin Infección ni daño para ella.
+  2. Reforzada: ignora Impactos con 5-6. Mueve 5.
+
+Rusty Staub (Ciudadano)
+  1. Buscar: obtienes 1 Suministro extra al Buscar con él.
+  2. Primer disparo gratis: su primer disparo del turno no gasta Munición.
+  3. Suertudo: en su tirada de Salvación tira 2 dados y elige el mejor. Reforzado.
+  4. Feroz: herido, su Fuerza Cuerpo a Cuerpo sube a 5 y la de sus disparos baja a 2.
+
+Doc Seaver (Científico)
+  1. Científico: puede entrar en las Oficinas del Hospital y en el Laboratorio (donde puede Investigar).
+  2. Médico: una vez por fase de Acciones, en una Oficina, cura (Acción de Personaje) a cualquier unidad del Hospital.
+  3. Primeros Auxilios (1 Suministro): una vez por fase cura a una unidad en su espacio o adyacente (incluso a sí mismo). Estando en una Oficina o en el Centro puede curar a una unidad del Hospital.
+  4. Administración del Hospital: en una Oficina admite un cuarto paciente, que puede quedarse aunque se vaya.
+
+Profesora Agee (Científica)
+  1. En una Oficina del Hospital: cada Acción de Curar reduce la Infección en 2.
+  2. En el Laboratorio: +1 a tiradas de Investigación (máx. 6).
+  3. Madre de la Ciencia: con la Súper Arma, restaurar el orden reduce la Infección 2.
+  4. Una vez por turno: +3 Infección a cambio de 1 Acción de Evento extra.
+
+Alan «Xeno» Jones (Científico)
+  1. Sus Propios Planes: una Acción de Personaje por fase de Acciones, solo para su unidad.
+  2. Pistola experimental: sus disparos cuestan 1 Suministro en vez de Munición.
+  3. En una Oficina del Hospital: con su Acción de Personaje manda 1 unidad del Hospital al Cementerio y revela la siguiente carta de Investigación (no cuenta como Investigar).
+  4. Puede Investigar en el Laboratorio.
+
+Agente Especial Wright (Científica)
+  1. Equipo de apoyo: 1 columna a favor en combates y disparos.
+  2. Información clasificada: 1 Acción: mira la carta superior del mazo de Eventos.
+  3. En las Oficinas del Hospital: +1 a las tiradas de Salvación de las unidades de jugador.
+  4. Reforzada: ignora Impactos con 5-6.
+
+Wilson el Ermitaño (Rapiñador)
+  1. Rapiñador: tira 2 dados al Buscar.
+  2. Visiones: puedes mirar la carta superior del mazo de Destino en cualquier momento.
+  3. Compañero: la unidad agrupada con él tira 1 dado extra y elige los mejores (no en el Centro).
+
+Sra. May Hauser (Ciudadana)
+  1. Intendente ahorradora: si está en un espacio de Ciudad, por cada Munición que pierdas o gastes tiras 1 dado: con 5-6 no la pierdes.
+  2. La voluntaria de hierro: en una Oficina del Hospital, las unidades dadas de alta en la fase de Acciones obtienen 1 Acción gratis.
+  3. Entrenadora de combate: cada unidad de jugador agrupada con ella (incluso en el Centro) recibe +1 de Fuerza en combate Cuerpo a Cuerpo.
+  4. Pistolera de primera: 1 columna a favor al disparar y tira 1 dado extra (eliges los 2 mejores). Su primer disparo del turno no gasta Munición.
+
+Betty «Saltarina» Bolívar (Ciudadana)
+  1. Miope: no puede disparar.
+  2. Despiadada: lucha siempre en la columna «Humanos ×3» (cara completa) o «Humanos ×2» (cara reducida), atacando o defendiendo, sin otros modificadores. Los modificadores de cartas especiales, Súper Arma y repetir tiradas sí se aplican. Agrupada con Wilson tira 3 dados.
+  3. Temeraria: cuando gana un combate contra Zeds, si en el siguiente espacio hacia el Centro hay Zeds, entra y ataca de nuevo (sube la Infección como siempre). Solo la detiene ser eliminada o no haber más Zeds. Ignora Caos y el Puente.
+  4. Inmortal: en su tirada de Salvación tira 2 dados y elige el mejor.
+
+Carter «Ruedas Grandes» (Montado)
+  1. El rey de la carretera: solo rutas de la superficie; no dispara, arresta ni usa otros vehículos; no sube la Infección al combatir. No tiene que parar al conducir por el Caos (pero no empieza un movimiento desde él).
+  2. Transportista de Cargamento: entra por un Inicial con la ficha en «Cargado». Al llegar al Centro cargado, el movimiento termina: +5 Suministros y +3 Munición, y se da la vuelta a «Vacío». Recarga en un Inicial con 1 Acción.
+  3. Barrer Zeds: al cruzar un espacio con Zeds (si le quedan puntos): 1 dado, 4-6 inflige 1 Impacto a cada Zed y sigue; si falla se detiene y combate.
+  4. Reparar: solo sufre Impactos su camión (6 en total). En el Centro o un Inicial retira 1 Impacto por turno (1 Suministro o 1 Acción).
+
+General Lee (Equino)
+  1. Ensillar: puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento.
+  2. Carga de caballería: cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir.
+  3. Purasangre: recibe 1 Acción de Mover gratis por fase de Acciones.
+  4. Instinto equino: no puede entrar voluntariamente en un espacio con Caos ni en el Túnel con jinete. Puede llevar a un herido al Hospital («Galope al Hospital»).
+  5. Un caballo es un caballo: no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.
+
+==== CIVILES HEROICOS ====
+
+Horacio (chimpancé) (Primate)
+  1. Los frutos del trabajo: al entrar en juego obtienes 3 Suministros.
+  2. Modificaciones genéticas: nunca sube la Infección al atacar o defender en combate Cuerpo a Cuerpo.
+  3. Resistente: ignora Impactos con 4-6.
+  4. Tácticas de gorila: en cada combate Cuerpo a Cuerpo puede repetir la tirada (la segunda es definitiva).
+  5. El gran simio: no dispara. Resiste 4 Impactos como las Civiles.
+
+Furias de Farmingdale (Civiles Heroicos)
+  1. Luchadoras: no pueden disparar con Arma de Fuego.
+  2. Resistentes: ignoran Impactos con 4-6. Mueven 4.
+
+Voluntarios de Bomberos 129 (Civiles Heroicos)
+  1. 1 columna a favor en todos los combates Cuerpo a Cuerpo.
+  2. Autoridad Civil: Acción de Personaje: libera Civiles Resistiendo o convierte Aldeanos en Refugiados (en o adyacente a un Pueblo).
+  3. Mangueras: tira 2 dados; si el total ≥ a la Fuerza de un Zed adyacente, se retira.
+
+Cuadrilla de Bob Bauer (Civiles Heroicos)
+  1. Dispositivos explosivos: Acción de Personaje: convierte 2 Suministros en 1 Munición. Construye Barricadas por 1 Suministro.
+
+F.D.P.D. Antidisturbios (Civiles Heroicos)
+  1. Nunca suben la Infección al combatir ni al restaurar el orden. No disparan.
+
+Tropas de Salvación (Civiles Heroicos)
+  1. Al entrar en juego: 2 Suministros.
+  2. Campamento Médico: Acción de Personaje (1 Suministro): cura a una unidad en su espacio o adyacente.
+  3. +1 a la tirada de Alimentación.
+
+Mensajero del Clarín (Civiles Heroicos)
+  1. Al entrar en juego trae otras Civiles Heroicos. Mientras esté en juego un Zed que llega al Centro no gana automáticamente: tiene que ganar un combate. El segundo Suministro gastado cada fase es gratis.
+
+WZED Farmingdale (Civiles Heroicos)
+  1. Transmisión de Emergencia: Acción de Personaje: 1 Acción gratis a una Civil Normal o Refugiados en la superficie.
+  2. Al defender en la Ciudad o el Centro tiras 1 dado extra y eliges los mejores.
+
+12.ª División de Veteranos (Civiles Heroicos)
+  1. Su primer disparo del turno no gasta Munición. Gana todo combate Cuerpo a Cuerpo contra Zeds (los Zeds se retiran, sin importar la tirada).
+
+Jaque Mates™ (Civiles Heroicos)
+  1. Estrategas: al comienzo de cada fase de Acciones tira 1 dado: si es mayor que tus Acciones de Evento, obtienes 1 Acción de Evento más (incluso por encima de 4).
+  2. Ruse de jeu: por cada Refugiados en el Campo de Refugiados su Fuerza aumenta +1 (cara completa) y +½ (cara reducida, redondeando abajo).
+
