@@ -41,7 +41,7 @@ function zoomInfo(spec) {
     const tags = []; if (u.ecg) tags.push('En coma (ficha de ECG): no puede actuar'); if (u.resist) tags.push('Resistiendo (inmóvil)'); if (u.armed) tags.push('Bien Armados: 1 columna a favor'); if (u.leader) tags.push('Líder Civil: 1 columna a favor'); if (u.trained) tags.push('Entrenados: +2 Fuerza'); if (u.keepCalm) tags.push('«Keep calm»: 2 columnas este turno'); if (freeTotal(u)) tags.push('Acciones gratis: ' + freeLabel(u));
     if (u.zresist) tags.push('Resistentes: Impactos anulados con 1-3'); if (u.fast) tags.push('Rápidos: se mueven dos veces'); if (u.toxic) tags.push('Tóxicos: Infección +3'); if (u.smart) tags.push('Inteligentes: 1 columna en contra al atacar'); if (u.leader && isZedSide(u)) tags.push('Líder Zed: 1 columna en contra'); if (u.pest) tags.push('Pestilentes');
     const cur = '<div class="zrow cur">' + state.join('<br>') + '</div>' + (tags.length ? '<div class="zrow">' + tags.map(t => '<span class="pill">' + t + '</span>').join('') + '</div>' : '');
-    if (u.key && HEROES[u.key]) { const h = HEROES[u.key]; return { img: heroImg(u.key), title: h.name, tok: heroTok(u.key) ? 1 : 0, html: '<div class="zk">' + h.cls + ' · Movimiento ' + h.mp + '</div>' + cur + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(u.key) }; }
+    if (u.key && HEROES[u.key]) { const h = HEROES[u.key]; return { img: heroImg(u.key, u.flipped), title: h.name, tok: heroTok(u.key) ? 1 : 0, html: '<div class="zk">' + h.cls + ' · Movimiento ' + h.mp + '</div>' + cur + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(u.key) }; }
     if (u.type === 'super') { const d = SUPER_ZEDS[u.key]; return { img: 'assets/tokens/' + d.img + '.png', title: 'Súper Zed: ' + d.name, tok: 1, html: cur + li([d.txt, 'Un Súper Zed eliminado se retira de la partida. Si entra en el Centro, pierdes.']) }; }
     if (u.type === 'spreader') return { img: 'assets/tokens/zed.png', title: u.name, tok: 1, html: cur + li(['Propagador de Enfermedad: +1 Infección en cada fase de Infección mientras no esté en un espacio Inicial. No cuenta para el límite de agrupamiento. Al ser eliminado: tirada 1-3 vuelve al Inicial, 4-6 sale de la partida.']) };
     if (u.type === 'zed') return { img: zedTokenImg(u), title: 'Unidad Zed (Fuerza ' + strength(u) + ')', tok: 1, html: cur + li(['Unidad Zed Normal. Con 3 Impactos pasa a su cara reducida; con otros 3 es eliminada.', 'Dos Zeds en el mismo espacio forman una Horda y luchan sumando su Fuerza (máximo 2 por espacio).']) };
@@ -55,13 +55,17 @@ function zoomInfo(spec) {
 /* Cartas de personaje: frente (h_*.jpg) y trasera con el trasfondo (hb_*.jpg). */
 const CARD_IMGS = ['piazza','hernandez','schmidt','hunt','furias','seaver','pepinillos','horacio','carter','betty','lee','may','jaque','darling','jones','wright','division12','santana','bauer','kingman','antidist','agee','hauser','clarin','wilson','bomberos','salvacion','johnson','staub','wzed'];
 const TOKEN_IMGS = ['agee','betty','carter','darling','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','santana','schmidt','seaver','staub','wilson','wright','furias','bomberos','bauer','antidist','salvacion','clarin','wzed','division12'];
-const heroCard = k => CARD_IMGS.includes(k) ? 'assets/cartas/h_' + k + '.jpg' : null;
+/* Arte alternativo (opción «Usar arte alternativo» del menú Opciones): cartas y fichas ilustradas en assets/arte_alt con las mismas claves.
+   Si la opción está apagada o el personaje no tiene arte alternativo, se usa siempre el original (y si una imagen falla, el reintento de ui.js vuelve al original). */
+const ALT_KEYS = ['agee','antidist','bauer','bomberos','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','pepinillos','piazza','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed'];
+const heroAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_KEYS.includes(k));
+const heroCard = k => CARD_IMGS.includes(k) ? (heroAlt(k) ? 'assets/arte_alt/cartas/h_' + k + '.webp' : 'assets/cartas/h_' + k + '.jpg') : null;
 const heroBack = k => CARD_IMGS.includes(k) ? 'assets/cartas/hb_' + k + '.jpg' : null;
-const heroTok = k => TOKEN_IMGS.includes(k) ? 'assets/tokens/' + k + '.png' : null;
+const heroTok = (k, red) => heroAlt(k) ? 'assets/arte_alt/tokens/' + k + (red ? '_r' : '') + '.webp' : (TOKEN_IMGS.includes(k) ? 'assets/tokens/' + k + '.png' : null);
 /* Imagen del tooltip: la ficha del personaje; si no tiene ficha propia, el frente de su carta. */
 const heroOpt = k => ({ value: k, label: HEROES[k].name, img: heroCard(k) || heroTok(k), sub: HEROES[k].cls + ' · ' + HEROES[k].full + '/' + HEROES[k].red });
 const unitOpt = (u, extra) => ({ value: u.id, label: u.name + (extra || ''), img: u.key && HEROES[u.key] ? (heroCard(u.key) || heroTok(u.key)) : null, sub: u.space ? spaceLabel(u.space) : '' });
-function heroImg(k) { return heroTok(k) || heroCard(k); }
+function heroImg(k, red) { return heroTok(k, red) || heroCard(k); }
 const HERO_HINT = k => heroCard(k) ? '<div class="zrow small">Selecciona la unidad (o abre «Cartas de Héroe») para ver la carta entera y su trasfondo.</div>' : '';
 
 /* Ficha Zed real (cara completa 2-9, reducida 1-5); si no existe, la ilustración genérica. */

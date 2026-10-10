@@ -298,7 +298,7 @@ runAction = async function (u, id) {
   switch (id) {
     case 'cmove': { const info = carterReach(u); const ids = Object.keys(info); if (!ids.length) { LOG('Carter no puede ir a ningún sitio.'); return; } const d = await UI.pickSpace(ids, 'Carter: elige el destino.', true); if (d == null) return; spendActions(u, 1, 'move'); await carterMove(u, d, info[d]); return; }
     case 'creload': spendActions(u, 1); u.loaded = true; LOG('Carter recoge un nuevo cargamento.', 'good'); return;
-    case 'crepair': { let how = G.supplies >= 1 ? 's' : 'a'; if (G.supplies >= 1 && canPay(u, 1)) how = await UI.choose({ title: 'Reparar camión', text: '¿Cómo pagas la reparación?', options: [{ label: '1 Suministro', value: 's' }, { label: '1 Acción', value: 'a' }], cancel: true }); if (how == null) return; if (how === 's') G.supplies--; else spendActions(u, 1); G.charUsed.crepair = true; if (u.hits > 0) u.hits--; else if (u.flipped) { u.flipped = false; u.hits = 2; } LOG('Carter repara su camión.', 'good'); UI.updateStats(); return; }
+    case 'crepair': { let how = G.supplies >= 1 ? 's' : 'a'; if (G.supplies >= 1 && canPay(u, 1)) how = await UI.choose({ title: 'Reparar camión', text: '¿Cómo pagas la reparación?', options: [{ label: '1 Suministro (tienes ' + G.supplies + ')', value: 's' }, { label: '1 Acción', value: 'a' }], cancel: true }); if (how == null) return; if (how === 's') G.supplies--; else spendActions(u, 1); G.charUsed.crepair = true; if (u.hits > 0) u.hits--; else if (u.flipped) { u.flipped = false; u.hits = 2; } LOG('Carter repara su camión.', 'good'); UI.updateStats(); return; }
     case 'lmount': { const near = unitsAt(u.space).filter(x => x.type === 'hero' && x.key !== 'lee' && !x.mount && !['carter', 'pepinillos'].includes(x.key)); const v = near.length === 1 ? near[0].id : await UI.pickUnit(near, 'Elige al jinete.', true); if (v == null) return; await leeMount(u, G.units[v]); return; }
     case 'ldis': leeDismount(u); return;
     case 'lpura': G.charUsed.pura = true; u.freeM = (u.freeM || 0) + 1; LOG('Purasangre: el General Lee tiene 1 Acción de Mover gratis.', 'good'); return;
@@ -314,7 +314,7 @@ runAction = async function (u, id) {
 const _maintenance = maintenance;
 maintenance = async function () {
   await _maintenance();
-  for (const s of Object.values(G.spaces)) if (s.tall && unitsAt(s.id).some(x => isFighter(x) && x.type !== 'refugee')) { const v = await UI.choose({ title: 'Tall-Mart', text: 'Elige tu recompensa:', options: [{ label: '2 Suministros', value: 's' }, { label: '1 Munición', value: 'a' }] }); if (v === 's') G.supplies = Math.min(20, G.supplies + 2); else G.ammo = Math.min(20, G.ammo + 1); }
+  for (const s of Object.values(G.spaces)) if (s.tall && unitsAt(s.id).some(x => isFighter(x) && x.type !== 'refugee')) { const v = await UI.choose({ title: 'Tall-Mart', text: 'Elige tu recompensa:', options: [{ label: '2 Suministros (tienes ' + G.supplies + ')', value: 's' }, { label: '1 Munición (tienes ' + G.ammo + ')', value: 'a' }] }); if (v === 's') G.supplies = Math.min(20, G.supplies + 2); else G.ammo = Math.min(20, G.ammo + 1); }
   for (const u of Object.values(G.units)) { delete u._chipDie; u.freeChip = false; }
   UI.updateStats();
 };

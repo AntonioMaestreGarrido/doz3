@@ -120,6 +120,10 @@ const blocked = id => G.turn.block.includes(id);
 /* ================= ZEDS ================= */
 function drawNormalToken() {
   if (!G.reserve.length) return null;
+  /* Si se anunció (vista previa de la carta) qué Zed iba a salir, sale ese. */
+  if (G.turn && G.turn.peekOn && G.turn.peekQ && G.turn.peekQ.zed.length && !alreadyHas('antinatural')) {
+    const t = G.turn.peekQ.zed.shift(), i = G.reserve.findIndex(x => x[0] === t[0] && x[1] === t[1]); if (i >= 0) return G.reserve.splice(i, 1)[0];
+  }
   if (alreadyHas('antinatural') && G.reserve.length > 1) {
     const a = G.reserve.splice(rnd(G.reserve.length), 1)[0], b = G.reserve.splice(rnd(G.reserve.length), 1)[0];
     const keep = a[0] >= b[0] ? a : b; G.reserve.push(a[0] >= b[0] ? b : a); return keep;
@@ -132,7 +136,10 @@ function makeZed() {
 }
 function makeSuper() {
   if (!G.supers.length) return makeZed();
-  const k = G.supers.splice(rnd(G.supers.length), 1)[0], d = SUPER_ZEDS[k];
+  let k; const q = G.turn && G.turn.peekOn && G.turn.peekQ && G.turn.peekQ.sup;
+  if (q && q.length) { const pk = q.shift(), i = G.supers.indexOf(pk); if (i >= 0) k = G.supers.splice(i, 1)[0]; }
+  if (!k) k = G.supers.splice(rnd(G.supers.length), 1)[0];
+  const d = SUPER_ZEDS[k];
   return newUnit({ side: 'zed', type: 'super', key: k, name: d.name, full: d.full, red: d.red, hf: 3, hr: 3, img: d.img, resistZ: k === 'ferreo' });
 }
 function discardZed(u) {
@@ -206,13 +213,14 @@ async function applyZedHits(zeds, n) {
 async function hitZed(t) {
   if (t.zresist || t.resistZ) { const r = d6(); if (r <= 3) { LOG('Resistente: el Impacto se cancela (dado ' + r + ').'); await UI.fxResist(t, r); return; } }
   const before = { flipped: t.flipped, hits: t.hits };
-  const r = hitUnitOnce(t);
+  const r = hitUnitOnce(t); EVT('zhit', ACTOR, { z: t.name, r });
   if (r === 'flip') { LOG(t.name + ' queda con Fuerza reducida (' + t.red + ').'); await UI.fxFlip(t, before); }
   else if (r === 'dead') await zedDies(t);
   else { LOG('Impacto a ' + t.name + ' ' + strength(t) + ' (' + t.hits + ').'); await UI.fxHit(t); }
   UI.redraw();
 }
 async function zedDies(t) {
+  EVT('kill', ACTOR, { z: t.name, ty: t.type, sp: t.space });
   G.stats.killed++; Voz.say('muerte_zed', .1);
   if (t.type === 'spreader') {
     const r = d6(); const rt = routeOfZ(t);
@@ -236,7 +244,7 @@ async function hitPlayer(u, n) {
     if ((u.chips || []).includes('traje')) { const r = d6(); if (r >= 4) { LOG(u.name + ' (DARPA) ignora el Impacto.', 'good'); await UI.fxResist(u, r, 'DARPA'); continue; } }
     if (u.space && sp(u.space).kind === 'bed' && u.ecg) { await sendCemetery(u, 'recibe un Impacto estando en coma'); return; }
     const before = { flipped: u.flipped, hits: u.hits };
-    const r = hitUnitOnce(u);
+    const r = hitUnitOnce(u); EVT('hit', u.id, { r });
     if (r === 'flip') { LOG(u.name + ' queda con Fuerza reducida (' + u.red + ').', 'bad'); await UI.fxFlip(u, before); }
     else if (r === 'hit') await UI.fxHit(u);
     else if (r === 'dead') { if (u.space && sp(u.space).kind === 'bed') await sendCemetery(u, 'recibe su último Impacto en el Hospital'); else await unitDown(u); return; }
@@ -245,6 +253,7 @@ async function hitPlayer(u, n) {
   }
 }
 async function sendCemetery(u, why) {
+  EVT('down', u.id, { why: why || 'muere' });
   LOG(u.name + ' ' + (why || 'muere') + ' → al Cementerio.', 'bad');
   if (u.type === 'hero') G.stats.heroLost++; if (u.type === 'civ') G.stats.civLost++;
   const where = u.space;
@@ -370,22 +379,25 @@ function zedShifts(zs, o) {
   if (G.turn.frenzy) s.push({ label: 'Súper Zeds enloquecidos', v: -2 });
   return s;
 }
-async function offerCards(f, o) {
+/* Cartas de la mano que se pueden jugar antes de tirar en un combate. No se preguntan: salen como botones en la ventana de resolución (ver combatOpen en ui.js). */
+function combatCards(f, attacking) {
   const out = [];
-  if (!o.attackerIsHuman && !o.attacking) {/* defendiendo */ }
-  for (const [k, lab, v, extra] of [['excavadora', 'Excavadora asesina (2►)', 2, o.attacking], ['sin_nombre', 'El Hombre sin nombre (3►)', 3, true], ['trago', 'Un trago para coger fuerzas (2►, 1 Impacto después)', 2, true]]) {
-    if (!extra || f.side !== 'pl') continue;
-    const i = G.hand.indexOf(k); if (i < 0) continue;
-    const r = await UI.choose({ title: DEST[k].name, text: '¿Juegas la carta?', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
-    if (r === 'y') { G.hand.splice(i, 1); G.destDiscard.push(k); zenPlayed(); out.push({ label: lab, v }); if (k === 'trago') o.trago = true; UI.updateHand(); }
-  }
-  /* Algunos civiles se organizan: se puede jugar antes del combate sobre una unidad de Civiles Normales (la que combate). */
-  const li = G.hand.indexOf('civiles');
-  if (li >= 0 && f.side === 'pl' && f.type === 'civ' && !f.leader && f.space) {
-    const r = await UI.choose({ title: DEST.civiles.name, text: '¿Juegas la carta sobre ' + f.name + ' antes de tirar los dados? Recibe la ficha de Líder Civil: 1 columna a favor en este combate y en los siguientes (cuerpo a cuerpo y disparos).', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
-    if (r === 'y') { G.hand.splice(li, 1); G.destDiscard.push('civiles'); zenPlayed(); f.leader = true; out.push({ label: 'Líder Civil', v: 1 }); LOG('Algunos civiles se organizan: ' + f.name + ' recibe la ficha de Líder Civil.', 'good'); UI.updateHand(); UI.redraw(); }
-  }
+  if (!f || f.side !== 'pl') return out;
+  for (const [key, label, v, ok, tag] of [['excavadora', 'Excavadora asesina (2►)', 2, attacking, '+2►'], ['sin_nombre', 'El Hombre sin nombre (3►)', 3, true, '+3►'], ['trago', 'Un trago para coger fuerzas (2►, 1 Impacto después)', 2, true, '+2►, y 1 Impacto después']])
+    if (ok && G.hand.includes(key)) out.push({ key, label, v, tag });
+  /* Algunos civiles se organizan: sobre la unidad de Civiles Normales que combate; recibe la ficha de Líder Civil (1 columna a favor en este combate y en los siguientes, cuerpo a cuerpo y disparos). */
+  if (G.hand.includes('civiles') && f.type === 'civ' && !f.leader && f.space) out.push({ key: 'civiles', label: 'Líder Civil', v: 1, tag: '+1► ahora y en los siguientes combates', civ: true });
   return out;
+}
+/* Juega una carta de combatCards: la saca de la mano y suma su columna a los modificadores del combate en curso (shifts). o: opciones de melee. */
+function playCombatCard(c, f, o, shifts) {
+  const i = G.hand.indexOf(c.key); if (i < 0) return false;
+  G.hand.splice(i, 1); G.destDiscard.push(c.key); zenPlayed();
+  shifts.push({ label: c.label, v: c.v });
+  if (c.key === 'trago') o.trago = true;
+  if (c.civ) { f.leader = true; LOG('Algunos civiles se organizan: ' + f.name + ' recibe la ficha de Líder Civil.', 'good'); UI.redraw(); }
+  else LOG('Juegas «' + DEST[c.key].name + '».', 'good');
+  UI.updateHand(); return true;
 }
 async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCol, noInf, assassin }
   let zeds = o.zeds.filter(z => z.space), hum = o.hum.filter(u => u.space);
@@ -440,15 +452,15 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     const r = await rollShown('Carga del Toro', r => r >= 4 ? '<b>' + r + '</b>: ¡los Zeds retroceden!' : '<b>' + r + '</b>: sin efecto (necesita 4-6)'); LOG('Carga del Toro: ' + r);
     if (r >= 4) { let tz = zeds[0]; if (zeds.length > 1) tz = G.units[await UI.choose({ title: 'Carga del Toro', text: '¿Qué Zed recibe el Impacto?', options: zeds.map((z, i) => ({ label: 'Zed ' + (i + 1) + ' — Fuerza ' + strength(z) + (z.hits ? ' (' + '♥'.repeat(z.hits) + ')' : '') + (z.flipped ? ' · cara reducida' : ''), value: z.id })) })]; await hitZed(tz); const zl = zeds.filter(z => z.space); if (zl.length) await retreatZeds(zl, zedOrigin(zl[0])); LOG('¡La Carga hace retroceder a los Zeds!', 'good'); return { humanWon: true }; }
   }
-  const extraShifts = fighter.side === 'pl' ? await offerCards(fighter, { attacking: attackerHuman }) : [];
-  for (const e of extraShifts) shifts.push(e);
-  const total = shifts.reduce((a, s) => a + s.v, 0);
-  const finalCol = clamp(initCol + total, 0, 6);
+  const recalcCol = () => clamp(initCol + shifts.reduce((a, s) => a + s.v, 0), 0, 6);
+  let finalCol = recalcCol();
   const medal = (fighter.chips || []).includes('medallon') && !G.turn.medalUsed;
   const wilsonBuddy = fighter.side === 'pl' && unitsAt(fighter.space).some(u => u.key === 'wilson' && u !== fighter) && fighter.space !== 'C';
   const wzed = !attackerHuman && fighter.side === 'pl' && alive('wzed') && isCity(space);
   let extraDice = (wilsonBuddy ? 1 : 0) + (wzed ? 1 : 0);
-  const h = UI.combatOpen({ title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice });
+  const cinfo = { title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, cards: combatCards(fighter, attackerHuman) };
+  cinfo.useCard = async c => { if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
+  const h = UI.combatOpen(cinfo);
   let dice = await h.roll(extraDice);
   if (fighter.key === 'schmidt' || fighter.key === 'hunt' || fighter.key === 'horacio') {
     const again = await h.ask('Artes marciales: ¿repites la tirada?', [{ label: 'Repetir', value: 'y' }, { label: 'Aceptar', value: 'n' }]);
@@ -469,9 +481,10 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if ((fighter.chips || []).includes('traje')) zh += 2;
   h.setResult(row, finalCol, [zh, ph], zedLoses);
   await h.done();
+  EVT('melee', fighter.id, { at: attackerHuman ? 'h' : 'z', sp: space, zs: zeds.length, row, col: finalCol, zh, ph, win: zedLoses ? 1 : 0 });
   if (!o.noInf && G.lv.infection && !vsPl) await infUp(meleeInfection(zeds, fighter));
-  await applyZedHits(zeds, zh);
-  if (hasPart('cebo') && !attackerHuman) await applyZedHits(zeds, 1);
+  ACTOR = fighter.side === 'pl' ? fighter.id : null;
+  try { await applyZedHits(zeds, zh); if (hasPart('cebo') && !attackerHuman) await applyZedHits(zeds, 1); } finally { ACTOR = null; }
   if (fighter.space) { if (fighter.side === 'raid') await hitRaider(fighter, ph); else await hitPlayer(fighter, ph); }
   if (o.trago || false) { if (fighter.space) await hitPlayer(fighter, 1); }
   if (isZedAtk && G.turn.noRetreatOnce && !G.turn.noRetreatDone) { G.turn.noRetreatDone = true; return { again: true, zedWon: !zedLoses }; }
@@ -594,7 +607,7 @@ function reachable(u, extra) {
       if (isSoft(u) && (zedsAt(n).length)) continue;
       const c = best[cur] + (G.spaces[n] ? moveCost(u, n) : 1);
       if (c > mp) continue;
-      if (best[n] === undefined || c < best[n]) { best[n] = c; prev[n] = cur; q.push(n); }
+      if (best[n] === undefined || c < best[n]) { best[n] = c; prev[n] = cur; if (!(s.bridge === 'ferry' && u.type !== 'zed')) q.push(n); }
     }
   }
   for (const id in best) if (id !== u.space && canStop(u, id)) out[id] = best[id];
@@ -609,7 +622,7 @@ function pathTo(prev, start, dest) {
 }
 /* path: recorrido de la acción de Mover. Si se pierde el combate, la unidad se retira UN espacio (al anterior del recorrido). */
 async function doMove(u, dest, path) {
-  const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
+  const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); EVT('move', u.id, { from, to: dest }); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
   if (isSoft(u)) { if (dest === 'C') await refugeeArrives(u); return; }
   if (dest === 'C' && u.space === 'C') {/* ok */ }
   const zs = zedsAt(dest), rs = raidAt(dest);
@@ -665,7 +678,8 @@ async function doFire(u, targetId, dist, opts) {
   let dice = await h.roll(0); dice = await zenReroll(dice, 'disparo', h);
   const row = sumRow(dice[0] + dice[1]); const hits = FIRE[row][col];
   h.setResult(row, col, hits); await h.done();
-  if (hits) { await applyZedHits([target], hits); if (hits >= 2 && hasPart('balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
+  EVT('shot', u.id, { to: targetId, d: dist, hits });
+  if (hits) { ACTOR = u.id; try { await applyZedHits([target], hits); } finally { ACTOR = null; } if (hits >= 2 && hasPart('balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
   else LOG('El disparo no impacta.');
   if (u.key === 'piazza' && u.space && u.space !== 'C' && !opts.noVig) {
     // Retroceder = alejarse del objetivo, es decir, hacia el Centro (índice mayor en la ruta).
@@ -726,7 +740,7 @@ async function doSearch(u) {
     else if (granja) { sup = big ? 2 : 1; }
     else if (mina) { am = big ? 2 : 1; }
     else { if (big) am = 1; else sup = 1; }
-    if (choose) { const v = await UI.choose({ title: 'Buscar: elige', text: 'Resultado ' + res + ' en un espacio de Ciudad.', options: [{ label: '1 Suministro', value: 's' }, { label: '1 Munición', value: 'a' }] }); if (v === 'a') { sup = 0; am = 1; } }
+    if (choose) { const v = await UI.choose({ title: 'Buscar: elige', text: 'Resultado ' + res + ' en un espacio de Ciudad.', options: [{ label: '1 Suministro (tienes ' + G.supplies + ')', value: 's' }, { label: '1 Munición (tienes ' + G.ammo + ')', value: 'a' }] }); if (v === 'a') { sup = 0; am = 1; } }
     if (!G.lv.supplies) sup = 0;
     if (G.res && G.res.cur && G.res.cur.id === 'cecina' && false) { }
     G.supplies = Math.min(20, G.supplies + sup); G.ammo = Math.min(20, G.ammo + am);

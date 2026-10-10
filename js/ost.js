@@ -11,7 +11,8 @@ const Ost = {
     { file: 'musica_last_stand.mp3', nombre: 'Last Stand', letra: 'musica_last_stand.txt' },
     { file: 'musica_victoria.mp3', nombre: 'Victoria', letra: 'musica_victoria.txt' },
     { file: 'musica_derrota.mp3', nombre: 'Derrota', letra: 'musica_derrota.txt' },
-    { file: 'musica_himno.mp3', nombre: 'Himno zombie', letra: 'musica_himno.txt' }
+    { file: 'musica_himno.mp3', nombre: 'Himno zombie', letra: 'musica_himno.txt' },
+    { file: 'musica_obituario.m4a', nombre: 'Obituario', letra: 'musica_obituario.txt' }
   ],
   DIR: 'assets/sonidos/musica/', LETRA_DIR: 'assets/sonidos/letras/',
   a: null, i: 0, rep: false, el: null,
@@ -71,7 +72,10 @@ const Ost = {
     const box = this.$('ostLetra');
     if (!t.letra) { box.classList.add('vacia'); box.textContent = 'Esta canción no tiene letra.'; return; }
     box.classList.remove('vacia'); box.textContent = 'Cargando letra…';
-    fetch(this.LETRA_DIR + t.letra).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    /* Primero las letras incrustadas (letras.js: funcionan también abriendo el juego como fichero); si no están, se piden como fichero. */
+    const embebida = window.LETRAS && window.LETRAS[t.letra];
+    const pedir = embebida !== undefined ? Promise.resolve(embebida) : fetch(this.LETRA_DIR + t.letra).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); });
+    pedir
       .then(s => { if (this.TEMAS[this.i] === t) box.textContent = s; })
       .catch(() => {
         if (this.TEMAS[this.i] !== t) return;

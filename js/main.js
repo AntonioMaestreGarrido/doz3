@@ -3,7 +3,7 @@
 
 async function revealEvent() {
   const id = G.eventDeck.shift(); const ev = EV[id];
-  G.event = ev; G.eventsRevealed++; G.turnNo++; G.turn = newTurn();
+  G.event = ev; G.eventsRevealed++; G.turnNo++; G.turn = newTurn(); EVT('turn', null, { ev: ev.name });
   if (G.turnNo > 1) Voz.say('turno');
   if (G.eventsRevealed >= G.totalEvents - 2) Voz.say('amanece');
   if (G.ammo <= 1) Voz.say('municion');
@@ -50,16 +50,16 @@ async function playGame(setup, saved) {
     if (resume !== 'actions') {
       await revealEvent(); ev = G.event;
       UI.redraw();
-      await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', ev.txt.join('<br>'), 'assets/cartas/e_' + ev.id + '.jpg', 'e:' + ev.id);
-      if (ev.guardia) { G.phase = 'zeds'; await eventStart(); await maintenance(); G.dangerNext = enPeligro(); saveGame('turn'); continue; }
+      await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', '<div class="rulebox"><b>Regla</b><br>' + ev.txt.join('<br>') + '</div>' + Preview.block(Preview.event(ev)), 'assets/cartas/e_' + ev.id + '.jpg', 'e:' + ev.id);
+      if (ev.guardia) { G.phase = 'zeds'; await withPeek(eventStart); await maintenance(); G.dangerNext = enPeligro(); saveGame('turn'); continue; }
       G.phase = 'fourR'; UI.updateStats(); await phase4R(); if (G.over) break;
       G.phase = 'infection'; UI.updateStats(); await phaseInfection(); if (G.over) break;
       G.phase = 'feeding'; UI.updateStats(); await phaseFeeding(); if (G.over) break;
       if (ev.fin && ev.id !== 'fin_b2') { G.over = 'win'; break; }  /* «Al inicio de esta fase: ¡habéis ganado!» */
       G.phase = 'zeds'; UI.updateStats();
-      await eventStart(); if (G.over) break;
+      await withPeek(eventStart); if (G.over) break;
       await phaseZeds(); if (G.over) break;
-      await eventAfterZeds(); UI.release(); if (G.over) break;
+      await withPeek(eventAfterZeds); UI.release(); if (G.over) break;
       if (ev.fin) { G.over = 'win'; break; }  /* fin_b2: al inicio de la fase de Acciones, si seguís vivos */
     } else ev = G.event;
     const resumed = resume === 'actions'; resume = null;
