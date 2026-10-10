@@ -734,7 +734,7 @@ const ui = {
     G.phase = 'end'; EVT('end', null, { over: G.over, why: G.loseWhy || null }); this.updateStats(); this.gameMusicEnd(win);
     Voz.say(win ? 'victoria' : G.loseWhy === 'caos' ? 'derrota_caos' : 'derrota_centro');
     saveTop({ win, score: s.total, lv: G.lv.name, len: G.len.name, turns: G.turnNo, killed: G.stats.killed, date: Date.now() });
-    this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center"><button id="revBtn">Revisar el tablero</button><button id="chrBtn">Crónica de la partida</button><button id="logBtn2">Registro</button><button class="primary" id="nb">Nueva partida</button></div></div>');
+    this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center">' + (Obit.bajas().length ? '<button id="obBtn">Obituario</button>' : '') + '<button id="revBtn">Revisar el tablero</button><button id="chrBtn">Crónica de la partida</button><button id="logBtn2">Registro</button><button class="primary" id="nb">Nueva partida</button></div></div>');
     this._endHtml = $('modalbox').innerHTML; this._bindEnd();
   },
   _bindEnd() {
@@ -742,6 +742,7 @@ const ui = {
     $('chrBtn').onclick = () => ui.showChronicle();
     $('logBtn2').onclick = () => downloadLog();
     $('revBtn').onclick = () => ui.reviewBoard();
+    if ($('obBtn')) $('obBtn').onclick = () => Obit.start();
   },
   /* Revisar el tablero tras el final: se oculta el resumen y el mapa queda libre (zoom, arrastre, fichas con su ficha ampliada). Una barra permite volver. */
   reviewBoard() {

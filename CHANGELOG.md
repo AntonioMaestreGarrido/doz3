@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-10 18:23
+
+### Mejoras
+- **Obituario:** nuevo botón en la pantalla final (aparece si hay bajas de héroes o civiles heroicos). Pasa a pantalla completa cada baja con su ilustración, un foco de luz sobre el personaje, su nombre, su clase, el turno en que cayó y su epitafio. La imagen pasa a blanco y negro, luego a negro y todo se funde para dar paso a la siguiente. Suena el tema «Obituario» y el ciclo se repite hasta que acaba la canción o se pulsa «Salir» (o Esc). Con la Música apagada se hace un solo ciclo. Respeta «reducir movimiento».
+
 ## 2026-10-10 18:00
 
 ### Mejoras

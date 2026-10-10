@@ -1,9 +1,9 @@
 /* Service worker: permite instalar la web como app y jugar sin conexión.
    Código (html/js/css): red primero, con copia local de reserva. Imágenes y audio: caché primero. */
 'use strict';
-const CACHE = 'doz3-v14';
+const CACHE = 'doz3-v15';
 const SHELL = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'assets/portada.jpg', 'assets/fondo_nueva.webp', 'assets/fondo_ranking.webp',
-  'js/version.js', 'js/data.js', 'js/events.js', 'js/dest.js', 'js/evlog.js', 'js/preview.js', 'js/engine.js', 'js/game.js', 'js/phases.js', 'js/actions.js', 'js/cardtext.js', 'js/ui.js', 'js/anim.js',
+  'js/version.js', 'js/data.js', 'js/events.js', 'js/dest.js', 'js/evlog.js', 'js/preview.js', 'js/obituario.js', 'js/engine.js', 'js/game.js', 'js/phases.js', 'js/actions.js', 'js/cardtext.js', 'js/ui.js', 'js/anim.js',
   'js/expansions.js', 'js/expansions2.js', 'js/sfx.js', 'js/sound.js', 'js/opciones.js', 'js/voz.js', 'js/ost.js', 'assets/sonidos/letras/letras.js', 'assets/sonidos/efectos/sfx_disparo.mp3', 'assets/sonidos/efectos/sfx_disparo_largo.mp3', 'js/mapzoom.js', 'js/save.js', 'js/main.js', 'js/bot.js'];
 
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
