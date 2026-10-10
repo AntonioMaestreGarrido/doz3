@@ -111,6 +111,7 @@ Object.assign(ui, {
     for (const id in dang) { const s = G.spaces[id]; c.save(); c.strokeStyle = 'rgba(255,40,30,' + (.35 + .5 * pt) + ')'; c.lineWidth = dang[id] === 2 ? 11 : 6; c.beginPath(); c.arc(s.x, s.y, 74 + pt * 6, 0, 7); c.stroke(); if (dang[id] === 2) { c.fillStyle = 'rgba(255,40,30,' + (.15 + .2 * pt) + ')'; c.fill(); } c.restore(); }
     for (const id in dang) if (dang[id] === 2 && !this.dangerSet[id] && G.turnNo > 0) this.toast('⚠ ¡Peligro! Zeds junto al Centro (' + ROUTES[sp(id).route].short + ')', '#ff3b2a', 2200, true);
     this.dangerSet = dang; this._needLoop = Object.keys(dang).length > 0;
+    this.setDanger(this._needLoop);
   },
   /* ---- efectos de combate ----
      Por unidad (ufx): temblor (Impacto), volteo (cambio de cara) y embestida (inicio del Cuerpo a Cuerpo).

@@ -8,6 +8,7 @@ const Ost = {
     { file: 'musica_juego1.mp3', nombre: 'Partida 1' },
     { file: 'musica_juego2.mp3', nombre: 'Partida 2' },
     { file: 'musica_peligro.mp3', nombre: 'Peligro' },
+    { file: 'musica_last_stand.mp3', nombre: 'Last Stand' },
     { file: 'musica_victoria.mp3', nombre: 'Victoria', letra: 'musica_victoria.txt' },
     { file: 'musica_derrota.mp3', nombre: 'Derrota', letra: 'musica_derrota.txt' },
     { file: 'musica_himno.mp3', nombre: 'Himno zombie', letra: 'musica_himno.txt' }
