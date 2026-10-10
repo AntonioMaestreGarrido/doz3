@@ -106,6 +106,9 @@ const ui = {
     if (z._spec !== sig) {
       z._spec = sig; z.className = info.img ? '' : 'noimg';
       z.innerHTML = (info.img ? '<img ' + (info.tok ? 'class="tok" ' : '') + 'src="' + info.img + '" alt="">' : '') + '<div class="zt"><h4>' + info.title + '</h4>' + info.html + '</div>';
+      /* Civiles Heroicos con ficha apaisada: el texto va debajo de la imagen, no al lado (los héroes, con ficha vertical, lo llevan al lado). */
+      const im = z.querySelector('img.tok');
+      if (im) { const put = () => z.classList.toggle('below', !!info.civ && im.naturalWidth >= im.naturalHeight); im.onload = put; if (im.complete) put(); }
     }
     z.hidden = false;
     const w = z.offsetWidth, h = z.offsetHeight; let x = e.clientX + 18, y = e.clientY + 14;

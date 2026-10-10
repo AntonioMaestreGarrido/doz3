@@ -255,8 +255,20 @@ async function phaseInfection() {
   if (sps.length) { LOG(sps.length + ' Propagador(es) de Enfermedad: +' + sps.length + ' Infección.', 'bad'); await infUp(sps.length); }
   if (G.event.inf === 'B') {
     const bd = await zenReroll([d6(), d6()], 'Tirada de Brote'); const a = bd[0], b = bd[1]; LOG('Tirada de Brote: ' + (a + b) + ' (Infección ' + G.inf + ').');
-    if (a + b <= G.inf) { LOG('¡Estalla un Brote!', 'bad'); await outbreak(false); }
+    if (a + b <= G.inf) { LOG('¡Estalla un Brote!', 'bad'); await announceOutbreak(); }
   }
+}
+/* Al fallar la tirada de Brote se explica qué va a pasar y luego se resuelve. El Zed que aparece se asoma (peekZeds)
+   y es el mismo que coloca outbreak(), igual que en la vista previa de las cartas. */
+async function announceOutbreak() {
+  G.turn.peekQ = { zed: [], sup: [] };
+  const t = peekZeds(1)[0];
+  await UI.waitAck('¡Estalla un Brote!', outbreakText(t));
+  await withPeek(() => outbreak(false));
+}
+function outbreakText(t) {
+  const reduce = alreadyHas('medio') ? 'La Infección baja a 2 («A medio convertir»).' : 'Tiras 2 dados: la Infección baja ese total.';
+  return '<b>1.</b> ' + reduce + '<br><b>2.</b> Robas una carta de Destino: la ruta que indique es donde estalla el Brote.<br><b>3.</b> Aparece ' + (t ? 'un ' : '') + Preview.zt(t) + ' en esa ruta: en el Caos o Pueblo más cercano al Centro si lo hay (con 4R), o en su Inicial; en el Túnel y con Vacunas, siempre en el Inicial.';
 }
 async function phaseFeeding() {
   if (!G.lv.supplies) return;

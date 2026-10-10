@@ -120,6 +120,9 @@ table.tbl td.hit{background:#e6b84a;color:#000;font-weight:900;outline:2px solid
 #zoom img.tok{width:150px;background:#000}
 #zoom .zt{width:290px;font-size:13px;line-height:1.4}
 #zoom.noimg .zt{width:320px}
+#zoom.below{flex-direction:column;align-items:center}
+#zoom.below img.tok{width:260px}
+#zoom.below .zt{width:290px}
 #zoom h4{margin:0 0 2px;font-size:16px;color:var(--gold)}
 #zoom .zk{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
 #zoom ul{margin:4px 0 4px 16px;padding:0}#zoom li{margin:3px 0}

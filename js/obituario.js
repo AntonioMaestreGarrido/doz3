@@ -16,11 +16,17 @@ const Obit = {
   DURACION: 239.56,  /* duración del tema «Obituario»: si no suena, el ciclo dura igual */
   run: 0, fin: false, activo: false, audio: null, _pend: [],
 
-  /* Bajas con ilustración, por orden de caída. */
+  /* Bajas con ilustración, por orden de caída. Si se pierde la partida se da por hecho que cae todo el mundo: tras los caídos
+     van los que seguían en pie (héroes y civiles heroicos con ilustración), que mueren con Farmingdale en el turno final. */
   bajas() {
     if (typeof G === 'undefined' || !G.cemetery) return [];
+    const ok = u => u.key && HEROES[u.key] && ALT_KEYS.includes(u.key);
     const d = u => (G.ust && G.ust[u.id] && G.ust[u.id].diedT) || 0;
-    return G.cemetery.filter(u => u.key && HEROES[u.key] && ALT_KEYS.includes(u.key)).sort((a, b) => d(a) - d(b));
+    const caidos = G.cemetery.filter(ok).sort((a, b) => d(a) - d(b));
+    if (G.over !== 'lose') return caidos;
+    const num = u => parseInt(String(u.id).replace(/\D/g, ''), 10) || 0;
+    const vivos = Object.values(G.units).filter(u => u.side === 'pl' && ok(u) && u.space && u.space !== 'CEM' && !caidos.includes(u)).sort((a, b) => num(a) - num(b));
+    return caidos.concat(vivos);
   },
   url: k => 'assets/arte_alt/obituario/' + k + '.webp',
 
@@ -68,7 +74,8 @@ const Obit = {
     const fx = this.FOCO[u.key] || 50, fy = this.FOCO_Y, v = this.vel, T = s => (s * v) + 's';
     const kills = st.kills || 0;
     el.querySelector('.ob-name').textContent = h.name.replace(/\s*\(.*?\)/, '');
-    el.querySelector('.ob-sub').textContent = h.cls + (st.diedT ? ' · cayó en el turno ' + st.diedT : '');
+    const cayo = st.diedT ? ' · cayó en el turno ' + st.diedT : (u.space && u.space !== 'CEM' ? ' · cayó con Farmingdale en el turno ' + G.turnNo : '');
+    el.querySelector('.ob-sub').textContent = h.cls + cayo;
     el.querySelector('.ob-epi').textContent = kills ? 'Eliminó ' + kills + ' Zed' + (kills > 1 ? 's' : '') + ' antes de caer.' : 'Sostuvo la línea hasta el final.';
     txt.classList.remove('on'); txt.style.transition = 'opacity ' + T(1.2);
     spot.style.background = 'radial-gradient(ellipse 36% 58% at ' + fx + '% ' + fy + '%, rgba(0,0,0,0) 0%, rgba(0,0,0,.32) 55%, rgba(0,0,0,.9) 100%)';
