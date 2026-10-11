@@ -260,7 +260,7 @@ async function phaseInfection() {
   const sps = allUnits(x => x.type === 'spreader' && x.space && isRouteSp(x.space) && !isInit(x.space));
   if (sps.length) { LOG(sps.length + ' Propagador(es) de Enfermedad: +' + sps.length + ' Infección.', 'bad'); await infUp(sps.length); }
   if (G.event.inf === 'B') {
-    const bd = await zenReroll([d6(), d6()], 'Tirada de Brote'); const a = bd[0], b = bd[1]; LOG('Tirada de Brote: ' + (a + b) + ' (Infección ' + G.inf + ').');
+    const bd = await zenReroll([d6('brote'), d6('brote')], 'Tirada de Brote'); const a = bd[0], b = bd[1]; LOG('Tirada de Brote: ' + (a + b) + ' (Infección ' + G.inf + ').');
     if (a + b <= G.inf) { LOG('¡Estalla un Brote!', 'bad'); await announceOutbreak(); }
   }
 }
@@ -281,7 +281,7 @@ async function phaseFeeding() {
   let n = G.event.al; let cost = 0;
   if (n === 'd') {
     const inHosp = BEDS.filter(b => G.spaces[b] && unitsAt(b).length).length + allUnits(x => x.space === 'CAMP').length;
-    const r = (await zen1(d6(), 'Tirada de Alimentación')) + (alive('salvacion') ? 1 : 0); LOG('Tirada de Alimentación: ' + r + ' (unidades necesitadas: ' + inHosp + ').');
+    const r = (await zen1(d6('alimentacion'), 'Tirada de Alimentación')) + (alive('salvacion') ? 1 : 0); LOG('Tirada de Alimentación: ' + r + ' (unidades necesitadas: ' + inHosp + ').');
     cost = r <= inHosp ? 1 : 0;
   } else cost = n;
   if (cost >= 2 && alive('clarin')) { cost--; LOG('El Mensajero del Clarín: el segundo Suministro es gratis.'); }
@@ -364,7 +364,7 @@ async function eventStart() {
     case 'murcielagos': { const us = allUnits(x => isFighter(x) && x.space && isRouteSp(x.space) && sp(x.space).route === 'T').sort((a, b) => sp(a.space).i - sp(b.space).i); if (us.length) { const u = us[0]; await infUp(1); await hitPlayer(u, 1); if (u.space && isRouteSp(u.space)) retreatPlayers([u], 'C'); } break; }
     case 'brote_local': break;
     case 'artefacto': { const dr = await drawDestiny(); if (dr) { const n = await rollShown('Artefacto: ¿dónde aparece?', v => 'Aparece el Súper Zed en el espacio n.º ' + v + ' de la ruta'); const t = dr.route + clamp(lastOf(dr.route) - n, 1, lastOf(dr.route) - 1); await placeZedAt(t, 'Artefacto', makeSuper()); await revealResearch(); await resolveTwist(dr); } break; }
-    case 'oh_no': { const t = strongestNormalZed(); if (t) { const up = ['smart', 'fast', 'toxic', 'leader', 'zresist'][rnd(5)]; t[up] = true; LOG('Una mejora Zed (' + up + ') se coloca sobre un Zed de Fuerza ' + strength(t) + '.', 'bad'); } break; }
+    case 'oh_no': { const t = strongestNormalZed(); if (t) { const up = ['smart', 'fast', 'toxic', 'leader', 'zresist'][rnd(5, 'evento')]; t[up] = true; LOG('Una mejora Zed (' + up + ') se coloca sobre un Zed de Fuerza ' + strength(t) + '.', 'bad'); } break; }
     case 'desde_lab': { const t = 'T4'; if (G.routes.includes('T')) { const sup = allUnits(x => x.type === 'super').length; await placeZedAt(t, 'Desde el laboratorio', sup ? makeZed() : makeSuper()); } break; }
     case 'hinchados': { const dr = await drawDestiny(); if (dr) { const zs = routeZeds(dr.route).sort((a, b) => sp(b.space).i - sp(a.space).i); if (zs.length) { const sid = zs[0].space; const z = zs[0]; if (z.type === 'super') { removeUnit(z); delete G.units[z.id]; } else if (z.type === 'spreader') { removeUnit(z); delete G.units[z.id]; } else discardZed(z); for (const nb of adjacentIds(sid)) { if (isInit(nb)) continue; const col = 3; const [a, b] = await UI.rollSimple('Zed hinchado: explosión en ' + spaceLabel(nb), 2, d => 'Total <b>' + (d[0] + d[1]) + '</b>: <b>' + FIRE[sumRow(d[0] + d[1])][col] + '</b> Impacto(s).'); const hits = FIRE[sumRow(a + b)][col]; const tg = unitsAt(nb); for (const t of tg) { if (isZedSide(t)) await applyZedHits([t], hits); else if (t.side === 'pl' || t.side === 'raid') await hitPlayer(t, hits); } } } await resolveTwist(dr); } break; }
     case 'atajos': G.turn.specials.push(mkSpecial('atajos')); break;

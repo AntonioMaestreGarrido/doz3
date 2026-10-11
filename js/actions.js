@@ -38,11 +38,11 @@ async function applyResearch(c) {
     case 'cecina': G.supplies = Math.min(20, G.supplies + 2); break;
     case 'musica': { const c = allUnits(x => isZedSide(x) && isRouteSp(x.space)).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, '¡Bajad la música!: elige un espacio; sus Zeds se retiran.'); await retreatZeds(zedsAt(t), zedOrigin(zedsAt(t)[0])); } break; }
     case 'cientificos': { const cs = Object.values(G.spaces).filter(s => s.chaos); if (cs.length) { const t = cs[0]; t.chaos--; G.chaosLeft++; } break; }
-    case 'pruebas': if (G.weapon && G.weapon.parts.length) G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); else pushInitialResearch(1); break;
+    case 'pruebas': if (G.weapon && G.weapon.parts.length) G.weapon.parts.splice(rnd(G.weapon.parts.length, 'arma'), 1); else pushInitialResearch(1); break;
     case 'hormona': break;
     case 'heroe_c': { const k = Object.keys(HEROES).find(x => (HEROES[x].sci || /Cient/.test(HEROES[x].cls)) && !hero(x) && !G.cemetery.some(c => c.key === x) && heroAllowed(x)); if (k) await spawnHero(k, 'C'); else LOG('No hay ningún Científico disponible en este nivel.'); break; }
     case 'antidoto': {
-      if (!G.finalPlaced) { G.finalPlaced = true; LOG('Componente Final colocado en el Laboratorio.', 'good'); G.res.deck.splice(rnd(G.res.deck.length + 1), 0, 'antidoto'); }
+      if (!G.finalPlaced) { G.finalPlaced = true; LOG('Componente Final colocado en el Laboratorio.', 'good'); G.res.deck.splice(rnd(G.res.deck.length + 1, 'investigacion'), 0, 'antidoto'); }
       else { G.antidote = true; LOG('¡Habéis descubierto el Antídoto! La Infección baja 1 cada turno.', 'good'); }
       break; }
     case 'arma1': case 'arma2': case 'arma3': case 'arma4': {

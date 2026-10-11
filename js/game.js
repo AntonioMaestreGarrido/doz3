@@ -97,7 +97,7 @@ function newGame(levelIdx, lenIdx, personal) {
   G.heroKeys = keys;
   const civhKey = L.n === 0 ? 'furias' : (() => { const p = CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[L.n]); return p[rnd(p.length)]; })();
   // recursos
-  if (L.n === 0) { G.ammo = 4; G.supplies = 0; } else { const a = d6(), b = d6(); G.supplies = a + b; G.ammo = 6 - Math.min(a, b); G.setupRoll = [a, b]; }
+  if (L.n === 0) { G.ammo = 4; G.supplies = 0; } else { const a = d6('inicio'), b = d6('inicio'); G.supplies = a + b; G.ammo = 6 - Math.min(a, b); G.setupRoll = [a, b]; }
   for (const k of keys) { const u = makeHero(k, 'C'); if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); } if (u.key === 'horacio' && L.supplies) G.supplies += 3; }
   const ch = makeHero(civhKey, 'C'); if (civhKey === 'salvacion' && L.supplies) G.supplies += 2;
   if (L.tunnel) { makeSpecial('diamante', 'T8'); makeSpecial('diamante', 'T6'); }
@@ -178,21 +178,21 @@ async function DEST_FX(id, route) {
     case 'planes': { const dr = await drawDestiny(); if (dr) { for (let i = 1; i <= lastOf(dr.route); i++) if (sp(dr.route + i).chaos && (await rollShown('Planes maníacos: ' + spaceLabel(dr.route + i), v => v <= 3 ? '<b>' + v + '</b>: se coloca un Zed' : '<b>' + v + '</b>: no pasa nada')) <= 3) await placeZedAt(dr.route + i, 'Planes maníacos'); await resolveTwistInner(dr); } for (const r of G.routes) await placeZedInitial(r); break; }
     case 'protestas': await lossChoice(await rollShown('Protestas: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' en cualquier combinación.'), ['s', 'a', 'i', 'p']); break;
     case 'punto_partida': { const v = await rollShown('De vuelta al punto de partida', v => v <= 2 ? '<b>' + v + '</b>: 2 cartas de Investigación Inicial encima del mazo' : v <= 5 ? '<b>' + v + '</b>: 1 carta de Investigación Inicial encima del mazo' : '<b>' + v + '</b>: sin efecto'); const n = v <= 2 ? 2 : v <= 5 ? 1 : 0; if (n) { pushInitialResearch(n); LOG('De vuelta al punto de partida: ' + n + ' carta(s) de Investigación Inicial encima del mazo.', 'good'); } break; }
-    case 'candado': { if (G.weapon && G.weapon.parts.length) { const k = G.weapon.parts.splice(rnd(G.weapon.parts.length), 1)[0]; LOG('Pierdes el componente ' + WEAPON_PARTS[k].name + '.', 'bad'); } else if (G.res) pushInitialResearch(1); const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Candado oxidado: ruta con menos Zeds.'); await placeZedInitial(r); break; }
+    case 'candado': { if (G.weapon && G.weapon.parts.length) { const k = G.weapon.parts.splice(rnd(G.weapon.parts.length, 'arma'), 1)[0]; LOG('Pierdes el componente ' + WEAPON_PARTS[k].name + '.', 'bad'); } else if (G.res) pushInitialResearch(1); const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Candado oxidado: ruta con menos Zeds.'); await placeZedInitial(r); break; }
     case 'hedor': { const zs = routeZeds(R).filter(z => z.type === 'zed'); if (zs.length) { zs.sort((a, b) => a.space.localeCompare(b.space) || strength(b) - strength(a)); const t = zs.sort((a, b) => sp(a.space).i - sp(b.space).i || strength(b) - strength(a))[0]; t.pest = true; LOG('Pestilentes sobre un Zed en ' + spaceLabel(t.space) + '.', 'bad'); } break; }
     case 'otra_manera': { for (const u of allUnits(x => x.space === 'CAMP')) { const r = await rollShown('Otra manera: ' + u.name, v => v === 1 ? '<b>1</b>: el grupo abandona la partida' : v === 6 ? '<b>6</b>: se cura un Civil' : '<b>' + v + '</b>: sin efecto'); if (r === 1) { removeUnit(u); delete G.units[u.id]; LOG('Un grupo de Refugiados abandona la partida.', 'bad'); } else if (r === 6) { const t = allUnits(x => x.type === 'civ' && (x.hits || x.flipped))[0]; if (t) healUnit(t); } } break; }
     case 'bubba': { const c = G.routes.filter(r => r !== 'T').map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = c.filter(x => x[1] === m)[0][0]; makeSpecial('bubba', r + '0'); LOG('La Banda de Bubba aparece en ' + spaceLabel(r + '0') + '.', 'bad'); break; }
     case 'zed_alfa': { const zs = routeZeds(R).filter(z => z.type === 'zed'); if (zs.length) { const t = zs.sort((a, b) => strength(b) - strength(a) || sp(b.space).i - sp(a.space).i)[0]; t.leader = true; LOG('Zed Líder en ' + spaceLabel(t.space) + '.', 'bad'); } await activateRoute(R, false); break; }
     case 'contagio': { await outbreak(true, true); const u = unitsAt('C').filter(isFighter)[0]; if (u && G.lv.infection) { const bed = freeBed(); if (bed) { putUnit(u, bed); u.flipped = true; u.hits = capOf(u) - 1; u.ecg = true; } } break; }
     case 'florecimiento': { const zs = allUnits(isZedSide); if (zs.length) { const m = Math.min(...zs.map(strength)); for (const z of zs.filter(x => strength(x) === m)) { const w = z.space, r = routeOfZ(z); removeUnit(z); delete G.units[z.id]; const nz = makeZed(); if (nz) putUnit(nz, w); } } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
-    case 'averia': { if (G.weapon && G.weapon.parts.length) { G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); LOG('Pierdes un componente de la Súper Arma.', 'bad'); } else { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Avería grave: ruta con menos Zeds.'); await activateRoute(r, false); } break; }
+    case 'averia': { if (G.weapon && G.weapon.parts.length) { G.weapon.parts.splice(rnd(G.weapon.parts.length, 'arma'), 1); LOG('Pierdes un componente de la Súper Arma.', 'bad'); } else { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Avería grave: ruta con menos Zeds.'); await activateRoute(r, false); } break; }
   }
 }
 async function resolveTwistInner(dr) { return resolveTwist(dr); }
 function spawnSpreader(k) { const d = SPREADERS[k]; return newUnit({ side: 'zed', type: 'spreader', skey: k, name: d.name, full: d.full, red: d.red, hf: 2, hr: 2, img: d.img }); }
 function pushInitialResearch(n) {
   if (!G.res) return; const pool = Object.keys(RES).filter(k => RES[k].kind === 'ini' && !G.res.deck.includes(k) && !G.res.disc.includes(k));
-  for (let i = 0; i < n && pool.length; i++) G.res.deck.unshift(pool.splice(rnd(pool.length), 1)[0]);
+  for (let i = 0; i < n && pool.length; i++) G.res.deck.unshift(pool.splice(rnd(pool.length, 'investigacion'), 1)[0]);
 }
 
 /* ---------- curación ---------- */

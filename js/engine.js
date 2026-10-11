@@ -4,20 +4,38 @@
 const G = {};
 let UI = null;
 function bindUI(u) { UI = u; }
-/* Generador con semilla (mulberry32): su estado se guarda con la partida para que repetir una acción dé las mismas tiradas. */
-let RNG_S = 1;
-function rngSeed(v) { RNG_S = v >>> 0; }
-function rngState() { return RNG_S; }
-function rngRestore(v) { RNG_S = v >>> 0; }
-function rnd(n) { RNG_S = (RNG_S + 0x6D2B79F5) >>> 0; let t = RNG_S; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return Math.floor(((t ^ (t >>> 14)) >>> 0) / 4294967296 * n); }
+/* Azar con semilla. Las partidas nuevas usan flujos independientes: cada tirada sale de (semilla, etiqueta, turno, contador de esa etiqueta en ese turno),
+   así un dado de más en una etiqueta o en un turno no desplaza el resto y dos partidas con el mismo código se mantienen lo más parecidas posible.
+   Las partidas guardadas antes (estado numérico) siguen con el generador secuencial de siempre (mulberry32). */
+let RNG_S = 1, RNG_M = 0, RNG_SD = 0, RNG_C = {};
+function rngSeed(v) { RNG_M = 1; RNG_SD = v >>> 0; RNG_C = {}; }
+function rngState() { return RNG_M ? 'S1:' + RNG_SD + ':' + JSON.stringify(RNG_C) : RNG_S; }
+function rngRestore(v) {
+  if (typeof v === 'string' && v.startsWith('S1:')) { const k = v.indexOf(':', 3); RNG_M = 1; RNG_SD = +v.slice(3, k) >>> 0; RNG_C = JSON.parse(v.slice(k + 1)); }
+  else { RNG_M = 0; RNG_S = v >>> 0; }
+}
+function rngMix(seed, str, n) {
+  let h = (seed ^ 0x9E3779B9) >>> 0; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 0x01000193);
+  h = (h + Math.imul(n + 1, 0x85EBCA6B)) >>> 0;
+  h ^= h >>> 16; h = Math.imul(h, 0x85EBCA6B); h ^= h >>> 13; h = Math.imul(h, 0xC2B2AE35); h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+function rnd(n, tag) {
+  if (!RNG_M) { RNG_S = (RNG_S + 0x6D2B79F5) >>> 0; let t = RNG_S; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return Math.floor(((t ^ (t >>> 14)) >>> 0) / 4294967296 * n); }
+  const k = (tag || 'misc') + '|' + ((typeof G !== 'undefined' && G.turnNo) || 0), c = RNG_C[k] || 0; RNG_C[k] = c + 1;
+  return Math.floor(rngMix(RNG_SD, k, c) * n);
+}
 /* Modo debug (se activa al empezar la partida): tras cada tirada con ventana aparece un botón Debug para cambiar los dados. */
 let DEBUG_DICE = false;
-function d6() { return 1 + rnd(6); }
+/* tag: etiqueta del tipo de tirada (cada tipo tiene su propio contador). Ojo: no usar d6 directamente como callback de Array.from. */
+function d6(tag) { return 1 + rnd(6, 'd6:' + (tag || 'dado')); }
+/* Etiqueta de una tirada a partir de su rótulo: sin paréntesis, cifras ni signos, para que sea la misma en cualquier partida. */
+function rollTag(label) { return String(label || '').toLowerCase().replace(/\([^)]*\)/g, '').replace(/<[^>]*>/g, '').replace(/[^a-záéíóúñü ]/g, '').trim().slice(0, 32) || 'dado'; }
 /* Dado aleatorio solo para la animación (no consume la secuencia ni pregunta). */
 const fxD6 = () => 1 + Math.floor(Math.random() * 6);
 /* Tirada de 1 dado visible: se muestra el dado y el resultado y hay que confirmar con un clic. fn(r) devuelve el texto del resultado. */
 async function rollShown(label, fn) { const [r] = await UI.rollSimple(label, 1, d => fn(d[0])); return r; }
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function shuffle(a, tag) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1, tag || 'shuffle'); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const LOG = (m, c) => UI && UI.log(m, c);
@@ -128,10 +146,10 @@ function drawNormalToken() {
     const t = G.turn.peekQ.zed.shift(), i = G.reserve.findIndex(x => x[0] === t[0] && x[1] === t[1]); if (i >= 0) return G.reserve.splice(i, 1)[0];
   }
   if (alreadyHas('antinatural') && G.reserve.length > 1) {
-    const a = G.reserve.splice(rnd(G.reserve.length), 1)[0], b = G.reserve.splice(rnd(G.reserve.length), 1)[0];
+    const a = G.reserve.splice(rnd(G.reserve.length, 'zed'), 1)[0], b = G.reserve.splice(rnd(G.reserve.length, 'zed'), 1)[0];
     const keep = a[0] >= b[0] ? a : b; G.reserve.push(a[0] >= b[0] ? b : a); return keep;
   }
-  return G.reserve.splice(rnd(G.reserve.length), 1)[0];
+  return G.reserve.splice(rnd(G.reserve.length, 'zed'), 1)[0];
 }
 function makeZed() {
   const t = drawNormalToken(); if (!t) return null;
@@ -141,7 +159,7 @@ function makeSuper() {
   if (!G.supers.length) return makeZed();
   let k; const q = G.turn && G.turn.peekOn && G.turn.peekQ && G.turn.peekQ.sup;
   if (q && q.length) { const pk = q.shift(), i = G.supers.indexOf(pk); if (i >= 0) k = G.supers.splice(i, 1)[0]; }
-  if (!k) k = G.supers.splice(rnd(G.supers.length), 1)[0];
+  if (!k) k = G.supers.splice(rnd(G.supers.length, 'super'), 1)[0];
   const d = SUPER_ZEDS[k];
   return newUnit({ side: 'zed', type: 'super', key: k, name: d.name, full: d.full, red: d.red, hf: 3, hr: 3, img: d.img, resistZ: k === 'ferreo' });
 }
@@ -214,7 +232,7 @@ async function applyZedHits(zeds, n) {
   }
 }
 async function hitZed(t) {
-  if (t.zresist || t.resistZ) { const r = d6(); if (r <= 3) { LOG('Resistente: el Impacto se cancela (dado ' + r + ').'); await UI.fxResist(t, r); return; } }
+  if (t.zresist || t.resistZ) { const r = d6('resistente'); if (r <= 3) { LOG('Resistente: el Impacto se cancela (dado ' + r + ').'); await UI.fxResist(t, r); return; } }
   const before = { flipped: t.flipped, hits: t.hits };
   const r = hitUnitOnce(t); EVT('zhit', ACTOR, { z: t.name, r });
   if (r === 'flip') { LOG(t.name + ' queda con Fuerza reducida (' + t.red + ').'); await UI.fxFlip(t, before); }
@@ -226,7 +244,7 @@ async function zedDies(t) {
   EVT('kill', ACTOR, { z: t.name, ty: t.type, sp: t.space });
   G.stats.killed++; Voz.say('muerte_zed', .1);
   if (t.type === 'spreader') {
-    const r = d6(); const rt = routeOfZ(t);
+    const r = d6('impacto'); const rt = routeOfZ(t);
     if (r <= 3 && rt) { await UI.fxResist(t, r, 'Huye'); t.hits = 0; t.flipped = false; putUnit(t, rt + '0'); LOG(t.name + ' vuelve al espacio Inicial (tirada ' + r + ').'); }
     else { await UI.fxBoom(t); LOG(t.name + ' queda fuera de juego.', 'good'); removeUnit(t); delete G.units[t.id]; }
     return;
@@ -243,8 +261,8 @@ async function hitPlayer(u, n) {
     if (u.type === 'aldeano') return;
     if (u.type === 'refugee') { if (u.space && sp(u.space).kind === 'bed') await sendCemetery(u, 'recibe un Impacto en el Hospital'); else await unitDown(u); return; }
     const th = resistsPl(u);
-    if (th) { const r = await zen1(d6(), 'resistir el Impacto (' + th + '+)'); if (r >= th) { LOG(u.name + ' ignora el Impacto (dado ' + r + ').', 'good'); await UI.fxResist(u, r, u.res === 'f' ? 'Reforzada' : 'Resistente'); continue; } }
-    if ((u.chips || []).includes('traje')) { const r = d6(); if (r >= 4) { LOG(u.name + ' (DARPA) ignora el Impacto.', 'good'); await UI.fxResist(u, r, 'DARPA'); continue; } }
+    if (th) { const r = await zen1(d6('ignorar impacto'), 'resistir el Impacto (' + th + '+)'); if (r >= th) { LOG(u.name + ' ignora el Impacto (dado ' + r + ').', 'good'); await UI.fxResist(u, r, u.res === 'f' ? 'Reforzada' : 'Resistente'); continue; } }
+    if ((u.chips || []).includes('traje')) { const r = d6('ignorar impacto'); if (r >= 4) { LOG(u.name + ' (DARPA) ignora el Impacto.', 'good'); await UI.fxResist(u, r, 'DARPA'); continue; } }
     if (u.space && sp(u.space).kind === 'bed' && u.ecg) { await sendCemetery(u, 'recibe un Impacto estando en coma'); return; }
     const before = { flipped: u.flipped, hits: u.hits };
     const r = hitUnitOnce(u); EVT('hit', u.id, { r });
@@ -279,8 +297,8 @@ async function unitDown(u) {
     if (u.key === 'staub' || u.key === 'betty') { const dd = await UI.rollSimple('Tirada de Salvación (' + u.name + '): vale el mejor de 2', 2, v => 'Mejor: <b>' + Math.max(v[0], v[1]) + '</b>'); r = Math.max(dd[0], dd[1]); }
     else { const [x] = await UI.rollSimple('Tirada de Salvación (' + u.name + ')', 1, v => 'Resultado: <b>' + v[0] + '</b>' + (saveBonus() ? ' (+' + saveBonus() + ' de bonificación)' : '') + ' → ' + (v[0] + saveBonus() > 3 ? 'se salva' : 'no se salva')); r = x; }
   } else {
-    r = d6();
-    if (u.key === 'staub' || u.key === 'betty') { const r2 = d6(); r = Math.max(r, r2); }
+    r = d6('salvacion');
+    if (u.key === 'staub' || u.key === 'betty') { const r2 = d6('salvacion'); r = Math.max(r, r2); }
     else r = await zen1(r, 'Tirada de Salvación');
   }
   const tot = r + saveBonus();

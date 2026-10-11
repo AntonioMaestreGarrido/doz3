@@ -9,13 +9,13 @@ function peekZeds(n) {
   const out = [];
   if (typeof alreadyHas === 'function' && alreadyHas('antinatural')) { for (let i = 0; i < n; i++) out.push(null); return out; }
   const q = G.turn.peekQ = G.turn.peekQ || { zed: [], sup: [] }, copy = G.reserve.slice();
-  for (let i = 0; i < n; i++) { if (!copy.length) { out.push(null); continue; } const t = copy.splice(rnd(copy.length), 1)[0]; q.zed.push(t); out.push(t); }
+  for (let i = 0; i < n; i++) { if (!copy.length) { out.push(null); continue; } const t = copy.splice(rnd(copy.length, 'zed'), 1)[0]; q.zed.push(t); out.push(t); }
   return out;
 }
 /* Asoma qué Súper Zed saldrá (clave de SUPER_ZEDS) o null. */
 function peekSuper() {
   if (!G.supers.length) return null;
-  const q = G.turn.peekQ = G.turn.peekQ || { zed: [], sup: [] }, k = G.supers[rnd(G.supers.length)]; q.sup.push(k); return k;
+  const q = G.turn.peekQ = G.turn.peekQ || { zed: [], sup: [] }, k = G.supers[rnd(G.supers.length, 'super')]; q.sup.push(k); return k;
 }
 /* Ejecuta fn con los anuncios activados: lo que se asomó se coloca tal cual. */
 async function withPeek(fn) {

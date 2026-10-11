@@ -85,7 +85,7 @@ async function zenReroll(vals, label, h) {
   const v = h && h.ask ? await h.ask(q, opts) : await UI.choose({ title: 'Pensar fríamente', text: q, options: opts });
   if (v !== 'y') return vals;
   G.hand.splice(G.hand.indexOf('pensar'), 1); G.destDiscard.push('pensar'); zenPlayed(); UI.updateHand();
-  const out = h && h.reroll ? await h.reroll(vals, idx) : vals.map((x, i) => idx.includes(i) ? d6() : x);
+  const out = h && h.reroll ? await h.reroll(vals, idx) : vals.map((x, i) => idx.includes(i) ? d6('repetir') : x);
   LOG('Pensar fríamente: se repite ' + (idx.length > 1 ? 'la tirada' : 'el 1') + ' → ' + out.join(' y ') + '.', 'good');
   return out;
 }

@@ -458,7 +458,7 @@ const ui = {
   pickSpace(ids, text, cancel) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res, cancel: !!cancel }; this.setBanner(text); this.redraw(); }); },
   async rollSimple(label, n, resultFn) {
     const b = this._modal('<h2>' + label + '</h2><div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div id="rres" style="text-align:center;margin:8px 0;font-size:15px"></div><div class="opts" id="rb"></div>', 'cbt');
-    const dice = Array.from({ length: n }, d6); await this._animate(b.querySelectorAll('.die'), dice);
+    const tg = rollTag(label), dice = Array.from({ length: n }, () => d6(tg)); await this._animate(b.querySelectorAll('.die'), dice);
     const show = () => { if (resultFn) $('rres').innerHTML = resultFn(dice); }; show();
     /* Pensar fríamente: se puede repetir cualquier dado con un 1 (con doble 1 se repiten los dos), igual que en combate. */
     if (G.hand && G.hand.includes('pensar') && dice.includes(1)) {
@@ -466,7 +466,7 @@ const ui = {
       const v = await this._ask('rb', 'Pensar fríamente: ¿repites ' + (idx.length > 1 ? 'los dos dados' : 'el dado con 1') + '?', [{ label: 'Repetir (juega la carta)', value: 'y' }, { label: 'No', value: 'n' }]);
       if (v === 'y') {
         G.hand.splice(G.hand.indexOf('pensar'), 1); G.destDiscard.push('pensar'); zenPlayed(); this.updateHand();
-        idx.forEach(i => dice[i] = d6());
+        idx.forEach(i => dice[i] = d6('repetir ' + tg));
         const els = [...b.querySelectorAll('.die')];
         await this._animate(idx.map(i => els[i]), idx.map(i => dice[i]));
         LOG('Pensar fríamente: se repite ' + (idx.length > 1 ? 'la tirada' : 'el 1') + ' → ' + dice.join(' y ') + '.', 'good');
@@ -523,7 +523,7 @@ const ui = {
     $('rb').innerHTML = '';
     if (got === 'cancel') return null; /* una carta (¡Tiradles algo!) ha cancelado el combate */
     const area = b.querySelector('.dice'); area.innerHTML = '<div class="die"></div>'.repeat(2 + (extra || 0));
-    const vals = Array.from({ length: 2 + (extra || 0) }, d6); await ui._animate(area.querySelectorAll('.die'), vals);
+    const vals = Array.from({ length: 2 + (extra || 0) }, () => d6('combate')); await ui._animate(area.querySelectorAll('.die'), vals);
     const topTwo = () => vals.slice().sort((a, c) => c - a).slice(0, 2);
     if (onChange) onChange(topTwo()); /* se marca ya el resultado en la tabla, antes de elegir Continuar o Debug */
     if (DEBUG_DICE) await ui._dbgDice([...area.querySelectorAll('.die')], vals, () => { if (onChange) onChange(topTwo()); });
@@ -534,7 +534,7 @@ const ui = {
   /* Repite los dados indicados (idx) de una tirada ya mostrada y recoloca el resultado resaltado. */
   async _rerollIn(b, info, vals, idx) {
     const area = b.querySelector('.dice'); area.innerHTML = vals.map(d => '<div class="die">' + d + '</div>').join('');
-    const els = [...area.querySelectorAll('.die')], nv = idx.map(() => d6());
+    const els = [...area.querySelectorAll('.die')], nv = idx.map(() => d6('repetir combate'));
     await this._animate(idx.map(i => els[i]), nv);
     if (DEBUG_DICE) await this._dbgDice(idx.map(i => els[i]), nv);
     const out = vals.slice(); idx.forEach((i, k) => out[i] = nv[k]);

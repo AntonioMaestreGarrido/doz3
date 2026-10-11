@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 12:14
+
+### Mejoras
+- **Azar por tipo de tirada (partidas nuevas):** cada tipo de tirada (combate, Brote, Alimentación, búsqueda, investigación, salvación…) y cada turno tiene su propio contador a partir de la semilla. Así un dado de más en un tipo o un turno no cambia el resto, y dos partidas con el mismo código se mantienen lo más parecidas posible. Las partidas guardadas antes siguen con el azar de siempre.
+
 ## 2026-10-11 12:10
 
 ### Mejoras
