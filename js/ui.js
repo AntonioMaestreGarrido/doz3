@@ -596,16 +596,41 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label><input type="checkbox" id="dbgDice"> Debug: botón para cambiar los dados tras cada tirada</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label>Héroe personal: <select id="heroSel"></select></label></div><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label><input type="checkbox" id="dbgDice"> Debug: botón para cambiar los dados tras cada tirada</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
+      let seed = null; /* { code, seed } cuando hay un código de partida activo */
+      const sels = () => ['heroSel', 'heroSel2', 'heroSel3', 'heroSel4'].map($);
       const upd = () => {
-        const n = +b.querySelector('input[name=lv]:checked').value, L = LEVELS[n];
-        $('lenSel').innerHTML = L.lengths.map((x, i) => '<option value="' + i + '">' + x.name + '</option>').join('');
+        const n = +b.querySelector('input[name=lv]:checked').value, L = LEVELS[n], keep = sels().map(e => e.value), lenKeep = $('lenSel').value;
+        $('lenSel').innerHTML = L.lengths.map((x, i) => '<option value="' + i + '">' + x.name + '</option>').join(''); if (L.lengths[lenKeep]) $('lenSel').value = lenKeep;
         G.expSel = [1, 2, 3, 4].filter(k => $('x' + k) && $('x' + k).checked); const pool = n === 0 ? [] : heroPoolFor(n);
-        $('heroSel').innerHTML = n === 0 ? '<option value="">(los 4 Héroes básicos)</option>' : '<option value="">Al azar</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join('');
+        sels().forEach((e, i) => { e.innerHTML = n === 0 ? '<option value="">(los 4 Héroes básicos)</option>' : '<option value="">' + (i ? 'Héroe ' + (i + 1) + ': al azar' : 'Al azar') + '</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join(''); if (pool.includes(keep[i])) e.value = keep[i]; });
+        $('heroAll').disabled = n === 0; $('heroMore').hidden = n === 0 || !$('heroAll').checked; $('heroLbl').firstChild.textContent = $('heroAll').checked ? 'Héroe 1: ' : 'Héroe personal: ';
       };
-      b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4').forEach(i => i.onchange = upd); upd();
-      $('goBtn').onclick = () => { const n = +b.querySelector('input[name=lv]:checked').value, len = +$('lenSel').value, hero = $('heroSel').value || null; const ex = [1, 2, 3, 4].filter(k => $('x' + k).checked); DEBUG_DICE = $('dbgDice').checked; ui._close(); res({ level: n, len, hero, exps: ex }); };
+      const picked = () => { const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0) return []; const v = sels().slice(0, $('heroAll').checked ? 4 : 1).map(e => e.value).filter(Boolean); return v; };
+      const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4].filter(k => $('x' + k).checked), heroes: picked() });
+      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
+      const msg = (t, bad) => { $('seedMsg').hidden = !t; $('seedMsg').textContent = t || ''; $('seedMsg').style.color = bad ? '#ff8a7a' : ''; };
+      b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #heroAll').forEach(i => i.onchange = upd); upd();
+      $('seedMake').onclick = () => {
+        const f = form(); if (f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length) { msg('Hay héroes repetidos.', true); return; }
+        const code = SeedCode.encode(Object.assign(f, { seed: SeedCode.random() })); $('seedTxt').value = code;
+        const say = c => msg('Código creado' + (c ? ' y copiado' : ' (cópialo a mano)') + ': ' + code + ' — pásaselo a la otra persona; con «Usar semilla» cargará la misma configuración.');
+        say(false); try { navigator.clipboard.writeText(code).then(() => say(true), () => { }); } catch (e) { }
+      };
+      $('seedUse').onclick = () => {
+        let o; try { o = SeedCode.decode($('seedTxt').value); } catch (e) { msg(e.message, true); return; }
+        b.querySelector('input[name=lv][value="' + o.level + '"]').checked = true; [1, 2, 3, 4].forEach(k => $('x' + k).checked = o.exps.includes(k));
+        $('heroAll').checked = o.heroes.length > 1; upd(); $('lenSel').value = o.len; o.heroes.forEach((k, i) => { sels()[i].value = k; });
+        seed = { code: SeedCode.encode(o), seed: o.seed }; $('seedTxt').value = seed.code; lock(true);
+        msg('Semilla ' + seed.code + ' cargada: la configuración queda fijada. Con «Quitar semilla» vuelves a la partida libre.');
+      };
+      $('seedOff').onclick = () => { seed = null; lock(false); msg(''); };
+      $('goBtn').onclick = () => {
+        const f = form(), dup = f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length; if (dup) { msg('Hay héroes repetidos.', true); return; }
+        DEBUG_DICE = $('dbgDice').checked; ui._close();
+        res({ level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null });
+      };
     });
   },
   /* Música de menú: suena en portada y selección de partida; el navegador exige un gesto del usuario para arrancar. */

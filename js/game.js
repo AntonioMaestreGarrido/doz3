@@ -68,8 +68,11 @@ function buildResearch(len) {
 }
 
 /* ---------- preparación ---------- */
+/* Semilla fijada para la próxima partida (viene de un código de partida); se consume al empezar. */
+let PENDING_SEED = null;
+/* personal: clave de héroe o lista de claves elegidas a mano (el resto se completa al azar). */
 function newGame(levelIdx, lenIdx, personal) {
-  UID = 1; rngSeed(crypto.getRandomValues(new Uint32Array(1))[0]);
+  UID = 1; rngSeed(PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]); PENDING_SEED = null;
   const L = LEVELS[levelIdx], len = L.lengths[lenIdx];
   Object.assign(G, {
     lv: L, len, units: {}, cemetery: [], reserve: ZED_TOKENS.map(t => t.slice()), supers: L.infection ? Object.keys(SUPER_ZEDS) : [],
@@ -87,7 +90,7 @@ function newGame(levelIdx, lenIdx, personal) {
   // Héroes
   const keys = L.n === 0 ? ['piazza', 'hernandez', 'schmidt', 'hunt'] : (() => {
     const pool = shuffle(heroPoolFor(L.n)); const sel = [];
-    if (personal && pool.includes(personal)) sel.push(personal);
+    for (const p of [].concat(personal || [])) if (pool.includes(p) && !sel.includes(p) && sel.length < 4) sel.push(p);
     for (const k of pool) { if (sel.length >= 4) break; if (!sel.includes(k)) sel.push(k); }
     return sel;
   })();

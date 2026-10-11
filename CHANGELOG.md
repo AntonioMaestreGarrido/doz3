@@ -2,6 +2,12 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 12:07
+
+### Mejoras
+- **Código de partida (semilla):** en Nueva partida, «Crear semilla» genera un código con nivel, duración, expansiones, héroes elegidos y semilla de azar; «Usar semilla» lo carga y fija la configuración. Con el mismo código, el montaje de la partida (héroes, mazos, civiles y tirada inicial) sale igual. Se puede elegir el héroe personal o los 4 héroes a mano.
+- **Mapa:** el zoom y el arrastre ya no se quedan atascados tras soltar fuera del mapa o cambiar de pestaña.
+
 ## 2026-10-11 06:44
 
 ### Mejoras
