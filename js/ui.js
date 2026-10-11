@@ -596,7 +596,7 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label><input type="checkbox" id="dbgDice"> Debug: botón para cambiar los dados tras cada tirada</label></div><details class="dbgobit"><summary>🐞 Debug: simular obituario</summary><div class="dbgbox"><div class="row"><select id="obHero"></select> <button type="button" id="obAdd">Añadir héroe</button> <button type="button" id="obAll">Añadir todos</button> <button type="button" id="obClr">Vaciar</button></div><div id="obList" class="oblist"></div><div class="row"><button type="button" class="primary" id="obGo">▶ Lanzar obituario</button> <span id="obMsg" class="pickhint"></span></div></div></details><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       let seed = null; /* { code, seed } cuando hay un código de partida activo */
       const sels = () => ['heroSel', 'heroSel2', 'heroSel3', 'heroSel4'].map($);
@@ -634,23 +634,9 @@ const ui = {
         msg('Semilla ' + seed.code + ' cargada: la configuración queda fijada. Con «Quitar semilla» vuelves a la partida libre.');
       };
       $('seedOff').onclick = () => { seed = null; lock(false); msg(''); };
-      /* Debug: simular obituario con héroes añadidos a mano y una estadística inventada (Zeds eliminados y turno de caída). */
-      const obKeys = ALT_KEYS.filter(k => HEROES[k]), obItems = [], rnd2 = (a, z) => a + Math.floor(Math.random() * (z - a + 1));
-      $('obHero').innerHTML = obKeys.map(k => '<option value="' + k + '">' + HEROES[k].name.replace(/\s*\(.*?\)/, '') + '</option>').join('');
-      const obDraw = () => {
-        $('obList').innerHTML = obItems.map((it, i) => '<div class="obchip"><b>' + HEROES[it.key].name.replace(/\s*\(.*?\)/, '') + '</b> · Zeds eliminados <input type="number" min="0" max="99" data-i="' + i + '" data-f="kills" value="' + it.kills + '"> · turno <input type="number" min="1" max="99" data-i="' + i + '" data-f="turno" value="' + it.turno + '"> <button type="button" data-rm="' + i + '">✕</button></div>').join('') || '<span class="pickhint">Sin héroes: añade los que quieras ver en el obituario.</span>';
-        $('obList').querySelectorAll('input').forEach(e => e.onchange = () => { obItems[+e.dataset.i][e.dataset.f] = Math.max(0, +e.value || 0); });
-        $('obList').querySelectorAll('[data-rm]').forEach(e => e.onclick = () => { obItems.splice(+e.dataset.rm, 1); obDraw(); });
-      };
-      const obAdd = k => { if (!obItems.some(x => x.key === k)) obItems.push({ key: k, kills: rnd2(2, 14), turno: rnd2(3, 20) }); };
-      $('obAdd').onclick = () => { obAdd($('obHero').value); obDraw(); };
-      $('obAll').onclick = () => { obKeys.forEach(obAdd); obDraw(); };
-      $('obClr').onclick = () => { obItems.length = 0; obDraw(); };
-      $('obGo').onclick = () => { if (!obItems.length) { $('obMsg').textContent = 'Añade al menos un héroe.'; return; } $('obMsg').textContent = ''; Obit.simular(obItems.map(x => Object.assign({}, x))); };
-      obDraw();
       $('goBtn').onclick = () => {
         const f = form(), dup = f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length; if (dup) { msg('Hay héroes repetidos.', true); return; }
-        DEBUG_DICE = $('dbgDice').checked; ui._close();
+        DEBUG_DICE = !!ui.dbgDice; ui._close();
         res({ level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null });
       };
     });
@@ -764,7 +750,7 @@ const ui = {
       const prev = $('title'); if (prev) prev.remove();
       const sv = listSaves(), t = document.createElement('div'); t.id = 'title';
       const info = sv.length ? sv.length + (sv.length === 1 ? ' partida' : ' partidas') + ' · ' + LEVELS[sv[0].G.lv].name + ', turno ' + sv[0].G.turnNo : 'No hay partidas guardadas';
-      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv.length ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="options">Opciones</button><button data-a="ost">OST</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button><div id="buildTag">' + (typeof BUILD_TIME !== 'undefined' ? 'build ' + BUILD_TIME : '') + '</div>';
+      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv.length ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="options">Opciones</button><button data-a="ost">OST</button><button data-a="debug">Debug</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button><div id="buildTag">' + (typeof BUILD_TIME !== 'undefined' ? 'build ' + BUILD_TIME : '') + '</div>';
       document.body.appendChild(t);
       this.musicOn();
       const mb = $('muteBtn'), paint = () => { mb.textContent = Sound.music.on ? '🔊' : '🔇'; }; paint();
@@ -775,6 +761,7 @@ const ui = {
         if (a === 'top') return ui.showTop();
         if (a === 'options') return ui.showOptions();
         if (a === 'ost') return Ost.open();
+        if (a === 'debug') return ui.showDebug();
         if (a === 'credits') return ui.showCredits();
         t.classList.add('bg'); if (a === 'new') t.classList.add('bgnew'); t.querySelectorAll('button').forEach(b => b.hidden = true); res(a);
       });
@@ -808,6 +795,25 @@ const ui = {
     this._modal('<h2>Top supervivientes</h2><table class="toptbl"><tr><th>#</th><th>Resultado</th><th>Puntos</th><th>Partida</th><th>Turnos</th><th>Zeds</th><th>Fecha</th></tr>' + rows + '</table><div class="opts">' + (list.length ? '<button id="topclr">Borrar</button>' : '') + '<button class="primary" id="xb">Cerrar</button></div>', 'toppanel');
     $('xb').onclick = () => { this._close(); const t2 = $('title'); if (t2) t2.classList.remove('bgrank'); };
     if ($('topclr')) $('topclr').onclick = () => { if (confirm('¿Borrar todo el ranking?')) { clearTop(); this.showTop(); } };
+  },
+  /* Menú Debug: herramientas de prueba. Por ahora, simular el obituario con héroes y estadísticas inventados. */
+  showDebug() {
+    const b = this._modal('<h2>🐞 Debug</h2><h3>Dados</h3><div class="row"><label><input type="checkbox" id="dbgDiceSw"' + (ui.dbgDice ? ' checked' : '') + '> Botón para cambiar los dados tras cada tirada</label></div><p class="pickhint">Solo vale para esta sesión: se apaga al recargar la página. Afecta a las partidas que empieces o cargues desde ahora.</p><h3>Obituario</h3><p class="pickhint">Añade los héroes que quieras ver; las estadísticas se inventan (puedes editarlas).</p><div class="dbgbox"><div class="row"><select id="obHero"></select> <button type="button" id="obAdd">Añadir héroe</button> <button type="button" id="obAll">Añadir todos</button> <button type="button" id="obClr">Vaciar</button></div><div id="obList" class="oblist"></div><div class="row"><button type="button" class="primary" id="obGo">▶ Lanzar obituario</button> <span id="obMsg" class="pickhint"></span></div></div><div class="opts"><button id="xb">Cerrar</button></div>');
+    const obKeys = ALT_KEYS.filter(k => HEROES[k]), obItems = [], rnd2 = (a, z) => a + Math.floor(Math.random() * (z - a + 1));
+    $('obHero').innerHTML = obKeys.map(k => '<option value="' + k + '">' + HEROES[k].name.replace(/\s*\(.*?\)/, '') + '</option>').join('');
+    const obDraw = () => {
+      $('obList').innerHTML = obItems.map((it, i) => '<div class="obchip"><b>' + HEROES[it.key].name.replace(/\s*\(.*?\)/, '') + '</b> · Zeds eliminados <input type="number" min="0" max="99" data-i="' + i + '" data-f="kills" value="' + it.kills + '"> · turno <input type="number" min="1" max="99" data-i="' + i + '" data-f="turno" value="' + it.turno + '"> <button type="button" data-rm="' + i + '">✕</button></div>').join('') || '<span class="pickhint">Sin héroes: añade los que quieras ver en el obituario.</span>';
+      $('obList').querySelectorAll('input').forEach(e => e.onchange = () => { obItems[+e.dataset.i][e.dataset.f] = Math.max(0, +e.value || 0); });
+      $('obList').querySelectorAll('[data-rm]').forEach(e => e.onclick = () => { obItems.splice(+e.dataset.rm, 1); obDraw(); });
+    };
+    const obAdd = k => { if (!obItems.some(x => x.key === k)) obItems.push({ key: k, kills: rnd2(2, 14), turno: rnd2(3, 20) }); };
+    $('obAdd').onclick = () => { obAdd($('obHero').value); obDraw(); };
+    $('obAll').onclick = () => { obKeys.forEach(obAdd); obDraw(); };
+    $('obClr').onclick = () => { obItems.length = 0; obDraw(); };
+    $('obGo').onclick = () => { if (!obItems.length) { $('obMsg').textContent = 'Añade al menos un héroe.'; return; } $('obMsg').textContent = ''; Obit.simular(obItems.map(x => Object.assign({}, x))); };
+    $('dbgDiceSw').onchange = e => { ui.dbgDice = e.target.checked; };
+    $('xb').onclick = () => this._close();
+    obDraw();
   },
   showCredits() {
     this._modal('<h2>Créditos</h2><p><b>Dawn of the Zeds</b> (3.ª edición)<br>Diseño del juego original: <b>Hermann Luttmann</b><br>Editorial: Victory Point Games</p><p>Esta adaptación web en solitario es un proyecto de aficionados, sin ánimo de lucro y no oficial. Las ilustraciones, cartas y marcas pertenecen a sus respectivos autores y editores.</p><p style="color:var(--mut);font-size:13px">Adaptación y programación: Antonio Maestre Garrido, con la ayuda de Claude.<br>' + (typeof BUILD_TIME !== 'undefined' ? 'Build: ' + BUILD_TIME : '') + '</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');

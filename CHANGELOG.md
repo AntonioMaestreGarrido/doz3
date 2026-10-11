@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 14:11
+
+### Mejoras
+- **Menú Debug:** nuevo botón en el menú principal (entre OST y Créditos). Reúne las herramientas de prueba: el interruptor de debug de dados (solo para la sesión; se apaga al recargar y ya no está en Nueva partida) y la simulación del obituario con héroes y estadísticas inventados, que antes estaba dentro de Nueva partida.
+
 ## 2026-10-11 13:00
 
 ### Mejoras

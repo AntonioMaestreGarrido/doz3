@@ -108,7 +108,7 @@ function listSaves() {
 }
 function loadSave(id) { return listSaves().find(s => s.id === id) || null; }
 function deleteSave(id) { if (!id) return; try { localStorage.removeItem(SLOT_PREFIX + id); } catch (e) { } setSlotIds(slotIds().filter(x => x !== id)); }
-function applySave(s) { restoreState(s.G); G.saveId = s.id || G.saveId; UID = s.uid; rngRestore(s.rng); DEBUG_DICE = !!s.dbg; /* el modo debug se guarda con la partida */ }
+function applySave(s) { restoreState(s.G); G.saveId = s.id || G.saveId; UID = s.uid; rngRestore(s.rng); DEBUG_DICE = !!s.dbg || !!ui.dbgDice; /* el modo debug se guarda con la partida */ }
 
 /* Ranking local de partidas terminadas (victorias primero, luego por puntos). */
 const TOP_KEY = 'doz3.top.v1';
