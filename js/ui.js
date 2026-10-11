@@ -614,8 +614,10 @@ const ui = {
       b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #heroAll').forEach(i => i.onchange = upd); upd();
       $('seedMake').onclick = () => {
         const f = form(); if (f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length) { msg('Hay héroes repetidos.', true); return; }
-        const code = SeedCode.encode(Object.assign(f, { seed: SeedCode.random() })); $('seedTxt').value = code;
-        const say = c => msg('Código creado' + (c ? ' y copiado' : ' (cópialo a mano)') + ': ' + code + ' — pásaselo a la otra persona; con «Usar semilla» cargará la misma configuración.');
+        /* Crear una semilla la activa de inmediato: si no, «Empezar» ignoraría el código y la partida saldría al azar. */
+        const s = SeedCode.random(), code = SeedCode.encode(Object.assign(f, { seed: s }));
+        seed = { code, seed: s }; $('seedTxt').value = code; lock(true);
+        const say = c => msg('Código creado' + (c ? ' y copiado' : ' (cópialo a mano)') + ': ' + code + ' — semilla activa, la configuración queda fijada. Pásaselo a la otra persona; con «Usar semilla» cargará la misma partida.');
         say(false); try { navigator.clipboard.writeText(code).then(() => say(true), () => { }); } catch (e) { }
       };
       $('seedCopy').onclick = () => {

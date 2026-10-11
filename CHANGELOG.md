@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 19:36
+
+### Fixes
+- **Semillas:** «Crear semilla» ahora activa la semilla al momento (la configuración queda fijada, igual que con «Usar semilla»). Antes solo escribía el código y «Empezar la partida» ignoraba la semilla, así que la partida salía al azar y el primer turno variaba.
+
 ## 2026-10-11 16:11
 
 ### Mejoras
