@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 16:11
+
+### Mejoras
+- **Obituario:** el arte se ajusta al alto de la pantalla y ya no se recorta por arriba ni por abajo. En pantalla ancha queda centrado con barras laterales; en móvil vertical se desplaza para dejar al personaje a la vista. Se reajusta al girar o cambiar el tamaño de la ventana.
+
 ## 2026-10-11 15:49
 
 ### Mejoras

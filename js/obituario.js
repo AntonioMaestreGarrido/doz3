@@ -37,6 +37,14 @@ const Obit = {
   },
   _cancelaEsperas() { for (const p of this._pend) { clearTimeout(p.t); p.res(false); } this._pend = []; },
 
+  /* El arte se muestra a toda la altura de la pantalla (nunca se recorta por arriba ni por abajo): el escenario toma la proporción de la imagen.
+     Si es más estrecho que la pantalla queda centrado con barras negras; si es más ancho (móvil vertical) se desplaza para dejar al personaje a la vista. */
+  _ajusta() {
+    const el = this.el; if (!el) return; const st = el.querySelector('.ob-stage'), img = el.querySelector('.ob-img');
+    const vw = el.clientWidth, vh = el.clientHeight, r = (img.naturalWidth && img.naturalHeight) ? img.naturalWidth / img.naturalHeight : 1280 / 853, sw = vh * r, fx = this._fx == null ? 50 : this._fx;
+    st.style.width = sw + 'px'; st.style.left = (sw <= vw ? (vw - sw) / 2 : Math.min(0, Math.max(vw - sw, vw / 2 - sw * fx / 100))) + 'px';
+  },
+
   _dom() {
     const o = document.createElement('div'); o.id = 'obit';
     o.innerHTML = '<div class="ob-stage"><img class="ob-img" alt=""><div class="ob-spot"></div></div>' +
@@ -45,6 +53,7 @@ const Obit = {
     document.body.appendChild(o); this.el = o;
     o.querySelector('.ob-exit').onclick = () => this.salir();
     this._key = e => { if (e.key === 'Escape') this.salir(); }; document.addEventListener('keydown', this._key);
+    this._rz = () => this._ajusta(); window.addEventListener('resize', this._rz);
   },
 
   async start() {
@@ -82,13 +91,13 @@ const Obit = {
     spot.style.transition = 'none'; spot.style.opacity = 0;   /* foco apagado: la imagen sale sin efectos */
     spot.style.background = 'radial-gradient(ellipse 36% 58% at ' + fx + '% ' + fy + '%, rgba(0,0,0,0) 0%, rgba(0,0,0,.32) 55%, rgba(0,0,0,.9) 100%)';
     img.style.transition = 'none'; img.style.opacity = 0; img.style.filter = 'grayscale(0) brightness(1)'; img.style.transform = 'scale(1)';
-    img.style.objectPosition = fx + '% ' + fy + '%'; img.style.transformOrigin = fx + '% ' + fy + '%';
+    img.style.transformOrigin = fx + '% ' + fy + '%'; this._fx = fx;
     const cargada = new Promise(r => { img.onload = img.onerror = () => r(); });
     img.src = this.url(u.key);
     if (!(img.complete && img.naturalWidth)) await Promise.race([cargada, new Promise(r => setTimeout(r, 4000))]);   /* tope: la imagen nunca bloquea el ciclo */
     if (next && next.key !== u.key) { const pre = new Image(); pre.src = this.url(next.key); }
     if (this.run !== run || this.fin) return;
-    void img.offsetWidth;
+    this._ajusta(); void img.offsetWidth;
     img.style.transition = 'opacity ' + T(this.T_ENTRA) + ' ease, filter ' + T(this.T_BN) + ' ease';
     img.style.opacity = 1;                                                                                    /* entra la imagen y se queda fija */
     if (!await this.wait((this.T_ENTRA + this.T_FIJA) * 1000, run)) return;                                    /* 5 s fija, tal cual, sin foco ni texto */
@@ -119,7 +128,7 @@ const Obit = {
 
   async cerrar(run) {
     if (this.audio) { const a = this.audio; this.audio = null; a.onended = null; const f = setInterval(() => { a.volume = Math.max(0, a.volume - .08); if (a.volume <= 0) { clearInterval(f); a.pause(); } }, 60); }
-    document.removeEventListener('keydown', this._key);
+    document.removeEventListener('keydown', this._key); window.removeEventListener('resize', this._rz);
     const el = this.el; if (el) { el.style.transition = 'opacity ' + (0.8 * this.vel) + 's'; el.style.opacity = 0; await new Promise(r => setTimeout(r, 800 * this.vel)); el.remove(); }
     this.el = null; this.activo = false; this.fin = false;
     if (this.sim) { this.sim = null; $('modal').hidden = false; try { ui.musicOn(); } catch (e) { } return; }
