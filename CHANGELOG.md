@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 12:10
+
+### Mejoras
+- **Código de partida:** botones «Copiar» y «Pegar» (lee el portapapeles y carga la semilla directamente).
+
 ## 2026-10-11 12:07
 
 ### Mejoras
