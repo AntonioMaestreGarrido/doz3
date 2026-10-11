@@ -112,3 +112,15 @@ window.addEventListener('load', async () => {
     if (setup) { ui.musicStop(); ui.hideCover(); playGame(setup); return; }
   }
 });
+
+/* App instalada (Android): el manifiesto pide pantalla completa, pero una instalación antigua puede conservar el modo «standalone».
+   Con el primer toque se entra en pantalla completa real; si se sale (gesto del sistema), se vuelve a entrar al tocar. */
+(function () {
+  const installed = () => ['standalone', 'minimal-ui', 'fullscreen'].some(m => matchMedia('(display-mode: ' + m + ')').matches) || navigator.standalone === true;
+  const el = document.documentElement;
+  const enter = () => {
+    if (!installed() || document.fullscreenElement || !el.requestFullscreen) return;
+    try { const p = el.requestFullscreen({ navigationUI: 'hide' }); if (p && p.catch) p.catch(() => { }); } catch (e) { }
+  };
+  ['pointerup', 'touchend'].forEach(ev => document.addEventListener(ev, enter, { capture: true, passive: true }));
+})();

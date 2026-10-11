@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 12:18
+
+### Mejoras
+- **App instalada (Android):** al tocar la pantalla entra en pantalla completa real, aunque la instalación conserve el modo anterior; si se sale, vuelve a entrar al tocar.
+
 ## 2026-10-11 12:10
 
 ### Mejoras
