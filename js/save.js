@@ -92,7 +92,7 @@ function saveGame(at) {
     if (!G.lv || G.over) return;
     if (!G.saveId) G.saveId = newSaveId();
     const snap = snapshotState();
-    localStorage.setItem(SLOT_PREFIX + G.saveId, JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), G: snap, meta: slotMeta(snap) }));
+    localStorage.setItem(SLOT_PREFIX + G.saveId, JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), dbg: !!DEBUG_DICE, G: snap, meta: slotMeta(snap) }));
     const ids = slotIds(); if (ids[0] !== G.saveId) setSlotIds([G.saveId].concat(ids.filter(x => x !== G.saveId)));
   } catch (e) { console.warn('No se pudo guardar la partida', e); }
 }
@@ -108,7 +108,7 @@ function listSaves() {
 }
 function loadSave(id) { return listSaves().find(s => s.id === id) || null; }
 function deleteSave(id) { if (!id) return; try { localStorage.removeItem(SLOT_PREFIX + id); } catch (e) { } setSlotIds(slotIds().filter(x => x !== id)); }
-function applySave(s) { restoreState(s.G); G.saveId = s.id || G.saveId; UID = s.uid; rngRestore(s.rng); }
+function applySave(s) { restoreState(s.G); G.saveId = s.id || G.saveId; UID = s.uid; rngRestore(s.rng); DEBUG_DICE = !!s.dbg; /* el modo debug se guarda con la partida */ }
 
 /* Ranking local de partidas terminadas (victorias primero, luego por puntos). */
 const TOP_KEY = 'doz3.top.v1';

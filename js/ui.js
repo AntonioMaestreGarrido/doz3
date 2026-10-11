@@ -129,11 +129,22 @@ const ui = {
     if (L.fourR) h += '<div>Caos: <b>' + chaosOnMap() + '</b> (quedan ' + G.chaosLeft + ')</div>';
     if (L.res && G.res) h += '<div style="grid-column:1/3" data-zoom="r:' + G.res.cur.id + '">Investigación: <b>' + G.res.cur.name + '</b> (' + G.res.cur.th + '+' + (G.res.cur.sup ? ', 1 Sum.' : '') + ') · quedan ' + G.res.deck.length + (G.weapon ? '<br>Súper Arma: ' + G.weapon.parts.map(k => '<img class="wpart" src="assets/tokens/arma_' + k + (WEAPON_EXT[k] || '.png') + '" title="' + WEAPON_PARTS[k].name + '" alt="' + WEAPON_PARTS[k].name + '">').join('') : '') + '</div>';
     h += '<div style="grid-column:1/3;font-size:12px;color:var(--mut)">Cartas de Evento: ' + done + ' / ' + tot + '</div><div class="bar"><i style="width:' + (tot ? 100 * done / tot : 0) + '%"></i></div>';
+    if (alive('wilson')) h += '<button id="visBtn" style="grid-column:1/3">🔮 Visiones de Wilson: mirar la carta de Destino</button>';
     if (G.phase === 'actions' && !G.busy) h += '<button class="primary" id="endBtn" style="grid-column:1/3">Terminar fase de Acciones ▶</button>';
     $('status').innerHTML = h;
+    const vb = $('visBtn'); if (vb) vb.onclick = () => this.willyVisions();
     const eb = $('endBtn'); if (eb) eb.onclick = () => { if (ui._endRes) { const r = ui._endRes; ui._endRes = null; ui.mode = null; ui.setBanner(null); r(); } };
     this.renderActBox();
     this.renderUnitBox();
+  },
+  /* Visiones (Wilson el Ermitaño): en cualquier momento, mira la carta superior del mazo de Destino. Sin robarla ni cambiar el orden. */
+  async willyVisions() {
+    if (!alive('wilson') || G.busy || !$('modal').hidden) return;
+    if (!G.destDeck.length && !G.destDiscard.length) { this._modal('<h2>Visiones</h2><p>No quedan cartas de Destino.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>'); $('xb').onclick = () => ui._close(); return; }
+    /* Mazo vacío: se baraja el descarte igual que al robar (drawDestiny) y se mira la primera carta de ese mazo nuevo. */
+    if (!G.destDeck.length) G.destDeck = shuffle(G.destDiscard.splice(0));
+    const id = G.destDeck[0], d = DEST[id];
+    await this.waitAck('Visiones de Wilson: «' + d.name + '»', '<div class="rulebox"><b>Regla</b><br>' + d.txt + '</div><p>Es la siguiente carta del mazo de Destino (sigue ahí, sin robarla).</p>', destImg(id));
   },
   /* Panel con todas las acciones que quedan este turno. */
   renderActBox() {
@@ -496,7 +507,7 @@ const ui = {
     return h + '</table>';
   },
   async _rollDice(b, extra, onChange, cardApi) {
-    await new Promise(r => {
+    const got = await new Promise(r => { ui._rollGo = r;
       $('rb').innerHTML = '<div id="cbcards"></div><button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>';
       const hasCards = !!(cardApi && cardApi.cards.length);
       if (hasCards) cardApi.cards.forEach(c => {
@@ -504,13 +515,16 @@ const ui = {
         bt.onclick = async () => { bt.disabled = true; await cardApi.use(c); bt.remove(); };
         $('cbcards').appendChild(bt);
       });
-      $('rollb').onclick = () => r(); $('rollb').focus();
-      if (ui.fast && !hasCards) r(); /* con cartas disponibles no se tira solo: hay que poder jugarlas */
+      $('rollb').onclick = () => r('roll'); $('rollb').focus();
+      if (ui.fast && !hasCards) r('roll'); /* con cartas disponibles no se tira solo: hay que poder jugarlas */
     });
+    ui._rollGo = null;
     $('rb').innerHTML = '';
+    if (got === 'cancel') return null; /* una carta (¡Tiradles algo!) ha cancelado el combate */
     const area = b.querySelector('.dice'); area.innerHTML = '<div class="die"></div>'.repeat(2 + (extra || 0));
     const vals = Array.from({ length: 2 + (extra || 0) }, d6); await ui._animate(area.querySelectorAll('.die'), vals);
     const topTwo = () => vals.slice().sort((a, c) => c - a).slice(0, 2);
+    if (onChange) onChange(topTwo()); /* se marca ya el resultado en la tabla, antes de elegir Continuar o Debug */
     if (DEBUG_DICE) await ui._dbgDice([...area.querySelectorAll('.die')], vals, () => { if (onChange) onChange(topTwo()); });
     const best = topTwo();
     if (extra) { const used = best.slice(); area.querySelectorAll('.die').forEach((e, i) => { const k = used.indexOf(vals[i]); if (k >= 0) used.splice(k, 1); else e.style.opacity = '.35'; }); }
@@ -537,8 +551,8 @@ const ui = {
       mark,
       roll: async extra => {
         /* Cartas jugables antes de tirar: botones en esta ventana. Al jugar una, se recalcula la columna final. */
-        const cardApi = info.cards && info.cards.length ? { cards: info.cards, use: async c => { await info.useCard(c); $('ccols').innerHTML = colsInner(); $('ctab').innerHTML = ui._cacTable(info.initCol, info.finalCol); } } : null;
-        const best = await ui._rollDice(b, extra, mark, cardApi); mark(best); return best;
+        const cardApi = info.cards && info.cards.length ? { cards: info.cards, use: async c => { await info.useCard(c); if (info.cancelled) { if (ui._rollGo) ui._rollGo('cancel'); return; } $('ccols').innerHTML = colsInner(); $('ctab').innerHTML = ui._cacTable(info.initCol, info.finalCol); } } : null;
+        const best = await ui._rollDice(b, extra, mark, cardApi); if (best) mark(best); return best;
       },
       ask: (t, o) => ui._ask('rb', t, o),
       reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
@@ -691,7 +705,8 @@ const ui = {
   },
   /* Al empezar cada turno: si el anterior terminó en peligro y este también empieza en peligro, suena «Last Stand» en vez del tema de peligro. */
   turnMusic() {
-    const ls = !!G.dangerNext && enPeligro();
+    /* Last Stand: si el peligro sigue del turno anterior, o si al empezar el turno queda 1 ficha de Caos. */
+    const ls = (!!G.dangerNext && enPeligro()) || (!!G.lv && G.lv.fourR && G.chaosLeft === 1);
     if (ls && !this._lastStand) this._ls.currentTime = 0;
     this._lastStand = ls; this._gamePlay();
   },

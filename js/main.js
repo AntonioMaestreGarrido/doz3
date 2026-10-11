@@ -14,6 +14,12 @@ async function revealEvent() {
 const FINISH = () => G.over;
 
 /* Zeds en el penúltimo espacio de alguna ruta o junto al Centro: el tema de peligro suena al empezar el siguiente turno. */
+/* Pocas fichas de Caos (3 o menos, solo en niveles con Caos): cuenta como peligro y se avisa al empezar el turno. */
+const chaosLow = () => !!(G.lv && G.lv.fourR && G.chaosLeft <= 3);
+function chaosWarnText() {
+  const n = G.chaosLeft;
+  return n === 1 ? 'Queda <b>1</b> ficha de Caos. Si hay que colocar otra, perdéis la partida.' : 'Quedan <b>' + n + '</b> fichas de Caos. Si se acaban y hay que colocar otra, perdéis la partida.';
+}
 function enPeligro() { return G.routes.some(rt => { const L = lastOf(rt); return [L, L - 1].some(k => k >= 1 && zedsAt(rt + k).length); }); }
 
 /* Descarga en segundo plano las cartas de Evento del mazo para que queden en la caché de la app. */
@@ -51,6 +57,7 @@ async function playGame(setup, saved) {
       await revealEvent(); ev = G.event;
       UI.redraw();
       await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', '<div class="rulebox"><b>Regla</b><br>' + ev.txt.join('<br>') + '</div>' + Preview.block(Preview.event(ev)), 'assets/cartas/e_' + ev.id + '.jpg', 'e:' + ev.id);
+      if (chaosLow()) { LOG('Quedan ' + G.chaosLeft + ' fichas de Caos.', 'bad'); await UI.waitAck('Fichas de Caos', chaosWarnText()); }
       if (ev.guardia) { G.phase = 'zeds'; await withPeek(eventStart); await maintenance(); G.dangerNext = enPeligro(); saveGame('turn'); continue; }
       G.phase = 'fourR'; UI.updateStats(); await phase4R(); if (G.over) break;
       G.phase = 'infection'; UI.updateStats(); await phaseInfection(); if (G.over) break;

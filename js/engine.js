@@ -394,6 +394,8 @@ function combatCards(f, attacking) {
   if (!f || f.side !== 'pl') return out;
   for (const [key, label, v, ok, tag] of [['excavadora', 'Excavadora asesina (2►)', 2, attacking, '+2►'], ['sin_nombre', 'El Hombre sin nombre (3►)', 3, true, '+3►'], ['trago', 'Un trago para coger fuerzas (2►, 1 Impacto después)', 2, true, '+2►, y 1 Impacto después']])
     if (ok && G.hand.includes(key)) out.push({ key, label, v, tag });
+  /* ¡Tiradles algo!: defendiendo, cancela este combate; ataque de Fuerza 2 y después combate Cuerpo a Cuerpo (ver melee). */
+  if (!attacking && G.hand.includes('tiradles')) out.push({ key: 'tiradles', label: 'Cancelar el combate: ataque de Fuerza 2 y luego Cuerpo a Cuerpo', tag: 'cancela el combate', cancel: true });
   /* Algunos civiles se organizan: sobre la unidad de Civiles Normales que combate; recibe la ficha de Líder Civil (1 columna a favor en este combate y en los siguientes, cuerpo a cuerpo y disparos). */
   if (G.hand.includes('civiles') && f.type === 'civ' && !f.leader && f.space) out.push({ key: 'civiles', label: 'Líder Civil', v: 1, tag: '+1► ahora y en los siguientes combates', civ: true });
   return out;
@@ -407,6 +409,15 @@ function playCombatCard(c, f, o, shifts) {
   if (c.civ) { f.leader = true; LOG('Algunos civiles se organizan: ' + f.name + ' recibe la ficha de Líder Civil.', 'good'); UI.redraw(); }
   else LOG('Juegas «' + DEST[c.key].name + '».', 'good');
   UI.updateHand(); return true;
+}
+/* ¡Tiradles algo!: antes de resolver el combate, ataque con Arma de Fuego de Fuerza 2 (sin Munición) contra los atacantes. */
+async function tiradlesAttack(zeds) {
+  G.hand.splice(G.hand.indexOf('tiradles'), 1); G.destDiscard.push('tiradles'); zenPlayed(); UI.updateHand();
+  const col = 1; /* Fuerza 2 */
+  const [a, b] = await UI.rollSimple('¡Tiradles algo!: ataque de Fuerza 2', 2, d => { const h = FIRE[sumRow(d[0] + d[1])][col]; return 'Total <b>' + (d[0] + d[1]) + '</b>: <b>' + h + '</b> Impacto(s) contra los atacantes.'; });
+  const hits = FIRE[sumRow(a + b)][col];
+  LOG('¡Tiradles algo!: ataque de Fuerza 2 (' + (a + b) + '): ' + hits + ' Impacto(s).', 'good');
+  await applyZedHits(zeds, hits);
 }
 async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCol, noInf, assassin }
   let zeds = o.zeds.filter(z => z.space), hum = o.hum.filter(u => u.space);
@@ -468,9 +479,17 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   const wzed = !attackerHuman && fighter.side === 'pl' && alive('wzed') && isCity(space);
   let extraDice = (wilsonBuddy ? 1 : 0) + (wzed ? 1 : 0);
   const cinfo = { title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, cards: combatCards(fighter, attackerHuman) };
-  cinfo.useCard = async c => { if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
+  cinfo.useCard = async c => { if (c.cancel) { cinfo.cancelled = true; return; } if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
   const h = UI.combatOpen(cinfo);
   let dice = await h.roll(extraDice);
+  if (dice === null) { /* ¡Tiradles algo!: se cancela este combate. Ataque de Fuerza 2 contra los atacantes; si quedan Zeds y la unidad sigue en el espacio, combate Cuerpo a Cuerpo. */
+    UI._close();
+    await tiradlesAttack(zeds);
+    const left = zeds.filter(z => z.space && G.units[z.id]);
+    const mine = unitsAt(space).filter(u => isFighter(u) && u.side === 'pl');
+    if (!left.length || !mine.length) return {};
+    return await melee({ zeds: left, hum: mine, space, attacker: 'h', from: o.from, noInf: o.noInf });
+  }
   if (fighter.key === 'schmidt' || fighter.key === 'hunt' || fighter.key === 'horacio') {
     const again = await h.ask('Artes marciales: ¿repites la tirada?', [{ label: 'Repetir', value: 'y' }, { label: 'Aceptar', value: 'n' }]);
     if (again === 'y') dice = await h.roll(extraDice);

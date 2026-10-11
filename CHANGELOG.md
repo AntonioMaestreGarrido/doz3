@@ -2,6 +2,19 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 02:02
+
+### Mejoras
+- **Caos:** al empezar el turno, si quedan 3 o menos fichas de Caos sale un aviso con el número. Con 3 o menos, el tema de peligro suena; con 1 ficha al empezar el turno, suena «Last Stand».
+- **Visiones de Wilson el Ermitaño:** botón en el panel de estado (con Wilson en juego) que muestra la carta superior del mazo de Destino sin robarla. Si el mazo está vacío pero queda descarte, lo baraja y muestra la primera carta.
+- **Brote:** la ventana «¡Estalla un Brote!» solo indica dónde aparece el Zed (la ruta la decide la carta de Destino).
+- **Debug:** la partida guarda si tenía el modo debug activo y lo recupera al cargarla.
+- **Debug de combate:** el resultado de la tirada se marca en la tabla antes de elegir Continuar o Debug.
+
+### Fixes
+- **¡Tiradles algo!:** se puede jugar desde la ventana de combate cuando una unidad defiende. Cancela el combate, hace un ataque de Fuerza 2 contra los atacantes y, si quedan Zeds y la unidad sigue en el espacio, empieza un combate Cuerpo a Cuerpo.
+- **De vuelta al punto de partida:** ahora tiene efecto (1 dado: 1–2 dos cartas de Investigación Inicial, 3–5 una, 6 nada).
+
 ## 2026-10-11 01:10
 
 ### Mejoras
