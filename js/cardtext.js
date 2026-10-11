@@ -57,7 +57,7 @@ const CARD_IMGS = ['porter','piazza','hernandez','schmidt','hunt','furias','seav
 const TOKEN_IMGS = ['porter','agee','betty','carter','darling','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','santana','schmidt','seaver','staub','wilson','wright','furias','bomberos','bauer','antidist','salvacion','clarin','wzed','division12'];
 /* Arte alternativo (opción «Usar arte alternativo» del menú Opciones): cartas y fichas ilustradas en assets/arte_alt con las mismas claves.
    Si la opción está apagada o el personaje no tiene arte alternativo, se usa siempre el original (y si una imagen falla, el reintento de ui.js vuelve al original). */
-const ALT_KEYS = ['agee','antidist','bauer','betty','bomberos','carter','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed'];
+const ALT_KEYS = ['agee','antidist','bauer','betty','bomberos','carter','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','porter','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed'];
 const heroAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_KEYS.includes(k));
 const heroCard = k => CARD_IMGS.includes(k) ? (heroAlt(k) ? 'assets/arte_alt/cartas/h_' + k + '.webp' : 'assets/cartas/h_' + k + '.jpg') : null;
 const heroBack = k => CARD_IMGS.includes(k) ? (heroAlt(k) ? 'assets/arte_alt/cartas/hb_' + k + '.webp' : 'assets/cartas/hb_' + k + '.jpg') : null;

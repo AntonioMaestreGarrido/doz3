@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 06:44
+
+### Mejoras
+- **Obituario:** Antonio «Porter» Maestre tiene ilustración propia y aparece entre las bajas (con su foco de luz).
+
 ## 2026-10-11 06:40
 
 ### Mejoras
