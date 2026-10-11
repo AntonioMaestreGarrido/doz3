@@ -2,6 +2,12 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 15:49
+
+### Mejoras
+- **Debug · obituario:** la lista de héroes es ahora de multiselección (casillas, «Marcar todos» y «Ninguno»); las estadísticas se inventan al lanzar.
+- **Obituario:** al empezar corta toda la música (menú, partida, peligro, Last Stand y tema de fin) para que solo suene la suya; al salir de la simulación vuelve la del menú.
+
 ## 2026-10-11 14:11
 
 ### Mejoras

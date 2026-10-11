@@ -798,22 +798,17 @@ const ui = {
   },
   /* Menú Debug: herramientas de prueba. Por ahora, simular el obituario con héroes y estadísticas inventados. */
   showDebug() {
-    const b = this._modal('<h2>🐞 Debug</h2><h3>Dados</h3><div class="row"><label><input type="checkbox" id="dbgDiceSw"' + (ui.dbgDice ? ' checked' : '') + '> Botón para cambiar los dados tras cada tirada</label></div><p class="pickhint">Solo vale para esta sesión: se apaga al recargar la página. Afecta a las partidas que empieces o cargues desde ahora.</p><h3>Obituario</h3><p class="pickhint">Añade los héroes que quieras ver; las estadísticas se inventan (puedes editarlas).</p><div class="dbgbox"><div class="row"><select id="obHero"></select> <button type="button" id="obAdd">Añadir héroe</button> <button type="button" id="obAll">Añadir todos</button> <button type="button" id="obClr">Vaciar</button></div><div id="obList" class="oblist"></div><div class="row"><button type="button" class="primary" id="obGo">▶ Lanzar obituario</button> <span id="obMsg" class="pickhint"></span></div></div><div class="opts"><button id="xb">Cerrar</button></div>');
-    const obKeys = ALT_KEYS.filter(k => HEROES[k]), obItems = [], rnd2 = (a, z) => a + Math.floor(Math.random() * (z - a + 1));
-    $('obHero').innerHTML = obKeys.map(k => '<option value="' + k + '">' + HEROES[k].name.replace(/\s*\(.*?\)/, '') + '</option>').join('');
-    const obDraw = () => {
-      $('obList').innerHTML = obItems.map((it, i) => '<div class="obchip"><b>' + HEROES[it.key].name.replace(/\s*\(.*?\)/, '') + '</b> · Zeds eliminados <input type="number" min="0" max="99" data-i="' + i + '" data-f="kills" value="' + it.kills + '"> · turno <input type="number" min="1" max="99" data-i="' + i + '" data-f="turno" value="' + it.turno + '"> <button type="button" data-rm="' + i + '">✕</button></div>').join('') || '<span class="pickhint">Sin héroes: añade los que quieras ver en el obituario.</span>';
-      $('obList').querySelectorAll('input').forEach(e => e.onchange = () => { obItems[+e.dataset.i][e.dataset.f] = Math.max(0, +e.value || 0); });
-      $('obList').querySelectorAll('[data-rm]').forEach(e => e.onclick = () => { obItems.splice(+e.dataset.rm, 1); obDraw(); });
-    };
-    const obAdd = k => { if (!obItems.some(x => x.key === k)) obItems.push({ key: k, kills: rnd2(2, 14), turno: rnd2(3, 20) }); };
-    $('obAdd').onclick = () => { obAdd($('obHero').value); obDraw(); };
-    $('obAll').onclick = () => { obKeys.forEach(obAdd); obDraw(); };
-    $('obClr').onclick = () => { obItems.length = 0; obDraw(); };
-    $('obGo').onclick = () => { if (!obItems.length) { $('obMsg').textContent = 'Añade al menos un héroe.'; return; } $('obMsg').textContent = ''; Obit.simular(obItems.map(x => Object.assign({}, x))); };
+    const b = this._modal('<h2>🐞 Debug</h2><h3>Dados</h3><div class="row"><label><input type="checkbox" id="dbgDiceSw"' + (ui.dbgDice ? ' checked' : '') + '> Botón para cambiar los dados tras cada tirada</label></div><p class="pickhint">Solo vale para esta sesión: se apaga al recargar la página. Afecta a las partidas que empieces o cargues desde ahora.</p><h3>Obituario</h3><p class="pickhint">Marca los héroes que quieras ver; las estadísticas se inventan al lanzar.</p><div class="dbgbox"><div class="row"><button type="button" id="obAll">Marcar todos</button> <button type="button" id="obClr">Ninguno</button> <span id="obCnt" class="pickhint"></span></div><div id="obList" class="obchecks"></div><div class="row"><button type="button" class="primary" id="obGo">▶ Lanzar obituario</button> <span id="obMsg" class="pickhint"></span></div></div><div class="opts"><button id="xb">Cerrar</button></div>');
+    const obKeys = ALT_KEYS.filter(k => HEROES[k]), rnd2 = (a, z) => a + Math.floor(Math.random() * (z - a + 1)), nom = k => HEROES[k].name.replace(/\s*\(.*?\)/, '');
+    $('obList').innerHTML = obKeys.map(k => '<label class="obck"><input type="checkbox" value="' + k + '"> ' + nom(k) + '</label>').join('');
+    const marcados = () => [...$('obList').querySelectorAll('input:checked')].map(e => e.value), cnt = () => { $('obCnt').textContent = marcados().length + ' de ' + obKeys.length + ' marcados'; };
+    $('obList').querySelectorAll('input').forEach(e => e.onchange = cnt);
+    $('obAll').onclick = () => { $('obList').querySelectorAll('input').forEach(e => e.checked = true); cnt(); };
+    $('obClr').onclick = () => { $('obList').querySelectorAll('input').forEach(e => e.checked = false); cnt(); };
+    $('obGo').onclick = () => { const ks = marcados(); if (!ks.length) { $('obMsg').textContent = 'Marca al menos un héroe.'; return; } $('obMsg').textContent = ''; Obit.simular(ks.map(k => ({ key: k, kills: rnd2(2, 14), turno: rnd2(3, 20) }))); };
     $('dbgDiceSw').onchange = e => { ui.dbgDice = e.target.checked; };
     $('xb').onclick = () => this._close();
-    obDraw();
+    cnt();
   },
   showCredits() {
     this._modal('<h2>Créditos</h2><p><b>Dawn of the Zeds</b> (3.ª edición)<br>Diseño del juego original: <b>Hermann Luttmann</b><br>Editorial: Victory Point Games</p><p>Esta adaptación web en solitario es un proyecto de aficionados, sin ánimo de lucro y no oficial. Las ilustraciones, cartas y marcas pertenecen a sus respectivos autores y editores.</p><p style="color:var(--mut);font-size:13px">Adaptación y programación: Antonio Maestre Garrido, con la ayuda de Claude.<br>' + (typeof BUILD_TIME !== 'undefined' ? 'Build: ' + BUILD_TIME : '') + '</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');

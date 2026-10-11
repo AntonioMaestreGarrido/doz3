@@ -51,7 +51,7 @@ const Obit = {
     const list = this.bajas(); if (!list.length || this.activo) return;
     this.activo = true; this.fin = false; const run = ++this.run;
     $('modal').hidden = true; this._dom();
-    try { if (ui._endMus) ui._endMus.pause(); } catch (e) { }
+    this.silenciar();
     this.audio = null;
     if (Sound.music.on) {
       const a = this.audio = new Audio(this.MUSICA); a.volume = Math.min(1, .9 * Sound.music.vol);
@@ -106,6 +106,15 @@ const Obit = {
     this.sim = { list, ust }; return this.start();
   },
 
+  /* Corta cualquier otra música (menú, partida, peligro, tema de fin) para que solo suene la del obituario. */
+  silenciar() {
+    try {
+      if (ui._mus) ui.musicStop();
+      if (ui._bg) { ui._bg.forEach(a => { a.onended = null; a.pause(); }); [ui._dg, ui._ls].forEach(a => a && a.pause()); ui._bg = null; ui._danger = false; ui._lastStand = false; }
+      if (ui._endMus) ui._endMus.pause();
+    } catch (e) { }
+  },
+
   salir() { this.fin = true; this._cancelaEsperas(); },
 
   async cerrar(run) {
@@ -113,7 +122,7 @@ const Obit = {
     document.removeEventListener('keydown', this._key);
     const el = this.el; if (el) { el.style.transition = 'opacity ' + (0.8 * this.vel) + 's'; el.style.opacity = 0; await new Promise(r => setTimeout(r, 800 * this.vel)); el.remove(); }
     this.el = null; this.activo = false; this.fin = false;
-    if (this.sim) { this.sim = null; $('modal').hidden = false; return; }
+    if (this.sim) { this.sim = null; $('modal').hidden = false; try { ui.musicOn(); } catch (e) { } return; }
     if (ui._endHtml) { ui._modal(ui._endHtml); ui._bindEnd(); }
   }
 };
