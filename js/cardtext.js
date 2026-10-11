@@ -47,21 +47,23 @@ function zoomInfo(spec) {
     if (u.type === 'zed') return { img: zedTokenImg(u), title: 'Unidad Zed (Fuerza ' + strength(u) + ')', tok: 1, html: cur + li(['Unidad Zed Normal. Con 3 Impactos pasa a su cara reducida; con otros 3 es eliminada.', 'Dos Zeds en el mismo espacio forman una Horda y luchan sumando su Fuerza (máximo 2 por espacio).']) };
     if (u.type === 'civ') return { img: null, title: 'Civiles Normales', html: cur + li(['Resisten 4 Impactos (2 por cara). Si reciben el último: tirada de Salvación (1-3 Cementerio; 4-6 Centro en el Juego Básico u Hospital en los niveles posteriores).', u.resist ? '<b>Resistiendo:</b> atrincheradas en un Pueblo; inmóviles hasta que los Zeds ataquen el Pueblo.' : 'Mueven 2 espacios por Acción.']) };
     const sp0 = Object.values(SPECIALS).find(s => s.type === u.type && s.name === u.name) || SPECIALS[u.skey];
-    return { img: null, title: u.name, html: cur + li(sp0 ? sp0.txt : ['Unidad especial.']) };
+    return { img: sp0 && sp0.card ? 'assets/cartas/' + sp0.card + '.jpg' : null, title: u.name, html: cur + li(sp0 ? sp0.txt : ['Unidad especial.']) };
   }
   return null;
 }
 
 /* Cartas de personaje: frente (h_*.jpg) y trasera con el trasfondo (hb_*.jpg). */
-const CARD_IMGS = ['piazza','hernandez','schmidt','hunt','furias','seaver','pepinillos','horacio','carter','betty','lee','may','jaque','darling','jones','wright','division12','santana','bauer','kingman','antidist','agee','hauser','clarin','wilson','bomberos','salvacion','johnson','staub','wzed'];
-const TOKEN_IMGS = ['agee','betty','carter','darling','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','santana','schmidt','seaver','staub','wilson','wright','furias','bomberos','bauer','antidist','salvacion','clarin','wzed','division12'];
+const CARD_IMGS = ['porter','piazza','hernandez','schmidt','hunt','furias','seaver','pepinillos','horacio','carter','betty','lee','may','jaque','darling','jones','wright','division12','santana','bauer','kingman','antidist','agee','hauser','clarin','wilson','bomberos','salvacion','johnson','staub','wzed'];
+const TOKEN_IMGS = ['porter','agee','betty','carter','darling','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','santana','schmidt','seaver','staub','wilson','wright','furias','bomberos','bauer','antidist','salvacion','clarin','wzed','division12'];
 /* Arte alternativo (opción «Usar arte alternativo» del menú Opciones): cartas y fichas ilustradas en assets/arte_alt con las mismas claves.
    Si la opción está apagada o el personaje no tiene arte alternativo, se usa siempre el original (y si una imagen falla, el reintento de ui.js vuelve al original). */
-const ALT_KEYS = ['agee','antidist','bauer','bomberos','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','pepinillos','piazza','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed'];
+const ALT_KEYS = ['agee','antidist','bauer','betty','bomberos','carter','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed'];
 const heroAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_KEYS.includes(k));
 const heroCard = k => CARD_IMGS.includes(k) ? (heroAlt(k) ? 'assets/arte_alt/cartas/h_' + k + '.webp' : 'assets/cartas/h_' + k + '.jpg') : null;
-const heroBack = k => CARD_IMGS.includes(k) ? 'assets/cartas/hb_' + k + '.jpg' : null;
-const heroTok = (k, red) => heroAlt(k) ? 'assets/arte_alt/tokens/' + k + (red ? '_r' : '') + '.webp' : (TOKEN_IMGS.includes(k) ? 'assets/tokens/' + k + '.png' : null);
+const heroBack = k => CARD_IMGS.includes(k) ? (heroAlt(k) ? 'assets/arte_alt/cartas/hb_' + k + '.webp' : 'assets/cartas/hb_' + k + '.jpg') : null;
+const heroTok = (k, red) => heroAlt(k) ? 'assets/arte_alt/tokens/' + k + (red ? '_r' : '') + '.webp' : (TOKEN_IMGS.includes(k) ? 'assets/tokens/' + k + (red && RED_TOKENS.includes(k) ? '_r' : '') + '.png' : null);
+/* Fichas por defecto que tienen también cara reducida (ver assets/tokens/<clave>_r.png). */
+const RED_TOKENS = ['porter'];
 /* Imagen del tooltip: la ficha del personaje; si no tiene ficha propia, el frente de su carta. */
 const heroOpt = k => ({ value: k, label: HEROES[k].name, img: heroCard(k) || heroTok(k), sub: HEROES[k].cls + ' · ' + HEROES[k].full + '/' + HEROES[k].red });
 const unitOpt = (u, extra) => ({ value: u.id, label: u.name + (extra || ''), img: u.key && HEROES[u.key] ? (heroCard(u.key) || heroTok(u.key)) : null, sub: u.space ? spaceLabel(u.space) : '' });

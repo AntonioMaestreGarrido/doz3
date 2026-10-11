@@ -7,7 +7,7 @@
 
 const Obit = {
   /* Posición horizontal (%) del personaje principal en cada ilustración: centra el foco de luz. */
-  FOCO: { piazza: 40, hernandez: 46, schmidt: 57, hunt: 47, hauser: 49, johnson: 29, kingman: 42, pepinillos: 53, santana: 46, darling: 45, staub: 23, horacio: 43, seaver: 38, agee: 42, jones: 46, wright: 45, wilson: 50, furias: 50, bomberos: 42, bauer: 46, antidist: 50, salvacion: 48, clarin: 44, wzed: 42, division12: 50, jaque: 46 },
+  FOCO: { piazza: 40, hernandez: 46, schmidt: 57, hunt: 47, hauser: 49, johnson: 29, kingman: 42, pepinillos: 53, santana: 46, darling: 45, staub: 23, horacio: 43, seaver: 38, agee: 42, jones: 46, wright: 45, wilson: 50, furias: 50, bomberos: 42, bauer: 46, antidist: 50, salvacion: 48, clarin: 44, wzed: 42, division12: 50, jaque: 46, carter: 36, betty: 53, lee: 47, may: 54 },
   FOCO_Y: 42,
   MUSICA: 'assets/sonidos/musica/musica_obituario.m4a',
   vel: 1,            /* factor de tiempo (1 = real); lo usan las pruebas */

@@ -15,7 +15,7 @@ function makeHero(key, where) {
 }
 function makeSpecial(key, where, extra) {
   const d = SPECIALS[key];
-  const u = newUnit(Object.assign({ side: ['saqueadores', 'bubba'].includes(key) ? 'raid' : 'pl', type: d.type, key: key === 'saqueadores' || key === 'bubba' ? undefined : undefined, skey: key, name: d.name, full: d.full, red: d.red, mp: d.mp, hf: d.hf || (d.type === 'raider' ? 3 : 1), hr: d.hr || (d.type === 'raider' ? 3 : 1), bonus: d.bonus, bubba: d.bubba, vip: d.vip, dr: d.dr }, extra || {}));
+  const u = newUnit(Object.assign({ side: ['saqueadores', 'bubba'].includes(key) ? 'raid' : 'pl', type: d.type, key: key === 'saqueadores' || key === 'bubba' ? undefined : undefined, skey: key, name: d.name, full: d.full, red: d.red, mp: d.mp, hf: d.hf || (d.type === 'raider' ? 3 : 1), hr: d.hr || (d.type === 'raider' ? 3 : 1), bonus: d.bonus, bubba: d.bubba, vip: d.vip, dr: d.dr, img: d.img }, extra || {}));
   putUnit(u, where); return u;
 }
 async function heroEnters(u) {

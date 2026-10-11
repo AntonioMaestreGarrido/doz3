@@ -1,6 +1,5 @@
-/* Expansiones: 1 «Un paso al frente», 2 «El blues del novato», 3 «Rumores y ferrocarriles». */
+/* Expansiones: 1 «Un paso al frente», 2 «El blues del novato», 3 «Rumores y ferrocarriles», 4 «Fiesta privada» (Fanmade). */
 'use strict';
-
 /* ---------- datos ---------- */
 Object.assign(HEROES, {
   may:    { name: 'Sra. May Hauser', type: 'hero', cls: 'Ciudadana', full: 3, red: 1, mp: 4, img: 'may', card: 'h_may', lv: 1, exp: 1,
@@ -12,11 +11,12 @@ Object.assign(HEROES, {
   lee:    { name: 'General Lee', type: 'hero', cls: 'Equino', full: 2, red: 1, mp: 6, img: 'lee', card: 'h_lee', lv: 2, exp: 1, nofire: 1, special: 'lee',
     txt: ['<b>Ensillar:</b> puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento.', '<b>Carga de caballería:</b> cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir.', '<b>Purasangre:</b> recibe 1 Acción de Mover gratis por fase de Acciones.', '<b>Instinto equino:</b> no puede entrar voluntariamente en un espacio con Caos ni en el Túnel con jinete. Puede llevar a un herido al Hospital («Galope al Hospital»).', '<b>Un caballo es un caballo:</b> no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.'] },
   jaque:  { name: 'Jaque Mates™', type: 'civh', cls: 'Civiles Heroicos', full: 1, red: 1, mp: 3, img: 'jaque', card: 'h_jaque', lv: 2, exp: 1, hf: 2, hr: 2, special: 'jaque',
-    txt: ['<b>Estrategas:</b> al comienzo de cada fase de Acciones tira 1 dado: si es mayor que tus Acciones de Evento, obtienes 1 Acción de Evento más (incluso por encima de 4).', '<b>Ruse de jeu:</b> por cada Refugiados en el Campo de Refugiados su Fuerza aumenta +1 (cara completa) y +½ (cara reducida, redondeando abajo).'] }
+    txt: ['<b>Estrategas:</b> al comienzo de cada fase de Acciones tira 1 dado: si es mayor que tus Acciones de Evento, obtienes 1 Acción de Evento más (incluso por encima de 4).', '<b>Ruse de jeu:</b> por cada Refugiados en el Campo de Refugiados su Fuerza aumenta +1 (cara completa) y +½ (cara reducida, redondeando abajo).'] },
+  porter: { name: 'Antonio «Porter» Maestre', type: 'hero', cls: 'Ciudadano', full: 5, red: 3, mp: 4, img: 'porter', card: 'h_porter', lv: 1, exp: 4, res: 'f',
+    txt: ['<b>Artes marciales:</b> +1 columna a favor al defender Cuerpo a Cuerpo. Puede repetir cualquier tirada Cuerpo a Cuerpo (la segunda es definitiva).', '<b>En zapatillas no se puede pasar:</b> si un Zed intenta entrar en su espacio o en uno adyacente, con 4-6 se cancela su movimiento. Máximo 1 por fase de los Zeds; los fallos no cuentan. Antes del combate.', '<b>Jefe de equipo:</b> Acción de Personaje, 1 vez por fase de Acciones: 1 Acción gratis a una unidad de Civiles (normales o heroicos) en su espacio o adyacente.', '<b>Resistente:</b> ignora Impactos con 5-6.'] }
 });
 CIVH_POOL.push('jaque');
-const EXP_HEROES = { 1: ['carter', 'lee', 'may'], 2: ['betty'] };
-
+const EXP_HEROES = { 1: ['carter', 'lee', 'may'], 2: ['betty'], 4: ['porter'] };
 /* Cartas nuevas de Evento y Destino */
 function evx(id, name, act, r4, inf, al, z, acc, txt, o) { EV[id] = Object.assign({ id, name, lvl: 'b', act, r4, inf, al, z, acc, txt, sp: 0, exp: 1 }, o || {}); }
 evx('fortuna', 'La fortuna favorece a los que se preparan', 1, 1, 'B', 'd', ['A', 'ANY'], 1, ['Al inicio de esta fase: cada Héroe y Civiles Heroicos en un espacio con nombre puede realizar gratis una Acción de Buscar.'], { freeSearch: 1, exp: 2 });
@@ -34,7 +34,6 @@ dx('pensar', 'Pensar fríamente supuso el triunfo', 'F', 1, 'Juega esta carta pa
 dx('discutiendo', '¡Estáis discutiendo por estupideces!', 'A', 0, 'Elige a dos unidades de jugador que estén en el mismo espacio: no pueden realizar (más) Acciones durante este turno.');
 dx('urbanistas', '¡Los urbanistas contraatacan!', 'M', 1, 'Juega esta carta para eliminar una unidad Zed cualquiera que esté intentando entrar en un espacio de Ciudad.');
 DEST_IMG.excavadora2 = 'excavadora2';
-
 /* Rumores (exp. 3): t = colocar (C) / guardar (G) / unir (U) */
 const RUMORS = {
   cementerio: { t: 'C', name: 'Cementerio ancestral', txt: 'Colócalo en cualquier espacio sin nombre (incluidas Criptas): cada unidad Zed que ocupe ese espacio sufre 2 Impactos.' },
@@ -54,11 +53,9 @@ const RUMORS = {
   medallon:   { t: 'U', name: 'Medallón místico', txt: 'Una vez por turno, cualquier dado (o un dado de una tirada de varios) de esta unidad puede cambiarse a 6.' },
   sirena:     { t: 'U', name: 'Sirena para Zeds', txt: 'La unidad que lo porta puede usar 1 Acción y tirar 2 dados: si el total ≥ Fuerza de un Zed adyacente, retrocede 1 espacio (dobles: desaparece). Se agota tras 2 usos.' }
 };
-
 /* ---------- utilidades ---------- */
 const expOn = n => G.exp && G.exp.includes(n);
 const trainsAt = id => G.spaces[id] ? unitsAt(id).filter(u => u.type === 'train') : [];
-
 /* ---------- preparación ---------- */
 const _heroPoolFor = heroPoolFor;
 heroPoolFor = function (level) {
@@ -98,7 +95,6 @@ newGame = function (levelIdx, lenIdx, personal, exps) {
   }
   if (expOn(3)) G.turn.railPerks = {};
 };
-
 /* ---------- Fuerza y agrupamiento ---------- */
 const _strength = strength;
 strength = function (u) {
@@ -128,7 +124,6 @@ meleeInfection = function (zs, h) {
   return _meleeInfection(zs, h);
 };
 function lee_with(h) { const l = hero('lee'); return l && l.space && l.space === h.space && l !== h; }
-
 /* ---------- combate: ajustes de las expansiones ---------- */
 function meleeStrengthBonus(f, o) {
   let b = 0;
@@ -138,7 +133,6 @@ function meleeStrengthBonus(f, o) {
 }
 /* Betty: columna fija */
 function bettyCol(f) { return f.flipped ? 5 : 6; }
-
 /* ---------- guardado de Munición (May) ---------- */
 const _payFire = payFire;
 payFire = async function (u) {
@@ -147,7 +141,6 @@ payFire = async function (u) {
   const before = G.ammo; _payFire(u);
   if (may && may.space && isCity(may.space) && G.ammo < before && !G.turn.mercs) { const r = await rollShown('May ahorra Munición', v => v >= 5 ? '<b>' + v + '</b>: no gastas la Munición' : '<b>' + v + '</b>: se gasta la Munición (necesita 5-6)'); if (r >= 5) { G.ammo = before; LOG('May ahorra la Munición (' + r + ').', 'good'); UI.updateStats(); } }
 };
-
 /* ---------- Rumores: llegada de Refugiados ---------- */
 const _refugeeArrives = refugeeArrives;
 refugeeArrives = async function (u) {
@@ -189,14 +182,12 @@ async function useRumor(k) {
   }
   UI.updateStats(); UI.redraw();
 }
-
 /* ---------- Efectos de Rumores en el mapa ---------- */
 const _zedsOccupy = zedsOccupy;
 zedsOccupy = async function (zs, id) {
   await _zedsOccupy(zs, id);
   if (sp(id).cem) for (const z of zs.filter(x => x.space === id)) await applyZedHits([z], 2);
 };
-
 /* ---------- Trenes ---------- */
 const TRAIN_STOPS = { F3: ['inf', 'Universidad: −4 Infección'], B4: ['sup', 'Granja: +3 Suministros'], M3: ['ammo', 'Mina: +2 Munición'], A4: ['evt', 'Central nuclear: +2 Acciones de Evento'] };
 async function trainDestinations(t) {
@@ -235,7 +226,6 @@ async function doTrainAction(t, id) {
     await moveTrain(t, d);
   } else if (id === 'tflip') { spendActions(null, 1); t.state = t.state === 'leaving' ? 'returning' : 'leaving'; LOG(t.name + ' cambia de sentido.'); }
 }
-
 /* ---------- Carter ---------- */
 function carterReach(u) { /* BFS permitiendo cruzar Zeds */
   const out = {}, best = { [u.space]: { c: 0, path: [] } }, q = [u.space];
@@ -264,11 +254,9 @@ async function carterMove(u, dest, info) {
     if (isInit(n)) return;
   }
 }
-
 /* ---------- Lee ---------- */
 async function leeMount(lee, h) { lee.rider = h.id; h.mount = lee.id; LOG(h.name + ' monta al General Lee.', 'good'); }
 function leeDismount(lee) { const r = lee.rider && G.units[lee.rider]; if (r) { r.mount = null; } lee.rider = null; }
-
 /* ---------- Acciones extra en la ficha de unidad ---------- */
 const _unitActions = unitActions;
 unitActions = function (u) {

@@ -1,0 +1,396 @@
+TEXTOS DE HÉROES Y CIVILES HEROICOS (Dawn of the Zeds)
+Generado desde data.js y expansions.js.
+El trasfondo (flavor text) no está en el código: está en la trasera de cada carta (hb_*.jpg).
+
+==================================================
+Capitana Piazza  [Héroe]
+Clase: Militar
+Expansión: Core   Nivel: 1
+Fuerza: 3 (cara completa) / 2 (cara reducida)
+Movimiento: 5
+Habilidades:
+  - Francotiradora de élite: disparos de Largo Alcance hasta 3 espacios (no a través del Centro). Fuerza 2 a 1 espacio, 4 a 2 espacios, 3 a 3 espacios.
+  - Vigilancia: tras disparar puede retroceder 1 espacio (con las unidades que quiera de su espacio).
+  - Fabricar Munición: gasta 2 Acciones para disparar sin gastar Munición.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Alcalde Hernández  [Héroe]
+Clase: Ciudadano
+Expansión: Core   Nivel: 1
+Fuerza: 2 (cara completa) / 1 (cara reducida)
+Movimiento: 4
+Otros valores: Sale de las Criptas sin tirar (Diamante Rojo)
+Habilidades:
+  - Llaves de la Ciudad: +1 a las tiradas de Buscar de cualquier unidad en espacios de Ciudad y en el Centro.
+  - Control del tráfico: entrar en el Centro cuesta 0 de Movimiento.
+  - Ciudadela: Acción de Personaje: una unidad del Centro realiza un disparo gratis (1 Munición) con 1 columna a favor.
+  - Discurso Motivador: una vez por partida: cada unidad de jugador en la Ciudad o el Centro recibe 1 Acción gratis.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Ayudante Schmidt  [Héroe]
+Clase: Policía
+Expansión: Core   Nivel: 1
+Fuerza: 4 (cara completa) / 2 (cara reducida)
+Movimiento: 4
+Otros valores: Resistente: ignora 4-6
+Habilidades:
+  - Iniciativa: una Acción de Personaje por fase de Acciones, solo para su unidad.
+  - Boy Scout de rango Águila: 1 columna a favor en combates Cuerpo a Cuerpo.
+  - Resistente: cada Impacto se ignora con 4-6.
+  - Artes marciales: en cada combate Cuerpo a Cuerpo puede repetir la tirada (la segunda es definitiva).
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Sheriff Hunt  [Héroe]
+Clase: Policía
+Expansión: Core   Nivel: 1
+Fuerza: 5 (cara completa) / 3 (cara reducida)
+Movimiento: 4
+Otros valores: Resistente: ignora 4-6; Sale de las Criptas sin tirar (Diamante Rojo)
+Habilidades:
+  - Liderazgo: Acción de Personaje: da 1 Acción gratis a una unidad de Civiles (normales o heroicos) o Marines en su espacio o adyacente.
+  - Largo Alcance: dispara a 2 espacios con 1 columna en contra.
+  - Resistente: cada Impacto se ignora con 4-6.
+  - Artes marciales: puede repetir la tirada de combate Cuerpo a Cuerpo.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Otto «Sargento» Hauser  [Héroe]
+Clase: Militar
+Expansión: Core   Nivel: 4
+Fuerza: 3 (cara completa) / 2 (cara reducida)
+Movimiento: 4
+Otros valores: Resistente: ignora 4-6
+Habilidades:
+  - Entrenar: como una Acción: una unidad de Civiles Normales en su espacio o adyacente recibe +2 de Fuerza (hasta ser eliminada).
+  - Reclutar: en el Centro, como una Acción y por 1 Munición retira 1 Impacto a unas Civiles Normales del mapa (no del Hospital).
+  - Buscar: +1 a sus tiradas de Buscar.
+  - Resistente: ignora Impactos con 4-6.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Sr. Johnson  [Héroe]
+Clase: Rapiñador
+Expansión: Core   Nivel: 1
+Fuerza: 3 (cara completa) / 2 (cara reducida)
+Movimiento: 4
+Otros valores: Rapiñador
+Habilidades:
+  - Al entrar en juego: obtienes 2 Suministros y 3 de Munición.
+  - Rapiñador: tira 2 dados al Buscar y elige el mejor (dobles naturales: resultado doble).
+  - Armas: sus ataques con Arma de Fuego tienen 2 columnas a favor.
+  - Trampas: cuando una unidad Zed entra en su espacio tira 1 dado: 1-3 combate normal; 4-6 el Zed sufre 1 Impacto y Johnson retrocede.
+  - Curar: Acción (1 Suministro) para Curar a una unidad en su espacio o adyacente.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Coronel Kingman  [Héroe]
+Clase: Militar
+Expansión: Core   Nivel: 2
+Fuerza: 3 (cara completa) / 2 (cara reducida)
+Movimiento: 4
+Habilidades:
+  - Bastión: una vez por partida, 1 Acción + 3 Suministros: ficha de Bastión (Terreno 3, permanente).
+  - Campo de Minas: una vez por partida, 1 Acción + 2 Suministros + 1 Munición.
+  - Defensor: 1 columna a favor al defender.
+  - Perímetro Defensivo: cuando un Zed se mueve a su espacio o a uno adyacente: tira 1 dado, con 5-6 el movimiento se cancela.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Pepinillos (pastor alemán)  [Héroe]
+Clase: Rapiñador
+Expansión: Core   Nivel: 2
+Fuerza: 2 (cara completa) / 1 (cara reducida)
+Movimiento: 6
+Otros valores: No dispara; Sale de las Criptas sin tirar (Diamante Rojo); Rapiñador
+Habilidades:
+  - Rápido: mueve 6 espacios y no lo detiene el Caos.
+  - Rapiñador: tira 2 dados al Buscar (solo 1 en espacios controlados por Zeds, donde sí puede buscar).
+  - Sigilo: al coincidir con Zeds o Saqueadores tira 1 dado: 1 combate Cuerpo a Cuerpo; 2-6 sigiloso, las unidades coexisten sin efecto.
+  - Ladrido ruidoso: cuando un Zed o Saqueador intenta salir de su espacio: 4-6 cancela el movimiento.
+  - Perruno: no dispara, construye, usa vehículos, restaura el orden ni arresta; el Caos no lo detiene.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Miguel «El Toro Loco» Santana  [Héroe]
+Clase: Luchador
+Expansión: Core   Nivel: 2
+Fuerza: 6 (cara completa) / 4 (cara reducida)
+Movimiento: 3
+Habilidades:
+  - Carga del Toro: al atacar Cuerpo a Cuerpo a Zeds normales: 1-3 combate normal; 4-6 el Zed sufre 1 Impacto y se retira sin combate (sin Infección).
+  - Fuerza 6/4 en combate pero solo 3/2 al disparar. Mueve 3 espacios.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Alyssa Darling  [Héroe]
+Clase: Ciudadana
+Expansión: Core   Nivel: 3
+Fuerza: 3 (cara completa) / 2 (cara reducida)
+Movimiento: 5
+Otros valores: Resistente: ignora 5-6
+Habilidades:
+  - Ataque asesino: al entrar con Zeds (o al entrar ellos) tira 1 dado: 1 combate normal; 2 puedes retroceder 1 espacio o luchar; 3-6 ataque con 2 columnas a favor, sin Infección ni daño para ella.
+  - Reforzada: ignora Impactos con 5-6. Mueve 5.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Rusty Staub  [Héroe]
+Clase: Ciudadano
+Expansión: Core   Nivel: 2
+Fuerza: 4 (cara completa) / 5 (cara reducida)
+Movimiento: 4
+Otros valores: Resistente: ignora 5-6
+Habilidades:
+  - Buscar: obtienes 1 Suministro extra al Buscar con él.
+  - Primer disparo gratis: su primer disparo del turno no gasta Munición.
+  - Suertudo: en su tirada de Salvación tira 2 dados y elige el mejor. Reforzado.
+  - Feroz: herido, su Fuerza Cuerpo a Cuerpo sube a 5 y la de sus disparos baja a 2.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Horacio (chimpancé)  [Héroe]
+Clase: Primate
+Expansión: Core   Nivel: 4
+Fuerza: 4 (cara completa) / 3 (cara reducida)
+Movimiento: 4
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2; No dispara; Resistente: ignora 4-6; Sale de las Criptas sin tirar (Diamante Rojo)
+Habilidades:
+  - Los frutos del trabajo: al entrar en juego obtienes 3 Suministros.
+  - Modificaciones genéticas: nunca sube la Infección al atacar o defender en combate Cuerpo a Cuerpo.
+  - Resistente: ignora Impactos con 4-6.
+  - Tácticas de gorila: en cada combate Cuerpo a Cuerpo puede repetir la tirada (la segunda es definitiva).
+  - El gran simio: no dispara. Resiste 4 Impactos como las Civiles.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Doc Seaver  [Héroe]
+Clase: Científico
+Expansión: Core   Nivel: 3
+Fuerza: 3 (cara completa) / 1 (cara reducida)
+Movimiento: 4
+Otros valores: Sale de las Criptas sin tirar (Diamante Rojo)
+Habilidades:
+  - Científico: puede entrar en las Oficinas del Hospital y en el Laboratorio (donde puede Investigar).
+  - Médico: una vez por fase de Acciones, en una Oficina, cura (Acción de Personaje) a cualquier unidad del Hospital.
+  - Primeros Auxilios (1 Suministro): una vez por fase cura a una unidad en su espacio o adyacente (incluso a sí mismo). Estando en una Oficina o en el Centro puede curar a una unidad del Hospital.
+  - Administración del Hospital: en una Oficina admite un cuarto paciente, que puede quedarse aunque se vaya.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Profesora Agee  [Héroe]
+Clase: Científica
+Expansión: Core   Nivel: 3
+Fuerza: 2 (cara completa) / 1 (cara reducida)
+Movimiento: 4
+Otros valores: Sale de las Criptas sin tirar (Diamante Rojo)
+Habilidades:
+  - En una Oficina del Hospital: cada Acción de Curar reduce la Infección en 2.
+  - En el Laboratorio: +1 a tiradas de Investigación (máx. 6).
+  - Madre de la Ciencia: con la Súper Arma, restaurar el orden reduce la Infección 2.
+  - Una vez por turno: +3 Infección a cambio de 1 Acción de Evento extra.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Alan «Xeno» Jones  [Héroe]
+Clase: Científico
+Expansión: Core   Nivel: 4
+Fuerza: 4 (cara completa) / 3 (cara reducida)
+Movimiento: 4
+Habilidades:
+  - Sus Propios Planes: una Acción de Personaje por fase de Acciones, solo para su unidad.
+  - Pistola experimental: sus disparos cuestan 1 Suministro en vez de Munición.
+  - En una Oficina del Hospital: con su Acción de Personaje manda 1 unidad del Hospital al Cementerio y revela la siguiente carta de Investigación (no cuenta como Investigar).
+  - Puede Investigar en el Laboratorio.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Agente Especial Wright  [Héroe]
+Clase: Científica
+Expansión: Core   Nivel: 3
+Fuerza: 4 (cara completa) / 2 (cara reducida)
+Movimiento: 4
+Otros valores: Resistente: ignora 5-6; Sale de las Criptas sin tirar (Diamante Rojo)
+Habilidades:
+  - Equipo de apoyo: 1 columna a favor en combates y disparos.
+  - Información clasificada: 1 Acción: mira la carta superior del mazo de Eventos.
+  - En las Oficinas del Hospital: +1 a las tiradas de Salvación de las unidades de jugador.
+  - Reforzada: ignora Impactos con 5-6.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Wilson el Ermitaño  [Héroe]
+Clase: Rapiñador
+Expansión: Core   Nivel: 4
+Fuerza: 2 (cara completa) / 1 (cara reducida)
+Movimiento: 4
+Otros valores: Sale de las Criptas sin tirar (Diamante Rojo); Rapiñador
+Habilidades:
+  - Rapiñador: tira 2 dados al Buscar.
+  - Visiones: puedes mirar la carta superior del mazo de Destino en cualquier momento.
+  - Compañero: la unidad agrupada con él tira 1 dado extra y elige los mejores (no en el Centro).
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Furias de Farmingdale  [Civil Heroico]
+Clase: Civiles Heroicos
+Expansión: Core   Nivel: 1
+Fuerza: 6 (cara completa) / 3 (cara reducida)
+Movimiento: 4
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2; No dispara; Resistente: ignora 4-6
+Habilidades:
+  - Luchadoras: no pueden disparar con Arma de Fuego.
+  - Resistentes: ignoran Impactos con 4-6. Mueven 4.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Voluntarios de Bomberos 129  [Civil Heroico]
+Clase: Civiles Heroicos
+Expansión: Core   Nivel: 2
+Fuerza: 3 (cara completa) / 2 (cara reducida)
+Movimiento: 3
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2; Bonificación: 1
+Habilidades:
+  - 1 columna a favor en todos los combates Cuerpo a Cuerpo.
+  - Autoridad Civil: Acción de Personaje: libera Civiles Resistiendo o convierte Aldeanos en Refugiados (en o adyacente a un Pueblo).
+  - Mangueras: tira 2 dados; si el total ≥ a la Fuerza de un Zed adyacente, se retira.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Cuadrilla de Bob Bauer  [Civil Heroico]
+Clase: Civiles Heroicos
+Expansión: Core   Nivel: 2
+Fuerza: 3 (cara completa) / 2 (cara reducida)
+Movimiento: 3
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2
+Habilidades:
+  - Dispositivos explosivos: Acción de Personaje: convierte 2 Suministros en 1 Munición. Construye Barricadas por 1 Suministro.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+F.D.P.D. Antidisturbios  [Civil Heroico]
+Clase: Civiles Heroicos
+Expansión: Core   Nivel: 2
+Fuerza: 5 (cara completa) / 3 (cara reducida)
+Movimiento: 3
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2; No dispara
+Habilidades:
+  - Nunca suben la Infección al combatir ni al restaurar el orden. No disparan.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Tropas de Salvación  [Civil Heroico]
+Clase: Civiles Heroicos
+Expansión: Core   Nivel: 1
+Fuerza: 2 (cara completa) / 1 (cara reducida)
+Movimiento: 3
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2
+Habilidades:
+  - Al entrar en juego: 2 Suministros.
+  - Campamento Médico: Acción de Personaje (1 Suministro): cura a una unidad en su espacio o adyacente.
+  - +1 a la tirada de Alimentación.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Mensajero del Clarín  [Civil Heroico]
+Clase: Civiles Heroicos
+Expansión: Core   Nivel: 3
+Fuerza: 1 (cara completa) / 1 (cara reducida)
+Movimiento: 3
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2
+Habilidades:
+  - Al entrar en juego trae otras Civiles Heroicos. Mientras esté en juego un Zed que llega al Centro no gana automáticamente: tiene que ganar un combate. El segundo Suministro gastado cada fase es gratis.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+WZED Farmingdale  [Civil Heroico]
+Clase: Civiles Heroicos
+Expansión: Core   Nivel: 3
+Fuerza: 1 (cara completa) / 1 (cara reducida)
+Movimiento: 3
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2
+Habilidades:
+  - Transmisión de Emergencia: Acción de Personaje: 1 Acción gratis a una Civil Normal o Refugiados en la superficie.
+  - Al defender en la Ciudad o el Centro tiras 1 dado extra y eliges los mejores.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+12.ª División de Veteranos  [Civil Heroico]
+Clase: Civiles Heroicos
+Expansión: Core   Nivel: 1
+Fuerza: 3 (cara completa) / 2 (cara reducida)
+Movimiento: 3
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2
+Habilidades:
+  - Su primer disparo del turno no gasta Munición. Gana todo combate Cuerpo a Cuerpo contra Zeds (los Zeds se retiran, sin importar la tirada).
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Sra. May Hauser  [Héroe]
+Clase: Ciudadana
+Expansión: Expansión 1   Nivel: 1
+Fuerza: 3 (cara completa) / 1 (cara reducida)
+Movimiento: 4
+Habilidades:
+  - Intendente ahorradora: si está en un espacio de Ciudad, por cada Munición que pierdas o gastes tiras 1 dado: con 5-6 no la pierdes.
+  - La voluntaria de hierro: en una Oficina del Hospital, las unidades dadas de alta en la fase de Acciones obtienen 1 Acción gratis.
+  - Entrenadora de combate: cada unidad de jugador agrupada con ella (incluso en el Centro) recibe +1 de Fuerza en combate Cuerpo a Cuerpo.
+  - Pistolera de primera: 1 columna a favor al disparar y tira 1 dado extra (eliges los 2 mejores). Su primer disparo del turno no gasta Munición.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Betty «Saltarina» Bolívar  [Héroe]
+Clase: Ciudadana
+Expansión: Expansión 2   Nivel: 1
+Fuerza: 3 (cara completa) / 2 (cara reducida)
+Movimiento: 4
+Otros valores: No dispara
+Habilidades:
+  - Miope: no puede disparar.
+  - Despiadada: lucha siempre en la columna «Humanos ×3» (cara completa) o «Humanos ×2» (cara reducida), atacando o defendiendo, sin otros modificadores. Los modificadores de cartas especiales, Súper Arma y repetir tiradas sí se aplican. Agrupada con Wilson tira 3 dados.
+  - Temeraria: cuando gana un combate contra Zeds, si en el siguiente espacio hacia el Centro hay Zeds, entra y ataca de nuevo (sube la Infección como siempre). Solo la detiene ser eliminada o no haber más Zeds. Ignora Caos y el Puente.
+  - Inmortal: en su tirada de Salvación tira 2 dados y elige el mejor.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Carter «Ruedas Grandes»  [Héroe]
+Clase: Montado
+Expansión: Expansión 1   Nivel: 3
+Fuerza: 8 (cara completa) / 4 (cara reducida)
+Movimiento: 5
+Otros valores: Impactos cara completa: 3; Impactos cara reducida: 3; No dispara
+Habilidades:
+  - El rey de la carretera: solo rutas de la superficie; no dispara, arresta ni usa otros vehículos; no sube la Infección al combatir. No tiene que parar al conducir por el Caos (pero no empieza un movimiento desde él).
+  - Transportista de Cargamento: entra por un Inicial con la ficha en «Cargado». Al llegar al Centro cargado, el movimiento termina: +5 Suministros y +3 Munición, y se da la vuelta a «Vacío». Recarga en un Inicial con 1 Acción.
+  - Barrer Zeds: al cruzar un espacio con Zeds (si le quedan puntos): 1 dado, 4-6 inflige 1 Impacto a cada Zed y sigue; si falla se detiene y combate.
+  - Reparar: solo sufre Impactos su camión (6 en total). En el Centro o un Inicial retira 1 Impacto por turno (1 Suministro o 1 Acción).
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+General Lee  [Héroe]
+Clase: Equino
+Expansión: Expansión 1   Nivel: 2
+Fuerza: 2 (cara completa) / 1 (cara reducida)
+Movimiento: 6
+Otros valores: No dispara
+Habilidades:
+  - Ensillar: puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento.
+  - Carga de caballería: cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir.
+  - Purasangre: recibe 1 Acción de Mover gratis por fase de Acciones.
+  - Instinto equino: no puede entrar voluntariamente en un espacio con Caos ni en el Túnel con jinete. Puede llevar a un herido al Hospital («Galope al Hospital»).
+  - Un caballo es un caballo: no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.
+Trasfondo (flavor text): [pendiente: en la trasera de carta]
+
+==================================================
+Jaque Mates™  [Civil Heroico]
+Clase: Civiles Heroicos
+Expansión: Expansión 1   Nivel: 2
+Fuerza: 1 (cara completa) / 1 (cara reducida)
+Movimiento: 3
+Otros valores: Impactos cara completa: 2; Impactos cara reducida: 2
+Habilidades:
+  - Estrategas: al comienzo de cada fase de Acciones tira 1 dado: si es mayor que tus Acciones de Evento, obtienes 1 Acción de Evento más (incluso por encima de 4).
+  - Ruse de jeu: por cada Refugiados en el Campo de Refugiados su Fuerza aumenta +1 (cara completa) y +½ (cara reducida, redondeando abajo).
+Trasfondo (flavor text): [pendiente: en la trasera de carta]

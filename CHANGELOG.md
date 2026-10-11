@@ -2,6 +2,20 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 06:40
+
+### Mejoras
+- **Exp. 4 · Fiesta privada (Fanmade):** nueva opción en el menú de nueva partida. Añade a Antonio «Porter» Maestre (Ciudadano, 5/3, Movimiento 4) en niveles I–V, no en el Juego Básico.
+  - **Artes marciales:** +1 columna a favor al defender Cuerpo a Cuerpo y puede repetir cualquier tirada Cuerpo a Cuerpo.
+  - **En zapatillas no se puede pasar:** con 4-6 cancela el movimiento de un Zed que entra en su espacio o en uno adyacente (una vez por fase de los Zeds).
+  - **Jefe de equipo:** acción de personaje, una vez por fase de Acciones: 1 acción gratis a un Civil en su espacio o adyacente.
+  - Carta, trasera, ficha y ficha reducida con el arte alternativo.
+- **Guardia Nacional y Marines:** nuevas fichas y cartas.
+- **Arte alternativo:** nuevas ilustraciones de Betty, Carter, Lee y May (carta, trasera, ficha y obituario).
+
+### Fixes
+- **Obituario:** en derrota se muestran también los héroes que seguían en pie.
+
 ## 2026-10-11 02:02
 
 ### Mejoras

@@ -18,6 +18,7 @@ async function loadAssets() {
   for (const k of ['caos', 'barricada', 'bastion', 'mina_4', 'mina_7', 'puente', 'ecg']) list.push(['m_' + k, 'assets/tokens/marcadores/' + k + '.png']);
   for (const k of Object.keys(RUMORS).concat('reverso')) list.push(['rum_' + k, 'assets/tokens/rumores/' + k + '.png']);
   for (const k of ['petra', 'aldeanos', 'refugiados', 'civ1', 'civ2', 'civ3']) list.push(['u_' + k, 'assets/tokens/' + k + '.png']);
+  list.push(['marines', 'assets/tokens/marines.png'], ['guardia', 'assets/tokens/guardia.png'], ['porter_r', 'assets/tokens/porter_r.png']);
   await Promise.all(list.map(([k, s]) => loadImg(k, s)));
 }
 const SIDE_COL = { train: '#555', civ: '#2b5c85', civh: '#5a2a7a', hero: '#1d3a2a', refugee: '#2f7a45', aldeano: '#a58a1d', raider: '#8a3d12', marine: '#3b4d2a', guard: '#2a4d3b', petra: '#5a2a7a' };
@@ -37,7 +38,7 @@ const ui = {
     document.addEventListener('error', e => {
       const t = e.target;
       /* Arte alternativo que no carga: vuelve a la imagen original. */
-      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(h_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
+      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
       if (!t || t.tagName !== 'IMG' || !/assets\/cartas\//.test(t.getAttribute('src') || '')) return;
       const base = t.getAttribute('src').split('?')[0], n = +(t.dataset.retry || 0); if (n >= 4) return; t.dataset.retry = n + 1;
       setTimeout(() => { t.src = base + '?r=' + Date.now(); }, 400 * (n + 1));
@@ -164,7 +165,7 @@ const ui = {
       ['hernandez', 'cit', 'Ciudadela', 'disparo gratis desde el Centro'], ['seaver', 'medico', 'Médico', 'Curar en el Hospital'], ['seaver', 'aidseaver', 'Primeros auxilios', 'Curar (1 Sum.)'],
       ['salvacion', 'aidsalvacion', 'Campamento Médico', 'Curar (1 Sum.)'], ['bauer', 'bauer', 'Dispositivos explosivos', '2 Sum. → 1 Mun.'], ['agee', 'boost', 'Madre de la Ciencia', '+1 Acción de Evento (+3 Inf.)'],
       ['wzed', 'wzed', 'Transmisión de Emergencia', '1 acción a Civiles/Refugiados'], ['bomberos', 'libera', 'Autoridad Civil', 'liberar Civiles/Aldeanos'], ['lee', 'pura', 'Purasangre', '1 Mover para Lee'],
-      ['darling', 'zen', 'Zen', '1 acción al jugar «Guardar»'], ['carter', 'crepair', 'Reparar camión', '1 Impacto por turno']];
+      ['darling', 'zen', 'Zen', '1 acción al jugar «Guardar»'], ['carter', 'crepair', 'Reparar camión', '1 Impacto por turno'], ['porter', 'jefe', 'Jefe de equipo', '1 acción a Civiles']];
     const ab = AB.filter(([k]) => alive(k)).map(([k, f, n, d]) => '<li class="sel' + (G.charUsed[f] ? ' used' : '') + '" data-uid="' + alive(k).id + '"><span>' + alive(k).name + ' — ' + n + '</span><span class="r">' + d + '</span></li>');
     if (alive('hernandez')) ab.push('<li class="sel' + (G.speechUsed ? ' used' : '') + '" data-uid="' + alive('hernandez').id + '"><span>' + alive('hernandez').name + ' — Discurso Motivador</span><span class="r">1 por partida</span></li>');
     if (alive('kingman')) { const k = alive('kingman').id; ab.push('<li class="sel' + (G.once.bast ? ' used' : '') + '" data-uid="' + k + '"><span>' + alive('kingman').name + ' — Bastión</span><span class="r">1 por partida</span></li>', '<li class="sel' + (G.once.mines ? ' used' : '') + '" data-uid="' + k + '"><span>' + alive('kingman').name + ' — Campo de Minas</span><span class="r">1 por partida</span></li>'); }
@@ -364,7 +365,7 @@ const ui = {
     } else if (isSoft(u)) {
       c.beginPath(); c.arc(0, 0, hw, 0, 7); c.fillStyle = u.type === 'aldeano' ? '#d4a017' : '#2f9a55'; c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 4 : 2.5; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.fillText(u.type === 'aldeano' ? 'ALD' : u.vip ? 'VIP' : 'REF', 0, 4);
     } else {
-      const col = SIDE_COL[u.type] || '#2b5c85'; const img = u.img && IMG[u.img] || (u.skey === 'petra' && IMG.u_petra);
+      const col = SIDE_COL[u.type] || '#2b5c85'; const img = u.img && (u.flipped && IMG[u.img + '_r'] || IMG[u.img]) || (u.skey === 'petra' && IMG.u_petra);
       const altImg = Opciones.artAlt && u.key && IMG['alt_' + u.key + (u.flipped ? '_r' : '')] || null;
       const civIm = u.type === 'civ' && IMG['u_civ' + (1 + (parseInt(String(u.id).replace(/\D/g, ''), 10) || 0) % 3)];
       if (civIm) { c.beginPath(); c.arc(0, 0, hw, 0, 7); c.fillStyle = col; c.fill(); c.save(); c.beginPath(); c.arc(0, 0, hw - 2, 0, 7); c.clip(); c.drawImage(civIm, 0, 0, civIm.width * 0.78, civIm.height * 0.82, -hw, -hw * 0.7, r.w, r.w * 0.82); c.restore(); c.beginPath(); c.arc(0, 0, hw, 0, 7); c.strokeStyle = sel ? '#ffd54a' : '#0c1a26'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; }
@@ -595,16 +596,16 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label></div><div class="row"><label><input type="checkbox" id="dbgDice"> Debug: botón para cambiar los dados tras cada tirada</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label>Héroe personal: <select id="heroSel"></select></label></div><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label><input type="checkbox" id="dbgDice"> Debug: botón para cambiar los dados tras cada tirada</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label>Héroe personal: <select id="heroSel"></select></label></div><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       const upd = () => {
         const n = +b.querySelector('input[name=lv]:checked').value, L = LEVELS[n];
         $('lenSel').innerHTML = L.lengths.map((x, i) => '<option value="' + i + '">' + x.name + '</option>').join('');
-        G.expSel = [1, 2, 3].filter(k => $('x' + k) && $('x' + k).checked); const pool = n === 0 ? [] : heroPoolFor(n);
+        G.expSel = [1, 2, 3, 4].filter(k => $('x' + k) && $('x' + k).checked); const pool = n === 0 ? [] : heroPoolFor(n);
         $('heroSel').innerHTML = n === 0 ? '<option value="">(los 4 Héroes básicos)</option>' : '<option value="">Al azar</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join('');
       };
-      b.querySelectorAll('input[name=lv], #x1, #x2, #x3').forEach(i => i.onchange = upd); upd();
-      $('goBtn').onclick = () => { const n = +b.querySelector('input[name=lv]:checked').value, len = +$('lenSel').value, hero = $('heroSel').value || null; const ex = [1, 2, 3].filter(k => $('x' + k).checked); DEBUG_DICE = $('dbgDice').checked; ui._close(); res({ level: n, len, hero, exps: ex }); };
+      b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4').forEach(i => i.onchange = upd); upd();
+      $('goBtn').onclick = () => { const n = +b.querySelector('input[name=lv]:checked').value, len = +$('lenSel').value, hero = $('heroSel').value || null; const ex = [1, 2, 3, 4].filter(k => $('x' + k).checked); DEBUG_DICE = $('dbgDice').checked; ui._close(); res({ level: n, len, hero, exps: ex }); };
     });
   },
   /* Música de menú: suena en portada y selección de partida; el navegador exige un gesto del usuario para arrancar. */

@@ -368,6 +368,7 @@ function ratioCol(z, p) {
 function humanShifts(f, o) { // o: { attacking, space }
   const s = [];
   if (f.key === 'schmidt') s.push({ label: 'Boy Scout (Schmidt)', v: 1 });
+  if (f.key === 'porter' && !o.attacking) s.push({ label: 'Artes marciales (Porter)', v: 1 });
   if (f.key === 'wright') s.push({ label: 'Equipo de apoyo (Wright)', v: 1 });
   if (f.key === 'kingman' && !o.attacking) s.push({ label: 'Defensor (Kingman)', v: 1 });
   if (f.armed) s.push({ label: 'Bien Armados', v: 1 });
@@ -490,7 +491,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     if (!left.length || !mine.length) return {};
     return await melee({ zeds: left, hum: mine, space, attacker: 'h', from: o.from, noInf: o.noInf });
   }
-  if (fighter.key === 'schmidt' || fighter.key === 'hunt' || fighter.key === 'horacio') {
+  if (fighter.key === 'schmidt' || fighter.key === 'hunt' || fighter.key === 'horacio' || fighter.key === 'porter') {
     const again = await h.ask('Artes marciales: ¿repites la tirada?', [{ label: 'Repetir', value: 'y' }, { label: 'Aceptar', value: 'n' }]);
     if (again === 'y') dice = await h.roll(extraDice);
   }

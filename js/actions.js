@@ -130,6 +130,7 @@ function unitActions(u) {
     if (u.key === 'jones') A.push({ id: 'planes', label: 'Sus Propios Planes', ok: cu('planes') });
     if (u.key === 'jones' && G.res && u.space && sp(u.space).kind === 'office') A.push({ id: 'jhosp', label: 'Sus Propios Planes: paciente al Cementerio + Investigación', ok: cu('planes') && G.res.deck.length > 0 && hospitalUnits(u).length > 0 });
     if (u.key === 'hunt') A.push({ id: 'lid', label: 'Liderazgo', ok: cu('lid') });
+    if (u.key === 'porter') A.push({ id: 'jefe', label: 'Jefe de equipo', ok: cu('jefe') && jefeTargets(u).length > 0 });
     if (u.key === 'hernandez') { A.push({ id: 'cit', label: 'Ciudadela', ok: cu('cit') && G.ammo >= 1 }); A.push({ id: 'spe', label: 'Discurso Motivador', ok: !G.speechUsed }); }
     if (u.key === 'hauser') { A.push({ id: 'train', label: 'Entrenar Civiles (1 acc.)', ok: pay(1) && allUnits(x => x.type === 'civ' && !x.trained && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))).length > 0 }); A.push({ id: 'recruit', label: 'Reclutar (1 Munición)', ok: u.space === 'C' && G.ammo >= 1 && pay(1) }); }
     if (u.key === 'seaver' && u.space && sp(u.space).kind === 'office') A.push({ id: 'medico', label: 'Médico: curar en el Hospital (gratis)', ok: cu('medico') && BEDS.some(b => G.spaces[b] && unitsAt(b)[0] && curable(unitsAt(b)[0])) });
@@ -148,6 +149,8 @@ function unitActions(u) {
 }
 function canBuildBar(u) { const r = sp(u.space).route; for (let i = 0; i <= lastOf(r); i++) if (sp(r + i).bar) return false; return true; }
 
+/* Civiles (normales o heroicos) en el espacio de Porter o adyacente: a quienes puede dar 1 acción gratis (Jefe de equipo). */
+const jefeTargets = u => allUnits(x => (x.type === 'civ' || x.type === 'civh') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)));
 /* Unidades del Hospital (camas y Oficinas del Personal) a las que Jones puede trasladar al Cementerio; no cuenta él mismo. */
 const hospitalUnits = self => ['H1', 'H2', 'H3', 'H4', 'O1', 'O2'].filter(k => G.spaces[k]).flatMap(k => unitsAt(k)).filter(x => x.id !== self.id);
 async function runAction(u, id) {
@@ -164,6 +167,7 @@ async function runAction(u, id) {
     case 'ini': G.charUsed.ini = true; u.free++; LOG('Schmidt usa Iniciativa: 1 acción gratis para él.', 'good'); break;
     case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
+    case 'jefe': { const c = jefeTargets(u); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Jefe de equipo: elige la unidad de Civiles que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.jefe = true; G.units[v].free++; LOG('Jefe de equipo: ' + G.units[v].name + ' recibe 1 acción gratis.', 'good'); break; }
     case 'lid': { const c = allUnits(x => (x.type === 'civ' || x.type === 'civh' || x.type === 'marine') && x.key !== 'horacio' && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Liderazgo: elige la unidad que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.lid = true; G.units[v].free++; break; }
     case 'cit': { const sh = unitsAt('C').filter(x => isFighter(x) && x.side === 'pl' && x.id !== u.id && Object.keys(fireTargets(x)).length && !x.nofire); if (!sh.length) { LOG('Ciudadela: ningún tirador del Centro tiene objetivos.'); break; } let s = sh[0]; if (sh.length > 1) { const sv = await UI.pickUnit(sh, 'Ciudadela: elige quién dispara.', true); if (sv == null) break; s = G.units[sv]; } UI.mode = { type: 'fire', unit: s, opts: fireTargets(s), free: true }; UI.setBanner('Ciudadela: elige el objetivo'); UI.redraw(); break; }
     case 'spe': { G.speechUsed = true; const wz = alive('wzed'); const us = allUnits(x => x.side === 'pl' && x.id !== u.id && !['aldeano', 'train'].includes(x.type) && x.space && (wz ? isSurface(x.space) : (x.space === 'C' || isCity(x.space)))); us.forEach(x => x.free++); LOG('Discurso Motivador: ' + us.length + ' unidades reciben 1 acción gratis.', 'good'); break; }
@@ -190,8 +194,11 @@ async function runAction(u, id) {
 const pay1 = u => canPay(u, 1);
 
 /* ---------- cartas de la mano ---------- */
+/* Coordinador de la comunidad: solo si queda una ficha de Civiles Normales (la reserva) o un Civil Heroico disponible */
+function coordinadorOpts() { return (G.spareCiv ? 1 : 0) + CIVH_POOL.filter(x => civhAvail(x) && !hero(x) && HEROES[x].lv <= MAX_CIVH_LV[G.lv.n] && !G.cemetery.some(c => c.key === x)).length; }
 function handUsable(k) {
   if (G.phase !== 'actions' && !['hoguera', 'desesperados', 'barrelotodo', 'senal', 'exploradores', 'civiles'].includes(k)) return false;
+  if (k === 'coordinador' && !coordinadorOpts()) return false;
   return ['adrenalina', 'coordinador', 'veo_alguien', 'heroe_d', 'cama', 'expediente', 'necesidad', 'canon', 'hoguera', 'desesperados', 'barrelotodo', 'senal', 'exploradores', 'civiles', 'vehiculos', 'heli_noticias'].includes(k);
 }
 async function useHandCard(k) {

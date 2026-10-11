@@ -73,6 +73,12 @@ async function moveGroup(movers, from, opts) {
     movers.forEach(z => putUnit(z, 'C')); LOG('¡Un Zed entra en el Centro de la Ciudad!', 'bad'); UI.focus('C', 1.5); UI.redraw(); await UI.announce('¡UN ZED HA ENTRADO EN EL CENTRO!', '#ff3b2a', 1200, true); G.over = 'lose'; G.loseWhy = 'zeds'; return { moved: true };
   }
   if (blocked(dest)) { LOG('Los Zeds no pueden entrar en ' + spaceLabel(dest) + ' (No Pasar).'); return { moved: false }; }
+  /* En zapatillas no se puede pasar (Porter): si un Zed intenta entrar en su espacio o en uno adyacente, con 4-6 se cancela su movimiento. Máximo 1 por fase de los Zeds; los fallos no cuentan. */
+  const porter = alive('porter');
+  if (porter && porter.space && !G.turn.zapStop && (dest === porter.space || adjacentIds(porter.space).includes(dest))) {
+    const r = await rollShown('En zapatillas no se puede pasar: ' + porter.name, v => v >= 4 ? '<b>' + v + '</b>: se cancela el movimiento' : '<b>' + v + '</b>: no cuenta (necesita 4-6)');
+    if (r >= 4) { G.turn.zapStop = true; LOG('En zapatillas no se puede pasar: ' + porter.name + ' cancela el movimiento hacia ' + spaceLabel(dest) + '.', 'good'); return { moved: false }; }
+  }
   if (sp(dest).bridge === 'down' && false) return { moved: false };
   // capacidad
   const spreaders = movers.filter(z => z.type === 'spreader'), norm = movers.filter(z => z.type !== 'spreader').sort((a, b) => strength(b) - strength(a));
