@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-11 13:00
+
+### Mejoras
+- **Debug: simular obituario:** en Nueva partida, bloque desplegable «🐞 Debug: simular obituario». Permite añadir héroes (uno a uno o todos), con unas estadísticas inventadas editables (Zeds eliminados y turno de caída), y lanza el obituario. Al salir vuelve a la pantalla de Nueva partida.
+
 ## 2026-10-11 12:18
 
 ### Mejoras

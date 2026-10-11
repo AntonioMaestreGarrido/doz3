@@ -14,11 +14,12 @@ const Obit = {
   /* Tiempos de cada baja, en segundos: entra la imagen, se queda FIJA y limpia, aparecen foco y nombre, pasa a blanco y negro, se apaga a negro y se funde el nombre. */
   T_ENTRA: 1.2, T_FIJA: 5, T_LUZ: 1.2, T_LUZ_FIJA: 2.5, T_BN: 2.4, T_BN_FIJA: 0.8, T_NEGRO: 1.6, T_NOMBRE_FUERA: 1.2, T_PAUSA: 0.4,
   DURACION: 239.56,  /* duración del tema «Obituario»: si no suena, el ciclo dura igual */
-  run: 0, fin: false, activo: false, audio: null, _pend: [],
+  run: 0, fin: false, activo: false, audio: null, _pend: [], sim: null,
 
   /* Bajas con ilustración, por orden de caída. Si se pierde la partida se da por hecho que cae todo el mundo: tras los caídos
      van los que seguían en pie (héroes y civiles heroicos con ilustración), que mueren con Farmingdale en el turno final. */
   bajas() {
+    if (this.sim) return this.sim.list;
     if (typeof G === 'undefined' || !G.cemetery) return [];
     const ok = u => u.key && HEROES[u.key] && ALT_KEYS.includes(u.key);
     const d = u => (G.ust && G.ust[u.id] && G.ust[u.id].diedT) || 0;
@@ -70,7 +71,7 @@ const Obit = {
 
   /* Una baja: color con foco → blanco y negro → negro → se funde todo. */
   async slide(u, run, next) {
-    const h = HEROES[u.key], st = (G.ust && G.ust[u.id]) || {}, el = this.el, img = el.querySelector('.ob-img'), spot = el.querySelector('.ob-spot'), txt = el.querySelector('.ob-txt');
+    const h = HEROES[u.key], st = this.sim ? (this.sim.ust[u.id] || {}) : ((G.ust && G.ust[u.id]) || {}), el = this.el, img = el.querySelector('.ob-img'), spot = el.querySelector('.ob-spot'), txt = el.querySelector('.ob-txt');
     const fx = this.FOCO[u.key] || 50, fy = this.FOCO_Y, v = this.vel, T = s => (s * v) + 's';
     const kills = st.kills || 0;
     el.querySelector('.ob-name').textContent = h.name.replace(/\s*\(.*?\)/, '');
@@ -98,6 +99,13 @@ const Obit = {
     await this.wait((this.T_NOMBRE_FUERA + this.T_PAUSA) * 1000, run);                                         /* y entra la siguiente */
   },
 
+  /* Debug: lanza el obituario con héroes y estadísticas inventados. items: [{ key, kills, turno }]. Al acabar vuelve a la pantalla de Nueva partida. */
+  simular(items) {
+    const list = [], ust = {};
+    items.forEach((it, i) => { const id = 'sim' + i; list.push({ id, key: it.key, space: 'CEM' }); ust[id] = { diedT: it.turno, kills: it.kills }; });
+    this.sim = { list, ust }; return this.start();
+  },
+
   salir() { this.fin = true; this._cancelaEsperas(); },
 
   async cerrar(run) {
@@ -105,6 +113,7 @@ const Obit = {
     document.removeEventListener('keydown', this._key);
     const el = this.el; if (el) { el.style.transition = 'opacity ' + (0.8 * this.vel) + 's'; el.style.opacity = 0; await new Promise(r => setTimeout(r, 800 * this.vel)); el.remove(); }
     this.el = null; this.activo = false; this.fin = false;
+    if (this.sim) { this.sim = null; $('modal').hidden = false; return; }
     if (ui._endHtml) { ui._modal(ui._endHtml); ui._bindEnd(); }
   }
 };
