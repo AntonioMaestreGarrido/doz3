@@ -39,6 +39,8 @@ Object.assign(ui, {
     let moved = false, last = null, pinch = null;
     cv.addEventListener('pointerdown', e => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (e.pointerType === 'mouse' || !e.isPrimary && !ptrs.size) { ptrs.clear(); pinch = null; }
+      if (e.isPrimary && ptrs.size) { ptrs.clear(); pinch = null; live(); }
       ptrs.set(e.pointerId, local(e)); moved = false; last = local(e);
       if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; moved = true; still(); }
     });
@@ -62,7 +64,13 @@ Object.assign(ui, {
       if (!ptrs.size) { moved = false; live(); cv.style.cursor = ''; }
       else if (ptrs.size === 1) { last = [...ptrs.values()][0]; }
     };
-    ['pointerup', 'pointercancel'].forEach(n => cv.addEventListener(n, end));
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => cv.addEventListener(n, end));
+    /* Red de seguridad: si se pierde un pointerup/cancel (soltar fuera del mapa, gestos del sistema, cambio de pestaña) el estado queda atascado. */
+    const reset = () => { ptrs.clear(); pinch = null; if (moved) self._mapDragT = performance.now(); moved = false; live(); cv.style.cursor = ''; };
+    ['pointerup', 'pointercancel'].forEach(n => window.addEventListener(n, e => { if (ptrs.has(e.pointerId)) end(e); }, true));
+    ['touchend', 'touchcancel'].forEach(n => window.addEventListener(n, e => { if (!e.touches.length && ptrs.size) reset(); }, true));
+    window.addEventListener('blur', reset); document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); });
+    cv.addEventListener('mouseleave', () => { if (ptrs.size && !moved) reset(); });
     this.clampView(); this.applyView();
   }
 });
