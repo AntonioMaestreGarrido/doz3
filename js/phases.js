@@ -57,11 +57,20 @@ async function mineAttack(dest, movers) {
   LOG('¡Campo de Minas! Ataque de Fuerza ' + str + ' (' + (a + b) + '): ' + hits + ' Impacto(s).', 'good');
   s.mine = s.mine === 1 ? 2 : 0; await applyZedHits(movers.filter(z => z.space === dest), hits);
 }
+/* Carta «¡Sí! Han picado…»: cancela la activación del grupo que está en `from`. Solo se llama cuando las habilidades ya no lo han detenido,
+   porque la carta es el último recurso (las habilidades son gratis). */
+async function playPicado(from) {
+  if (!G.hand.includes('picado')) return false;
+  const gr = zedsAt(from).filter(z => !z.moved); if (!gr.length) return false;
+  const v = await UI.askZeds({ title: '«¡Sí! Han picado…»', text: '¿Cancelas la activación de ' + zedGroupName(gr, from) + '?', spaces: [from], options: [{ label: 'Cancelar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('picado'), 1); zenPlayed(); UI.updateHand(); if (d6() <= 3) G.destDiscard.push('picado'); else G.hand.push('picado'); UI.updateHand(); gr.forEach(z => z.moved = true); { const hz = gr.find(z => z.hits > 0) || gr.find(z => z.flipped); if (hz) { const bf = { flipped: hz.flipped, hits: hz.hits }; if (hz.hits > 0) hz.hits--; else { hz.flipped = false; hz.hits = Math.max(0, (hz.hf || 1) - 1); } LOG(hz.name + ' recupera 1 Impacto.', 'bad'); if (UI.fxHeal) UI.fxHeal(hz, bf); } } return true; }
+  return false;
+}
 async function moveGroup(movers, from, opts) {
   opts = opts || {};
   movers = movers.filter(z => z.space === from && G.units[z.id]); if (!movers.length) return { moved: false };
   const dest = nextToward(from);
   if (dest === 'C') {
+    if (opts.picado && await playPicado(from)) return { moved: false };
     const cl = alive('clarin');
     if (cl && plAt('C').length) {
       LOG('¡Los Zeds llegan al Centro! El Mensajero del Clarín los obliga a luchar.', 'bad');
@@ -91,6 +100,8 @@ async function moveGroup(movers, from, opts) {
   if (perimeterBlocks(from, dest)) { const r = await rollShown('Perímetro Defensivo de Kingman', r => r >= 5 ? '<b>' + r + '</b>: los Zeds se detienen' : '<b>' + r + '</b>: los Zeds avanzan (necesita 5-6)'); if (r >= 5) { LOG('El Perímetro Defensivo de Kingman detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
   // Ladrido de Pepinillos
   const pep = unitsAt(from).find(u => u.key === 'pepinillos'); if (pep && !isInit(from)) { const r = await rollShown('Ladrido de Pepinillos', r => r >= 4 ? '<b>' + r + '</b>: los Zeds se detienen' : '<b>' + r + '</b>: los Zeds avanzan (necesita 4-6)'); if (r >= 4) { LOG('El ladrido de Pepinillos detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
+  // La carta «Han picado» va después de las habilidades de arriba: solo se juega si el grupo de verdad iba a avanzar.
+  if (opts.picado && await playPicado(from)) return { moved: false };
   // Evento de Adiós: Barricada
   if (sp(from).bar === 1) { sp(from).bar = 0; LOG('¡Los Zeds destruyen la Barricada de ' + spaceLabel(from) + '!', 'bad'); }
   const leavingChaos = sp(from).chaos > 0;
@@ -135,7 +146,7 @@ async function stepSpace(id, cer, second) {
   }
   let guard = 0, cur = group;
   while (cur.length && !G.over && guard++ < 8) {
-    const from = cur[0].space; const r = await moveGroup(cur, from);
+    const from = cur[0].space; const r = await moveGroup(cur, from, { picado: !cer });
     if (!r.moved) break;
     cur = [];
     const supersWon = (r.go || []).filter(z => z.key === 'berserker' && z.space === r.dest && r.won);
@@ -156,7 +167,7 @@ async function cryptExit(z, cer) {
       putUnit(z, t); z.moved = true; if (plAt(t).length) await zedAttack([z], t, from); return;
     }
   }
-  await moveGroup([z], from);
+  await moveGroup([z], from, { picado: !cer });
 }
 async function activateRoute(r, cer) {
   if (G.over) return;
@@ -168,10 +179,6 @@ async function activateRoute(r, cer) {
   for (const z of zs) if (z.key === 'reanimador') { if (z.hits > 0) z.hits--; else if (z.flipped) { z.flipped = false; z.hits = 2; } }
   const L = lastOf(r);
   for (let i = L; i >= 0 && !G.over; i--) {
-    if (G.hand.includes('picado') && !cer) {
-      const gr = zedsAt(r + i).filter(z => !z.moved);
-      if (gr.length) { const v = await UI.askZeds({ title: '«¡Sí! Han picado…»', text: '¿Cancelas la activación de ' + zedGroupName(gr, r + i) + '?', spaces: [r + i], options: [{ label: 'Cancelar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('picado'), 1); zenPlayed(); UI.updateHand(); if (d6() <= 3) G.destDiscard.push('picado'); else G.hand.push('picado'); UI.updateHand(); gr.forEach(z => z.moved = true); { const hz = gr.find(z => z.hits > 0) || gr.find(z => z.flipped); if (hz) { const bf = { flipped: hz.flipped, hits: hz.hits }; if (hz.hits > 0) hz.hits--; else { hz.flipped = false; hz.hits = Math.max(0, (hz.hf || 1) - 1); } LOG(hz.name + ' recupera 1 Impacto.', 'bad'); if (UI.fxHeal) UI.fxHeal(hz, bf); } } continue; } }
-    }
     if (alreadyHas('distraccion')) {
       const gr = zedsAt(r + i).filter(z => !z.moved);
       const civs = gr.length ? adjacentIds(r + i).filter(id => G.spaces[id] && isRouteSp(id)).flatMap(id => unitsAt(id).filter(x => x.type === 'civ' && !x.ecg)) : [];

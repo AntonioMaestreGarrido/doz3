@@ -165,6 +165,7 @@ async function placeZedAt(id, why, zed) {
     target = zedBack(id);
     if (target === null) { target = firstOpenInitial(); if (!target) { returnZed(zed); LOG('No hay sitio para un Zed nuevo.'); return null; } }
   }
+  if (zed.type === 'super') await UI.superIntro(zed, target);
   if (!UI.fast) Sfx.zed(); putUnit(zed, target); UI.pulseSpace(target, '#ff4a3a'); UI.toast('Nuevo Zed en ' + spaceLabel(target), '#ff4a3a', 1100);
   LOG('Nuevo ' + (zed.type === 'super' ? 'Súper Zed (' + zed.name + ')' : 'Zed (' + zed.full + ')') + ' en ' + spaceLabel(target) + (why ? ' — ' + why : '') + '.', 'zed');
   UI.redraw();
@@ -178,6 +179,7 @@ async function placeZedInitial(r, zed) {
   let t = r + '0';
   if (normalZedsAt(t).length >= zedCap(t)) t = firstOpenInitial();
   if (!t) { returnZed(zed); LOG('Todos los espacios Iniciales están llenos.'); return null; }
+  if (zed.type === 'super') await UI.superIntro(zed, t);
   UI.focus(t, 1.7); putUnit(zed, t); UI.pulseSpace(t, '#ff4a3a'); UI.toast('Nuevo Zed en ' + spaceLabel(t), '#ff4a3a', 1100); LOG('Nuevo ' + (zed.type === 'super' ? 'Súper Zed' : 'Zed') + ' (' + zed.full + ') en ' + spaceLabel(t) + '.', 'zed'); UI.redraw(); await UI.settle(); return zed;
 }
 function alreadyHas(rid) { return G.res && G.res.cur && G.res.cur.id === rid; }

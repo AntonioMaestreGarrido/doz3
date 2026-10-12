@@ -1,6 +1,6 @@
 /* Opciones del juego que no son de sonido (el sonido está en sound.js). Se guardan en este navegador.
-   artAlt: usar el arte alternativo (ilustraciones nuevas de personajes). Por ahora solo se guarda la preferencia;
-   cuando exista el arte alternativo, las imágenes consultarán Opciones.artAlt para elegir qué cargar. */
+   artAlt: usar el arte alternativo (assets/arte_alt): cartas, fichas y obituario consultan Opciones.artAlt para elegir qué cargar.
+   Se cambia desde el menú Opciones de la portada. */
 'use strict';
 
 const Opciones = {

@@ -58,9 +58,11 @@ Object.assign(ui, {
     const ol = cv.offsetLeft, ot = cv.offsetTop, cw = cv.clientWidth, ch = cv.clientHeight, ww = wrap.clientWidth, wh = wrap.clientHeight;
     let tx = ww / 2 - ol - px * zoom, ty = wh / 2 - ot - py * zoom;
     tx = Math.min(-ol, Math.max(ww - ol - cw * zoom, tx)); ty = Math.min(-ot, Math.max(wh - ot - ch * zoom, ty));
+    /* Se guarda también en la vista del zoom del usuario (mapzoom.js) para que el zoom y el arrastre sigan desde aquí. */
+    this.view.z = zoom; this.view.tx = tx; this.view.ty = ty;
     cv.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + zoom + ')'; this.camZoom = zoom;
   },
-  release() { this.canvas.style.transform = ''; this.camZoom = 1; },
+  release() { this.camZoom = 1; this.resetView(); },
 
   /* ---- avisos ---- */
   toast(text, color, ms, big) {

@@ -47,7 +47,7 @@ const ui = {
     window.addEventListener('resize', () => this.arrange());
     $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
-    $('soundBtn').addEventListener('click', () => ui.showSound());
+    $('optionsBtn').addEventListener('click', () => ui.showOptions());
     $('logBtn').addEventListener('click', () => downloadLog());
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
     $('cancelBtn').addEventListener('click', () => ui.cancelMode());
@@ -96,7 +96,8 @@ const ui = {
   setMap(board) { this.board = board; this.mapH = board === 'B' ? 1541 : 1545; this.canvas.height = this.mapH; this.fit(); },
   fit() {
     const w = $('mapwrap'); if (!w) return;
-    const k = Math.max(0.1, Math.min((w.clientWidth - 12) / 2000, (w.clientHeight - 12) / this.mapH));
+    const rb = $('routebtns'), bh = rb ? rb.offsetHeight + 6 : 0;
+    const k = Math.max(0.1, Math.min((w.clientWidth - 12) / 2000, (w.clientHeight - 12 - bh) / this.mapH));
     this.canvas.style.width = Math.floor(2000 * k) + 'px'; this.canvas.style.height = Math.floor(this.mapH * k) + 'px';
     if (this.applyView) { this.clampView(); if (!this.camZoom || this.camZoom <= 1) this.applyView(); }
   },
@@ -428,6 +429,40 @@ const ui = {
     });
   },
   confirm(text) { return this.choose({ title: 'Confirmar', text, options: [{ label: 'Sí', value: true }, { label: 'No', value: false }] }); },
+  /* Súper Zed: la ficha aparece en grande en el centro con su nombre y su efecto (OK). Al pulsar OK vuela a su espacio y solo entonces se coloca.
+     Con «Animaciones rápidas» no vuela: se muestra la información igual y se coloca al pulsar OK. */
+  superIntro(zed, target) {
+    return new Promise(res => {
+      const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: '', img: null };
+      const ov = document.createElement('div'); ov.className = 'superfx';
+      ov.innerHTML = '<div class="sfx-tok"><img src="assets/tokens/' + (d.img || 'sz_lobo') + '.png" alt=""></div>' +
+        '<div class="sfx-info" hidden><h2>' + d.name + '</h2><p>' + d.txt + '</p><button class="primary" id="sfxOk">OK</button></div>';
+      document.body.appendChild(ov);
+      const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info');
+      setTimeout(() => { info.hidden = false; }, 900);
+      const finish = () => { ov.remove(); res(); };
+      $('sfxOk').onclick = () => {
+        info.hidden = true;
+        const dest = target && G.spaces[target];
+        if (this.fast || !dest) { finish(); return; }
+        /* Vuelo por fotogramas: la ficha va al espacio de destino donde esté en pantalla en cada fotograma. El mapa no hace zoom ni se mueve. */
+        const cv = this.canvas, dur = 1600, ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        const live = () => { const r = cv.getBoundingClientRect(), k = r.width / cv.width; return { x: r.left + dest.x * k, y: r.top + dest.y * k }; };
+        const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+        tok.style.animation = 'none';
+        const t0 = performance.now();
+        const step = now => {
+          const t = Math.min(1, (now - t0) / dur), e = ease(t), p = live();
+          const x = cx + (p.x - cx) * e, y = cy + (p.y - cy) * e - Math.sin(Math.PI * e) * 70;
+          tok.style.transform = 'translate(' + (x - cx) + 'px,' + (y - cy) + 'px) scale(' + (1 - .86 * e) + ')';
+          ov.style.background = 'rgba(0,0,0,' + (.82 * (1 - e)).toFixed(3) + ')';
+          if (t < 1) requestAnimationFrame(step);
+          else finish();
+        };
+        requestAnimationFrame(step);
+      };
+    });
+  },
   waitAck(title, text, img, spec) {
     return new Promise(res => {
       const im = img ? '<img src="' + img + '" alt="" ' + (spec ? 'data-zoom="' + spec + '"' : '') + '>' : '';
@@ -442,6 +477,8 @@ const ui = {
       const b = this._modal('<h2>Elige una unidad</h2><p>' + text + '</p><div class="pickhint">Toca una opción (o la unidad en el mapa) para verla; pulsa Aceptar para confirmar.</div><div class="pickopts"></div><div class="opts"><button class="primary" id="pkok" disabled>Aceptar</button>' + (cancel ? '<button id="pkcancel">Cancelar</button>' : '') + '</div>', 'pickpanel');
       $('modal').classList.add('pick');
       const box = b.querySelector('.pickopts'); let cur = null, focused = false;
+      /* La cámara va a la primera unidad en cuanto aparece la pregunta, sin esperar a que se elija en la lista. */
+      const first = units.find(u => u.space); if (first) { this.focus(first.space); focused = !!(this.camOn && !this.fast); }
       const done = id => { this._pick = null; this.hl = null; if (focused) this.release(); this._close(); this.redraw(); res(id); };
       const select = id => {
         cur = id; this.hl = id; $('pkok').disabled = false;
@@ -666,15 +703,11 @@ const ui = {
       $('vol_' + k).oninput = e => { $('pct_' + k).textContent = e.target.value + '%'; Sound.set(k, { vol: e.target.value / 100 }); };
     });
   },
-  showSound() {
-    this._modal('<h2>Sonido</h2><p>Cada canal tiene su propio interruptor y volumen.</p>' + this._soundRows() + '<div class="opts"><button class="primary" id="sndOk">Cerrar</button></div>', 'sound');
-    this._bindSound(); $('sndOk').onclick = () => ui._close();
-  },
-  /* Menú de opciones de la portada: sonido y arte alternativo. */
+  /* Menú Opciones de la portada (antes «Sonido»): sonido y arte alternativo. */
   showOptions() {
     this._modal('<h2>Opciones</h2><h3 class="oph">Sonido</h3><p>Cada canal tiene su propio interruptor y volumen.</p>' + this._soundRows() +
       '<h3 class="oph">Arte</h3><div class="snd"><label class="chk"><input type="checkbox" id="optArt"' + (Opciones.artAlt ? ' checked' : '') + '> Usar arte alternativo</label></div>' +
-      '<p class="ophint">Las ilustraciones alternativas de cartas y fichas se aplicarán cuando estén disponibles.</p>' +
+      '<p class="ophint">Cambia las ilustraciones de cartas, fichas y obituario por el arte alternativo.</p>' +
       '<div class="opts"><button class="primary" id="sndOk">Cerrar</button></div>', 'sound');
     this._bindSound();
     $('optArt').onchange = e => { Opciones.set({ artAlt: e.target.checked }); loadAltArt().then(() => ui.redraw()); };

@@ -2,6 +2,19 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-12 11:04
+
+### Mejoras
+- **Opciones:** el menú «Sonido» de la portada pasa a llamarse «Opciones». Mantiene los canales de sonido y añade el interruptor «Usar arte alternativo» para cartas, fichas y obituario.
+- **Súper Zed:** al aparecer, la ficha se muestra en grande en el centro con su nombre y su efecto (botón OK). Al pulsar OK vuela hasta su espacio con un recorrido por fotogramas de 1,6 s, y solo entonces se coloca.
+- **Rutas:** seis botones debajo del mapa (Bosque, Montaña, Autovía, Afueras, Túnel y Centro) acercan el mapa a esa ruta. Centro incluye el Centro, los espacios n.º 1 y las camas del Hospital.
+
+### Fixes
+- **Súper Zed:** las 18 fichas se recortan y quedan transparentes, sin el borde blanco.
+- **«¡Sí! Han picado…»:** la carta solo se ofrece si el grupo de Zeds iba a avanzar. Se pregunta después de las habilidades gratuitas (zapatillas de Porter, Perímetro de Kingman, Ladrido de Pepinillos y No Pasar).
+- **Lluvia torrencial:** la cámara enseña cada Zed antes de tirar el dado.
+- **Cámara:** al abrir una elección de unidad, la cámara se centra en la primera unidad.
+
 ## 2026-10-11 19:36
 
 ### Fixes

@@ -17,7 +17,7 @@ button.primary{background:#7a2a1b;border-color:#c0543f}
 button.primary:hover:not(:disabled){background:#9a3822}
 .chk{font-size:12px;color:var(--mut);display:flex;gap:5px;align-items:center}
 main{flex:1;display:flex;min-height:0}
-#mapwrap{flex:1;min-width:0;min-height:0;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;padding:6px;background:#0a0806}
+#mapwrap{flex:1;min-width:0;min-height:0;overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;background:#0a0806}
 #map{border:1px solid var(--line);cursor:default;display:block}
 #banner{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(10,8,6,.92);border:1px solid var(--gold);padding:8px 16px;border-radius:20px;color:var(--gold);font-weight:700;pointer-events:none;box-shadow:0 4px 18px #000;z-index:5}
 #tip{position:absolute;background:rgba(10,8,6,.95);border:1px solid var(--line);padding:5px 9px;border-radius:5px;font-size:12px;pointer-events:none;z-index:6;max-width:240px}
@@ -390,3 +390,18 @@ body:has(#title.bgnew) #modalbox.setup .opts{margin-top:6px}
 
 .obchecks{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:2px 10px;max-height:38vh;overflow:auto;margin:6px 0;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .obck{font-size:13px;cursor:pointer;padding:2px 0;white-space:nowrap}.obck input{margin-right:4px}
+
+/* Súper Zed: ficha en grande al aparecer y vuelo hasta su espacio (ui.js superIntro). */
+.superfx{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center}
+.superfx .sfx-tok{animation:sfxGrow .9s cubic-bezier(.2,.7,.2,1) both;will-change:transform,opacity}
+.superfx .sfx-tok img{width:min(64vw,340px);height:auto;filter:drop-shadow(0 0 22px rgba(255,80,60,.55))}
+.superfx .sfx-info{max-width:min(92vw,460px);margin-top:14px;animation:sfxFade .6s ease-out both}
+.superfx .sfx-info h2{margin:0 0 8px;color:var(--gold)}
+.superfx .sfx-info p{margin:0 0 14px;line-height:1.4}
+@keyframes sfxGrow{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes sfxFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* Botones de ruta debajo del mapa: cada uno acerca el mapa a esa ruta (mapzoom.js zoomToRoute). */
+#routebtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding-top:6px;position:relative;z-index:3}
+#routebtns button{font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(10,8,6,.9);color:var(--ink);cursor:pointer}
+#routebtns button:hover{border-color:var(--gold);color:var(--gold)}

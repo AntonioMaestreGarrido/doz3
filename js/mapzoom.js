@@ -16,7 +16,7 @@ Object.assign(ui, {
     cv.style.transform = v.z > 1.001 ? 'translate(' + v.tx + 'px,' + v.ty + 'px) scale(' + v.z + ')' : '';
     const r = $('zReset'); if (r) r.classList.toggle('on', v.z > 1.001);
   },
-  release() { this.camZoom = 1; this.applyView(); },
+  release() { this.camZoom = 1; this.resetView(); },
   /* Cambia el zoom manteniendo fijo el punto (px, py), en coordenadas del contenedor del mapa. */
   zoomAt(factor, px, py) {
     const v = this.view, cv = this.canvas, w = $('mapwrap'); if (this.camZoom > 1) this.camZoom = 1;
@@ -26,12 +26,28 @@ Object.assign(ui, {
     v.z = nz; v.tx = px - cv.offsetLeft - nz * lx; v.ty = py - cv.offsetTop - nz * ly;
     this.clampView(); this.applyView();
   },
+  /* Acerca el mapa para ver una ruta entera (o el Centro, con r = 'C'). Usa la misma vista que el zoom del usuario. */
+  zoomToRoute(r) {
+    const cv = this.canvas, w = $('mapwrap'); if (!cv || !w || !G.spaces) return;
+    /* Centro: el Centro, los espacios n.º 1 de cada ruta (los que tocan el Centro) y el Hospital, las Oficinas y el Laboratorio. */
+    const ids = r === 'C' ? Object.values(G.spaces).filter(s => s.id === 'C' || (s.route && spaceNum(s.id) === 1) || ['bed', 'office', 'lab'].includes(s.kind)).map(s => s.id) : Object.values(G.spaces).filter(s => s.route === r).map(s => s.id);
+    if (!ids.length) { UI.toast('Esa ruta no está en esta partida', '#ffd54a', 1400); return; }
+    const xs = ids.map(id => G.spaces[id].x), ys = ids.map(id => G.spaces[id].y), pad = 70;
+    const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad, minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
+    const k = cv.clientWidth / cv.width, W = w.clientWidth, H = w.clientHeight;
+    const z = Math.max(1, Math.min(this.MAXZ, W / ((maxX - minX) * k), H / ((maxY - minY) * k)));
+    const cx = (minX + maxX) / 2 * k, cy = (minY + maxY) / 2 * k;
+    this.camZoom = 1; const v = this.view;
+    v.z = z; v.tx = W / 2 - cv.offsetLeft - cx * z; v.ty = H / 2 - cv.offsetTop - cy * z;
+    this.clampView(); this.applyView();
+  },
   resetView() { this.view.z = 1; this.view.tx = 0; this.view.ty = 0; this.clampView(); this.applyView(); },
   initMapZoom() {
     const cv = this.canvas, wrap = $('mapwrap'), self = this, ptrs = new Map();
     const local = e => { const r = wrap.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
     const still = () => { cv.style.transition = 'none'; };
     const live = () => { cv.style.transition = ''; };
+    document.querySelectorAll('#routebtns button').forEach(b => b.onclick = () => self.zoomToRoute(b.dataset.route));
     $('zIn').onclick = () => self.zoomAt(1.5); $('zOut').onclick = () => self.zoomAt(1 / 1.5); $('zReset').onclick = () => self.resetView();
     cv.addEventListener('wheel', e => { e.preventDefault(); const p = local(e); self.zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), p.x, p.y); }, { passive: false });
     /* Tras arrastrar no debe dispararse el clic sobre una unidad o espacio. */
