@@ -86,8 +86,12 @@ const Preview = {
         else L.push('La Infección está ahora en ' + G.inf + ' (7 o menos): no hay Súper Zed, aparecen los Supervivientes V.I.P. en el Inicial de esa ruta.');
         break;
       }
+      case 'aqui_doctor': {
+        L.push('Al final de la fase, la Infección sube de ' + G.inf + ' a 13 y estalla un Brote Descontrolado: tirada de Brote (baja la Infección) y aparecerá un Súper Zed — ' + this.st(peekSuper()) + ' — en la ruta que decida la carta de Destino.');
+        break;
+      }
       case 'que_demonios': {
-        L.push('La Infección sube de ' + G.inf + ' a 13 y estalla un Brote Descontrolado: aparecerá un Súper Zed — ' + this.st(peekSuper()) + ' — en la ruta que decida la carta de Destino.');
+        L.push('La Infección sube de ' + G.inf + ' a 13 y estalla un Brote Descontrolado: tirada de Brote (baja la Infección) y aparecerá un Súper Zed — ' + this.st(peekSuper()) + ' — en la ruta que decida la carta de Destino.');
         L.push('Se retiran todas las fichas de Impacto de los Zeds.');
         break;
       }

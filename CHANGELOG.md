@@ -2,6 +2,18 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-13 07:42
+
+### Mejoras
+- **Nuevo evento «¡Aquí está el Doctor!»** (naranja, Acto 2, especial): al final de la fase de los Zeds la Infección sube a 13 y estalla un Brote Descontrolado completo. Con él, el mazo de la duración Épica del nivel IV vuelve a tener sus 45 cartas.
+- **Tirada de Cripta para las unidades de jugador:** al salir de una Cripta del Túnel tiran un dado (1-3 sale, 4-5 se queda y el movimiento se cancela, 6 ¡Perdidos!: nueva tirada y reaparece en el espacio del Túnel con ese número, o se pierde para siempre si coincide con su Cripta). Los Guardias Diamante Rojo y los héroes con la marca «Diamante Rojo» salen sin tirar.
+
+### Fixes
+- **Tirada de Cripta de los Zeds:** «Zeds de alcantarilla» usa ahora la misma tirada que el movimiento normal (un 6 es ¡Perdidos!, ya no «se queda»), y un Zed perdido que reaparece no vuelve a moverse ese turno.
+- **«¿Qué demonios es eso?»:** el Brote Descontrolado incluye ahora la tirada de Brote, que baja la Infección (antes se quedaba en 13).
+- **Lluvia torrencial:** ya no falla si un Zed muere al ser arrastrado.
+- **Retirada:** una unidad que retrocede hacia un espacio fuera de ruta (cama, Oficina…) se manda al Centro en vez de dar error.
+
 ## 2026-10-13 07:16
 
 ### Mejoras

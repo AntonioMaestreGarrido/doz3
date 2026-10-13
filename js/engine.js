@@ -340,7 +340,7 @@ function retreatPlayers(units, dest, back) {
   for (const u of units) {
     if (!u.space || !G.spaces[u.space] || ['bed', 'office', 'lab', 'camp'].includes(sp(u.space).kind)) continue; let d = dest === 'C' ? (sp(u.space).route ? nextToward(u.space) : 'C') : dest;
     let k = back ? back.indexOf(d) : -1; /* sin sitio: se sigue hacia atrás por el recorrido del Mover, y luego hacia el Centro */
-    while (d !== 'C' && (!playerRoom(d, u) || blocked(d) || (u.type === 'petra' && false))) d = (k >= 0 && k + 1 < back.length) ? back[++k] : nextToward(d);
+    while (d !== 'C' && (!playerRoom(d, u) || blocked(d) || (u.type === 'petra' && false))) d = (k >= 0 && k + 1 < back.length) ? back[++k] : (sp(d).route ? nextToward(d) : 'C');
     putUnit(u, d); LOG(u.name + ' se retira a ' + spaceLabel(d) + '.');
   }
   UI.redraw();
@@ -704,6 +704,7 @@ function pathTo(prev, start, dest) {
 }
 /* path: recorrido de la acción de Mover. Si se pierde el combate, la unidad se retira UN espacio (al anterior del recorrido). */
 async function doMove(u, dest, path) {
+  if (u.space && G.spaces[u.space] && sp(u.space).kind === 'crypt' && !u.dr && !(await cryptRollPlayer(u))) return;
   const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); EVT('move', u.id, { from, to: dest }); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
   if (isSoft(u)) { if (dest === 'C') await refugeeArrives(u); return; }
   if (dest === 'C' && u.space === 'C') {/* ok */ }

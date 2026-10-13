@@ -22,6 +22,12 @@ async function outbreak(wild, noReduce) {
   await resolveTwist(dr);
 }
 
+/* La Infección sube de inmediato a 13 y estalla un Brote Descontrolado completo (con su tirada de Brote, que baja la Infección). */
+async function wildOutbreakNow() {
+  G.inf = 13; UI.updateStats(); LOG('¡La Infección sube a 13! Brote Descontrolado.', 'bad');
+  G.inWild = true; try { await outbreak(true); } finally { G.inWild = false; }
+}
+
 /* ---------- Caos ---------- */
 async function placeChaos(id, n) {
   if (!G.lv.fourR) return; const s = sp(id); n = n || (G.turn.chaos2 ? 2 : 1);
@@ -155,20 +161,38 @@ async function stepSpace(id, cer, second) {
     else if (supersWon.length) { cur = supersWon; cur.forEach(z => z.moved = false); }
   }
 }
+/* Tirada de Cripta de una unidad de jugador que intenta salir de una Cripta (los Diamante Rojo salen sin tirar).
+   1-3 sale con normalidad · 4-5 se queda (el movimiento se cancela) · 6 ¡Perdidos!: nueva tirada, reaparece en el espacio del Túnel con ese número; si coincide con el de su Cripta, se pierde para siempre. Devuelve true si puede seguir con su movimiento. */
+async function cryptRollPlayer(u) {
+  const from = u.space;
+  const r = await rollShown('Tirada de Cripta: ' + u.name, v => v <= 3 ? '<b>' + v + '</b>: sale de la Cripta' : v <= 5 ? '<b>' + v + '</b>: se queda en la Cripta' : '<b>6</b>: ¡Perdidos! (nueva tirada)');
+  LOG('Tirada de Cripta de ' + u.name + ': ' + r);
+  if (r <= 3) return true;
+  if (r <= 5) { LOG(u.name + ' se queda en la Cripta.', 'bad'); return false; }
+  const r2 = await rollShown('¡Perdidos! Nueva tirada', v => '<b>' + v + '</b>: aparece en el Túnel, espacio n.º ' + v); const idx = lastOf('T') - r2;
+  if (idx === sp(from).i) { await sendCemetery(u, 'se pierde para siempre en el Túnel'); return false; }
+  let d = 'T' + idx; while (d !== 'C' && (!playerRoom(d, u) || blocked(d))) d = nextToward(d);
+  putUnit(u, d); LOG(u.name + ' aparece perdido en ' + spaceLabel(d) + '.', 'bad'); UI.redraw();
+  const zs = d === 'C' ? [] : zedsAt(d); if (zs.length) await melee({ zeds: zs, hum: [u], space: d, attacker: 'z', from: prevToward(d) || d });
+  return false;
+}
+
 async function cryptExit(z, cer) {
   const from = z.space;
   if (!z.dr && !(SUPER_ZEDS[z.key] && false)) {
     const r = await rollShown('Tirada de Cripta', v => v >= 4 && v <= 5 ? '<b>' + v + '</b>: el Zed se queda en la Cripta' : v === 6 ? '<b>6</b>: el Zed se pierde en el Túnel (nueva tirada)' : '<b>' + v + '</b>: el Zed sale de la Cripta'); LOG('Tirada de Cripta: ' + r);
     if (r >= 4 && r <= 5) { z.moved = true; return; }
-    if (r === 6) {
-      const r2 = await rollShown('Zed perdido: nueva tirada', v => '<b>' + v + '</b>: aparece en el Túnel, espacio n.º ' + v); const idx = lastOf('T') - r2; LOG('¡Perdido! Nueva tirada: ' + r2);
-      if (idx === sp(from).i || idx < 1 || idx > lastOf('T')) { LOG('El Zed se pierde para siempre.', 'good'); if (z.type === 'super') { removeUnit(z); delete G.units[z.id]; } else discardZed(z); return; }
-      const t = 'T' + idx;
-      if (normalZedsAt(t).length >= zedCap(t) && sp(t).kind !== 'crypt') { z.moved = true; return; }
-      putUnit(z, t); z.moved = true; if (plAt(t).length) await zedAttack([z], t, from); return;
-    }
+    if (r === 6) { await cryptLost(z, from); return; }
   }
   await moveGroup([z], from, { picado: !cer });
+}
+/* Tirada de Cripta con un 6: ¡Perdidos! Nueva tirada: el Zed reaparece en el espacio del Túnel con ese número; si coincide con el de su Cripta, se pierde para siempre. */
+async function cryptLost(z, from) {
+  const r2 = await rollShown('Zed perdido: nueva tirada', v => '<b>' + v + '</b>: aparece en el Túnel, espacio n.º ' + v); const idx = lastOf('T') - r2; LOG('¡Perdido! Nueva tirada: ' + r2);
+  if (idx === sp(from).i || idx < 1 || idx > lastOf('T')) { LOG('El Zed se pierde para siempre.', 'good'); if (z.type === 'super') { removeUnit(z); delete G.units[z.id]; } else discardZed(z); return false; }
+  const t = 'T' + idx;
+  if (normalZedsAt(t).length >= zedCap(t) && sp(t).kind !== 'crypt') { z.moved = true; return false; }
+  putUnit(z, t); z.moved = true; (G.turn.lost || (G.turn.lost = [])).push(z.id); if (plAt(t).length) await zedAttack([z], t, from); return false;
 }
 async function activateRoute(r, cer) {
   if (G.over) return;
@@ -349,7 +373,7 @@ async function eventStart() {
     case 'helicoptero': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && !isInit(x.space) && sp(x.space).route !== 'T').map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, 'Helicóptero: elige un espacio con Zeds.'); const r = d6() + d6(); const n = r <= 5 ? 1 : r <= 9 ? 2 : 3; LOG('Helicóptero: ' + r + ' → ' + n + ' Impacto(s).', 'good'); await applyZedHits(zedsAt(t), n); } break; }
     case 'eficiencia': case 'jornada': case 'monstruo': G.turn.specials.push(mkSpecial(id)); break;
     case 'oh_malo': { const dr = await drawDestiny(); if (dr) { await placeZedAt(dr.route + '1', 'Oh, esto es malo'); await resolveTwist(dr); } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
-    case 'que_demonios': { G.inf = 13; await outbreak(true, true); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
+    case 'que_demonios': { await wildOutbreakNow(); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'donde_todos': { for (const r of G.routes) for (let i = 1; i <= lastOf(r); i++) if (sp(r + i).kind === 'pueblo' && controlled(r + i)) await placeZedAt(r + i, '¿De dónde salen todos?'); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'guardia': { const dr = await drawDestiny(); if (dr) { let r = dr.route; if (r === 'T') r = await chooseRoute(SURFACE, 'La Guardia Nacional solo puede ir a la superficie: elige ruta.'); const g = makeSpecial('guardia', r + '0'); g.name = 'Guardia Nacional'; await resolveTwist(dr); } break; }
     case 'noelle': { const dr = await drawDestiny(); if (dr) { await placeZedInitial(dr.route, spawnSpreader('noelle')); await resolveTwist(dr); } break; }
@@ -388,6 +412,7 @@ async function eventAfterZeds() {
   switch (id) {
     case 'que_olor': { const c = allUnits(x => isFighter(x) && x.space && x.space !== 'C' && sp(x.space).kind !== 'bed' && !sp(x.space).kind.match(/office|lab|camp/) && !isInit(x.space) && x.side === 'pl'); if (c.length) { const v = await UI.pickUnit(c, '¿Qué es ese olor?: elige la unidad que será atacada.'); const u = G.units[v]; const z = makeZed(); if (z) { z.flipped = true; putUnit(z, u.space); const r = await melee({ zeds: [z], hum: [u], space: u.space, attacker: 'z', from: prevToward(u.space) }); if (z.space && r.zedWon) { z.flipped = false; z.hits = Math.min(z.hits, 2); } } } break; }
     case 'frenesi': case 'super_enloq': { G.turn.frenzy = true; const sups = allUnits(x => x.type === 'super' && x.space && isRouteSp(x.space)).sort((a, b) => (lastOf(sp(a.space).route) - sp(a.space).i) - (lastOf(sp(b.space).route) - sp(b.space).i)); sups.forEach(z => z.moved = false); for (const z of sups) { if (z.space && G.units[z.id]) await moveGroup([z], z.space); if (G.over) return; } G.turn.frenzy = false; break; }
+    case 'aqui_doctor': await wildOutbreakNow(); break;
     case 'inteligentes': { await placeZedAt('F0', 'Zeds Inteligentes'); const t = strongestNormalZed(); if (t) t.smart = true; break; }
     case 'feria': { for (const r of ['T']) for (const i of [3, 5]) { const id2 = 'T' + i; if (!G.spaces[id2]) continue; const n = await rollShown('La feria de las tinieblas (' + spaceLabel(id2) + ')', v => '<b>' + v + '</b>: ' + (v === 1 ? '2 Zeds' : v <= 5 ? '1 Zed' : 'ningún Zed')); const k = n === 1 ? 2 : n <= 5 ? 1 : 0; for (let j = 0; j < k; j++) await placeZedAt(id2, 'La feria de las tinieblas'); } break; }
     case 'conductos': for (const i of [3, 5]) { const id2 = 'T' + i; if (!G.spaces[id2]) continue; for (const z of zedsAt(id2).slice()) { const n = await rollShown('Conductos del vapor', v => v <= 2 ? '<b>' + v + '</b>: el Zed intenta entrar en la Central Nuclear' : v <= 5 ? '<b>' + v + '</b>: el Zed intenta entrar en la Granja' : '<b>' + v + '</b>: no pasa nada'); if (n <= 2) await sewerMove(z, 'A4'); else if (n <= 5) await sewerMove(z, 'B4'); } } break;
@@ -395,8 +420,8 @@ async function eventAfterZeds() {
   }
 }
 async function sewerMove(z, tgt) {
-  if (!z.space || !G.units[z.id]) return;
-  if (sp(z.space).kind === 'crypt') { const r = await rollShown('Zed en la Cripta', v => v >= 4 ? '<b>' + v + '</b>: se queda en la Cripta' : '<b>' + v + '</b>: sale de la Cripta'); if (r >= 4) return; }
+  if (!z.space || !G.units[z.id] || (G.turn.lost || []).includes(z.id)) return;
+  if (sp(z.space).kind === 'crypt') { const from = z.space; const r = await rollShown('Tirada de Cripta', v => v <= 3 ? '<b>' + v + '</b>: el Zed sale de la Cripta' : v <= 5 ? '<b>' + v + '</b>: el Zed se queda en la Cripta' : '<b>6</b>: el Zed se pierde en el Túnel (nueva tirada)'); if (r >= 6) { await cryptLost(z, from); return; } if (r >= 4) return; }
   if (normalZedsAt(tgt).length >= zedCap(tgt)) return;
   putUnit(z, tgt); LOG('Un Zed emerge del Túnel en ' + spaceLabel(tgt) + '.', 'bad'); z.moved = true;
   if (plAt(tgt).length) await zedAttack([z], tgt, prevToward(tgt)); else await zedsOccupy([z], tgt);
