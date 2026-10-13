@@ -38,11 +38,12 @@ function perimeterBlocks(from, dest) {
 }
 async function zedsOccupy(zs, id) {
   const here = zs.filter(z => z.space === id); if (!here.length) return;
+  const hadChaos = sp(id).chaos > 0;
   if (G.lv.fourR && !isInit(id) && isNamed(id) && id !== 'C' && !sp(id).chaos && sp(id).kind !== 'crypt') await placeChaos(id);
   else if (G.turn.chaos2 && sp(id).chaos && false) { }
   if (G.over) return;
   if (!plAt(id).length && !raidAt(id).length) { await convertAldeanos(id); if (softAt(id).length) await devourSoft(here, id); }
-  if (G.turn.flamed && sp(id).chaos) for (const z of here) if (z.space === id) await hitZed(z);
+  if (G.turn.flamed && hadChaos) for (const z of here) if (z.space === id && !z.flamedHit) { z.flamedHit = true; await hitZed(z); }
 }
 async function handleArrival(zs, dest, from) {
   const here = zs.filter(z => z.space === dest);

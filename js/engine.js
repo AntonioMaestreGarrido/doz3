@@ -129,7 +129,7 @@ function drawNormalToken() {
   }
   if (alreadyHas('antinatural') && G.reserve.length > 1) {
     const a = G.reserve.splice(rnd(G.reserve.length), 1)[0], b = G.reserve.splice(rnd(G.reserve.length), 1)[0];
-    const keep = a[0] >= b[0] ? a : b; G.reserve.push(a[0] >= b[0] ? b : a); return keep;
+    const keep = a[0] <= b[0] ? a : b; G.reserve.push(a[0] <= b[0] ? b : a); return keep;  /* roba dos y elige: la más débil */
   }
   return G.reserve.splice(rnd(G.reserve.length), 1)[0];
 }
@@ -141,6 +141,10 @@ function makeSuper() {
   if (!G.supers.length) return makeZed();
   let k; const q = G.turn && G.turn.peekOn && G.turn.peekQ && G.turn.peekQ.sup;
   if (q && q.length) { const pk = q.shift(), i = G.supers.indexOf(pk); if (i >= 0) k = G.supers.splice(i, 1)[0]; }
+  if (!k && alreadyHas('antinatural') && G.supers.length > 1) { /* roba dos Súper Zeds y elige el más débil */
+    const a = G.supers.splice(rnd(G.supers.length), 1)[0], b = G.supers.splice(rnd(G.supers.length), 1)[0];
+    k = SUPER_ZEDS[a].full <= SUPER_ZEDS[b].full ? a : b; G.supers.push(k === a ? b : a);
+  }
   if (!k) k = G.supers.splice(rnd(G.supers.length), 1)[0];
   const d = SUPER_ZEDS[k];
   return newUnit({ side: 'zed', type: 'super', key: k, name: d.name, full: d.full, red: d.red, hf: 3, hr: 3, img: d.img, resistZ: k === 'ferreo' });
@@ -241,7 +245,7 @@ function routeOfZ(z) { return z.space && sp(z.space).route; }
 const resistsPl = u => u.res === 'r' ? 4 : u.res === 'f' ? 5 : 0;
 async function hitPlayer(u, n) {
   for (let k = 0; k < n; k++) {
-    if (!u.space) return;
+    if (!u.space || u.space === 'CEM') return;
     if (u.type === 'aldeano') return;
     if (u.type === 'refugee') { if (u.space && sp(u.space).kind === 'bed') await sendCemetery(u, 'recibe un Impacto en el Hospital'); else await unitDown(u); return; }
     const th = resistsPl(u);
@@ -371,6 +375,7 @@ function humanShifts(f, o) { // o: { attacking, space }
   const s = [];
   if (f.key === 'schmidt') s.push({ label: 'Boy Scout (Schmidt)', v: 1 });
   if (f.key === 'porter' && !o.attacking) s.push({ label: 'Artes marciales (Porter)', v: 1 });
+  if (f.key === 'alia' && !o.attacking) s.push({ label: 'Parada perfecta (Alia)', v: 1 });
   if (f.key === 'wright') s.push({ label: 'Equipo de apoyo (Wright)', v: 1 });
   if (f.key === 'kingman' && !o.attacking) s.push({ label: 'Defensor (Kingman)', v: 1 });
   if (f.armed) s.push({ label: 'Bien Armados', v: 1 });
@@ -449,6 +454,13 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
       if (r >= 3) { o.assassin = true; o.noInf = true; }
       else if (r === 2) { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { retreatPlayers([fighter], 'C'); return { evaded: true }; } }
     }
+    if (fighter.key === 'alia' && sp(space).route && space !== 'C') {
+      const bk = nextToward(space);
+      if (bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter)) {
+        const r = await rollShown('Evasión (Alia)', r => r >= 4 ? '<b>' + r + '</b>: se retira 1 espacio hacia el Centro antes del combate' : '<b>' + r + '</b>: no se retira (necesita 4-6)'); LOG('Evasión de Alia: ' + r);
+        if (r >= 4) { retreatPlayers([fighter], 'C'); LOG('Alia se escabulle antes del combate.', 'good'); return { evaded: true }; }
+      }
+    }
     if (fighter.key === 'johnson') {
       const r = await rollShown('Trampas de Johnson', r => r >= 4 ? '<b>' + r + '</b>: las trampas funcionan' : '<b>' + r + '</b>: las trampas fallan (necesita 4-6)'); LOG('Trampas de Johnson: ' + r);
       if (r >= 4) { await hitZed(zeds[0]); retreatPlayers(unitsAt(space).filter(x => isFighter(x) && x.key !== 'pepinillos'), 'C'); LOG('Johnson retrocede (las trampas funcionan).', 'good'); return { evaded: true }; }
@@ -471,6 +483,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     if (fighter.res === undefined) {/* noop */ }
   }
   if (o.assassin && !betty) shifts.push({ label: 'Ataque asesino (Darling)', v: 2 });
+  if (attackerHuman && fighter.key === 'alia' && o.from && sp(o.from) && sp(space).route && sp(o.from).route === sp(space).route && sp(space).i > sp(o.from).i) shifts.push({ label: 'Emboscada (Alia)', v: 2 });
   if (attackerHuman && fighter.key === 'santana' && zeds.every(z => z.type === 'zed')) {
     const r = await rollShown('Carga del Toro', r => r >= 4 ? '<b>' + r + '</b>: ¡los Zeds retroceden!' : '<b>' + r + '</b>: sin efecto (necesita 4-6)'); LOG('Carga del Toro: ' + r);
     if (r >= 4) { let tz = zeds[0]; if (zeds.length > 1) tz = G.units[await UI.askZeds({ title: 'Carga del Toro', text: '¿Qué Zed recibe el Impacto?', spaces: zeds.map(z => z.space), options: zeds.map(z => ({ label: zedLabel(z), value: z.id })) })]; await hitZed(tz); const zl = zeds.filter(z => z.space); if (zl.length) await retreatZeds(zl, zedOrigin(zl[0])); LOG('¡La Carga hace retroceder a los Zeds!', 'good'); return { humanWon: true }; }
@@ -497,6 +510,10 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     const again = await h.ask('Artes marciales: ¿repites la tirada?', [{ label: 'Repetir', value: 'y' }, { label: 'Aceptar', value: 'n' }]);
     if (again === 'y') dice = await h.roll(extraDice);
   }
+  if (fighter.key === 'alia' && !attackerHuman && !G.turn.paradaUsed) {
+    const again = await h.ask('Parada perfecta: ¿repites la tirada defensiva? (1 vez por turno)', [{ label: 'Repetir', value: 'y' }, { label: 'Aceptar', value: 'n' }]);
+    if (again === 'y') { G.turn.paradaUsed = true; dice = await h.roll(extraDice); }
+  }
   dice = await zenReroll(dice, 'combate', h);
   if (medal && dice.some(d => d < 6)) { const v = await h.ask('Medallón místico: ¿cambias un dado a 6?', [{ label: 'Sí', value: 'y' }, { label: 'No', value: 'n' }]); if (v === 'y') { dice = dice.slice().sort((a, b) => a - b); dice[0] = 6; G.turn.medalUsed = true; } }
   const sum = dice[0] + dice[1], row = sumRow(sum);
@@ -516,7 +533,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if (!o.noInf && G.lv.infection && !vsPl) await infUp(meleeInfection(zeds, fighter));
   ACTOR = fighter.side === 'pl' ? fighter.id : null;
   try { await applyZedHits(zeds, zh); if (hasPart('cebo') && !attackerHuman) await applyZedHits(zeds, 1); } finally { ACTOR = null; }
-  if (fighter.space) { if (fighter.side === 'raid') await hitRaider(fighter, ph); else await hitPlayer(fighter, ph); }
+  if (fighter.space && fighter.space !== 'CEM') { if (fighter.side === 'raid') await hitRaider(fighter, ph); else await hitPlayer(fighter, ph); }
   if (o.trago || false) { if (fighter.space) await hitPlayer(fighter, 1); }
   if (isZedAtk && G.turn.noRetreatOnce && !G.turn.noRetreatDone) { G.turn.noRetreatDone = true; return { again: true, zedWon: !zedLoses }; }
   const left = zeds.filter(z => z.space);
@@ -625,7 +642,7 @@ function reachable(u, extra) {
   while (q.length) {
     const cur = q.shift();
     if (cur !== u.space && (zedsAt(cur).length || raidAt(cur).length)) continue;
-    if (cur !== u.space && sp(cur).chaos && u.key !== 'pepinillos' && u.key !== 'horacio' && !isSoft(u)) continue;
+    if (cur !== u.space && sp(cur).chaos && u.key !== 'pepinillos' && u.key !== 'horacio' && u.key !== 'alia' && !isSoft(u)) continue;
     for (const n of neighbors(cur).concat(shortcuts(u, cur))) {
       const s = sp(n);
       if (isInit(n) || blocked(n) || s.kind === 'camp') continue;
@@ -643,7 +660,41 @@ function reachable(u, extra) {
   }
   for (const id in best) if (id !== u.space && canStop(u, id)) out[id] = best[id];
   Object.defineProperty(out, 'prev', { value: prev, enumerable: false });
+  if (u.key === 'alia') {
+    const st = stealthReach(u, mp), paths = {};
+    for (const id in st) if (out[id] === undefined || st[id].cost < out[id]) { out[id] = st[id].cost; paths[id] = st[id].path; }
+    Object.defineProperty(out, 'stealthPath', { value: paths, enumerable: false });
+  }
   return out;
+}
+/* Alia, Sigilo: atraviesa espacios con Zeds sin combatir (cada uno cuesta 2 de Movimiento, ignora el Caos) y debe acabar en un espacio libre de Zeds.
+   Devuelve solo los destinos que obligan a atravesar Zeds, con su coste y recorrido. */
+function stealthReach(u, mp) {
+  const key = (id, f) => id + ':' + f, best = { [key(u.space, 0)]: 0 }, prev = {}, q = [[u.space, 0]], res = {};
+  while (q.length) {
+    const [cur, f] = q.shift(), cb = best[key(cur, f)];
+    if (cur !== u.space && raidAt(cur).length) continue;
+    const hasZ = cur !== u.space && zedsAt(cur).length > 0;
+    for (const n of neighbors(cur).concat(shortcuts(u, cur))) {
+      const s = sp(n);
+      if (isInit(n) || blocked(n) || s.kind === 'camp') continue;
+      if (G.turn.rain && s.route === 'M') continue;
+      if (s.bridge === 'down') continue;
+      if (!officeOk(u, s)) continue;
+      if (s.kind === 'bed' && cur !== 'C' && sp(cur).kind !== 'office') continue;
+      const c = cb + (G.spaces[n] ? moveCost(u, n) : 1) + (hasZ ? 1 : 0), nf = (f || hasZ) ? 1 : 0, k = key(n, nf);
+      if (c > mp) continue;
+      if (best[k] === undefined || c < best[k]) { best[k] = c; prev[k] = key(cur, f); if (s.bridge !== 'ferry') q.push([n, nf]); }
+    }
+  }
+  for (const k in best) {
+    const [id, f] = k.split(':'); if (f !== '1' || id === u.space) continue;
+    if (zedsAt(id).length || raidAt(id).length || !canStop(u, id)) continue;
+    if (res[id] && res[id].cost <= best[k]) continue;
+    const path = [id]; let c = k; for (let i = 0; i < 60 && prev[c]; i++) { c = prev[c]; path.push(c.split(':')[0]); }
+    res[id] = { cost: best[k], path: path.reverse() };
+  }
+  return res;
 }
 /* Recorrido (origen … destino) reconstruido con los predecesores de reachable(). */
 function pathTo(prev, start, dest) {

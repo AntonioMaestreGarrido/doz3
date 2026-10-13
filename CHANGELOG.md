@@ -2,6 +2,21 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-13 07:16
+
+### Mejoras
+- **Hormona anticrecimiento:** ya funciona. Al revelarla eliges un Súper Zed (o cancelas) y se sustituye por un Zed Normal conservando sus Impactos.
+- **Granada de Gas:** ahora repartes tú los 4 Impactos entre los Zeds del espacio objetivo.
+- **Botón «Volver al menú»:** el botón «Nueva partida» de la barra y el de la revisión final pasan a llamarse «Volver al menú».
+- **Alia, arte alternativo de los Súper Zeds y pantalla de introducción:** se publican también los cambios en curso de estas piezas.
+
+### Fixes
+- **«Nos llegaron noticias de tu muerte» y «Rumores de nuestra muerte»:** ya no se cuelgan cuando hay un héroe en el Cementerio.
+- **Zeds flambeados:** un Zed que cruza un espacio con Caos recibe 1 Impacto (antes 2), y ninguno si el Caos se coloca al entrar.
+- **Selección antinatural Zed:** roba dos fichas y se queda con la más débil, y también se aplica a los Súper Zeds.
+- **Combate:** si la Infección llega a 13 en mitad de un combate y la unidad cae, el combate ya no se cuelga.
+- **Súper Arma:** el cuarto componente sigue exigiendo a la Profesora Agee en el Laboratorio.
+
 ## 2026-10-12 11:04
 
 ### Mejoras

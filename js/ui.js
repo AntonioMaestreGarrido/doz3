@@ -8,6 +8,7 @@ function loadImg(k, src) { return new Promise(res => { const i = new Image(); i.
 async function loadAltArt() {
   if (typeof Opciones === 'undefined' || !Opciones.artAlt || typeof ALT_KEYS === 'undefined') return;
   const list = []; for (const k of ALT_KEYS) { if (!IMG['alt_' + k]) list.push(['alt_' + k, 'assets/arte_alt/tokens/' + k + '.webp']); if (!IMG['alt_' + k + '_r']) list.push(['alt_' + k + '_r', 'assets/arte_alt/tokens/' + k + '_r.webp']); }
+  for (const k of ALT_ZEDS) { const f = SUPER_ZEDS[k].img; for (const [id, suf] of [['altz_' + k, ''], ['altz_' + k + '_r', '_r']]) if (!IMG[id]) list.push([id, 'assets/arte_alt/zeds/' + f + suf + '.webp']); }
   await Promise.all(list.map(([k, src]) => loadImg(k, src)));
 }
 async function loadAssets() {
@@ -38,7 +39,7 @@ const ui = {
     document.addEventListener('error', e => {
       const t = e.target;
       /* Arte alternativo que no carga: vuelve a la imagen original. */
-      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
+      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)_r\.webp$/, 'assets/tokens/$1_reverso.png').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
       if (!t || t.tagName !== 'IMG' || !/assets\/cartas\//.test(t.getAttribute('src') || '')) return;
       const base = t.getAttribute('src').split('?')[0], n = +(t.dataset.retry || 0); if (n >= 4) return; t.dataset.retry = n + 1;
       setTimeout(() => { t.src = base + '?r=' + Date.now(); }, 400 * (n + 1));
@@ -166,7 +167,7 @@ const ui = {
       ['hernandez', 'cit', 'Ciudadela', 'disparo gratis desde el Centro'], ['seaver', 'medico', 'Médico', 'Curar en el Hospital'], ['seaver', 'aidseaver', 'Primeros auxilios', 'Curar (1 Sum.)'],
       ['salvacion', 'aidsalvacion', 'Campamento Médico', 'Curar (1 Sum.)'], ['bauer', 'bauer', 'Dispositivos explosivos', '2 Sum. → 1 Mun.'], ['agee', 'boost', 'Madre de la Ciencia', '+1 Acción de Evento (+3 Inf.)'],
       ['wzed', 'wzed', 'Transmisión de Emergencia', '1 acción a Civiles/Refugiados'], ['bomberos', 'libera', 'Autoridad Civil', 'liberar Civiles/Aldeanos'], ['lee', 'pura', 'Purasangre', '1 Mover para Lee'],
-      ['darling', 'zen', 'Zen', '1 acción al jugar «Guardar»'], ['carter', 'crepair', 'Reparar camión', '1 Impacto por turno'], ['porter', 'jefe', 'Jefe de equipo', '1 acción a Civiles']];
+      ['darling', 'zen', 'Zen', '1 acción al jugar «Guardar»'], ['carter', 'crepair', 'Reparar camión', '1 Impacto por turno'], ['porter', 'jefe', 'Jefe de equipo', '1 acción a Civiles'], ['alia', 'calle', 'Ya no es hora de estar en la calle', 'mover Civiles 2 hacia el Centro']];
     const ab = AB.filter(([k]) => alive(k)).map(([k, f, n, d]) => '<li class="sel' + (G.charUsed[f] ? ' used' : '') + '" data-uid="' + alive(k).id + '"><span>' + alive(k).name + ' — ' + n + '</span><span class="r">' + d + '</span></li>');
     if (alive('hernandez')) ab.push('<li class="sel' + (G.speechUsed ? ' used' : '') + '" data-uid="' + alive('hernandez').id + '"><span>' + alive('hernandez').name + ' — Discurso Motivador</span><span class="r">1 por partida</span></li>');
     if (alive('kingman')) { const k = alive('kingman').id; ab.push('<li class="sel' + (G.once.bast ? ' used' : '') + '" data-uid="' + k + '"><span>' + alive('kingman').name + ' — Bastión</span><span class="r">1 por partida</span></li>', '<li class="sel' + (G.once.mines ? ' used' : '') + '" data-uid="' + k + '"><span>' + alive('kingman').name + ' — Campo de Minas</span><span class="r">1 por partida</span></li>'); }
@@ -278,7 +279,7 @@ const ui = {
         if (m.type === 'move') ui.guard(async () => {
           if (!moveIsFree(u, sid)) spendActions(u, 1, 'move'); if (m.extra && dist > u.mp) G.turn.vehicle = 0;
           if (G.turn.heli && u.type === 'hero') { G.turn.heli = false; putUnit(u, sid); LOG(u.name + ' es recogido por el helicóptero.'); ui.redraw(); return; }
-          await doMove(u, sid, pathTo(m.opts.prev, u.space, sid));
+          await doMove(u, sid, (m.opts.stealthPath && m.opts.stealthPath[sid]) || pathTo(m.opts.prev, u.space, sid));
         });
         else ui.guard(async () => {
           if (m.free) { G.ammo--; G.charUsed.cit = true; await doFire(u, sid, dist, { shift: 1, shiftLabel: 'Ciudadela' }); }
@@ -352,6 +353,14 @@ const ui = {
     if (sel) { c.shadowColor = '#ffd54a'; c.shadowBlur = 26; } else if (r.glow) { c.shadowColor = r.glow; c.shadowBlur = 34; }
     if (u.type === 'train') { c.fillStyle = u.state === 'leaving' ? '#d9822b' : '#3c7fc4'; rr(c, -hw - 8, -hh / 2, r.w + 16, hh, 6); c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.fillText(u.tkey === 'local' ? 'TREN L' : 'TREN M', 0, 4); }
     else if (isZedSide(u)) {
+      const altz = u.type === 'super' && Opciones.artAlt && IMG['altz_' + u.key + (u.flipped ? '_r' : '')];
+      if (altz) {
+        c.save(); rr(c, -hw, -hh, r.w, r.h, 8); c.clip(); c.drawImage(altz, -hw, -hh, r.w, r.h); c.restore();
+        if (sel) { c.strokeStyle = '#ffd54a'; c.lineWidth = 5; rr(c, -hw, -hh, r.w, r.h, 8); c.stroke(); }
+        c.shadowBlur = 0;
+        if (u.hits) { c.font = '700 15px Segoe UI'; c.fillStyle = '#ff6b6b'; c.strokeStyle = '#000'; c.lineWidth = 3; c.textAlign = 'left'; const t = '♥'.repeat(u.hits); c.strokeText(t, -hw + 3, hh - 5); c.fillText(t, -hw + 3, hh - 5); }
+        let ty2 = -hh + 10; for (const [f, t, col] of [['zresist', 'R', '#c26b00'], ['fast', '»', '#2a7fc2'], ['toxic', 'T', '#4a9a1a'], ['smart', 'I', '#7a3fc2'], ['leader', 'L', '#c22a2a'], ['pest', 'P', '#6a6a1a']]) if (u[f]) { tag(c, -hw + 11, ty2, t, col); ty2 += 18; }
+      } else {
       const img = IMG[u.img] || IMG.zed;
       c.fillStyle = u.type === 'super' ? '#4a0d6a' : u.type === 'spreader' ? '#1d6a2a' : '#7a1d12'; rr(c, -hw, -hh, r.w, r.h, 8); c.fill();
       c.save(); rr(c, -hw + 3, -hh + 3, r.w - 6, r.h - 6, 6); c.clip(); if (img) c.drawImage(img, 0, 0, img.width, img.height, -hw + 2, -hh + 2, r.w - 4, r.h - 4); if (u.flipped) { c.fillStyle = 'rgba(40,0,0,.5)'; c.fillRect(-hw, -hh, r.w, r.h); } c.restore();
@@ -359,6 +368,7 @@ const ui = {
       badge(c, hw - 14, hh - 14, String(strength(u)), u.flipped ? '#5a1010' : '#a52a1b', '#fff');
       if (u.hits) { c.font = '700 15px Segoe UI'; c.fillStyle = '#ff6b6b'; c.strokeStyle = '#000'; c.lineWidth = 3; c.textAlign = 'left'; const t = '♥'.repeat(u.hits); c.strokeText(t, -hw + 3, hh - 5); c.fillText(t, -hw + 3, hh - 5); }
       let ty = -hh + 10; for (const [f, t, col] of [['zresist', 'R', '#c26b00'], ['fast', '»', '#2a7fc2'], ['toxic', 'T', '#4a9a1a'], ['smart', 'I', '#7a3fc2'], ['leader', 'L', '#c22a2a'], ['pest', 'P', '#6a6a1a']]) if (u[f]) { tag(c, -hw + 11, ty, t, col); ty += 18; }
+      }
     } else if (isSoft(u) && IMG[u.type === 'aldeano' ? 'u_aldeanos' : 'u_refugiados']) {
       const im = IMG[u.type === 'aldeano' ? 'u_aldeanos' : 'u_refugiados'], w = r.w + 12, h = w * im.height / im.width;
       c.drawImage(im, -w / 2, -h / 2, w, h); c.shadowBlur = 0; c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 4 : 2; rr(c, -w / 2, -h / 2, w, h, 12); c.stroke();
@@ -435,7 +445,7 @@ const ui = {
     return new Promise(res => {
       const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: '', img: null };
       const ov = document.createElement('div'); ov.className = 'superfx';
-      ov.innerHTML = '<div class="sfx-tok"><img src="assets/tokens/' + (d.img || 'sz_lobo') + '.png" alt=""></div>' +
+      ov.innerHTML = '<div class="sfx-tok"><img src="' + (zed.key && SUPER_ZEDS[zed.key] ? superImg(zed.key, false) : 'assets/tokens/' + (d.img || 'sz_lobo') + '.png') + '" alt=""></div>' +
         '<div class="sfx-info" hidden><h2>' + d.name + '</h2><p>' + d.txt + '</p><button class="primary" id="sfxOk">OK</button></div>';
       document.body.appendChild(ov);
       const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info');
@@ -446,6 +456,7 @@ const ui = {
         const dest = target && G.spaces[target];
         if (this.fast || !dest) { finish(); return; }
         /* Vuelo por fotogramas: la ficha va al espacio de destino donde esté en pantalla en cada fotograma. El mapa no hace zoom ni se mueve. */
+        if (this.view && this.view.z > 1.001) this.panTo(target);
         const cv = this.canvas, dur = 1600, ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         const live = () => { const r = cv.getBoundingClientRect(), k = r.width / cv.width; return { x: r.left + dest.x * k, y: r.top + dest.y * k }; };
         const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
@@ -689,7 +700,8 @@ const ui = {
   },
   /* Lo llama Sound.set al cambiar música: ajusta volumen o pausa/reanuda lo que esté sonando. */
   applyMusic() {
-    if (this._mus) this.musicOn();
+    /* El tema del menú solo vuelve en la portada, nunca durante la partida. */
+    if (this._mus && !this._bg) this.musicOn();
     this._gamePlay();
   },
   /* Filas de sonido (una por canal) y sus controles; las comparten el panel de Sonido y el de Opciones. */
@@ -720,11 +732,11 @@ const ui = {
   intro() {
     return new Promise(res => {
       /* Se salta solo si la recarga viene de volver al menú desde la partida (reloadToMenu). */
-      try { const skip = sessionStorage.getItem('doz3.skipIntro') === '1'; sessionStorage.removeItem('doz3.skipIntro'); if (skip) return res(); } catch (e) { }
-      const t = document.createElement('div'); t.id = 'intro';
-      t.innerHTML = '<img src="assets/intro.png" alt=""><p>Pulsa para empezar</p>';
-      document.body.appendChild(t);
-      const done = () => { t.remove(); res(); };
+      try { const skip = sessionStorage.getItem('doz3.skipIntro') === '1'; sessionStorage.removeItem('doz3.skipIntro'); if (skip) { document.body.classList.remove('booting'); const old = document.getElementById('intro'); if (old) old.remove(); return res(); } } catch (e) { }
+      /* La intro ya está en el HTML (visible desde el primer dibujo); si no existe, se crea aquí. */
+      let t = document.getElementById('intro');
+      if (!t) { t = document.createElement('div'); t.id = 'intro'; t.innerHTML = '<img src="assets/intro.png" alt=""><p>Pulsa para empezar</p>'; document.body.appendChild(t); }
+      const done = () => { t.remove(); document.body.classList.remove('booting'); res(); };
       t.onclick = () => {
         t.onclick = null; const p0 = t.querySelector('p'); if (p0) p0.remove();
         this.musicOn();
@@ -735,7 +747,8 @@ const ui = {
     });
   },
   musicStop() {
-    const m = this._mus; if (!m || m.paused) return; this._mus = null;
+    /* Siempre suelta la referencia: si el tema del menú estaba pausado (sonido apagado), no debe volver a sonar en la partida. */
+    const m = this._mus; this._mus = null; if (!m) return; if (m.paused) { m.pause(); return; }
     const f = setInterval(() => { m.volume = Math.max(0, m.volume - .05); if (m.volume <= 0) { clearInterval(f); m.pause(); } }, 80);
   },
   /* Música de partida: dos temas de fondo que se turnan, un tema de peligro y «Last Stand» (ver turnMusic). */
@@ -874,7 +887,7 @@ const ui = {
     $('modal').hidden = true;
     let bar = $('revbar'); if (bar) bar.remove();
     bar = document.createElement('div'); bar.id = 'revbar';
-    bar.innerHTML = '<span>Partida terminada · revisando el tablero</span><button id="revBack" class="primary">Volver al resumen</button><button id="revNew">Nueva partida</button>';
+    bar.innerHTML = '<span>Partida terminada · revisando el tablero</span><button id="revBack" class="primary">Volver al resumen</button><button id="revNew">Volver al menú</button>';
     document.body.appendChild(bar);
     $('revBack').onclick = () => { bar.remove(); ui._modal(ui._endHtml); ui._bindEnd(); };
     $('revNew').onclick = () => ui.reloadToMenu();

@@ -405,3 +405,6 @@ body:has(#title.bgnew) #modalbox.setup .opts{margin-top:6px}
 #routebtns{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding-top:6px;position:relative;z-index:3}
 #routebtns button{font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(10,8,6,.9);color:var(--ink);cursor:pointer}
 #routebtns button:hover{border-color:var(--gold);color:var(--gold)}
+
+/* Al cargar, la portada del juego queda oculta hasta que termina la intro (así no se ve el esqueleto de la página). */
+body.booting #app{visibility:hidden}

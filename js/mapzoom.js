@@ -26,6 +26,13 @@ Object.assign(ui, {
     v.z = nz; v.tx = px - cv.offsetLeft - nz * lx; v.ty = py - cv.offsetTop - nz * ly;
     this.clampView(); this.applyView();
   },
+  /* Desplaza la vista (sin cambiar el zoom) para centrar un espacio. El CSS de #map anima el movimiento. */
+  panTo(id) {
+    const cv = this.canvas, w = $('mapwrap'), s = G.spaces && G.spaces[id]; if (!cv || !w || !s) return;
+    const k = cv.clientWidth / cv.width, v = this.view;
+    v.tx = w.clientWidth / 2 - cv.offsetLeft - s.x * k * v.z; v.ty = w.clientHeight / 2 - cv.offsetTop - s.y * k * v.z;
+    this.clampView(); this.applyView();
+  },
   /* Acerca el mapa para ver una ruta entera (o el Centro, con r = 'C'). Usa la misma vista que el zoom del usuario. */
   zoomToRoute(r) {
     const cv = this.canvas, w = $('mapwrap'); if (!cv || !w || !G.spaces) return;

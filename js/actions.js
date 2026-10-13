@@ -39,7 +39,11 @@ async function applyResearch(c) {
     case 'musica': { const c = allUnits(x => isZedSide(x) && isRouteSp(x.space)).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, '¡Bajad la música!: elige un espacio; sus Zeds se retiran.'); await retreatZeds(zedsAt(t), zedOrigin(zedsAt(t)[0])); } break; }
     case 'cientificos': { const cs = Object.values(G.spaces).filter(s => s.chaos); if (cs.length) { const t = cs[0]; t.chaos--; G.chaosLeft++; } break; }
     case 'pruebas': if (G.weapon && G.weapon.parts.length) G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); else pushInitialResearch(1); break;
-    case 'hormona': break;
+    case 'hormona': {
+      const sup = allUnits(x => x.type === 'super' && x.space && isRouteSp(x.space)); if (!sup.length) break;
+      const v = await UI.pickUnit(sup, 'Hormona anticrecimiento: elige el Súper Zed que se reemplaza por un Zed Normal (o cancela).', true); if (v == null) break;
+      const z = G.units[v], w = z.space, hits = z.hits; G.supers.push(z.key); removeUnit(z); delete G.units[z.id];
+      const nz = makeZed(); if (nz) { putUnit(nz, w); nz.hits = Math.min(hits, (nz.hf || 2) - 1); LOG('Hormona anticrecimiento: el Súper Zed se sustituye por un Zed de Fuerza ' + nz.full + '.', 'good'); } UI.redraw(); break; }
     case 'heroe_c': { const k = Object.keys(HEROES).find(x => (HEROES[x].sci || /Cient/.test(HEROES[x].cls)) && !hero(x) && !G.cemetery.some(c => c.key === x) && heroAllowed(x)); if (k) await spawnHero(k, 'C'); else LOG('No hay ningún Científico disponible en este nivel.'); break; }
     case 'antidoto': {
       if (!G.finalPlaced) { G.finalPlaced = true; LOG('Componente Final colocado en el Laboratorio.', 'good'); G.res.deck.splice(rnd(G.res.deck.length + 1), 0, 'antidoto'); }
@@ -130,6 +134,7 @@ function unitActions(u) {
     if (u.key === 'jones') A.push({ id: 'planes', label: 'Sus Propios Planes', ok: cu('planes') });
     if (u.key === 'jones' && G.res && u.space && sp(u.space).kind === 'office') A.push({ id: 'jhosp', label: 'Sus Propios Planes: paciente al Cementerio + Investigación', ok: cu('planes') && G.res.deck.length > 0 && hospitalUnits(u).length > 0 });
     if (u.key === 'hunt') A.push({ id: 'lid', label: 'Liderazgo', ok: cu('lid') });
+    if (u.key === 'alia') A.push({ id: 'calle', label: 'Ya no es hora de estar en la calle', ok: cu('calle') && calleTargets(u).length > 0 });
     if (u.key === 'porter') A.push({ id: 'jefe', label: 'Jefe de equipo', ok: cu('jefe') && jefeTargets(u).length > 0 });
     if (u.key === 'hernandez') { A.push({ id: 'cit', label: 'Ciudadela', ok: cu('cit') && G.ammo >= 1 }); A.push({ id: 'spe', label: 'Discurso Motivador', ok: !G.speechUsed }); }
     if (u.key === 'hauser') { A.push({ id: 'train', label: 'Entrenar Civiles (1 acc.)', ok: pay(1) && allUnits(x => x.type === 'civ' && !x.trained && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))).length > 0 }); A.push({ id: 'recruit', label: 'Reclutar (1 Munición)', ok: u.space === 'C' && G.ammo >= 1 && pay(1) }); }
@@ -151,6 +156,16 @@ function canBuildBar(u) { const r = sp(u.space).route; for (let i = 0; i <= last
 
 /* Civiles (normales o heroicos) en el espacio de Porter o adyacente: a quienes puede dar 1 acción gratis (Jefe de equipo). */
 const jefeTargets = u => allUnits(x => (x.type === 'civ' || x.type === 'civh') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)));
+/* Alia, «Ya no es hora de estar en la calle»: Civiles (normales o heroicos) o Refugiados en su espacio o adyacente que puedan avanzar hacia el Centro. */
+const calleDests = x => {
+  if (!x.space || x.ecg || !sp(x.space).route || x.space === 'C') return [];
+  const s1 = nextToward(x.space), out = [], soft = isSoft(x);
+  const stop = id => canStop(x, id) && !(soft && zedsAt(id).length);
+  if (stop(s1)) out.push(s1);
+  if (s1 !== 'C' && !blocked(s1) && !zedsAt(s1).length && !raidAt(s1).length && !sp(s1).chaos && sp(s1).bridge !== 'down') { const s2 = nextToward(s1); if (stop(s2)) out.push(s2); }
+  return out;
+};
+const calleTargets = u => allUnits(x => (x.type === 'civ' || x.type === 'civh' || x.type === 'refugee') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)) && calleDests(x).length);
 /* Unidades del Hospital (camas y Oficinas del Personal) a las que Jones puede trasladar al Cementerio; no cuenta él mismo. */
 const hospitalUnits = self => ['H1', 'H2', 'H3', 'H4', 'O1', 'O2'].filter(k => G.spaces[k]).flatMap(k => unitsAt(k)).filter(x => x.id !== self.id);
 async function runAction(u, id) {
@@ -167,6 +182,7 @@ async function runAction(u, id) {
     case 'ini': G.charUsed.ini = true; u.free++; LOG('Schmidt usa Iniciativa: 1 acción gratis para él.', 'good'); break;
     case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
+    case 'calle': { const c = calleTargets(u); if (!c.length) { LOG('No hay Civiles que puedan avanzar.'); break; } const v = c.length === 1 ? c[0].id : await UI.pickUnit(c, 'Elige la unidad que avanza hacia el Centro.', true); if (v == null) break; const x = G.units[v], ds = calleDests(x); const d = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Alia: elige el destino de ' + x.name + ' (hasta 2 espacios hacia el Centro).', true); if (d == null) break; G.charUsed.calle = true; if (x.resist) { x.resist = false; LOG(x.name + ' deja de estar Resistiendo.'); } LOG('Alia manda a ' + x.name + ' hacia el Centro.', 'good'); await doMove(x, d, [x.space, d]); break; }
     case 'jefe': { const c = jefeTargets(u); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Jefe de equipo: elige la unidad de Civiles que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.jefe = true; G.units[v].free++; LOG('Jefe de equipo: ' + G.units[v].name + ' recibe 1 acción gratis.', 'good'); break; }
     case 'lid': { const c = allUnits(x => (x.type === 'civ' || x.type === 'civh' || x.type === 'marine') && x.key !== 'horacio' && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Liderazgo: elige la unidad que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.lid = true; G.units[v].free++; break; }
     case 'cit': { const sh = unitsAt('C').filter(x => isFighter(x) && x.side === 'pl' && x.id !== u.id && Object.keys(fireTargets(x)).length && !x.nofire); if (!sh.length) { LOG('Ciudadela: ningún tirador del Centro tiene objetivos.'); break; } let s = sh[0]; if (sh.length > 1) { const sv = await UI.pickUnit(sh, 'Ciudadela: elige quién dispara.', true); if (sv == null) break; s = G.units[sv]; } UI.mode = { type: 'fire', unit: s, opts: fireTargets(s), free: true }; UI.setBanner('Ciudadela: elige el objetivo'); UI.redraw(); break; }
@@ -188,7 +204,7 @@ async function runAction(u, id) {
       if (!zs.length) { LOG('Mangueras (' + tot + '): ningún Zed adyacente tiene Fuerza ' + tot + ' o menos.', 'bad'); break; }
       const z = zs.length === 1 ? zs[0] : G.units[await UI.pickUnit(zs, 'Mangueras (' + tot + '): elige el Zed que se retira.')];
       LOG('Mangueras (' + tot + '): ' + z.name + ' se retira.', 'good'); await retreatZeds([z], zedOrigin(z)); UI.redraw(); break; }
-    case 'granada': { const nb = adjacentIds(u.space).filter(i => zedsAt(i).length && !isInit(i)); if (!nb.length) { spendActions(u, 1); break; } const t = nb.length === 1 ? nb[0] : await UI.pickSpace(nb, 'Granada de Gas: elige el espacio adyacente.', true); if (t == null) break; spendActions(u, 1); const zs = zedsAt(t); let n = 4; while (n-- > 0 && zedsAt(t).length) { const cur = zedsAt(t).sort((a, b) => a.hits - b.hits)[0]; await hitZed(cur); } await placeChaos(t, 1); break; }
+    case 'granada': { const nb = adjacentIds(u.space).filter(i => zedsAt(i).length && !isInit(i)); if (!nb.length) { spendActions(u, 1); break; } const t = nb.length === 1 ? nb[0] : await UI.pickSpace(nb, 'Granada de Gas: elige el espacio adyacente.', true); if (t == null) break; spendActions(u, 1); for (let n = 1; n <= 4 && zedsAt(t).length; n++) { const zs = zedsAt(t); const cur = zs.length === 1 ? zs[0] : G.units[await UI.pickUnit(zs, 'Granada de Gas: reparte el Impacto ' + n + '/4 entre los Zeds de ' + spaceLabel(t) + '.')]; await hitZed(cur); } await placeChaos(t, 1); break; }
   }
 }
 const pay1 = u => canPay(u, 1);
