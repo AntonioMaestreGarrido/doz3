@@ -379,7 +379,7 @@ Habilidades:
   - Ensillar: puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento.
   - Carga de caballería: cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir.
   - Purasangre: recibe 1 Acción de Mover gratis por fase de Acciones.
-  - Instinto equino: no puede entrar voluntariamente en un espacio con Caos ni en el Túnel con jinete. Puede llevar a un herido al Hospital («Galope al Hospital»).
+  - Instinto equino: cuando no transporta a un jinete, no puede entrar voluntariamente en un espacio con Caos ni en la ruta del Túnel. Puede llevar a un herido al Hospital («Galope al Hospital»).
   - Un caballo es un caballo: no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.
 Trasfondo (flavor text): [pendiente: en la trasera de carta]
 

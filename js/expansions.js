@@ -9,13 +9,13 @@ Object.assign(HEROES, {
   carter: { name: 'Carter «Ruedas Grandes»', type: 'hero', cls: 'Montado', full: 8, red: 4, mp: 5, img: 'carter', card: 'h_carter', lv: 3, exp: 1, nofire: 1, hf: 3, hr: 3, special: 'carter',
     txt: ['<b>El rey de la carretera:</b> solo rutas de la superficie; no dispara, arresta ni usa otros vehículos; no sube la Infección al combatir. No tiene que parar al conducir por el Caos (pero no empieza un movimiento desde él).', '<b>Transportista de Cargamento:</b> entra por un Inicial con la ficha en «Cargado». Al llegar al Centro cargado, el movimiento termina: +5 Suministros y +3 Munición, y se da la vuelta a «Vacío». Recarga en un Inicial con 1 Acción.', '<b>Barrer Zeds:</b> al cruzar un espacio con Zeds (si le quedan puntos): 1 dado, 4-6 inflige 1 Impacto a cada Zed y sigue; si falla se detiene y combate.', '<b>Reparar:</b> solo sufre Impactos su camión (6 en total). En el Centro o un Inicial retira 1 Impacto por turno (1 Suministro o 1 Acción).'] },
   lee:    { name: 'General Lee', type: 'hero', cls: 'Equino', full: 2, red: 1, mp: 6, img: 'lee', card: 'h_lee', lv: 2, exp: 1, nofire: 1, special: 'lee',
-    txt: ['<b>Ensillar:</b> puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento.', '<b>Carga de caballería:</b> cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir.', '<b>Purasangre:</b> recibe 1 Acción de Mover gratis por fase de Acciones.', '<b>Instinto equino:</b> no puede entrar voluntariamente en un espacio con Caos ni en el Túnel con jinete. Puede llevar a un herido al Hospital («Galope al Hospital»).', '<b>Un caballo es un caballo:</b> no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.'] },
+    txt: ['<b>Ensillar:</b> puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento.', '<b>Carga de caballería:</b> cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir.', '<b>Purasangre:</b> recibe 1 Acción de Mover gratis por fase de Acciones.', '<b>Instinto equino:</b> cuando no transporta a un jinete, no puede entrar voluntariamente en un espacio con Caos ni en la ruta del Túnel. Puede llevar a un herido al Hospital («Galope al Hospital»).', '<b>Un caballo es un caballo:</b> no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.'] },
   jaque:  { name: 'Jaque Mates™', type: 'civh', cls: 'Civiles Heroicos', full: 1, red: 1, mp: 3, img: 'jaque', card: 'h_jaque', lv: 2, exp: 1, hf: 2, hr: 2, special: 'jaque',
     txt: ['<b>Estrategas:</b> al comienzo de cada fase de Acciones tira 1 dado: si es mayor que tus Acciones de Evento, obtienes 1 Acción de Evento más (incluso por encima de 4).', '<b>Ruse de jeu:</b> por cada Refugiados en el Campo de Refugiados su Fuerza aumenta +1 (cara completa) y +½ (cara reducida, redondeando abajo).'] },
   porter: { name: 'Antonio «Porter» Maestre', type: 'hero', cls: 'Ciudadano', full: 5, red: 3, mp: 4, img: 'porter', card: 'h_porter', lv: 1, exp: 4, res: 'f',
     txt: ['<b>Artes marciales:</b> +1 columna a favor al defender Cuerpo a Cuerpo. Puede repetir cualquier tirada Cuerpo a Cuerpo (la segunda es definitiva).', '<b>En zapatillas no se puede pasar:</b> si un Zed intenta entrar en su espacio o en uno adyacente, con 4-6 se cancela su movimiento. Máximo 1 por fase de los Zeds; los fallos no cuentan. Antes del combate.', '<b>Jefe de equipo:</b> Acción de Personaje, 1 vez por fase de Acciones: 1 Acción gratis a una unidad de Civiles (normales o heroicos) en su espacio o adyacente.', '<b>Resistente:</b> ignora Impactos con 5-6.'] },
   alia:   { name: 'Alia «Ghost (of Tsushima)»', type: 'hero', cls: 'Ciudadana', full: 4, red: 2, mp: 5, img: 'alia', card: 'h_alia', lv: 2, exp: 4, rapi: 1,
-    txt: ['<b>Sigilo:</b> puede atravesar espacios con Zeds sin combatir; cada uno cuesta 2 de Movimiento. Debe acabar en un espacio libre de Zeds e ignora el Caos al moverse.', '<b>Emboscada (katana):</b> +2 columnas al atacar Cuerpo a Cuerpo a Zeds situados más cerca del Centro que ella en la misma ruta (se compara su posición antes del ataque).', '<b>Evasión:</b> al entrar un Zed en su espacio, tira 1 dado. Con 4-6 se retira gratis 1 espacio hacia el Centro, si está libre de Zeds, antes de combatir.', '<b>Parada perfecta:</b> +1 columna al defender Cuerpo a Cuerpo. Una vez por turno repite una tirada defensiva; vale el segundo resultado.', '<b>Ya no es hora de estar en la calle:</b> Acción de Personaje, 1 vez por fase de Acciones: mueve gratis hasta 2 espacios hacia el Centro a una unidad de Civiles (normales o heroicos) o Refugiados en su espacio o adyacente.', '<b>A que voy yo y lo encuentro:</b> al Buscar, tira 2 dados y elige el mejor resultado.'] }
+    txt: ['<b>Sigilo:</b> puede atravesar espacios con Zeds sin combatir; cada uno cuesta 2 de Movimiento. Debe acabar en un espacio libre de Zeds e ignora el Caos al moverse.', '<b>Emboscada (katana):</b> +2 columnas al atacar Cuerpo a Cuerpo a Zeds situados más cerca del Centro que ella en la misma ruta (se compara su posición antes del ataque).', '<b>Evasión:</b> al entrar un Zed en su espacio, tira 1 dado. Con 4-6 se retira gratis 1 espacio hacia el Centro, si está libre de Zeds, antes de combatir.', '<b>Parada perfecta:</b> +1 columna al defender Cuerpo a Cuerpo. Una vez por turno repite una tirada defensiva; vale el segundo resultado.', '<b>Ya no es hora de estar en la calle:</b> Acción de Personaje, 1 vez por fase de Acciones: mueve gratis hasta 2 espacios hacia el Centro a una unidad de Civiles (normales o heroicos) o Refugiados en su espacio o adyacente.', '<b>A que voy yo y lo encuentro:</b> al Buscar, tira 2 dados y elige el mejor resultado (con dobles naturales busca dos veces, como un Rapiñador).'] }
 });
 CIVH_POOL.push('jaque');
 const EXP_HEROES = { 1: ['carter', 'lee', 'may'], 2: ['betty'], 4: ['porter', 'alia'] };
@@ -45,7 +45,7 @@ const RUMORS = {
   ferreteria: { t: 'G', name: 'Gran superficie de ferretería', txt: 'Úsala en cualquier momento: +7 Suministros.' },
   ayuda:      { t: 'G', name: '¡Llegó la ayuda!', txt: 'Úsala en la fase de Acciones: coloca un Héroe o Civiles Heroicos disponible en el Centro o en un Inicial.' },
   deposito:   { t: 'G', name: 'Depósito de armas de la policía', txt: 'Úsalo en cualquier momento: +5 Munición.' },
-  tesis:      { t: 'G', name: 'Tesis: ¿Qué hemos aprendido?', txt: 'Úsala en cualquier momento: recupera hasta 3 cartas de Destino del descarte («guardar» o no).' },
+  tesis:      { t: 'G', name: 'Tesis: ¿Qué hemos aprendido?', txt: 'Úsala en cualquier momento: recupera hasta 3 cartas «Guardar para más tarde» del descarte de Destino; pasan a tu mano y puedes volver a usarlas.' },
   muerte:     { t: 'G', name: 'Rumores de nuestra muerte', txt: 'Úsalos en la fase de Acciones: recupera hasta 2 unidades del Cementerio en el Centro con Fuerza reducida.' },
   telefono:   { t: 'G', name: 'El teléfono rojo', txt: 'Úsalo en la fase de Acciones: bombardeo de napalm sobre un espacio de la superficie (no Inicial) y otro adyacente: todo lo que haya se elimina; Caos en cada uno y «No Pasar» en el más lejano del Centro.' },
   plan:       { t: 'G', name: 'Plan de guerra negro', txt: 'Úsalo en la fase de Acciones: +2 Munición y +1 Suministro.' },
@@ -129,7 +129,7 @@ function lee_with(h) { const l = hero('lee'); return l && l.space && l.space ===
 /* ---------- combate: ajustes de las expansiones ---------- */
 function meleeStrengthBonus(f, o) {
   let b = 0;
-  const may = alive('may'); if (may && f.side === 'pl' && f.space === may.space && f.type !== 'train') b += 1;
+  const may = alive('may'); if (may && f !== may && f.side === 'pl' && f.space === may.space && f.type !== 'train') b += 1;
   if (f.type === 'hero' && lee_with(f)) b += 1;
   return b;
 }
@@ -149,6 +149,7 @@ refugeeArrives = async function (u) {
   await _refugeeArrives(u);
   if (!expOn(3) || !G.rumorPool.length) return;
   const dr = await drawDestiny(); if (!dr) return;
+  if (Object.values(G.spaces).some(s => s.route === dr.route && s.rumor)) { LOG('Rumor perdido: esa ruta ya tiene un Rumor sin revelar.'); await resolveTwist(dr); return; }
   const zs = routeZeds(dr.route).filter(z => !isInit(z.space) && !sp(z.space).rumor);
   if (!zs.length) { LOG('Rumor perdido: no hay dónde colocarlo.'); await resolveTwist(dr); return; }
   const by = {}; for (const z of zs) by[z.space] = (by[z.space] || 0) + strength(z);
@@ -176,10 +177,10 @@ async function useRumor(k) {
     case 'ferreteria': G.supplies = Math.min(20, G.supplies + 7); rm(); break;
     case 'deposito': G.ammo = Math.min(20, G.ammo + 5); rm(); break;
     case 'plan': G.ammo = Math.min(20, G.ammo + 2); G.supplies = Math.min(20, G.supplies + 1); G.turn.combineFire = true; LOG('Plan de guerra negro: este turno las unidades agrupadas combinan su Fuerza al disparar.', 'good'); rm(); break;
-    case 'tesis': { for (let i = 0; i < 3 && G.destDiscard.length; i++) { const opts = G.destDiscard.map((c, j) => ({ label: DEST[c].name, value: j, img: destImg(c), keep: DEST[c] && DEST[c].keep })).filter(o => o.keep); if (!opts.length) break; const v = await UI.chooseCards({ title: 'Tesis', text: 'Recupera una carta del descarte de Destino (' + (i + 1) + '/3):', options: opts, extra: [{ label: 'Terminar', value: -1 }] }); if (v < 0) break; const c = G.destDiscard.splice(v, 1)[0]; G.destDeck.push(c); shuffle(G.destDeck); } rm(); break; }
+    case 'tesis': { for (let i = 0; i < 3 && G.destDiscard.length; i++) { const opts = G.destDiscard.map((c, j) => ({ label: DEST[c].name, value: j, img: destImg(c), keep: DEST[c] && DEST[c].keep })).filter(o => o.keep); if (!opts.length) break; const v = await UI.chooseCards({ title: 'Tesis', text: 'Recupera una carta del descarte de Destino (' + (i + 1) + '/3):', options: opts, extra: [{ label: 'Terminar', value: -1 }] }); if (v < 0) break; const c = G.destDiscard.splice(v, 1)[0]; G.hand.push(c); LOG('Tesis: recuperas «' + DEST[c].name + '» y pasa a tu mano.', 'good'); } UI.updateHand(); rm(); break; }
     case 'muerte': { for (let i = 0; i < 2; i++) { const cs = G.cemetery.filter(isFighter); if (!cs.length) break; const v = await UI.chooseCards({ title: 'Rumores de nuestra muerte', text: 'Elige una unidad:', options: cs.map(u => unitOpt(u)) }); const u = G.units[v]; G.cemetery = G.cemetery.filter(x => x !== u); putUnit(u, 'C'); u.flipped = true; u.hits = 0; u.ecg = false; } rm(); break; }
     case 'ayuda': { const pool = heroPoolFor(G.lv.n).concat(CIVH_POOL.filter(x => civhAvail(x) && HEROES[x].lv <= MAX_CIVH_LV[G.lv.n])).filter((x, i, a) => a.indexOf(x) === i && !hero(x) && !G.cemetery.some(c => c.key === x)); const key = !pool.length ? null : pool.length === 1 ? pool[0] : await UI.chooseCards({ title: '¡Llegó la ayuda!', text: 'Elige la unidad que llega.', options: pool.map(heroOpt) }); if (key) { const w = await UI.pickSpace(['C'].concat(G.routes.filter(r => r !== 'T').map(r => r + '0')), '¡Llegó la ayuda!: elige el espacio.'); await spawnHero(key, w); rm(); } break; }
-    case 'telefono': { const c = Object.values(G.spaces).filter(s => s.route && s.route !== 'T' && s.i > 0); const a = await UI.pickSpace(c.map(s => s.id), 'Napalm: primer espacio.', true); if (a == null) break; const adj = adjacentIds(a).filter(i => isRouteSp(i) && !isInit(i) && sp(i).route === sp(a).route); const b = adj.length ? await UI.pickSpace(adj, 'Napalm: espacio adyacente (o el mismo).') : a; for (const id of [a, b].filter((v, i, x) => x.indexOf(v) === i)) { for (const u of unitsAt(id).slice()) { if (isZedSide(u)) { if (u.type === 'super') { removeUnit(u); delete G.units[u.id]; } else if (u.type === 'spreader') { removeUnit(u); delete G.units[u.id]; } else discardZed(u); } else if (u.side === 'pl' || u.side === 'raid') { await sendCemetery(u, 'es calcinada'); } } await placeChaos(id, 1); } G.turn.block.push(sp(a).i < sp(b).i ? a : b); rm(); break; }
+    case 'telefono': { const c = Object.values(G.spaces).filter(s => s.route && s.route !== 'T' && s.i > 0); const a = await UI.pickSpace(c.map(s => s.id), 'Napalm: primer espacio.', true); if (a == null) break; const adj = adjacentIds(a).filter(i => isRouteSp(i) && !isInit(i) && sp(i).route === sp(a).route); const b = adj.length ? await UI.pickSpace(adj, 'Napalm: espacio adyacente (o el mismo).') : a; for (const id of [a, b].filter((v, i, x) => x.indexOf(v) === i)) { for (const u of unitsAt(id).slice()) { if (isZedSide(u)) { if (u.type === 'super') { removeUnit(u); delete G.units[u.id]; } else if (u.type === 'spreader') { removeUnit(u); delete G.units[u.id]; } else discardZed(u); } else if (u.type === 'train' || u.type === 'aldeano') { removeUnit(u); delete G.units[u.id]; } else if (u.side === 'pl' || u.side === 'raid') { LOG(u.name + ' es calcinada: se elimina (con su tirada de Salvación).', 'bad'); await unitDown(u); } } const sx = sp(id); sx.bar = 0; sx.mine = 0; sx.rumor = null; await placeChaos(id, 1); } G.turn.block.push(sp(a).i < sp(b).i ? a : b); rm(); break; }
     case 'diario': { const sup = allUnits(x => x.type === 'super'); if (sup.length) { const v = await UI.pickUnit(sup, 'Elige el Súper Zed que se retira.', true); if (v == null) break; const z = G.units[v]; G.supers.push(z.key); removeUnit(z); delete G.units[z.id]; } if (G.res) await revealResearch(); rm(); break; }
   }
   UI.updateStats(); UI.redraw();
@@ -216,16 +217,18 @@ async function moveTrain(t, dest) {
   if (zedsAt(dest).length) { const pl = plAt(dest); if (pl.length) await melee({ zeds: zedsAt(dest), hum: pl, space: dest, attacker: 'h', from: t.space }); }
   UI.redraw(); UI.updateStats();
 }
-async function doTrainAction(t, id) {
+async function doTrainAction(t, id, opts) {
+  opts = opts || {}; let withRefugees = false;
   if (id === 'tmove') {
     const dests = await trainDestinations(t); if (!dests.length) { LOG('El tren no puede ir a ningún sitio.'); return; }
-    const cands = unitsAt(t.space).filter(x => (isFighter(x) && !x.mount && x.key !== 'lee' || x.type === 'refugee') && x.type !== 'train');
+    const cands = unitsAt(t.space).filter(x => (isFighter(x) && !x.mount && x.key !== 'lee' || x.type === 'refugee') && x.type !== 'train' && x.type !== 'guard');  /* la Guardia Nacional no sube a los trenes */
     let carried = [];
     if (cands.length) { for (let k = 0; k < 2; k++) { const c = cands.filter(x => !carried.includes(x)); if (!c.length) break; const v = await UI.choose({ title: 'Pasajeros', text: 'Sube pasajeros al ' + t.name + ' (máx. 2 unidades o 1 de Refugiados; subir Refugiados cuesta 1 Acción más).', options: c.filter(x => x.type !== 'refugee' || canPay(null, 2)).map(x => ({ label: x.name, value: x.id })).concat([{ label: 'Salir ya', value: '' }]) }); if (!v) break; const x = G.units[v]; if (x.type === 'refugee') { if (carried.length) break; carried.push(x); break; } if (carried.some(y => y.type === 'refugee')) break; carried.push(x); } }
     const d = await UI.pickSpace(dests, 'Elige el destino del tren.', true); if (d == null) return;
     carried.forEach(x => x.ride = t.id);
-    spendActions(null, 1, 'move'); if (carried.some(x => x.type === 'refugee')) spendActions(null, 1);
-    await moveTrain(t, d);
+    withRefugees = carried.some(x => x.type === 'refugee');
+    if (!opts.free) { spendActions(null, 1, 'move'); if (withRefugees) spendActions(null, 1); }
+    await moveTrain(t, d); return withRefugees;
   } else if (id === 'tflip') { spendActions(null, 1); t.state = t.state === 'leaving' ? 'returning' : 'leaving'; LOG(t.name + ' cambia de sentido.'); }
 }
 /* ---------- Carter ---------- */
@@ -268,12 +271,12 @@ unitActions = function (u) {
   if (u.type === 'train') return [{ id: 'tmove', label: 'Mover tren', ok: pay(1) && !sp(u.space).chaos && !(G.turn.cLock && u.space === 'C') }, { id: 'tflip', label: u.state === 'leaving' ? 'Dar la vuelta (volver)' : 'Dar la vuelta (salir)', ok: pay(1) && u.space !== 'C' && !controlled(u.space) }];
   if (u.key === 'carter') { A = A.filter(a => a.id !== 'move'); A.unshift({ id: 'cmove', label: 'Conducir', ok: act && canPay(u, 1, 'move') && !(G.turn.cLock && u.space === 'C') });
     if (u.space && (isInit(u.space) || u.space === 'C')) { A.push({ id: 'creload', label: 'Recargar cargamento (1 acc.)', ok: isInit(u.space) && !u.loaded && pay(1) }); }
-    A.push({ id: 'crepair', label: 'Reparar camión (1 Sum. o 1 acc.)', ok: (u.space === 'C' || isInit(u.space)) && (u.hits > 0 || u.flipped) && !G.charUsed.crepair && (G.supplies >= 1 || pay(1)) }); }
+    A.push({ id: 'crepair', label: 'Reparar camión (1 Sum. o 1 acc.)', ok: (u.space === 'C' || isInit(u.space)) && (u.hits > 0 || u.flipped) && !G.charUsed.crepair && u.curedTurn !== G.turnNo && (G.supplies >= 1 || pay(1)) }); }
   if (u.key === 'lee') {
     const near = unitsAt(u.space).filter(x => x.type === 'hero' && x.key !== 'lee' && !x.mount && x.key !== 'carter' && x.key !== 'pepinillos' || (x.key === 'horacio' && x.space === u.space && !x.mount));
-    A.push({ id: 'lmount', label: 'Montar a un Héroe', ok: !u.rider && near.length > 0 });
-    A.push({ id: 'ldis', label: 'Desmontar al jinete', ok: !!u.rider });
-    A.push({ id: 'lpura', label: 'Purasangre (1 Mover gratis)', ok: !G.charUsed.pura });
+    A.push({ id: 'lmount', label: 'Montar a un Héroe', ok: act && !u.rider && near.length > 0 });
+    A.push({ id: 'ldis', label: 'Desmontar al jinete', ok: act && !!u.rider });
+    A.push({ id: 'lpura', label: 'Purasangre (1 Mover gratis)', ok: act && !G.charUsed.pura });
     if (u.rider) A.push({ id: 'lhosp', label: 'Galope al Hospital con el jinete', ok: G.lv.infection && act && canPay(u, 1, 'move') && !(G.turn.cLock && u.space === 'C') });
   }
   if (u.mount) { A = A.filter(a => a.id !== 'move'); }
@@ -288,7 +291,7 @@ runAction = async function (u, id) {
   switch (id) {
     case 'cmove': { const info = carterReach(u); const ids = Object.keys(info); if (!ids.length) { LOG('Carter no puede ir a ningún sitio.'); return; } const d = await UI.pickSpace(ids, 'Carter: elige el destino.', true); if (d == null) return; spendActions(u, 1, 'move'); await carterMove(u, d, info[d]); return; }
     case 'creload': spendActions(u, 1); u.loaded = true; LOG('Carter recoge un nuevo cargamento.', 'good'); return;
-    case 'crepair': { let how = G.supplies >= 1 ? 's' : 'a'; if (G.supplies >= 1 && canPay(u, 1)) how = await UI.choose({ title: 'Reparar camión', text: '¿Cómo pagas la reparación?', options: [{ label: '1 Suministro (tienes ' + G.supplies + ')', value: 's' }, { label: '1 Acción', value: 'a' }], cancel: true }); if (how == null) return; if (how === 's') G.supplies--; else spendActions(u, 1); G.charUsed.crepair = true; if (u.hits > 0) u.hits--; else if (u.flipped) { u.flipped = false; u.hits = 2; } LOG('Carter repara su camión.', 'good'); UI.updateStats(); return; }
+    case 'crepair': { let how = G.supplies >= 1 ? 's' : 'a'; if (G.supplies >= 1 && canPay(u, 1)) how = await UI.choose({ title: 'Reparar camión', text: '¿Cómo pagas la reparación?', options: [{ label: '1 Suministro (tienes ' + G.supplies + ')', value: 's' }, { label: '1 Acción', value: 'a' }], cancel: true }); if (how == null) return; if (how === 's') G.supplies--; else spendActions(u, 1); G.charUsed.crepair = true; u.curedTurn = G.turnNo; if (u.hits > 0) u.hits--; else if (u.flipped) { u.flipped = false; u.hits = 2; } LOG('Carter repara su camión.', 'good'); UI.updateStats(); return; }
     case 'lmount': { const near = unitsAt(u.space).filter(x => x.type === 'hero' && x.key !== 'lee' && !x.mount && !['carter', 'pepinillos'].includes(x.key)); const v = near.length === 1 ? near[0].id : await UI.pickUnit(near, 'Elige al jinete.', true); if (v == null) return; await leeMount(u, G.units[v]); return; }
     case 'ldis': leeDismount(u); return;
     case 'lpura': G.charUsed.pura = true; u.freeM = (u.freeM || 0) + 1; LOG('Purasangre: el General Lee tiene 1 Acción de Mover gratis.', 'good'); return;

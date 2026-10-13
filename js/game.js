@@ -48,7 +48,7 @@ function randomAvailableHero() {
 /* ---------- mazo de Eventos ---------- */
 function buildEventDeck(len) {
   const L = G.lv, cols = L.cols;
-  const pool = Object.values(EV).filter(e => cols.includes(e.lvl));
+  const pool = Object.values(EV).filter(e => cols.includes(e.lvl) && !e.exp);  /* las cartas de expansión solo entran si la expansión está activa (ver expansions.js) */
   let deck = [];
   for (let a = 1; a <= 4; a++) {
     const spP = shuffle(pool.filter(e => e.act === a && e.sp && !e.guardia)), noP = shuffle(pool.filter(e => e.act === a && !e.sp && !e.fin));
@@ -59,7 +59,7 @@ function buildEventDeck(len) {
   return deck.map(e => e.id);
 }
 function buildDestinyDeck() {
-  return shuffle(Object.keys(DEST).filter(k => G.lv.cols.includes(DEST[k].lvl) && !(G.lv.n === 0 && k === 'alimanas')));
+  return shuffle(Object.keys(DEST).filter(k => G.lv.cols.includes(DEST[k].lvl) && !DEST[k].exp && !(G.lv.n === 0 && k === 'alimanas')));
 }
 function buildResearch(len) {
   const ini = shuffle(Object.keys(RES).filter(k => RES[k].kind === 'ini')).slice(0, len.inv || 3);

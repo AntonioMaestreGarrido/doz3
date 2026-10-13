@@ -6,6 +6,8 @@ reachable = function (u, extra) {
   if (G.turn.cLock && u.space === 'C') return {};
   if (G.turn.negation && (zedsAt(u.space).length || adjacentIds(u.space).some(i => zedsAt(i).length))) return {};
   const r = _reachable(u, extra);
+  /* Instinto equino: sin jinete, el General Lee no entra voluntariamente en espacios con Caos ni en el Túnel. */
+  if (u.key === 'lee' && !u.rider) for (const k in r) if (sp(k).chaos || sp(k).route === 'T') delete r[k];
   if (G.turn.noFight) for (const k in r) if (controlled(k) || zedsAt(k).length) delete r[k];
   return r;
 };
@@ -30,7 +32,9 @@ DEST_FX = async function (id, route) {
     const spaces = Object.values(G.spaces).filter(s => unitsAt(s.id).filter(isFighter).length >= 2).map(s => s.id);
     if (!spaces.length) { LOG('No hay dos unidades juntas.'); return; }
     const t = await UI.pickSpace(spaces, 'Discusión: elige el espacio con dos unidades.');
-    unitsAt(t).filter(isFighter).slice(0, 2).forEach(u => u.locked = true); LOG('Dos unidades discuten y no pueden actuar este turno.', 'bad'); return;
+    let us = unitsAt(t).filter(isFighter);
+    if (us.length > 2) { const a = await UI.pickUnit(us, 'Discusión: elige la primera unidad que discute.'); const b = await UI.pickUnit(us.filter(x => x.id !== a), 'Discusión: elige la segunda unidad.'); us = [G.units[a], G.units[b]]; }
+    us.forEach(u => u.locked = true); LOG('Dos unidades discuten y no pueden actuar este turno.', 'bad'); return;
   }
   return _DEST_FX(id, route);
 };

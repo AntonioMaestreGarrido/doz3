@@ -639,7 +639,7 @@ const ui = {
       mark,
       ask: (t, o) => ui._ask('rb', t, o),
       reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
-      roll: async () => { const best = await ui._rollDice(b, 0, mark); mark(best); return best; },
+      roll: async (x) => { const best = await ui._rollDice(b, x || 0, mark); mark(best); return best; },
       setResult: (row, col, hits, _x, ground) => { if (ground) { $('rr').innerHTML = 'Tu unidad sufre <b class="z">' + hits + '</b> Impacto(s).'; return; } $('rr').innerHTML = hits ? 'Impactos al objetivo: <b class="p">' + hits + '</b>' : '<span class="bad">Sin impactos.</span>'; },
       done: async () => { await ui._btn('rb', 'Continuar'); ui._close(); }
     };

@@ -2,6 +2,20 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-13 10:01
+
+### Mejoras
+- **Amuleto de la suerte (Wilson):** la unidad agrupada con él (fuera del Centro) tira un dado extra y elige el mejor en todas sus tiradas: combate, disparo, Salvación, resistir Impactos, Buscar y las tiradas de habilidad (Sigilo de Pepinillos, Ataque asesino de Darling, Evasión de Alia, Trampas de Johnson, Carga del Toro).
+- **Expansión 1:** May recibe su +1 columna y su dado extra al disparar (y no se da el +1 de Fuerza a sí misma). El General Lee puede retirarse antes de ser atacado («¡Corre, Flicka, corre!») y su «Instinto equino» impide entrar en Caos y en el Túnel sin jinete. «¡Estáis discutiendo!» deja elegir a las dos unidades.
+- **Expansión 3 (trenes y Rumores):** los trenes se pueden mover en la fase 4R con una activación «R», los Zeds los destruyen al avanzar desde su espacio, y no combaten ni se retiran. La Guardia Nacional no sube a los trenes. Solo puede haber un Rumor sin revelar por ruta; la Tesis devuelve las cartas a tu mano; el teléfono rojo hace tirada de Salvación a las unidades y limpia las fichas del espacio.
+- **Betty:** su cadena de combates no entra en espacios con «No Pasar» ni sin sitio para ella.
+
+### Fixes
+- **Cartas de expansión:** los eventos de las expansiones 1 y 2 y las 4 cartas de Destino de la expansión 1 salían aunque la expansión no estuviera activada. Ahora solo entran con ella.
+- **«¿Qué es ese olor?»:** pasa al Acto IV (su carta tiene 4 estrellas). Con eso los mazos de duración Normal del Juego Básico y del Nivel I vuelven a tener todas sus cartas.
+- **Carter:** ninguna otra Curación (Primeros Auxilios de Seaver, Curar de Johnson, Base aérea, Técnico médico V.I.P.) repara su camión, y no se puede curar y reparar el mismo turno.
+- **Textos de General Lee:** el «Instinto equino» dice ahora lo que dice la carta (cuando NO lleva jinete).
+
 ## 2026-10-13 08:10
 
 ### Mejoras

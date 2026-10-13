@@ -111,6 +111,7 @@ async function moveGroup(movers, from, opts) {
   if (opts.picado && await playPicado(from)) return { moved: false };
   // Evento de Adiós: Barricada
   if (sp(from).bar === 1) { sp(from).bar = 0; LOG('¡Los Zeds destruyen la Barricada de ' + spaceLabel(from) + '!', 'bad'); }
+  for (const tn of unitsAt(from).filter(x => x.type === 'train')) { LOG('¡Los Zeds destruyen el ' + tn.name + ' en ' + spaceLabel(from) + '! Se retira de la partida.', 'bad'); removeUnit(tn); delete G.units[tn.id]; }
   const leavingChaos = sp(from).chaos > 0;
   if (sp(dest).bar === 1 && G.turn.smash) { sp(dest).bar = 0; LOG('Los Zeds destruyen la Barricada de ' + spaceLabel(dest) + '.', 'bad'); }
   /* ¡Los urbanistas contraatacan!: se puede jugar al avanzar un Zed hacia un espacio de Ciudad, antes del combate. */
@@ -268,10 +269,16 @@ async function phase4R() {
   }
   let n = ev.r4 || 0;
   if (n > 0) {
-    const rs = allUnits(x => x.type === 'refugee' && x.space && isRouteSp(x.space));
-    for (let k = 0; k < Math.min(n, rs.length); k++) {
-      const cands = rs.filter(x => x.space && isRouteSp(x.space) && !zedsAt(nextToward(x.space)).length && !x.movedR);
-      if (!cands.length) break;
+    const trainsOn = () => (typeof expOn === 'function' && expOn(3)) ? allUnits(t => t.type === 'train' && t.space && !t.movedR && !sp(t.space).chaos) : [];
+    for (let k = 0; k < n; k++) {
+      const cands = allUnits(x => x.type === 'refugee' && x.space && isRouteSp(x.space) && !zedsAt(nextToward(x.space)).length && !x.movedR);
+      const tcands = trainsOn();
+      if (!cands.length && !tcands.length) break;
+      if (tcands.length) { /* Expansión 3: una activación «R» puede usarse para activar 1 Tren en lugar de 1 unidad de Refugiados */
+        const v = await UI.choose({ title: 'Fase 4R: activación ' + (k + 1) + '/' + n, text: 'Gasta esta activación «R» en un Refugiado o en un Tren.', options: tcands.map(t => ({ label: 'Mover el ' + t.name, value: t.id })).concat(cands.length ? [{ label: 'Mover Refugiados', value: 'r' }] : []).concat([{ label: 'No usarla', value: '' }]) });
+        if (!v) continue;
+        if (v !== 'r') { const t = G.units[v]; t.movedR = true; const extra = await doTrainAction(t, 'tmove', { free: true }); if (extra) k++; continue; }
+      }
       const w = cands.length === 1 ? cands[0].id : await UI.pickUnit(cands, 'Refugiados 4R: elige la unidad que huye ' + (k + 1) + '/' + n + '.');
       const u = G.units[w]; u.movedR = true; const nx = nextToward(u.space);
       if (nx === 'C') await refugeeArrives(u); else putUnit(u, nx);

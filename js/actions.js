@@ -124,7 +124,8 @@ function canBuild(u) {
 /* ---------- curar ---------- */
 /* Toda Acción de Curar baja la Infección 1 (2 si Agee está en el Hospital) y solo puede hacerse 1 vez por unidad y turno. */
 function cureInf() { const agee = alive('agee'); infDown(agee && agee.space && sp(agee.space).kind === 'office' ? 2 : 1); }
-const curable = x => injured(x) && x.curedTurn !== G.turnNo;
+/* El camión de Carter solo se repara con su propia habilidad: ninguna otra Curación puede usarse en él (salvo quitarle el ECG en el Hospital). */
+const curable = x => injured(x) && x.curedTurn !== G.turnNo && !(x.key === 'carter' && !(x.space && G.spaces[x.space] && sp(x.space).kind === 'bed'));
 async function doCure(u, free, noInf) {
   if (!free) spendActions(u, 1);
   healUnit(u); u.curedTurn = G.turnNo; if (!noInf) cureInf();
@@ -272,7 +273,7 @@ async function maintenance() {
   if (G.lv.fourR) {
     for (const s of Object.values(G.spaces)) {
       if (!s.chaos) continue;
-      const rs = unitsAt(s.id).filter(u => (isFighter(u) || u.side === 'raid') && !['pepinillos', 'horacio'].includes(u.key) && !u.ecg && u.type !== 'refugee');
+      const rs = unitsAt(s.id).filter(u => (isFighter(u) || u.side === 'raid' || u.type === 'train') && !['pepinillos', 'horacio'].includes(u.key) && !u.ecg && u.type !== 'refugee');
       if (rs.length) { s.chaos--; G.chaosLeft++; LOG('Se restaura el orden en ' + spaceLabel(s.id) + ' (−1 Caos' + (rs.some(u => u.key === 'antidist') ? ', sin Infección' : ', +1 Infección') + ').', 'good'); UI.pulseSpace(s.id, '#7bd45a'); UI.toast('Orden restaurado en ' + spaceLabel(s.id) + ': −1 Caos', '#7bd45a', 1600); if (!rs.some(u => u.key === 'antidist')) { if (G.weapon && alive('agee')) infDown(2); else await infUp(1); } }
     }
   }
