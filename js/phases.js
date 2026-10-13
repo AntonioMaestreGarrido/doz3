@@ -399,7 +399,7 @@ async function eventStart() {
     case 'elwood': G.berra = true; LOG('Elwood Berra reduce la Infección 1 cada turno.', 'good'); break;
     case 'hace_falta': { const c = allUnits(x => (x.type === 'refugee' || x.type === 'aldeano' || x.type === 'civ') && x.space && isRouteSp(x.space) && sp(x.space).route !== 'T'); if (c.length) { const v = await UI.pickUnit(c, 'Hace falta un Pueblo: elige la unidad que será sustituida por un Zed.'); const u = G.units[v], w = u.space; putUnit(u, 'C'); const z = makeZed(); if (z) putUnit(z, w); const bed = freeBed(); if (bed && u.type !== 'aldeano') { putUnit(u, bed); u.flipped = true; u.ecg = true; } else if (u.type === 'aldeano') { removeUnit(u); delete G.units[u.id]; } else putUnit(u, 'C'); } break; }
     case 'no_comer': { for (const z of allUnits(x => x.type === 'zed' && x.space && isRouteSp(x.space))) { const nb = adjacentIds(z.space).concat([z.space]); if (nb.some(i => (sp(i).kind === 'city' || sp(i).kind === 'pueblo') && !plAt(i).length)) { if (z.hits > 0) z.hits--; else if (z.flipped) { z.flipped = false; z.hits = 2; } } } break; }
-    case 'misterioso': { const i = G.hand.findIndex(k => DEST[k]); if (i >= 0) { LOG('Descartas ' + DEST[G.hand[i]].name + '.', 'bad'); G.destDiscard.push(G.hand.splice(i, 1)[0]); UI.updateHand(); } await infUp(d6()); for (const r of G.routes) await placeZedInitial(r); break; }
+    case 'misterioso': { const held = G.hand.filter(k => DEST[k]); const pick = held.length > 1 ? await UI.chooseCards({ title: 'El misterioso Dr. Marteuse', text: 'Tienes que descartar una carta de Destino guardada (sin jugarla).', options: held.map(k => ({ value: k, label: DEST[k].name, img: destImg(k) })) }) : held[0]; const i = pick ? G.hand.indexOf(pick) : -1; if (i >= 0) { LOG('Descartas ' + DEST[G.hand[i]].name + '.', 'bad'); G.destDiscard.push(G.hand.splice(i, 1)[0]); UI.updateHand(); } await infUp(d6()); for (const r of G.routes) await placeZedInitial(r); break; }
     case 'civ_heroicos': { const k = pickCivh(); if (k) await spawnHero(k, 'C'); break; }
     case 'murcielagos': { const us = allUnits(x => isFighter(x) && x.space && isRouteSp(x.space) && sp(x.space).route === 'T').sort((a, b) => sp(a.space).i - sp(b.space).i); if (us.length) { const u = us[0]; await infUp(1); await hitPlayer(u, 1); if (u.space && isRouteSp(u.space)) retreatPlayers([u], 'C'); } break; }
     case 'brote_local': break;
@@ -485,7 +485,11 @@ async function eventEnd() {
     case 'descubrimiento': if (pl('F3')) await revealResearch(); break;
     case 'materiales': if (pl('A4')) await revealResearch(); break;
     case 'soldados': { await lossChoice(await rollShown('Soldados de fortuna: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' (Suministros o Impactos).'), ['s', 'p']); break; }
-    case 'bomberos': { let n = 0; for (const s of Object.values(G.spaces)) if (s.kind === 'pueblo' && s.chaos) { const v = await UI.choose({ title: 'Bomberos', text: '¿Retiras el Caos de ' + spaceLabel(s.id) + ' (+1 Infección)?', options: [{ label: 'Retirar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { s.chaos = 0; G.chaosLeft++; await infUp(1); n++; } } break; }
+    case 'bomberos': { for (const s of Object.values(G.spaces)) if (s.kind === 'pueblo' && s.chaos) {
+      /* +1 de Infección por cada ficha retirada; con varias fichas en el Pueblo se elige cuántas. */
+      const opts = Array.from({ length: s.chaos }, (_, i) => ({ label: 'Retirar ' + (i + 1) + ' (+' + (i + 1) + ' Infección)', value: i + 1 })).concat([{ label: 'No', value: 0 }]);
+      const v = await UI.choose({ title: 'Bomberos', text: '¿Retiras Caos de ' + spaceLabel(s.id) + '?', options: opts });
+      if (v) { s.chaos -= v; G.chaosLeft += v; LOG('Bomberos: −' + v + ' Caos en ' + spaceLabel(s.id) + '.', 'good'); await infUp(v); } } UI.redraw(); break; }
   }
 }
 

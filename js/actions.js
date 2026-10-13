@@ -63,7 +63,7 @@ async function applyResearch(c) {
     case 'folletos': { const cs = allUnits(x => x.type === 'civ' && curable(x)).slice(0, 2); for (const u of cs) { healUnit(u); infDown(1); } break; }
     case 'cecina': G.supplies = Math.min(20, G.supplies + 2); break;
     case 'musica': { const c = allUnits(x => isZedSide(x) && isRouteSp(x.space)).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, '¡Bajad la música!: elige un espacio; sus Zeds se retiran.'); await retreatZeds(zedsAt(t), zedOrigin(zedsAt(t)[0])); } break; }
-    case 'cientificos': { const cs = Object.values(G.spaces).filter(s => s.chaos); if (cs.length) { const t = cs[0]; t.chaos--; G.chaosLeft++; } break; }
+    case 'cientificos': { const cs = Object.values(G.spaces).filter(s => s.chaos).map(s => s.id); if (cs.length) { const id = cs.length === 1 ? cs[0] : await UI.pickSpace(cs, 'Científicos seguros de sí mismos: elige de dónde retiras 1 ficha de Caos.'); sp(id).chaos--; G.chaosLeft++; LOG('Se retira 1 ficha de Caos de ' + spaceLabel(id) + '.', 'good'); UI.redraw(); } break; }
     case 'pruebas': if (G.weapon && G.weapon.parts.length) G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); else pushInitialResearch(1); break;
     case 'hormona': {
       const sup = allUnits(x => x.type === 'super' && x.space && isRouteSp(x.space)); if (!sup.length) break;
@@ -143,7 +143,7 @@ function unitActions(u) {
   A.push({ id: 'move', label: 'Mover', ok: act && (canPay(u, 1, 'move') || canMoveFree(u)) && !u.resist && u.type !== 'aldeano' });
   if (!isSoft(u)) {
     const ammoNeed = u.type === 'guard' ? 2 : 1;
-    const supCost = u.key === 'jones' || u.type === 'petra';
+    const supCost = u.key === 'jones' || isPetra(u);
     const hasAmmo = G.turn.mercs || (supCost ? G.supplies >= 1 : G.ammo >= ammoNeed) || ((u.key === 'staub' || u.key === 'division12' || (u.key === 'may' && !supCost)) && !(G.firstFreeUsed || {})[u.key]);
     A.push({ id: 'fire', label: 'Disparar', ok: act && canPay(u, 1, 'fire') && hasAmmo && Object.keys(fireTargets(u)).length > 0 });
     A.push({ id: 'search', label: 'Buscar', ok: act && pay(1) && canSearch(u) });
@@ -283,7 +283,7 @@ async function maintenance() {
 
 /* ---------- puntuación ---------- */
 function scoreGame() {
-  const units = Object.values(G.units).filter(u => u.side === 'pl' && u.space && u.space !== 'CEM' && !isSoft(u) && u.type !== 'raider').length;
+  const units = Object.values(G.units).filter(u => u.side === 'pl' && u.space && u.space !== 'CEM' && !isSoft(u) && u.type !== 'raider' && u.type !== 'train').length;  /* los Trenes (exp. 3) no son unidades: no puntúan */
   const soft = Object.values(G.units).filter(u => u.side === 'pl' && isSoft(u) && u.space && u.space !== 'CEM').length;
   let good = units + (G.supplies >= 2 && G.lv.supplies ? 1 : 0) + (G.ammo >= 2 ? 1 : 0) + (G.antidote ? 1 : 0) + (G.weapon ? G.weapon.parts.length : 0) + (G.lv.infection && G.inf <= 6 ? 1 : 0) + 3 * soft;
   const bad = chaosOnMap() + (G.over === 'win' ? 0 : G.eventDeck.length);

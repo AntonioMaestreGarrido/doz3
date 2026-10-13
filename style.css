@@ -141,6 +141,8 @@ select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);bo
 .toast{background:rgba(10,8,6,.93);border:2px solid var(--gold);color:var(--ink);padding:7px 16px;border-radius:22px;font-weight:700;font-size:14px;animation:tin .25s ease-out;transition:opacity .4s,transform .4s}
 .toast.big{font-size:18px;padding:10px 22px;color:#fff}
 .toast.out{opacity:0;transform:translateY(-10px)}
+/* Móvil: el mapa es pequeño y los avisos lo tapaban casi entero. */
+@media (max-width:640px){#toast{top:4px;gap:3px;width:94%}.toast{font-size:11px;padding:3px 9px;border-width:1px;border-radius:12px;text-align:center}.toast.big{font-size:12px;padding:4px 10px}}
 @keyframes tin{from{opacity:0;transform:translateY(-14px) scale(.9)}to{opacity:1;transform:none}}
 
 /* panel de acciones */

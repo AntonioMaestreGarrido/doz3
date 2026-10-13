@@ -75,7 +75,8 @@ newGame = function (levelIdx, lenIdx, personal, exps) {
     const add = Object.keys(EV).filter(k => EV[k].exp && (EV[k].exp === 1 && expOn(1) || EV[k].exp === 2 && expOn(2)) && (EV[k].exp !== 2 || true));
     const extraE = Object.keys(EV).filter(k => EV[k].exp && ((EV[k].exp === 1 && expOn(1)) || (EV[k].exp === 2 && expOn(2))));
     if (G.lv.cols.includes('b')) {
-      const deck = G.eventDeck.filter(id => !EV[id].fin); const fin = G.eventDeck.filter(id => EV[id].fin);
+      /* La Guardia Nacional se saca aquí y se vuelve a insertar abajo en su posición fija (si no, quedaría barajada con el Acto III). */
+      const deck = G.eventDeck.filter(id => !EV[id].fin && id !== 'guardia'); const fin = G.eventDeck.filter(id => EV[id].fin);
       const pool = shuffle(extraE.filter(k => !EV[k].fin && !deck.includes(k)));
       for (const k of pool.slice(0, Math.max(1, Math.floor(pool.length / 2)))) deck.push(k);
       const byAct = a => deck.filter(id => EV[id].act === a);
@@ -106,6 +107,7 @@ strength = function (u) {
 const _playerRoom = playerRoom;
 playerRoom = function (id, u) {
   const s = sp(id); if (s.kind === 'bed') return !unitsAt(id).length;
+  if (u && id !== 'C' && unitsAt(id).some(x => x !== u && x.side === 'pl' && x.space === id && petraClash(u, x))) return false;   /* Aislamiento (Ángeles de Petra) */
   const here = unitsAt(id).filter(x => (isFighter(x) || x.side === 'raid') && x !== u && !x.mount && !(u && u.mount === x.id) && !(u && x.mount === u.id) && x.type !== 'train').length;
   if (s.route === 'T' && s.kind !== 'crypt' && s.i !== lastOf('T')) return here === 0 && !zedsAt(id).length;
   return here < playerCap(id);

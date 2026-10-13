@@ -47,7 +47,7 @@ function zoomInfo(spec) {
     if (u.type === 'zed') return { img: zedTokenImg(u), title: 'Unidad Zed (Fuerza ' + strength(u) + ')', tok: 1, html: cur + li(['Unidad Zed Normal. Con 3 Impactos pasa a su cara reducida; con otros 3 es eliminada.', 'Dos Zeds en el mismo espacio forman una Horda y luchan sumando su Fuerza (máximo 2 por espacio).']) };
     if (u.type === 'civ') return { img: null, title: 'Civiles Normales', html: cur + li(['Resisten 4 Impactos (2 por cara). Si reciben el último: tirada de Salvación (1-3 Cementerio; 4-6 Centro en el Juego Básico u Hospital en los niveles posteriores).', u.resist ? '<b>Resistiendo:</b> atrincheradas en un Pueblo; inmóviles hasta que los Zeds ataquen el Pueblo.' : 'Mueven 2 espacios por Acción.']) };
     const sp0 = Object.values(SPECIALS).find(s => s.type === u.type && s.name === u.name) || SPECIALS[u.skey];
-    return { img: sp0 && sp0.card ? 'assets/cartas/' + sp0.card + '.jpg' : null, title: u.name, html: cur + li(sp0 ? sp0.txt : ['Unidad especial.']) };
+    return { img: unitAlt(u.skey) ? 'assets/arte_alt/cartas/h_' + u.skey + '.webp' : (sp0 && sp0.card ? 'assets/cartas/' + sp0.card + '.jpg' : null), title: u.name, html: cur + li(sp0 ? sp0.txt : ['Unidad especial.']) };
   }
   return null;
 }
@@ -60,6 +60,9 @@ const TOKEN_IMGS = ['porter','alia','agee','betty','carter','darling','hauser','
 const ALT_KEYS = ['agee','alia','antidist','bauer','betty','bomberos','carter','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','porter','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed'];
 /* Arte alternativo de los Súper Zeds (counters de dos caras en assets/arte_alt/zeds, con las claves de SUPER_ZEDS). */
 const ALT_ZEDS = ['berserker'];
+/* Arte alternativo de unidades especiales (clave de SPECIALS): counter apaisado de dos caras en assets/arte_alt/unidades y carta en arte_alt/cartas (h_/hb_). */
+const ALT_UNITS = ['petra'];
+const unitAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_UNITS.includes(k));
 const zedAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_ZEDS.includes(k));
 const superImg = (k, red) => zedAlt(k) ? 'assets/arte_alt/zeds/' + SUPER_ZEDS[k].img + (red ? '_r' : '') + '.webp' : 'assets/tokens/' + SUPER_ZEDS[k].img + '.png';
 const heroAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_KEYS.includes(k));

@@ -55,6 +55,7 @@ function adjacentIds(id) { // adyacencia para efectos (incluye Hospital ~ Centro
 function spaceNum(id) { const s = sp(id); return s.route ? lastOf(s.route) - s.i : null; }
 function spaceLabel(id) {
   const s = sp(id);
+  if (!s) return id === 'CEM' ? 'Cementerio' : (id || '');  /* el Cementerio no es un espacio del tablero */
   if (id === 'C') return 'Centro de la Ciudad';
   if (!s.route) return s.name;
   const rn = ROUTES[s.route].short;
@@ -74,6 +75,7 @@ let UID = 1;
 function newUnit(o) { const u = Object.assign({ id: 'u' + (UID++), hits: 0, flipped: false, space: null, free: 0, hf: 1, hr: 1 }, o); G.units[u.id] = u; return u; }
 let strength = u => (u.flipped ? u.red : u.full) + (u.trained ? 2 : 0);
 const isZedSide = u => u.side === 'zed';
+const isPetra = u => !!u && u.skey === 'petra';   /* Ángeles de Petra (su tipo en SPECIALS es civh) */
 const isFighter = u => u.side === 'pl' && !['refugee', 'aldeano', 'train'].includes(u.type);  /* los Trenes (exp. 3) no combaten, no se retiran ni sufren Impactos */
 const isSoft = u => u.type === 'refugee' || u.type === 'aldeano';
 const isHero = u => u.type === 'hero';
@@ -107,8 +109,12 @@ function playerCap(id) {
   if (s.route === 'T') return (s.i === lastOf('T')) ? 2 : 1;
   return 2;
 }
+/* Aislamiento (Ángeles de Petra): fuera del Centro no se agrupan con Héroes ni Civiles (sí con Refugiados u otras unidades). */
+const petraMate = x => x.type === 'hero' || x.type === 'civ' || (x.type === 'civh' && !isPetra(x));
+const petraClash = (a, b) => (isPetra(a) && petraMate(b)) || (isPetra(b) && petraMate(a));
 function playerRoom(id, u) {
   const s = sp(id); if (s.kind === 'bed') return !unitsAt(id).length;
+  if (u && id !== 'C' && unitsAt(id).some(x => x !== u && x.side === 'pl' && x.space === id && petraClash(u, x))) return false;
   const here = unitsAt(id).filter(x => (isFighter(x) || x.side === 'raid') && x !== u).length;
   if (s.route === 'T' && s.kind !== 'crypt' && s.i !== lastOf('T')) return here === 0 && !zedsAt(id).length;
   return here < playerCap(id);
@@ -351,7 +357,7 @@ function retreatPlayers(units, dest, back) {
   for (const u of units) {
     if (!u.space || !G.spaces[u.space] || ['bed', 'office', 'lab', 'camp'].includes(sp(u.space).kind)) continue; let d = dest === 'C' ? (sp(u.space).route ? nextToward(u.space) : 'C') : dest;
     let k = back ? back.indexOf(d) : -1; /* sin sitio: se sigue hacia atrás por el recorrido del Mover, y luego hacia el Centro */
-    while (d !== 'C' && (!playerRoom(d, u) || blocked(d) || (u.type === 'petra' && false))) d = (k >= 0 && k + 1 < back.length) ? back[++k] : (sp(d).route ? nextToward(d) : 'C');
+    while (d !== 'C' && (!playerRoom(d, u) || blocked(d) || (!isPetra(u) && unitsAt(d).some(isPetra)))) d = (k >= 0 && k + 1 < back.length) ? back[++k] : (sp(d).route ? nextToward(d) : 'C');
     putUnit(u, d); LOG(u.name + ' se retira a ' + spaceLabel(d) + '.');
   }
   UI.redraw();
@@ -633,7 +639,7 @@ async function vipBenefit(u) {
 }
 
 /* ================= MOVIMIENTO ================= */
-function surfaceOnly(u) { return u.type === 'guard' || u.type === 'petra' || u.key === 'carter'; }
+function surfaceOnly(u) { return u.type === 'guard' || isPetra(u) || u.key === 'carter'; }
 function canAct(u) { return u && !u.locked && u.space && u.space !== 'CEM' && G.spaces[u.space] && !u.ecg && (!sp(u.space).chaos || u.key === 'pepinillos' || u.key === 'horacio') && u.space !== 'CEM'; }
 function moveCost(u, to) { return (to === 'C' && alive('hernandez') && isFighter(u)) ? 0 : 1; }
 function officeOk(u, s) { return u.sci || (s.kind !== 'office' && s.kind !== 'lab') || (s.kind === 'office' && u.key === 'may'); }

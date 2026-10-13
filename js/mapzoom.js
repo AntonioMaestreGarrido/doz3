@@ -56,7 +56,12 @@ Object.assign(ui, {
     const live = () => { cv.style.transition = ''; };
     document.querySelectorAll('#routebtns button').forEach(b => b.onclick = () => self.zoomToRoute(b.dataset.route));
     $('zIn').onclick = () => self.zoomAt(1.5); $('zOut').onclick = () => self.zoomAt(1 / 1.5); $('zReset').onclick = () => self.resetView();
-    cv.addEventListener('wheel', e => { e.preventDefault(); const p = local(e); self.zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), p.x, p.y); }, { passive: false });
+    /* Rueda y pellizco del trackpad envían decenas de eventos por segundo: cada uno reiniciaba la transición de .95 s (que arranca casi plana) y el mapa se quedaba congelado hasta soltar. Mientras llegan, sin transición. */
+    let wheelT = null;
+    cv.addEventListener('wheel', e => {
+      e.preventDefault(); still(); clearTimeout(wheelT); wheelT = setTimeout(() => { wheelT = null; if (!ptrs.size) live(); }, 250);
+      const p = local(e); self.zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), p.x, p.y);
+    }, { passive: false });
     /* Tras arrastrar no debe dispararse el clic sobre una unidad o espacio. */
     cv.addEventListener('click', e => { if (performance.now() - (self._mapDragT || 0) < 350) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
     let moved = false, last = null, pinch = null;
@@ -84,12 +89,14 @@ Object.assign(ui, {
       if (!ptrs.delete(e.pointerId)) return;
       if (ptrs.size < 2) pinch = null;
       if (moved) { self._mapDragT = performance.now(); }
-      if (!ptrs.size) { moved = false; live(); cv.style.cursor = ''; }
+      if (!ptrs.size) { moved = false; if (!wheelT) live(); cv.style.cursor = ''; }
       else if (ptrs.size === 1) { last = [...ptrs.values()][0]; }
     };
     ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => cv.addEventListener(n, end));
     /* Red de seguridad: si se pierde un pointerup/cancel (soltar fuera del mapa, gestos del sistema, cambio de pestaña) el estado queda atascado. */
-    const reset = () => { ptrs.clear(); pinch = null; if (moved) self._mapDragT = performance.now(); moved = false; live(); cv.style.cursor = ''; };
+    const reset = () => { ptrs.clear(); pinch = null; if (moved) self._mapDragT = performance.now(); moved = false; clearTimeout(wheelT); wheelT = null; live(); cv.style.cursor = ''; };
+    /* La cámara guiada (anim.js focus) no debe mover el mapa mientras el jugador lo arrastra, pellizca o usa la rueda. */
+    self.userBusy = () => ptrs.size > 0 || !!wheelT;
     ['pointerup', 'pointercancel'].forEach(n => window.addEventListener(n, e => { if (ptrs.has(e.pointerId)) end(e); }, true));
     ['touchend', 'touchcancel'].forEach(n => window.addEventListener(n, e => { if (!e.touches.length && ptrs.size) reset(); }, true));
     window.addEventListener('blur', reset); document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); });

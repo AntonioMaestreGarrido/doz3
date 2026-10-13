@@ -96,22 +96,30 @@ async function playGame(setup, saved) {
     G.phase = 'maint'; await maintenance();
     G.dangerNext = enPeligro();
     saveGame('turn');
-    G.sel = G.sel && G.units[G.sel] ? G.sel : null; UI.updateStats(); UI.redraw();
+    G.sel = G.sel && G.units[G.sel] && G.spaces[G.units[G.sel].space] ? G.sel : null; UI.updateStats(); UI.redraw();
   }
   deleteSave(G.saveId); G.busy = true; G.sel = null; UI.redraw(); await ui.endScreen();
 }
 window.addEventListener('keydown', e => { if (e.key === 'Escape') ui.cancelMode(); });
 const UI_ = ui;
+/* Un error dentro del flujo dejaría la partida congelada sin aviso (G.busy sigue a true): se informa y se ofrece recargar desde el último guardado. */
+function runGame(setup, saved) {
+  playGame(setup, saved).catch(async e => {
+    console.error(e); ui.log('Error: ' + e.message, 'bad');
+    try { await ui.waitAck('Error inesperado', 'La partida se ha detenido por un error (<i>' + e.message + '</i>).<br>Pulsa Continuar para recargarla desde el último guardado.'); } catch (e2) { }
+    location.reload();
+  });
+}
 window.addEventListener('load', async () => {
   bindUI(ui); window.UI = ui;
   await ui.init();
   await ui.intro();
   while (true) {
     const a = await ui.titleScreen();
-    if (a === 'load') { const id = await ui.slotsScreen(); const saved = id && loadSave(id); if (saved) { ui.musicStop(); ui.hideCover(); playGame(null, saved); return; } continue; }
+    if (a === 'load') { const id = await ui.slotsScreen(); const saved = id && loadSave(id); if (saved) { ui.musicStop(); ui.hideCover(); runGame(null, saved); return; } continue; }
     if (listSaves().length >= MAX_SLOTS) { const id = await ui.slotsScreen('full'); if (!id) continue; }
     const setup = await ui.setupScreen();
-    if (setup) { ui.musicStop(); ui.hideCover(); playGame(setup); return; }
+    if (setup) { ui.musicStop(); ui.hideCover(); runGame(setup); return; }
   }
 });
 

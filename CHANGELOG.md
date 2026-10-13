@@ -2,6 +2,21 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-13 19:35
+
+### Mejoras
+- **Ángeles de Petra:** texto completo de su carta (Motos, Combustible, Aislamiento). Fuera del Centro no se agrupan con Héroes ni Civiles, y al retirarse se saltan los espacios donde estén ellas. Arte alternativo de su ficha y su carta.
+- **Mapa en tablets y trackpad:** el zoom con rueda o pellizco ya no se queda congelado hasta soltar, la cámara guiada no mueve el mapa mientras lo arrastras, y el aviso de peligro redibuja menos veces (menos tirones).
+- **Móvil:** los avisos son más pequeños y no tapan el mapa.
+- **«El misterioso Dr. Marteuse»:** con varias cartas de Destino guardadas eliges cuál descartas. **«Bomberos»:** con varias fichas de Caos en un Pueblo eliges cuántas retiras (+1 Infección por ficha). **«Científicos seguros de sí mismos»:** eliges de qué espacio retiras el Caos.
+
+### Fixes
+- **Partida congelada:** si la unidad seleccionada moría fuera de la fase de Acciones (en Infección o en la fase de los Zeds), el juego daba un error y se quedaba parado: se podía mover el mapa pero no hacer nada hasta salir y volver a entrar. Ahora se quita la selección. Además, si el flujo de la partida se para por cualquier otro error, sale un aviso y se recarga desde el último guardado.
+- **Pérdidas a elegir:** ya no se ofrece pagar con Suministros o Munición que están a 0, ni con Impactos si no te quedan unidades.
+- **«Florecimiento»:** se roba la ficha nueva antes de devolver la vieja (no puede volver a salir la misma); Súper Zeds y Propagadores salen de la partida.
+- **Guardia Nacional:** vuelve a su posición fija en el mazo de Eventos en vez de barajarse con el Acto III.
+- **«El pánico…»:** el Movimiento gratis solo se ofrece si hay de verdad un destino gratis.
+- **Trenes (exp. 3):** no puntúan como unidades al final.
 ## 2026-10-13 10:01
 
 ### Mejoras

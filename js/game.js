@@ -159,10 +159,11 @@ async function resolveTwist(dr) {
 async function lossChoice(n, opts) { // pierdes n en combinación de opciones: s (Suministros), a (Munición), i (Infección), p (Impactos)
   for (let k = 0; k < n; k++) {
     const options = [];
-    if (opts.includes('s') && G.lv.supplies) options.push({ label: '−1 Suministro (' + G.supplies + ')', value: 's' });
-    if (opts.includes('a')) options.push({ label: '−1 Munición (' + G.ammo + ')', value: 'a' });
+    /* No se puede «pagar» con un recurso que está a 0. */
+    if (opts.includes('s') && G.lv.supplies && G.supplies > 0) options.push({ label: '−1 Suministro (' + G.supplies + ')', value: 's' });
+    if (opts.includes('a') && G.ammo > 0) options.push({ label: '−1 Munición (' + G.ammo + ')', value: 'a' });
     if (opts.includes('i') && G.lv.infection) options.push({ label: '+1 Infección', value: 'i' });
-    if (opts.includes('p')) options.push({ label: '1 Impacto a una unidad', value: 'p' });
+    if (opts.includes('p') && allUnits(u => isFighter(u) && u.side === 'pl').length) options.push({ label: '1 Impacto a una unidad', value: 'p' });
     if (!options.length) return;
     const v = await UI.choose({ title: 'Pérdidas (' + (k + 1) + '/' + n + ')', text: 'Elige cómo pagas esta pérdida.', options });
     if (v === 's') G.supplies = Math.max(0, G.supplies - 1); else if (v === 'a') G.ammo = Math.max(0, G.ammo - 1);
@@ -198,7 +199,8 @@ async function DEST_FX(id, route) {
       if (cs.length && G.lv.infection) { const u = cs.length === 1 ? cs[0] : G.units[await UI.pickUnit(cs, 'Contagio mortífero: elige la unidad del Centro que va al Hospital con 1 Impacto restante.')];
         let bed = freeBed(); if (!bed) { const ok = await dischargeSomeone(true, { title: 'Hospital lleno', text: u.name + ' llega al Hospital pero no hay Camas libres. Elige a quién dar de alta para hacer sitio o manda a ' + u.name + ' al Cementerio.', none: 'Mandar a ' + u.name + ' al Cementerio' }); bed = ok ? freeBed() : null; }
         if (bed) { putUnit(u, bed); u.flipped = true; u.hits = capOf(u) - 1; u.ecg = false; } else await sendCemetery(u, 'no hay cama en el Hospital'); } break; }
-    case 'florecimiento': { const zs = allUnits(isZedSide); if (zs.length) { const m = Math.min(...zs.map(strength)); for (const z of zs.filter(x => strength(x) === m)) { const w = z.space, r = routeOfZ(z); removeUnit(z); delete G.units[z.id]; const nz = makeZed(); if (nz) putUnit(nz, w); } } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
+    /* Se roba la ficha nueva antes de devolver la vieja (no puede volver a salir la misma). La ficha del Zed Normal reemplazado vuelve a la reserva; Súper Zeds y Propagadores salen de la partida. */
+    case 'florecimiento': { const zs = allUnits(isZedSide); if (zs.length) { const m = Math.min(...zs.map(strength)); for (const z of zs.filter(x => strength(x) === m)) { const w = z.space, nz = makeZed(); if (z.type === 'zed') discardZed(z); else { removeUnit(z); delete G.units[z.id]; } if (nz) putUnit(nz, w); } } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'averia': { if (G.weapon && G.weapon.parts.length) { G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); LOG('Pierdes un componente de la Súper Arma.', 'bad'); } else { const optA = G.res ? await UI.choose({ title: 'Avería grave', text: 'No tienes Súper Arma. Elige:', options: [{ label: 'a) Una carta de Investigación Inicial al azar encima del mazo', value: 'a' }, { label: 'b) Activar la ruta con menos Zeds', value: 'b' }] }) : 'b'; if (optA === 'a') { pushInitialResearch(1); LOG('Avería grave: una carta de Investigación Inicial pasa encima del mazo.', 'good'); } else { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Avería grave: ruta con menos Zeds.'); await activateRoute(r, false); } } break; }
   }
 }

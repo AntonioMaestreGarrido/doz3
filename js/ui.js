@@ -9,6 +9,7 @@ async function loadAltArt() {
   if (typeof Opciones === 'undefined' || !Opciones.artAlt || typeof ALT_KEYS === 'undefined') return;
   const list = []; for (const k of ALT_KEYS) { if (!IMG['alt_' + k]) list.push(['alt_' + k, 'assets/arte_alt/tokens/' + k + '.webp']); if (!IMG['alt_' + k + '_r']) list.push(['alt_' + k + '_r', 'assets/arte_alt/tokens/' + k + '_r.webp']); }
   for (const k of ALT_ZEDS) { const f = SUPER_ZEDS[k].img; for (const [id, suf] of [['altz_' + k, ''], ['altz_' + k + '_r', '_r']]) if (!IMG[id]) list.push([id, 'assets/arte_alt/zeds/' + f + suf + '.webp']); }
+  for (const k of ALT_UNITS) for (const [id, suf] of [['altu_' + k, ''], ['altu_' + k + '_r', '_r']]) if (!IMG[id]) list.push([id, 'assets/arte_alt/unidades/' + k + suf + '.webp']);
   await Promise.all(list.map(([k, src]) => loadImg(k, src)));
 }
 async function loadAssets() {
@@ -39,7 +40,7 @@ const ui = {
     document.addEventListener('error', e => {
       const t = e.target;
       /* Arte alternativo que no carga: vuelve a la imagen original. */
-      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)_r\.webp$/, 'assets/tokens/$1_reverso.png').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
+      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)_r\.webp$/, 'assets/tokens/$1_reverso.png').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/unidades\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
       if (!t || t.tagName !== 'IMG' || !/assets\/cartas\//.test(t.getAttribute('src') || '')) return;
       const base = t.getAttribute('src').split('?')[0], n = +(t.dataset.retry || 0); if (n >= 4) return; t.dataset.retry = n + 1;
       setTimeout(() => { t.src = base + '?r=' + Date.now(); }, 400 * (n + 1));
@@ -248,6 +249,8 @@ const ui = {
   },
   cancelMode() { if (this.mode && this.mode.type === 'pick' && this.mode.cancel) { const r = this.mode.resolve; this.mode = null; this.setBanner(null); this.redraw(); r(null); } else if (this.mode && this.mode.type !== 'pick') { this.mode = null; this.setBanner(null); this.redraw(); } },
   renderUnitBox() {
+    /* La unidad seleccionada puede haber muerto fuera de la fase de Acciones (Infección, Zeds): sigue en G.units pero en el Cementerio. */
+    if (G.sel && G.units[G.sel] && !G.spaces[G.units[G.sel].space]) G.sel = null;
     const box = $('unitbox'), u = G.sel && G.units[G.sel];
     let sph = '';
     if (G.phase === 'actions' && !G.busy && G.turn && G.turn.specials.length) sph = '<div class="acts" style="margin-top:6px">' + G.turn.specials.map((s, i) => '<button data-sp="' + i + '">' + s.label + '</button>').join('') + '</div>';
@@ -331,7 +334,7 @@ const ui = {
         else { x = s.x + (k - (big.length - 1) / 2) * 66; y = s.y; }
         if (u.type === 'train') { rects.push({ id: u.id, x: s.x + (k - (big.length - 1) / 2) * 66, y: s.y - 52, w: 52, h: 34 }); return; }
         const z = isZedSide(u); const w = z ? 62 : u.side === 'raid' ? 60 : (u.type === 'civ' ? 56 : 58), h = z ? 62 : (u.type === 'civ' ? 56 : u.type === 'hero' ? 76 : 60);
-        let rw = w, rh = h; const altI = !z && Opciones.artAlt && u.key && IMG['alt_' + u.key];
+        let rw = w, rh = h; const altI = !z && Opciones.artAlt && ((u.key && IMG['alt_' + u.key]) || (u.skey && IMG['altu_' + u.skey]));
         if (altI) { if (altI.width > altI.height) { rw = 76; rh = Math.round(76 * altI.height / altI.width); } else { rh = 88; rw = Math.round(88 * altI.width / altI.height); } }
         rects.push({ id: u.id, x, y, w: rw, h: rh });
       });
@@ -397,7 +400,7 @@ const ui = {
       c.beginPath(); c.arc(0, 0, hw, 0, 7); c.fillStyle = u.type === 'aldeano' ? '#d4a017' : '#2f9a55'; c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 4 : 2.5; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.fillText(u.type === 'aldeano' ? 'ALD' : u.vip ? 'VIP' : 'REF', 0, 4);
     } else {
       const col = SIDE_COL[u.type] || '#2b5c85'; const img = u.img && (u.flipped && IMG[u.img + '_r'] || IMG[u.img]) || (u.skey === 'petra' && IMG.u_petra);
-      const altImg = Opciones.artAlt && u.key && IMG['alt_' + u.key + (u.flipped ? '_r' : '')] || null;
+      const altImg = (Opciones.artAlt && u.key && IMG['alt_' + u.key + (u.flipped ? '_r' : '')]) || (Opciones.artAlt && u.skey && IMG['altu_' + u.skey + (u.flipped ? '_r' : '')]) || null;
       const civIm = u.type === 'civ' && IMG['u_civ' + (1 + (parseInt(String(u.id).replace(/\D/g, ''), 10) || 0) % 3)];
       if (civIm) { c.beginPath(); c.arc(0, 0, hw, 0, 7); c.fillStyle = col; c.fill(); c.save(); c.beginPath(); c.arc(0, 0, hw - 2, 0, 7); c.clip(); c.drawImage(civIm, 0, 0, civIm.width * 0.78, civIm.height * 0.82, -hw, -hw * 0.7, r.w, r.w * 0.82); c.restore(); c.beginPath(); c.arc(0, 0, hw, 0, 7); c.strokeStyle = sel ? '#ffd54a' : '#0c1a26'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; }
       else if (u.type === 'civ') { c.beginPath(); c.arc(0, 0, hw, 0, 7); c.fillStyle = col; c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#0c1a26'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#cfe6f7'; c.font = '700 13px Segoe UI'; c.textAlign = 'center'; c.fillText('CIV', 0, -8); }
@@ -962,7 +965,7 @@ const ui = {
 };
 function payFire(u) {
   if (G.turn.mercs) return;
-  if (u.key === 'jones' || u.type === 'petra') { G.supplies--; return; }
+  if (u.key === 'jones' || isPetra(u)) { G.supplies--; return; }
   if ((u.key === 'staub' || u.key === 'division12') && !G.firstFreeUsed[u.key]) { G.firstFreeUsed[u.key] = true; return; }
   G.ammo -= (u.type === 'guard' ? 2 : 1); if (UI) UI.updateStats();
 }

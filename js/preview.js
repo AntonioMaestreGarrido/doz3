@@ -117,7 +117,7 @@ const Preview = {
         break;
       }
       case 'misterioso': {
-        const k = G.hand.find(x => DEST[x]); L.push(k ? 'Descartas la carta de Destino guardada «' + DEST[k].name + '».' : 'No tienes cartas de Destino guardadas: no descartas ninguna.');
+        const held = G.hand.filter(x => DEST[x]); L.push(held.length > 1 ? 'Descartas una de tus cartas de Destino guardadas (eliges cuál): ' + this.lista(held.map(k => '«' + DEST[k].name + '»')) + '.' : held.length ? 'Descartas la carta de Destino guardada «' + DEST[held[0]].name + '».' : 'No tienes cartas de Destino guardadas: no descartas ninguna.');
         L.push('La Infección aumenta en 1 dado (1-6).');
         const zs = peekZeds(G.routes.length); L.push('Aparece un Zed en cada ruta: ' + G.routes.map((r, i) => this.rn(r) + ': ' + this.zt(zs[i])).join('; ') + '.');
         break;

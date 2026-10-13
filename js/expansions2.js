@@ -23,7 +23,11 @@ function moveIsFree(u, dest) {
   return false;
 }
 
-function canMoveFree(u) { return !!(u.space && (G.turn.freeFromC && u.space === 'C' || G.turn.panic && (zedsAt(u.space).length || adjacentIds(u.space).some(i => zedsAt(i).length)))); }
+/* Solo si existe algún destino gratis de verdad: con «El pánico…», una unidad del Centro está junto a Zeds pero no puede moverse «hacia el Centro». */
+function canMoveFree(u) {
+  if (!u.space || !(G.turn.freeFromC && u.space === 'C' || G.turn.panic && (zedsAt(u.space).length || adjacentIds(u.space).some(i => zedsAt(i).length)))) return false;
+  return Object.keys(reachable(u)).some(k => moveIsFree(u, k));
+}
 
 const _DEST_FX = DEST_FX;
 DEST_FX = async function (id, route) {

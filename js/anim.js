@@ -52,7 +52,7 @@ Object.assign(ui, {
 
   /* ---- cámara guiada ---- */
   focus(id, zoom) {
-    if (!this.camOn || this.fast || !G.spaces || !G.spaces[id]) return;
+    if (!this.camOn || this.fast || !G.spaces || !G.spaces[id] || (this.userBusy && this.userBusy())) return;
     const s = G.spaces[id], cv = this.canvas, wrap = $('mapwrap'); zoom = zoom || 1.9;
     const k = cv.clientWidth / cv.width, px = s.x * k, py = s.y * k;
     const ol = cv.offsetLeft, ot = cv.offsetTop, cw = cv.clientWidth, ch = cv.clientHeight, ww = wrap.clientWidth, wh = wrap.clientHeight;
@@ -268,13 +268,16 @@ Object.assign(ui, {
     if (keep) Object.assign(u, keep);
   },
 
-  /* bucle de dibujo mientras haya animaciones o peligro */
+  /* bucle de dibujo mientras haya animaciones o peligro. Si solo late el aviso de peligro, unos 20 fps bastan:
+     redibujar el mapa entero a 60 fps sin necesidad hace que el zoom y el arrastre vayan a tirones en tablets. */
   redraw() {
     if (!this.ctx || !G.spaces) return;
     if (this._loop) return; this._loop = true;
     const step = () => {
       this.draw();
-      if (this.isAnimating() || this._needLoop || this.flash) requestAnimationFrame(step); else this._loop = false;
+      if (this.isAnimating() || this.flash) requestAnimationFrame(step);
+      else if (this._needLoop) setTimeout(() => requestAnimationFrame(step), 45);
+      else this._loop = false;
     };
     requestAnimationFrame(step);
   }
