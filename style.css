@@ -408,3 +408,11 @@ body:has(#title.bgnew) #modalbox.setup .opts{margin-top:6px}
 
 /* Al cargar, la portada del juego queda oculta hasta que termina la intro (así no se ve el esqueleto de la página). */
 body.booting #app{visibility:hidden}
+
+/* Cooperativo hot seat: barra de jugadores */
+#plbar{display:flex;flex-wrap:wrap;gap:5px}
+#plbar .plchip{border:2px solid var(--c);background:transparent;color:#fff;padding:3px 9px;border-radius:14px;font-size:12px;cursor:pointer}
+#plbar .plchip.on{background:var(--c);color:#111;font-weight:700}
+#plbar .plchip.on b{color:#111}
+#plbar #tieBtn{margin-left:auto;font-size:12px;padding:3px 8px}
+.setup .row[hidden]{display:none !important}

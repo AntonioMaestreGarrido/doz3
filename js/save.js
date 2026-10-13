@@ -64,6 +64,9 @@ function restoreState(g) {
   G.lv = LEVELS[g.lv]; G.len = G.lv.lengths[g.len]; G.event = g.event ? EV[g.event] : null;
   if (g.res) G.res.cur = g.res.cur ? RES[g.res.cur] : null;
   G.turn.specials = g.turn.specials.map(s => mkSpecial(s.kind, s.n));
+  /* Partidas guardadas antes del modo cooperativo: un solo jugador. */
+  if (!G.players) { initPlayers(null); G.pool = { pl: [(g.pool && g.pool.player) ? 1 : 0], event: g.pool ? g.pool.event : 0 }; }
+  if (!G.turn.perm) G.turn.perm = {};
 }
 
 /* Slots: hasta MAX_SLOTS partidas en curso, una ranura por partida (G.saveId). El guardado automático solo pisa la ranura de su partida.
@@ -84,7 +87,7 @@ function migrateOldSave() {
 }
 function slotMeta(g) {
   const lv = LEVELS[g.lv];
-  return { lv: lv.name, len: lv.lengths[g.len] ? lv.lengths[g.len].name : '', turn: g.turnNo, heroes: (g.heroKeys || []).map(k => HEROES[k] ? HEROES[k].name : k), date: Date.now() };
+  return { lv: lv.name, len: lv.lengths[g.len] ? lv.lengths[g.len].name : '', turn: g.turnNo, players: g.players ? g.players.length : 1, heroes: (g.heroKeys || []).map(k => HEROES[k] ? HEROES[k].name : k), date: Date.now() };
 }
 /* at: 'actions' (a mitad de la fase de Acciones) o 'turn' (al empezar un turno). */
 function saveGame(at) {

@@ -66,7 +66,7 @@ async function baseAereaEnd() {
 /* Inicio de la fase de Acciones: Cristal, Jaque Mates, Sirena */
 async function startOfActions() {
   /* ¡No hay tiempo para eso!: al inicio de la fase de Acciones, la ficha de Acción de Jugador pasa a Usada. */
-  if (G.event && G.event.noPlayerAction) { G.pool.player = 0; LOG('¡No hay tiempo para eso!: la Acción de Jugador no está disponible este turno.', 'bad'); }
+  if (G.event && G.event.noPlayerAction) { G.pool.pl = G.pool.pl.map(() => 0); LOG('¡No hay tiempo para eso!: la Acción de Jugador no está disponible este turno.', 'bad'); }
   for (const u of Object.values(G.units)) if (u.side === 'pl' && (u.chips || []).includes('cristal') && u.space) { u.free++; }
   const j = alive('jaque'); if (j) { const r = await rollShown('Jaque Mates: Acción de Evento extra', v => v > G.pool.event ? '<b>' + v + '</b> &gt; tus ' + G.pool.event + ' Acciones de Evento: <b>+1 Acción de Evento</b>' : '<b>' + v + '</b> ≤ tus ' + G.pool.event + ' Acciones de Evento: sin Acción extra'); if (r > G.pool.event) { G.pool.event++; LOG('Jaque Mates: ' + r + ' > ' + (G.pool.event - 1) + ' → +1 Acción de Evento.', 'good'); } else LOG('Jaque Mates: ' + r + ' (sin Acción extra).'); }
   for (const u of Object.values(G.units)) if (u.space && sp(u.space) && sp(u.space).rumor === undefined) {}

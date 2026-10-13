@@ -1,0 +1,11 @@
+{
+  "name": "doz3",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "serve:dist": "python -m http.server 8790 --directory dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

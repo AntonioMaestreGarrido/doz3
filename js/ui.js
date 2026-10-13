@@ -127,6 +127,7 @@ const ui = {
     if (!G.lv) return;
     const L = G.lv, done = G.eventsRevealed, tot = G.totalEvents;
     let h = '<div class="big">Turno ' + G.turnNo + ' · ' + ({ setup: 'Preparación', fourR: 'Fase 4R', infection: 'Infección', feeding: 'Alimentación', zeds: 'Fase de los Zeds', actions: 'Fase de Acciones', maint: 'Mantenimiento', end: 'Fin de la partida' }[G.phase] || '') + '</div>';
+    if (multiP()) h += '<div id="plbar" style="grid-column:1/3">' + G.players.map((p, i) => '<button class="plchip' + (i === G.act ? ' on' : '') + '" data-pl="' + i + '" style="--c:' + p.color + '">' + p.name + (G.phase === 'actions' ? ' <b>' + plTok(i) + '</b>' : '') + '</button>').join('') + '<button id="tieBtn" title="Si el grupo no se pone de acuerdo, se decide con un dado">🎲 Desempate</button></div>';
     h += '<div>Munición: <b>' + G.ammo + '</b></div><div>' + (L.supplies ? 'Suministros: <b>' + G.supplies + '</b>' : 'Reserva Zed: <b>' + G.reserve.length + '</b>') + '</div>';
     if (L.infection) h += '<div>Infección: <b id="infv" style="color:' + (G.inf >= 10 ? '#ff6b5a' : G.inf >= 7 ? '#ffb347' : '#fff') + '">' + G.inf + ' / 13</b>' + (G.antidote ? ' (Antídoto)' : '') + (G.berra ? ' (Elwood)' : '') + '</div>';
     if (L.fourR) h += '<div>Caos: <b>' + chaosOnMap() + '</b> (quedan ' + G.chaosLeft + ')</div>';
@@ -136,9 +137,25 @@ const ui = {
     if (G.phase === 'actions' && !G.busy) h += '<button class="primary" id="endBtn" style="grid-column:1/3">Terminar fase de Acciones ▶</button>';
     $('status').innerHTML = h;
     const vb = $('visBtn'); if (vb) vb.onclick = () => this.willyVisions();
+    $('status').querySelectorAll('[data-pl]').forEach(b => b.onclick = () => { if (G.busy || !$('modal').hidden) return; G.act = +b.dataset.pl; this.updateStats(); });
+    const tb = $('tieBtn'); if (tb) tb.onclick = () => this.tieBreak();
     const eb = $('endBtn'); if (eb) eb.onclick = () => { if (ui._endRes) { const r = ui._endRes; ui._endRes = null; ui.mode = null; ui.setBanner(null); r(); } };
     this.renderActBox();
     this.renderUnitBox();
+  },
+  /* Desempate del cooperativo: un dado decide qué jugador manda en la discusión. */
+  async tieBreak() {
+    if (G.busy || !$('modal').hidden || !multiP()) return;
+    const n = nPlayers(), who = v => G.players[(v - 1) % n].name;
+    G.busy = true;
+    try { const [v] = await this.rollSimple('Desempate: ' + G.players.map((p, i) => p.name + ' (' + [1, 2, 3, 4, 5, 6].filter(x => (x - 1) % n === i).join('/') + ')').join(' · '), 1, d => 'Decide <b>' + who(d[0]) + '</b>.'); LOG('Desempate: decide ' + who(v) + '.', 'turn'); } finally { G.busy = false; }
+    this.updateStats();
+  },
+  /* Permiso explícito del dueño de un Héroe Personal para que otro jugador lo use este turno. */
+  async askPermission(u) {
+    const ok = await this.choose({ title: 'Permiso de ' + ownerName(u), text: '<b>' + G.players[G.act].name + '</b> quiere usar a <b>' + u.name + '</b>, el Héroe Personal de <b>' + ownerName(u) + '</b>. ¿' + ownerName(u) + ' da su permiso?', options: [{ label: 'Sí, lo permite', value: true }, { label: 'No', value: false }] });
+    if (ok) G.turn.perm[u.id + ':' + G.act] = true;
+    return ok;
   },
   /* Visiones (Wilson el Ermitaño): en cualquier momento, mira la carta superior del mazo de Destino. Sin robarla ni cambiar el orden. */
   async willyVisions() {
@@ -155,9 +172,10 @@ const ui = {
     const inPhase = G.phase === 'actions';
     const noPl = G.event && G.event.noPlayerAction;
     let h = '<div class="lbl">Acciones disponibles' + (inPhase ? '' : ' · se usan en la fase de Acciones') + '</div>';
-    h += '<div class="row"><span>Acción de Jugador</span>' + (G.pool.player ? '<b>1</b>' : '<span class="off">' + (noPl ? 'No disponible este turno' : 'Usada') + '</span>') + '</div>';
-    h += '<div class="row"><span>Acciones de Evento</span><b>' + G.pool.event + '</b></div>';
-    const gen = (G.pool.player ? 1 : 0) + G.pool.event;
+    if (multiP()) G.players.forEach((p, i) => { h += '<div class="row"><span style="color:' + p.color + '">Acción de ' + p.name + (i === G.act ? ' ◀' : '') + '</span>' + (plTok(i) ? '<b>1</b>' : '<span class="off">' + (noPl ? 'No disponible' : 'Usada') + '</span>') + '</div>'; });
+    else h += '<div class="row"><span>Acción de Jugador</span>' + (plTok(0) ? '<b>1</b>' : '<span class="off">' + (noPl ? 'No disponible este turno' : 'Usada') + '</span>') + '</div>';
+    h += '<div class="row"><span>Acciones de Evento' + (multiP() ? ' (fondo común)' : '') + '</span><b>' + G.pool.event + '</b></div>';
+    const gen = plTok() + G.pool.event;
     const fr = allUnits(x => x.side === 'pl' && freeTotal(x) > 0);
     const frN = fr.reduce((a, x) => a + freeTotal(x), 0);
     h += '<div class="row total"><span>Para cualquier unidad</span><span>' + gen + '</span></div>';
@@ -247,6 +265,7 @@ const ui = {
   },
   bindSpecials(box) { box.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { const s = G.turn.specials[+b.dataset.sp]; G.turn.specials.splice(+b.dataset.sp, 1); ui.guard(() => s.fn()); }); },
   doAct(u, id) {
+    if (needsPermission(u)) { this.askPermission(u).then(ok => { if (ok) this.doAct(u, id); }); return; }
     if (id === 'move') {
       const extra = G.turn.vehicle && u.type === 'hero' && !['pepinillos', 'horacio'].includes(u.key) && isSurface(u.space) ? G.turn.vehicle : 0; let opts = reachable(u, extra); if (extra) { const base = reachable(u, 0); for (const k in opts) if (base[k] === undefined && !isSurface(k)) delete opts[k]; }
       if (G.turn.heli && u.type === 'hero') { opts = {}; for (const k in G.spaces) if (isSurface(k) && canStop(u, k) && k !== u.space) opts[k] = 0; }
@@ -296,6 +315,7 @@ const ui = {
   selectUnit(uid) {
     G.sel = uid || null; this.updateStats(); this.redraw();
     const u = uid && G.units[uid]; if (!u || G.phase !== 'actions' || G.busy) return;
+    if (needsPermission(u)) return; /* solo se mira: el permiso se pide al elegir una acción */
     const mv = unitActions(u).find(a => a.id === 'move'); if (mv && mv.ok) this.doAct(u, 'move');
   },
   redraw() { if (!this.ctx || !G.spaces) return; cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.draw()); },
@@ -398,6 +418,7 @@ const ui = {
       if (!altImg || strength(u) !== (u.flipped ? u.red : u.full)) badge(c, 0, hh - 8, String(strength(u)), u.flipped ? '#7a1d12' : '#2f6b3a', '#fff');
       if (u.resist) tag(c, -hw + 4, -hh + 8, 'RES', '#c2a000'); if (u.armed) tag(c, hw - 4, -hh + 8, 'ARM', '#c2561a'); if (u.leader) tag(c, hw - 4, -hh + 24, 'LÍD', '#8a3fc2'); if (u.keepCalm) tag(c, -hw + 4, -hh + 24, '2►', '#2a7fc2'); if (u.trained) tag(c, hw - 4, -hh + 40, '+2', '#2a9f5a'); if (freeTotal(u)) tag(c, hw - 4, hh - 30, '+' + freeTotal(u), '#2a9f5a');
     }
+    if (multiP() && u.owner != null && G.players[u.owner]) { c.shadowBlur = 0; c.strokeStyle = G.players[u.owner].color; c.lineWidth = 4; c.setLineDash([9, 5]); c.beginPath(); c.ellipse(0, 0, hw + 6, hh + 6, 0, 0, 7); c.stroke(); c.setLineDash([]); tag(c, 0, -hh - 10, G.players[u.owner].name.slice(0, 8), G.players[u.owner].color); }
     c.restore();
   },
   flashRoute(r) { this.flash = { r, t0: performance.now() }; this.redraw(); },
@@ -644,7 +665,7 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (en solitario).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       let seed = null; /* { code, seed } cuando hay un código de partida activo */
       const sels = () => ['heroSel', 'heroSel2', 'heroSel3', 'heroSel4'].map($);
@@ -654,12 +675,19 @@ const ui = {
         G.expSel = [1, 2, 3, 4].filter(k => $('x' + k) && $('x' + k).checked); const pool = n === 0 ? [] : heroPoolFor(n);
         sels().forEach((e, i) => { e.innerHTML = n === 0 ? '<option value="">(los 4 Héroes básicos)</option>' : '<option value="">' + (i ? 'Héroe ' + (i + 1) + ': al azar' : 'Al azar') + '</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join(''); if (pool.includes(keep[i])) e.value = keep[i]; });
         $('heroAll').disabled = n === 0; $('heroMore').hidden = n === 0 || !$('heroAll').checked; $('heroLbl').firstChild.textContent = $('heroAll').checked ? 'Héroe 1: ' : 'Héroe personal: ';
+        /* Cooperativo: cada jugador pone su nombre y elige su Héroe Personal (los selectores de un solo jugador se ocultan). */
+        const np = +$('nPl').value, prev = [...document.querySelectorAll('#plRows .plname')].map(e => e.value), prevH = [...document.querySelectorAll('#plRows .plhero')].map(e => e.value);
+        $('heroLbl').hidden = np > 1; $('heroAll').parentNode.hidden = np > 1; if (np > 1) $('heroMore').hidden = true;
+        $('plRows').innerHTML = np > 1 ? Array.from({ length: np }, (_, i) => '<div class="row"><span style="color:' + PL_COLORS[i] + '">●</span> <input class="plname" maxlength="10" size="10" placeholder="Jugador ' + (i + 1) + '"> ' + (n === 0 ? '<span class="sub">recibe un Héroe básico</span>' : '<select class="plhero"><option value="">Héroe personal: al azar</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join('') + '</select>') + '</div>').join('') : '';
+        document.querySelectorAll('#plRows .plname').forEach((e, i) => { if (prev[i]) e.value = prev[i]; });
+        document.querySelectorAll('#plRows .plhero').forEach((e, i) => { if (prevH[i] && pool.includes(prevH[i])) e.value = prevH[i]; });
       };
-      const picked = () => { const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0) return []; const v = sels().slice(0, $('heroAll').checked ? 4 : 1).map(e => e.value).filter(Boolean); return v; };
+      const players = () => { const np = +$('nPl').value; if (np < 2) return null; const nm = [...document.querySelectorAll('#plRows .plname')], hs = [...document.querySelectorAll('#plRows .plhero')]; return Array.from({ length: np }, (_, i) => ({ name: (nm[i] && nm[i].value.trim()) || 'Jugador ' + (i + 1), hero: (hs[i] && hs[i].value) || '' })); };
+      const picked = () => { const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0 || +$('nPl').value > 1) return []; const v = sels().slice(0, $('heroAll').checked ? 4 : 1).map(e => e.value).filter(Boolean); return v; };
       const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4].filter(k => $('x' + k).checked), heroes: picked() });
       const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
       const msg = (t, bad) => { $('seedMsg').hidden = !t; $('seedMsg').textContent = t || ''; $('seedMsg').style.color = bad ? '#ff8a7a' : ''; };
-      b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #heroAll').forEach(i => i.onchange = upd); upd();
+      b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #heroAll, #nPl').forEach(i => i.onchange = upd); upd();
       $('seedMake').onclick = () => {
         const f = form(); if (f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length) { msg('Hay héroes repetidos.', true); return; }
         /* Crear una semilla la activa de inmediato: si no, «Empezar» ignoraría el código y la partida saldría al azar. */
@@ -685,9 +713,9 @@ const ui = {
       };
       $('seedOff').onclick = () => { seed = null; lock(false); msg(''); };
       $('goBtn').onclick = () => {
-        const f = form(), dup = f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length; if (dup) { msg('Hay héroes repetidos.', true); return; }
+        const f = form(), pls = players(), ph = pls ? pls.map(p => p.hero).filter(Boolean) : [], dup = (f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length) || new Set(ph).size !== ph.length; if (dup) { msg('Hay héroes repetidos.', true); return; }
         DEBUG_DICE = !!ui.dbgDice; ui._close();
-        res({ level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null });
+        res({ level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), players: pls, exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null });
       };
     });
   },
@@ -859,7 +887,7 @@ const ui = {
     cnt();
   },
   showCredits() {
-    this._modal('<h2>Créditos</h2><p><b>Dawn of the Zeds</b> (3.ª edición)<br>Diseño del juego original: <b>Hermann Luttmann</b><br>Editorial: Victory Point Games</p><p>Esta adaptación web en solitario es un proyecto de aficionados, sin ánimo de lucro y no oficial. Las ilustraciones, cartas y marcas pertenecen a sus respectivos autores y editores.</p><p style="color:var(--mut);font-size:13px">Adaptación y programación: Antonio Maestre Garrido, con la ayuda de Claude.<br>' + (typeof BUILD_TIME !== 'undefined' ? 'Build: ' + BUILD_TIME : '') + '</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');
+    this._modal('<h2>Créditos</h2><p><b>Dawn of the Zeds</b> (3.ª edición)<br>Diseño del juego original: <b>Hermann Luttmann</b><br>Editorial: Victory Point Games</p><p>Esta adaptación web, en solitario o cooperativo hot seat, es un proyecto de aficionados, sin ánimo de lucro y no oficial. Las ilustraciones, cartas y marcas pertenecen a sus respectivos autores y editores.</p><p style="color:var(--mut);font-size:13px">Adaptación y programación: Antonio Maestre Garrido, con la ayuda de Claude.<br>' + (typeof BUILD_TIME !== 'undefined' ? 'Build: ' + BUILD_TIME : '') + '</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');
     $('xb').onclick = () => this._close();
   },
   async endScreen() {

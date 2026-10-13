@@ -70,16 +70,21 @@ function buildResearch(len) {
 /* ---------- preparación ---------- */
 /* Semilla fijada para la próxima partida (viene de un código de partida); se consume al empezar. */
 let PENDING_SEED = null;
+/* Jugadores del hot seat para la próxima partida: [{name, hero}] (hero = clave del Héroe Personal elegido o ''). Se consume al empezar. */
+let PENDING_PLAYERS = null;
 /* personal: clave de héroe o lista de claves elegidas a mano (el resto se completa al azar). */
 function newGame(levelIdx, lenIdx, personal) {
+  const plist = PENDING_PLAYERS; PENDING_PLAYERS = null;
+  if (plist && plist.length > 1) personal = plist.map(p => p.hero).filter(Boolean);
   UID = 1; rngSeed(PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]); PENDING_SEED = null;
   const L = LEVELS[levelIdx], len = L.lengths[lenIdx];
   Object.assign(G, {
     lv: L, len, units: {}, cemetery: [], reserve: ZED_TOKENS.map(t => t.slice()), supers: L.infection ? Object.keys(SUPER_ZEDS) : [],
     ammo: 4, supplies: 0, inf: 0, chaosLeft: L.chaos || 0, over: null, turnNo: 0, hand: [], destDiscard: [], event: null, eventsRevealed: 0,
-    phase: 'setup', pool: { player: 1, event: 0 }, charUsed: {}, once: {}, sel: null, speechUsed: false, antidote: false, berra: false, finalPlaced: false,
+    phase: 'setup', pool: { pl: [1], event: 0 }, charUsed: {}, once: {}, sel: null, speechUsed: false, antidote: false, berra: false, finalPlaced: false,
     weapon: null, res: null, turn: newTurn(), stats: { killed: 0, civLost: 0, heroLost: 0 }, evlog: [], ust: {}, evn: 0, inWild: false, spareCiv: null, upgrades: [], dangerNext: false
   });
+  initPlayers(plist); G.pool = newPool(0);
   buildBoard();
   for (const r of G.routes) { const z = makeZed(); putUnit(z, r + '0'); }
   // Civiles
@@ -99,6 +104,12 @@ function newGame(levelIdx, lenIdx, personal) {
   // recursos
   if (L.n === 0) { G.ammo = 4; G.supplies = 0; } else { const a = d6(), b = d6(); G.supplies = a + b; G.ammo = 6 - Math.min(a, b); G.setupRoll = [a, b]; }
   for (const k of keys) { const u = makeHero(k, 'C'); if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); } if (u.key === 'horacio' && L.supplies) G.supplies += 3; }
+  /* Héroe Personal de cada jugador: el que eligió; si no eligió (o es el Juego Básico) se le da uno de los iniciales aún sin dueño. */
+  if (nPlayers() > 1) {
+    const inits = Object.values(G.units).filter(u => u.type === 'hero' && keys.includes(u.key));
+    plist.forEach((p, i) => { const u = inits.find(x => x.key === p.hero && x.owner == null); if (u) u.owner = i; });
+    plist.forEach((p, i) => { if (!inits.some(x => x.owner === i)) { const u = inits.find(x => x.owner == null); if (u) u.owner = i; } });
+  }
   const ch = makeHero(civhKey, 'C'); if (civhKey === 'salvacion' && L.supplies) G.supplies += 2;
   if (L.tunnel) { makeSpecial('diamante', 'T8'); makeSpecial('diamante', 'T6'); }
   G.eventDeck = buildEventDeck(len); G.totalEvents = G.eventDeck.length;
@@ -106,7 +117,7 @@ function newGame(levelIdx, lenIdx, personal) {
   if (L.res) G.res = buildResearch(len);
   G.heroPoolRest = heroPoolFor(L.n).filter(k => !keys.includes(k));
 }
-function newTurn() { return { noTerrain: false, block: [], propag: false, cardio: false, noEvade: false, specials: [], mercs: false, flamed: false, chaos2: false, smash: false, assaultUsed: false }; }
+function newTurn() { return { perm: {}, noTerrain: false, block: [], propag: false, cardio: false, noEvade: false, specials: [], mercs: false, flamed: false, chaos2: false, smash: false, assaultUsed: false }; }
 
 /* ---------- Destino ---------- */
 function chaosCount(r) { return routeUnits(r, () => false).length + (() => { let n = 0; for (let i = 0; i <= lastOf(r); i++) n += sp(r + i).chaos; return n; })(); }
@@ -183,9 +194,12 @@ async function DEST_FX(id, route) {
     case 'otra_manera': { for (const u of allUnits(x => x.space === 'CAMP')) { const r = await rollShown('Otra manera: ' + u.name, v => v === 1 ? '<b>1</b>: el grupo abandona la partida' : v === 6 ? '<b>6</b>: se cura un Civil' : '<b>' + v + '</b>: sin efecto'); if (r === 1) { removeUnit(u); delete G.units[u.id]; LOG('Un grupo de Refugiados abandona la partida.', 'bad'); } else if (r === 6) { const t = allUnits(x => x.type === 'civ' && (x.hits || x.flipped))[0]; if (t) healUnit(t); } } break; }
     case 'bubba': { const c = G.routes.filter(r => r !== 'T').map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = c.filter(x => x[1] === m)[0][0]; makeSpecial('bubba', r + '0'); LOG('La Banda de Bubba aparece en ' + spaceLabel(r + '0') + '.', 'bad'); break; }
     case 'zed_alfa': { const zs = routeZeds(R).filter(z => z.type === 'zed'); if (zs.length) { const t = zs.sort((a, b) => strength(b) - strength(a) || sp(b.space).i - sp(a.space).i)[0]; t.leader = true; LOG('Zed Líder en ' + spaceLabel(t.space) + '.', 'bad'); } await activateRoute(R, false); break; }
-    case 'contagio': { await outbreak(true, true); const u = unitsAt('C').filter(isFighter)[0]; if (u && G.lv.infection) { const bed = freeBed(); if (bed) { putUnit(u, bed); u.flipped = true; u.hits = capOf(u) - 1; u.ecg = true; } } break; }
+    case 'contagio': { await outbreak(true, true); const cs = unitsAt('C').filter(isFighter);
+      if (cs.length && G.lv.infection) { const u = cs.length === 1 ? cs[0] : G.units[await UI.pickUnit(cs, 'Contagio mortífero: elige la unidad del Centro que va al Hospital con 1 Impacto restante.')];
+        let bed = freeBed(); if (!bed) { const ok = await dischargeSomeone(true, { title: 'Hospital lleno', text: u.name + ' llega al Hospital pero no hay Camas libres. Elige a quién dar de alta para hacer sitio o manda a ' + u.name + ' al Cementerio.', none: 'Mandar a ' + u.name + ' al Cementerio' }); bed = ok ? freeBed() : null; }
+        if (bed) { putUnit(u, bed); u.flipped = true; u.hits = capOf(u) - 1; u.ecg = false; } else await sendCemetery(u, 'no hay cama en el Hospital'); } break; }
     case 'florecimiento': { const zs = allUnits(isZedSide); if (zs.length) { const m = Math.min(...zs.map(strength)); for (const z of zs.filter(x => strength(x) === m)) { const w = z.space, r = routeOfZ(z); removeUnit(z); delete G.units[z.id]; const nz = makeZed(); if (nz) putUnit(nz, w); } } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
-    case 'averia': { if (G.weapon && G.weapon.parts.length) { G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); LOG('Pierdes un componente de la Súper Arma.', 'bad'); } else { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Avería grave: ruta con menos Zeds.'); await activateRoute(r, false); } break; }
+    case 'averia': { if (G.weapon && G.weapon.parts.length) { G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); LOG('Pierdes un componente de la Súper Arma.', 'bad'); } else { const optA = G.res ? await UI.choose({ title: 'Avería grave', text: 'No tienes Súper Arma. Elige:', options: [{ label: 'a) Una carta de Investigación Inicial al azar encima del mazo', value: 'a' }, { label: 'b) Activar la ruta con menos Zeds', value: 'b' }] }) : 'b'; if (optA === 'a') { pushInitialResearch(1); LOG('Avería grave: una carta de Investigación Inicial pasa encima del mazo.', 'good'); } else { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Avería grave: ruta con menos Zeds.'); await activateRoute(r, false); } } break; }
   }
 }
 async function resolveTwistInner(dr) { return resolveTwist(dr); }

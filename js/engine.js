@@ -149,7 +149,9 @@ function makeSuper() {
   const d = SUPER_ZEDS[k];
   return newUnit({ side: 'zed', type: 'super', key: k, name: d.name, full: d.full, red: d.red, hf: 3, hr: 3, img: d.img, resistZ: k === 'ferreo' });
 }
+const ZED_UPGRADES = { smart: 'Inteligentes', fast: 'Rápidos', toxic: 'Tóxicos', leader: 'Líder', zresist: 'Resistentes' };
 function discardZed(u) {
+  for (const k in ZED_UPGRADES) if (u[k]) (G.upgrades || (G.upgrades = [])).push(k); /* la ficha de Mejora Zed se retira de la partida */
   const keepTok = u.token;
   if (u.token) G.reserve.push(u.token);
   removeUnit(u); delete G.units[u.id]; return keepTok;
@@ -270,7 +272,9 @@ async function sendCemetery(u, why) {
   if ((u.chips || []).length) { const mates = where && G.spaces[where] ? unitsAt(where).filter(x => x !== u && isFighter(x)) : []; if (mates.length) { const t = mates.length === 1 ? mates[0] : G.units[await UI.pickUnit(mates, 'Fichas de Rumor de ' + u.name + ': ¿quién las recoge?')]; t.chips = (t.chips || []).concat(u.chips); LOG(t.name + ' recoge las fichas de Rumor.', 'good'); } else LOG('Las fichas de Rumor de ' + u.name + ' se pierden.', 'bad'); u.chips = []; }
   removeUnit(u); u.space = 'CEM'; G.cemetery.push(u);
   UI.redraw();
+  if (u.owner != null && multiP()) await reassignHero(u);
   if (G.turn.propag && u.type === 'civ' && where && isRouteSp(where)) await placeZedAt(where, 'Propagación');
+  if (G.turn.outbreakLocal && u.type === 'civ' && where && isRouteSp(where)) await brotLocalZed(where);
 }
 function saveBonus() {
   let b = 0; if (alreadyHas('esperanza')) b++;
@@ -310,8 +314,10 @@ async function unitDown(u) {
   }
   UI.redraw();
   if (G.turn.propag && wasCiv && where && isRouteSp(where)) await placeZedAt(where, 'Propagación');
-  if (G.turn.outbreakLocal && wasCiv && where && isRouteSp(where)) await placeZedAt(where, 'Brote local');
+  if (G.turn.outbreakLocal && wasCiv && where && isRouteSp(where)) await brotLocalZed(where);
 }
+/* Brote local de Zeds: el Zed nuevo no se mueve durante el resto de este turno. */
+async function brotLocalZed(where) { const z = await placeZedAt(where, 'Brote local'); if (z) z.frozen = G.turnNo; }
 async function unitDown2(u, where) {
   const bed = freeBed(); if (!bed) { await sendCemetery(u, 'no encuentra cama'); return; }
   const wasCiv = u.type === 'civ';
@@ -321,7 +327,7 @@ async function unitDown2(u, where) {
   UI.redraw(); await UI.settle(); await UI.fxHospital(u);
   await infUp(1); UI.redraw();
   if (G.turn.propag && wasCiv && where && isRouteSp(where)) await placeZedAt(where, 'Propagación');
-  if (G.turn.outbreakLocal && wasCiv && where && isRouteSp(where)) await placeZedAt(where, 'Brote local');
+  if (G.turn.outbreakLocal && wasCiv && where && isRouteSp(where)) await brotLocalZed(where);
 }
 async function dischargeSomeone(forceCem, o) {
   const cands = BEDS.map(b => unitsAt(b)[0]).filter(Boolean);
@@ -440,7 +446,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if (!attackerHuman) for (const u of unitsAt(space)) if (u.resist && (fighter.side === 'pl')) { u.resist = false; LOG(u.name + ' deja de estar Resistiendo.'); }
   const isZedAtk = !attackerHuman && fighter.side === 'pl';
   // Habilidades de evasión al ser atacado por Zeds
-  if (isZedAtk && !G.turn.noEvade) {
+  if (isZedAtk && !G.turn.noEvade && !o.second) {
     if (G.turn.cardio) {
       const v = await UI.choose({ title: 'Regla n.º 7: Cardio', text: '¿Retiras a ' + fighter.name + ' en lugar de luchar?', options: [{ label: 'Retirarse', value: 'y' }, { label: 'Luchar', value: 'n' }] });
       if (v === 'y') { retreatPlayers([fighter], 'C'); return { evaded: true }; }
@@ -466,7 +472,6 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
       if (r >= 4) { await hitZed(zeds[0]); retreatPlayers(unitsAt(space).filter(x => isFighter(x) && x.key !== 'pepinillos'), 'C'); LOG('Johnson retrocede (las trampas funcionan).', 'good'); return { evaded: true }; }
     }
   }
-  if (isZedAtk && G.turn.noRetreatOnce) {/* se maneja al final */ }
   if (!UI.fast) { if (zeds.length > 1) Sfx.horde(); else Sfx.growl(); }
   await UI.fxClash(space, attackerHuman ? fighter : zeds[0], attackerHuman ? zeds[0] : fighter);
   let initialCard = 0;
@@ -535,7 +540,13 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   try { await applyZedHits(zeds, zh); if (hasPart('cebo') && !attackerHuman) await applyZedHits(zeds, 1); } finally { ACTOR = null; }
   if (fighter.space && fighter.space !== 'CEM') { if (fighter.side === 'raid') await hitRaider(fighter, ph); else await hitPlayer(fighter, ph); }
   if (o.trago || false) { if (fighter.space) await hitPlayer(fighter, 1); }
-  if (isZedAtk && G.turn.noRetreatOnce && !G.turn.noRetreatDone) { G.turn.noRetreatDone = true; return { again: true, zedWon: !zedLoses }; }
+  if (isZedAtk && G.turn.noRetreatOnce && !o.second) {
+    /* No hay escapatoria: tras el primer ataque de cada unidad u Horda Zed nadie se retira; esa unidad ataca otra vez de inmediato (si puede). */
+    const z2 = zeds.filter(z => z.space && G.units[z.id]), h2 = unitsAt(space).filter(u => isFighter(u) || u.side === 'raid');
+    LOG('No hay escapatoria: nadie se retira.', 'bad');
+    if (z2.length && h2.length) { const r2 = await melee(Object.assign({}, o, { zeds: z2, hum: h2, space, attacker: 'z', second: true })); return r2; }
+    return { zedWon: !zedLoses, humanWon: zedLoses, fighter };
+  }
   const left = zeds.filter(z => z.space);
   if (zedLoses) { if (left.length) await retreatZeds(left, attackerHuman ? zedOrigin(left[0]) : (o.from || zedOrigin(left[0]))); }
   else {
@@ -583,8 +594,7 @@ async function zedAttack(zeds, space, from) {
   if (!pl.length) { await devourSoft(zeds, space); return {}; }
   const r = await melee({ zeds, hum: pl, space, attacker: 'z', from });
   if (r.fighter && r.fighter.key === 'betty' && r.humanWon && r.fighter.space) await bettyChain(r.fighter);
-  if (!r.again && zedsAt(space).length && !plAt(space).length && softAt(space).some(u => u.type === 'refugee')) await devourSoft(zedsAt(space), space);
-  if (r.again) { const z2 = zeds.filter(z => z.space === space); if (z2.length && plAt(space).length) { const r2 = await melee({ zeds: z2, hum: plAt(space), space, attacker: 'z', from }); return r2; } }
+  if (zedsAt(space).length && !plAt(space).length && softAt(space).some(u => u.type === 'refugee')) await devourSoft(zedsAt(space), space);
   return r;
 }
 async function devourSoft(zeds, space) {

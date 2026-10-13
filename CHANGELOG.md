@@ -2,6 +2,18 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-13 08:10
+
+### Mejoras
+- **Modo cooperativo (hot seat):** el juego pasa a «Solitario · Cooperativo». Hay varios jugadores con su propia Acción de Jugador (barra de jugadores en el panel), y los eventos llevan sus iconos de Presión Zed. Las partidas guardadas antiguas se cargan como de un solo jugador.
+- **Alia** y **arte alternativo de los Súper Zeds:** se publican con sus cartas, fichas y obituario.
+- **Cartas de Destino:** «Zeds hipnotizados» cancela todas las activaciones de la ruta elegida ese turno. «Avería grave» sin Súper Arma permite elegir entre una carta de Investigación Inicial o activar la ruta con menos Zeds. «Contagio mortífero» deja al elegido en el Hospital sin ECG (con «Hospital lleno» si no hay cama). «Cañón histórico» puede apuntar también a los espacios n.º 0 y n.º 1 del Túnel.
+- **Eventos:** «No hay escapatoria» da un segundo ataque tras el primero de cada unidad u Horda Zed (sin evasión en el segundo). «Los Zeds hinchados estallan» deja elegir en caso de empate y tira un ataque por cada unidad adyacente. «¡Oh, no! ¡Otra vez no!» solo usa fichas de Mejora Zed realmente retiradas de la partida.
+
+### Fixes
+- **Brote local de Zeds:** también aparece el Zed cuando las Civiles mueren (Cementerio), y los Zeds nuevos no se mueven ese turno.
+- **Cañón histórico:** el texto de la carta ya no limita el objetivo a la superficie.
+
 ## 2026-10-13 07:42
 
 ### Mejoras

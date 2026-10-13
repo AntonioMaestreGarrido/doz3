@@ -1,7 +1,8 @@
 /* Cartas de Evento (transcritas de las cartas originales).
    lvl: b azul · g verde · y amarilla · o naranja · r roja.  act: Acto (estrellas); 5 = carta de Fin.
    sp: Evento Especial.  r4 · inf ('B' = tirada de Brote) · al (Alimentación: 0,1,2 ó 'd' = tirada) · z (rutas) · acc (Acciones de Evento).
-   El Presión Zed (Z) se ignora en solitario. Imágenes: assets/cartas/e_<id>.jpg */
+   Presión Zed (cooperativo, 2+ jugadores; se ignora en solitario): pr = iconos de la carta en orden, cada uno 's'/'e' (efecto «al inicio» / «al final» de la fase de los Zeds) + 'M' (Z, movimiento) o 'P' (Ƶ, colocación); se rellena con PRESSURE más abajo.
+   Imágenes: assets/cartas/e_<id>.jpg */
 'use strict';
 const EV = {};
 function ev(id, name, lvl, act, r4, inf, al, z, acc, txt, o) { EV[id] = Object.assign({ id, name, lvl, act, r4, inf, al, z, acc, txt, sp: 0 }, o || {}); }
@@ -107,6 +108,6 @@ ev('no_escapatoria', 'No hay escapatoria', 'r', 3, 0, 'B', 'd', ['A','F','T','T'
 ev('conductos', 'Conexión por los conductos del vapor', 'r', 3, 1, 'B', 0, ['A','A','B','B'], 3, ['Al inicio de esta fase. Por cada unidad Zed en un espacio de Cripta, tira 1 dado: 1-2 = intenta entrar en la Central Nuclear; 3-5 = intenta entrar en la Granja (primero tira en la tabla de Cripta); 6 = no pasa nada. Si no hay sitio, se queda donde está.'], { vents: 1 });
 ev('caos_control', 'El caos se extiende sin control', 'r', 3, 1, 0, 0, ['M','T','A'], 2, ['Cada espacio con nombre que pase a estar controlado por Zeds este turno recibe 2 fichas de Caos (en lugar de 1). Solo puedes retirar 1 ficha por turno, como es habitual, durante la fase de Mantenimiento (ver sección 7.2).'], { chaos2: 1 });
 ev('fin_r', 'Por fin ha terminado la larga pesadilla', 'r', 5, 0, 'B', 2, ['*','*'], 0, ['¡Habéis ganado!', 'Ninguno de los supervivientes volverá a ser el mismo…'], { fin: 1 });
-/* El Dr. Marteuse («¡Aquí está el Doctor!») y las cartas del Jugador Zed se usan solo en el modo Versus (no incluido). */
+/* Las cartas del Jugador Zed y el texto «En Versus» de «¡Aquí está el Doctor!» (Dr. Marteuse) son solo del modo Versus (no incluido); el efecto en solitario de esa carta sí está. */
 
 /* orden estable de nombres de archivo de imagen = id */

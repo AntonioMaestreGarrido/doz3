@@ -51,7 +51,7 @@ dest('hipnotizados', 'Zeds hipnotizados', 'r', 'T', 1, 'Juega esta carta durante
 dest('necesidad', 'La necesidad agudiza el ingenio', 'r', 'F', 1, 'Juega esta carta durante la fase de Acciones para convertir 2 Suministros en 1 de Munición. Puedes hacer esto tantas veces como quieras este turno.');
 dest('florecimiento', 'El florecimiento', 'r', 'lessC', 0, 'Reemplaza la unidad Zed más débil (incluso si es Propagador o Súper Zed) por una nueva unidad Zed Normal. Si hay empate, reemplaza todas las unidades más débiles por nuevas unidades Zed Normales. Retira todas las fichas de Impacto de las unidades Zed.');
 dest('averia', 'Avería grave', 'r', 'B', 0, 'Retira 1 Componente de la Súper Arma si has descubierto la Súper Arma. De lo contrario: a) coge al azar una carta de Investigación Inicial y ponla encima del mazo, o bien b) activa la ruta (moviendo las unidades Zed con normalidad) con menos Zeds (elige en caso de empate).');
-dest('canon', 'Cañón histórico de Farmingdale', 'r', 'T', 1, 'Juega esta carta durante la fase de Acciones para realizar un ataque gratuito con Arma de Fuego de Fuerza 5 contra cualquier espacio n.º 0 ó n.º 1 en la superficie (sin consumir Munición). Después tira 1 dado: 1-5 = descarta la carta; 6 = guárdala.');
+dest('canon', 'Cañón histórico de Farmingdale', 'r', 'T', 1, 'Juega esta carta durante la fase de Acciones para realizar un ataque gratuito con Arma de Fuego de Fuerza 5 contra cualquier espacio n.º 0 ó n.º 1 (sin consumir Munición ni usar la Súper Arma). Después tira 1 dado: 1-5 = descarta la carta; 6 = guárdala.');
 
 /* ---- Investigación ---- th: tirada mínima (1 dado), sup: coste en Suministros. kind: ini (inicial) | adv (avanzada normal) | spe (avanzada especial «!») */
 const RES = {};

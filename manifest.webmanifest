@@ -1,7 +1,7 @@
 {
-  "name": "Dawn of the Zeds — Solitario",
+  "name": "Dawn of the Zeds — Solitario y cooperativo",
   "short_name": "Dawn of the Zeds",
-  "description": "Adaptación web en solitario, no oficial, de Dawn of the Zeds.",
+  "description": "Adaptación web en solitario o cooperativo (hot seat), no oficial, de Dawn of the Zeds.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

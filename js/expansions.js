@@ -308,3 +308,15 @@ maintenance = async function () {
   for (const u of Object.values(G.units)) { delete u._chipDie; u.freeChip = false; }
   UI.updateStats();
 };
+/* ---------- Presión Zed (cooperativo): iconos de cada carta de Evento, transcritos de las imágenes ----------
+   's'/'e' = «al inicio» / «al final» de la fase de los Zeds · M = Z (movimiento) · P = Ƶ (colocación, el icono Z enmarcado). Orden = orden en la carta.
+   Las cartas que no aparecen no tienen iconos de Presión. */
+const PRESSURE = {
+  sM: ['cardio', 'asalto_m', 'asalto_f', 'pelo', 'odio', 'heroe_b', 'resistentes', 'errantes', 'caos_abs', 'caos_control', 'oh_malo', 'que_demonios', 'donde_todos', 'super_enloq', 'desesperacion', 'moteros', 'que_diablos', 'campanas', 'frenesi', 'no_comer', 'gente'],
+  sP: ['cerebros_b1', 'cerebros_b2', 'cerebros_g', 'cerebros_y1', 'cerebros_y2', 'rapidos', 'helicoptero', 'monstruo', 'elwood', 'rumores', 'hace_falta', 'murcielagos', 'brote_local', 'feria', 'atajos', 'conductos', 'fortuna', 'panico'],
+  eM: ['que_olor', 'flambeados', 'materiales', 'entusiasma'],
+  eP: ['descubrimiento']
+};
+const PRESSURE_SEQ = { bajo_pies: ['sP', 'sM'], contaminacion: ['sP', 'sM'], doc_problema: ['sP', 'sM'], artefacto: ['sP', 'sM'], oh_no: ['sP', 'sM'], resiste: ['sP', 'sM'], duros: ['eP', 'eM'], no_detendran: ['eP', 'eM'], aqui_doctor: ['eM', 'eP'] };
+for (const k in PRESSURE) for (const id of PRESSURE[k]) if (EV[id]) EV[id].pr = [k];
+for (const id in PRESSURE_SEQ) if (EV[id]) EV[id].pr = PRESSURE_SEQ[id];

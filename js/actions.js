@@ -7,14 +7,40 @@ function freeFor(u, type) { return u ? (u.free || 0) + (type === 'move' ? (u.fre
 function freeLabel(u) { const p = []; if (u.free) p.push(u.free); if (u.freeM) p.push(u.freeM + ' solo Mover'); if (u.freeMF) p.push(u.freeMF + ' Mover o disparar'); return p.join(' + '); }
 /* El medidor de Acciones de Evento llega como mucho a 4 (solo Jaque Mates puede superarlo). */
 function addEventActions(n) { G.pool.event = Math.min(4, G.pool.event + n); }
-function actionsAvail(u, type) { return freeFor(u, type) + (G.pool.player ? 1 : 0) + G.pool.event; }
+/* ---------- Jugadores (cooperativo hot seat) ----------
+   G.players: [{name, color}] (1 = partida en solitario) · G.act: jugador que está actuando · G.pool.pl[i]: Acción de Jugador de cada uno.
+   u.owner: índice del jugador cuyo Héroe Personal es u (null = unidad común). */
+const PL_COLORS = ['#4fc3f7', '#ffb74d', '#81c784', '#ce93d8'];
+const nPlayers = () => (G.players && G.players.length) || 1;
+const multiP = () => nPlayers() > 1;
+const plTok = i => (G.pool && G.pool.pl && G.pool.pl[i === undefined ? (G.act || 0) : i]) || 0;
+const plTokAll = () => ((G.pool && G.pool.pl) || []).reduce((a, b) => a + (b ? 1 : 0), 0);
+function initPlayers(list) {
+  G.players = (list && list.length ? list : [{}]).map((p, i) => ({ name: p.name || 'Jugador ' + (i + 1), color: PL_COLORS[i % 4] }));
+  G.act = 0;
+}
+function newPool(eventActs) { return { pl: Array.from({ length: nPlayers() }, () => 1), event: eventActs || 0 }; }
+/* El Héroe Personal de otro jugador exige su permiso explícito; las unidades comunes las activa cualquiera.
+   Solo en partidas online (G.online): en hot seat todos están en la misma mesa y el permiso se pide hablando, sin modal. */
+function needsPermission(u) { return multiP() && G.online && u && u.owner != null && u.owner !== G.act && !(G.turn && G.turn.perm && G.turn.perm[u.id + ':' + G.act]); }
+/* Cuando muere el Héroe Personal de un jugador, ese jugador elige otro Héroe o Civil Heroico del tablero que aún no tenga dueño. */
+async function reassignHero(dead) {
+  const i = dead.owner, p = G.players[i]; dead.owner = null; if (!p) return;
+  const c = allUnits(x => (x.type === 'hero' || x.type === 'civh') && x.owner == null && x.space && x.space !== 'CEM' && x.side === 'pl');
+  if (!c.length) { LOG(p.name + ' se queda sin Héroe Personal: no hay ningún Héroe libre en el tablero.', 'bad'); return; }
+  const prev = G.act; G.act = i; UI.updateStats();
+  const t = c.length === 1 ? c[0] : G.units[await UI.pickUnit(c, p.name + ': ha muerto ' + dead.name + '. Elige tu nuevo Héroe Personal.')];
+  G.act = prev; t.owner = i; LOG(p.name + ' toma el control de ' + t.name + ' como nuevo Héroe Personal.', 'good'); UI.updateStats(); UI.redraw();
+}
+function ownerName(u) { return u && u.owner != null && G.players[u.owner] ? G.players[u.owner].name : ''; }
+function actionsAvail(u, type) { return freeFor(u, type) + plTok() + G.pool.event; }
 function canPay(u, n, type) { return actionsAvail(u, type) >= n; }
 function spendActions(u, n, type) {
   for (let k = 0; k < n; k++) {
     if (u && type === 'move' && u.freeM > 0) u.freeM--;
     else if (u && (type === 'move' || type === 'fire') && u.freeMF > 0) u.freeMF--;
     else if (u && u.free > 0) u.free--;
-    else if (G.pool.player > 0) G.pool.player = 0;
+    else if (plTok() > 0) G.pool.pl[G.act || 0] = 0;
     else if (G.pool.event > 0) G.pool.event--;
   }
 }
@@ -227,7 +253,7 @@ async function useHandCard(k) {
     case 'cama': { const cs = BEDS.map(b => unitsAt(b)[0]).filter(x => x && x.type === 'civ' && x.curedTurn !== G.turnNo); if (!cs.length) { LOG('No hay Civiles en el Hospital que puedan curarse este turno.'); return; } const v = await UI.pickUnit(cs, 'Elige la unidad que sale del Hospital totalmente curada.', true); if (v == null) return; const u = G.units[v]; const c = Object.values(G.spaces).filter(s => s.route && s.route !== 'T' && s.name && !controlled(s.id)); const w = await UI.pickSpace(c.map(s => s.id), 'Elige el espacio con nombre donde aparece.', true); if (w == null) return; u.hits = 0; u.flipped = false; u.ecg = false; u.curedTurn = G.turnNo; infDown(1); putUnit(u, w); rm(); break; }
     case 'expediente': { if (!unitsAt('T4').some(isFighter)) { LOG('Necesitas una unidad en la Oficina del Dr. Marteuse.'); return; } rm(); await revealResearch(); break; }
     case 'necesidad': { if (G.supplies < 2) { LOG('Necesitas 2 Suministros.'); return; } rm(); await mkSpecial('necesidad').fn(); break; }
-    case 'canon': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && sp(x.space).route !== 'T' && spaceNum(x.space) <= 1).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (!c.length) { LOG('No hay objetivos en espacios 0 ó 1.'); return; } const t = await UI.pickSpace(c, 'Cañón: elige el objetivo.', true); if (t == null) return; const a = d6(), b = d6(), hits = FIRE[sumRow(a + b)][4]; LOG('Cañón: ' + hits + ' Impactos.', 'good'); await applyZedHits(zedsAt(t), hits); if (d6() <= 5) rm(); break; }
+    case 'canon': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && spaceNum(x.space) <= 1).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (!c.length) { LOG('No hay objetivos en espacios 0 ó 1.'); return; } const t = await UI.pickSpace(c, 'Cañón: elige el objetivo.', true); if (t == null) return; const a = d6(), b = d6(), hits = FIRE[sumRow(a + b)][4]; LOG('Cañón: ' + hits + ' Impactos.', 'good'); await applyZedHits(zedsAt(t), hits); if (d6() <= 5) rm(); break; }
     case 'hoguera': rm(); infDown(2); break;
     case 'desesperados': if (G.ammo >= 1) { G.ammo--; rm(); infDown(5); UI.updateStats(); } break;
     case 'barrelotodo': { let n = 2; for (const s of Object.values(G.spaces)) while (n > 0 && s.chaos) { s.chaos--; G.chaosLeft++; n--; } rm(); UI.redraw(); break; }

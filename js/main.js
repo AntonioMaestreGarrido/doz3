@@ -7,7 +7,7 @@ async function revealEvent() {
   if (G.turnNo > 1) Voz.say('turno');
   if (G.eventsRevealed >= G.totalEvents - 2) Voz.say('amanece');
   if (G.ammo <= 1) Voz.say('municion');
-  G.pool = { player: 1, event: ev.acc || 0 }; G.charUsed = {}; G.firstFreeUsed = {};
+  G.pool = newPool(ev.acc); G.charUsed = {}; G.firstFreeUsed = {};
   $('evimg').src = 'assets/cartas/e_' + id + '.jpg'; $('evimg').dataset.zoom = 'e:' + id;
   UI.log('— Turno ' + G.turnNo + ': «' + ev.name + '» —', 'turn'); UI.updateStats();
 }
@@ -41,7 +41,7 @@ async function playGame(setup, saved) {
     UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     UI.log('Partida recuperada — ' + G.lv.name + ' (' + G.len.name + '), turno ' + G.turnNo + '.', 'turn');
   } else {
-    PENDING_SEED = setup.seed != null ? setup.seed : null;
+    PENDING_SEED = setup.seed != null ? setup.seed : null; PENDING_PLAYERS = setup.players || null;
     newGame(setup.level, setup.len, setup.hero, setup.exps); G.saveId = newSaveId(); G.seedCode = setup.seedCode || null;
     ui.setMap(G.lv.board); G.busy = true; UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     if (G.setupRoll) { const [a, b] = G.setupRoll; G.setupRoll = null; await UI.waitAck('Suministros y munición iniciales', 'Tirada de 2 dados: <b>' + a + '</b> y <b>' + b + '</b>.<br>Suministros: <b>' + (a + b) + '</b> · Munición: <b>' + (6 - Math.min(a, b)) + '</b>.'); }
@@ -67,8 +67,10 @@ async function playGame(setup, saved) {
       if (ev.fin && ev.id !== 'fin_b2') { G.over = 'win'; break; }  /* «Al inicio de esta fase: ¡habéis ganado!» */
       G.phase = 'zeds'; UI.updateStats();
       await withPeek(eventStart); if (G.over) break;
+      await pressure('s'); if (G.over) break;
       await phaseZeds(); if (G.over) break;
       await withPeek(eventAfterZeds); UI.release(); if (G.over) break;
+      await pressure('e'); if (G.over) break;
       if (ev.fin) { G.over = 'win'; break; }  /* fin_b2: al inicio de la fase de Acciones, si seguís vivos */
     } else ev = G.event;
     const resumed = resume === 'actions'; resume = null;
