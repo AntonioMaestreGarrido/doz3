@@ -223,7 +223,7 @@ const ui = {
   _undo: [],
   _undoSnap() { return { s: JSON.stringify({ rng: rngState(), uid: UID, G: snapshotState() }) }; },
   undoClear() { this._undo = []; this.updateUndo(); },
-  updateUndo() { const b = $('undoBtn'); if (!b) return; const n = this._undo.length, ok = n > 0 && G.phase === 'actions' && !G.busy && !G.over; b.disabled = !ok; b.textContent = '↶ Deshacer' + (n ? ' (' + n + ')' : ''); },
+  updateUndo() { const b = $('undoBtn'); if (!b) return; const n = this._undo.length, ok = n > 0 && G.phase === 'actions' && !G.busy && !G.over && !Net.online; b.disabled = !ok; b.textContent = '↶ Deshacer' + (n ? ' (' + n + ')' : ''); },
   async undo() {
     if (G.busy || G.phase !== 'actions' || G.over || !this._undo.length) return;
     const p = this._undo.pop(), s = JSON.parse(p.s);
@@ -773,9 +773,10 @@ const ui = {
   showOptions() {
     this._modal('<h2>Opciones</h2><h3 class="oph">Sonido</h3><p>Cada canal tiene su propio interruptor y volumen.</p>' + this._soundRows() +
       '<h3 class="oph">Arte</h3><div class="snd"><label class="chk"><input type="checkbox" id="optArt"' + (Opciones.artAlt ? ' checked' : '') + '> Usar arte alternativo</label></div>' +
-      '<p class="ophint">Cambia las ilustraciones de cartas, fichas y obituario por el arte alternativo.</p>' +
+      '<p class="ophint">Cambia las ilustraciones de cartas, fichas y obituario por el arte alternativo.</p>' + (G.lv && G.saveId ? '<h3 class="oph">Partida</h3><div class="opts"><button id="expSave">Exportar partida (archivo)</button></div><p class="ophint">Guarda la partida actual en un archivo para reanudarla en otro navegador o dispositivo («Cargar partida → Importar archivo»).</p>' : '') +
       '<div class="opts"><button class="primary" id="sndOk">Cerrar</button></div>', 'sound');
     this._bindSound();
+    if ($('expSave')) $('expSave').onclick = () => { const s = exportSave(G.saveId); if (!s) { alert('Aún no hay nada guardado.'); return; } const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([s], { type: 'application/json' })); a.download = 'doz3-partida' + (G.online && Net.code ? '-sala-' + Net.code : '') + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
     $('optArt').onchange = e => { Opciones.set({ artAlt: e.target.checked }); loadAltArt().then(() => ui.redraw()); };
     $('sndOk').onclick = () => ui._close();
   },
@@ -877,9 +878,14 @@ const ui = {
       const draw = () => {
         const l = listSaves();
         if (!l.length && !full) { this._close(); return res(null); }
-        const rows = l.map(s => '<div class="slot"><div><b>' + s.meta.lv + '</b> · ' + s.meta.len + ' · turno ' + s.meta.turn + '<small>' + (s.meta.heroes || []).join(', ') + ' · ' + fmt(s.meta.date) + '</small></div><div class="sbt">' + (full ? '' : '<button class="primary" data-load="' + s.id + '">Cargar</button>') + '<button data-del="' + s.id + '">' + (full ? 'Borrar y empezar nueva' : 'Borrar') + '</button></div></div>').join('');
-        const b = this._modal('<h2>' + (full ? 'Partidas guardadas (máximo ' + MAX_SLOTS + ')' : 'Cargar partida') + '</h2>' + (full ? '<p>Has llegado al máximo. Borra una partida para empezar otra.</p>' : '') + '<div class="slots">' + rows + '</div><div class="opts"><button id="slotx">' + (full ? 'Cancelar' : 'Volver') + '</button></div>', 'toppanel');
+        const rows = l.map(s => '<div class="slot"><div><b>' + s.meta.lv + '</b> · ' + s.meta.len + ' · turno ' + s.meta.turn + '<small>' + (s.meta.online ? '🌐 Online · sala ' + s.meta.online + ' · ' : '') + (s.meta.heroes || []).join(', ') + ' · ' + fmt(s.meta.date) + '</small></div><div class="sbt">' + (full ? '' : '<button class="primary" data-load="' + s.id + '">Cargar</button>') + '<button data-del="' + s.id + '">' + (full ? 'Borrar y empezar nueva' : 'Borrar') + '</button></div></div>').join('');
+        const b = this._modal('<h2>' + (full ? 'Partidas guardadas (máximo ' + MAX_SLOTS + ')' : 'Cargar partida') + '</h2>' + (full ? '<p>Has llegado al máximo. Borra una partida para empezar otra.</p>' : '') + '<div class="slots">' + rows + '</div><div class="opts">' + (full ? '' : '<button id="slotimp">Importar archivo…</button>') + '<button id="slotx">' + (full ? 'Cancelar' : 'Volver') + '</button></div>', 'toppanel');
         $('slotx').onclick = () => { this._close(); res(null); };
+        if (!full) $('slotimp').onclick = () => {
+          const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+          inp.onchange = () => { const f = inp.files[0]; if (!f) return; f.text().then(tx => { try { importSave(tx); draw(); } catch (e) { alert(e.message || 'No se pudo importar la partida.'); } }); };
+          inp.click();
+        };
         b.querySelectorAll('[data-load]').forEach(bt => bt.onclick = () => { this._close(); res(bt.dataset.load); });
         b.querySelectorAll('[data-del]').forEach(bt => bt.onclick = () => {
           if (!confirm('¿Borrar esta partida guardada?')) return;

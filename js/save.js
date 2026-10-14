@@ -94,10 +94,20 @@ function saveGame(at) {
   try {
     if (!G.lv || G.over) return;
     if (!G.saveId) G.saveId = newSaveId();
-    const snap = snapshotState();
-    localStorage.setItem(SLOT_PREFIX + G.saveId, JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), dbg: !!DEBUG_DICE, G: snap, meta: slotMeta(snap) }));
+    const snap = snapshotState(), net = typeof Net !== 'undefined' ? Net.saveInfo() : null, meta = slotMeta(snap); if (net) meta.online = net.code;
+    const str = JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), dbg: !!DEBUG_DICE, G: snap, meta, net });
+    if (net) Net.joinSave = str; /* instantánea con la que se une quien entre a mitad de partida */
+    localStorage.setItem(SLOT_PREFIX + G.saveId, str);
     const ids = slotIds(); if (ids[0] !== G.saveId) setSlotIds([G.saveId].concat(ids.filter(x => x !== G.saveId)));
   } catch (e) { console.warn('No se pudo guardar la partida', e); }
+}
+/* Exportar / importar una partida guardada como archivo (para no depender solo del navegador). */
+function exportSave(id) { try { return localStorage.getItem(SLOT_PREFIX + id); } catch (e) { return null; } }
+function importSave(text) {
+  const s = JSON.parse(text);
+  if (!s || s.v !== 1 || !s.G || !LEVELS[s.G.lv]) throw new Error('El archivo no es una partida válida.');
+  const id = newSaveId(); s.G.saveId = id; s.meta = slotMeta(s.G); if (s.net) s.meta.online = s.net.code;
+  localStorage.setItem(SLOT_PREFIX + id, JSON.stringify(s)); setSlotIds([id].concat(slotIds())); return id;
 }
 /* Lista de partidas guardadas (la más reciente primero). */
 function listSaves() {

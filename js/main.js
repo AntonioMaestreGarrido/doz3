@@ -115,10 +115,12 @@ window.addEventListener('load', async () => {
   Net.wrap(ui); bindUI(ui); window.UI = ui;
   await ui.init();
   await ui.intro();
+  let rj = null; try { rj = sessionStorage.getItem('doz3.rejoin'); sessionStorage.removeItem('doz3.rejoin'); } catch (e) { }
+  if (rj) { Net._joinCode = rj; const s = await Net._join(true); Net._joinCode = null; if (s) { ui.musicStop(); ui.hideCover(); if (s.resume) runGame(null, s.resume); else runGame(s); return; } }
   while (true) {
     const a = await ui.titleScreen();
-    if (a === 'online') { const s = await Net.lobbyFlow(); if (s) { ui.musicStop(); ui.hideCover(); runGame(s); return; } continue; }
-    if (a === 'load') { const id = await ui.slotsScreen(); const saved = id && loadSave(id); if (saved) { ui.musicStop(); ui.hideCover(); runGame(null, saved); return; } continue; }
+    if (a === 'online') { const s = await Net.lobbyFlow(); if (s) { ui.musicStop(); ui.hideCover(); if (s.resume) runGame(null, s.resume); else runGame(s); return; } continue; }
+    if (a === 'load') { const id = await ui.slotsScreen(); const saved = id && loadSave(id); if (saved && saved.net) { const r = await Net.resumeFlow(saved); if (r) { ui.musicStop(); ui.hideCover(); runGame(null, r); return; } continue; } if (saved) { ui.musicStop(); ui.hideCover(); runGame(null, saved); return; } continue; }
     if (listSaves().length >= MAX_SLOTS) { const id = await ui.slotsScreen('full'); if (!id) continue; }
     const setup = await ui.setupScreen();
     if (setup) { ui.musicStop(); ui.hideCover(); runGame(setup); return; }

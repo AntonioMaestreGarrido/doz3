@@ -2,6 +2,15 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-14 07:29
+
+### Novedades
+- **Jugar online (2-4 jugadores, cada uno en su dispositivo):** en la portada, «Jugar online» → «Crear sala» o «Unirse a una sala» con un código corto (o un enlace `#sala=XXXX`). El anfitrión elige nivel, duración, expansiones y jugadores; los invitados toman uno o varios asientos. Todos ven la partida completa, con animaciones y ventanas; cuando decide otro jugador, ves su ventana en solo lectura («Esperando a X…»). No hace falta servidor propio: la conexión es directa entre navegadores (WebRTC, con PeerJS para encontrarse).
+- **Sincronización:** todos ejecutan el mismo juego con la misma semilla y se pasan solo las decisiones y las órdenes de la fase de Acciones. Al final de cada turno se comprueba que el estado coincide y, si no, el anfitrión corrige al invitado.
+- **Cortes de conexión:** el invitado se reconecta solo y recupera lo que se perdió; el anfitrión ve quién falta. Si un invitado recarga la pestaña, vuelve a entrar con «Unirse a una sala». Si cae el anfitrión, cualquiera puede reanudar la partida desde su guardado («Cargar partida» → partida marcada 🌐 → «Reanudar como anfitrión») y los demás se unen a la misma sala.
+- **Guardado:** las partidas online se marcan con 🌐 y se pueden exportar a un archivo (Opciones → «Exportar partida») e importar («Cargar partida» → «Importar archivo…»).
+- En partidas online no está disponible «Deshacer».
+
 ## 2026-10-13 19:35
 
 ### Mejoras

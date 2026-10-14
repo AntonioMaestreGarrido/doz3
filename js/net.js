@@ -13,12 +13,12 @@ const Net = {
      · Ventanas de decisión (elegir, confirmar, tirar...): se numeran en el mismo orden en todos los dispositivos (n). Decide quien lleva el asiento
        que manda en ese momento; los demás ven la misma ventana en solo lectura («esperando a X») y la cierran con la respuesta recibida.
      · Órdenes en la fase de Acciones (mover, disparar, usar carta, terminar…): las numera el anfitrión y todos las ejecutan en el mismo orden. */
-  pn: 0, curN: 0, waitCount: 0, forceSeat: null, ans: {}, res: {}, subs: {}, subH: {}, q: [], waiters: {}, cn: 0, me: 'h',
+  pn: 0, curN: 0, waitCount: 0, forceSeat: null, ans: {}, res: {}, subs: {}, subH: {}, q: [], waiters: {}, cn: 0, me: 'h', hostTok: 'h', ses: '', epoch: '', joinSave: null,
   _enc(v) { return v === undefined ? { u: 1 } : v; },
   _dec(v) { return v && typeof v === 'object' && v.u === 1 ? undefined : v; },
   reset() { this.pn = 0; this.curN = 0; this.waitCount = 0; this.forceSeat = null; this.ans = {}; this.res = {}; this.subs = {}; this.subH = {}; this.q = []; this.waiters = {}; this.cn = 0; this.log = []; this.hi = 0; this.lastK = {}; this.lastI = 0; this.gk = 0; this.outbox = []; },
   /* Envía a los demás (el anfitrión retransmite lo que le llega de un invitado). */
-  _bcast(m) { if (this.role === 'host') this._hsend(null, m, 'h'); else this._gsend(m); },
+  _bcast(m) { if (this.role === 'host') this._hsend(null, m, this.me); else this._gsend(m); },
   /* Anfitrión → invitados, con número de secuencia y guardado en el registro para repetirlo a quien se reconecte.
      to = un invitado concreto (null = todos menos origin). */
   _hsend(to, m, origin) {
@@ -87,9 +87,9 @@ const Net = {
   cmd(c) {
     if (!this.online) return this.exec(c);
     if (c.seat === undefined) c.seat = G.act;
-    c.id = this.me + ':' + (++this.cn);
+    c.id = this.me + ':' + this.ses + ':' + (++this.cn);
     const p = new Promise(res => { this.waiters[c.id] = res; });
-    if (this.role === 'host') this._seqCmd(c, 'h'); else this._bcast({ t: 'cmd', cmd: c });
+    if (this.role === 'host') this._seqCmd(c, this.me); else this._bcast({ t: 'cmd', cmd: c });
     return p;
   },
   _seqCmd(c, from) {
@@ -120,7 +120,7 @@ const Net = {
       case 'sp': { const s = G.turn.specials[c.i]; if (!s) return; G.turn.specials.splice(c.i, 1); await ui.guard(() => s.fn()); return; }
       case 'perm': if (u) await ui.guard(() => ui.askPermission(u)); return;
       case 'end': if (ui._endRes) { const r = ui._endRes; ui._endRes = null; ui.mode = null; ui.setBanner(null); r(); } return;
-      case 'undo': await ui.undo(); return;
+      case 'undo': if (!this.online) await ui.undo(); return;
       case 'tie': if (!G.busy) { await ui._tieBreak(); ui.updateStats(); } return;
       case 'vis': await ui.guard(() => ui._willyVisions()); return;
     }
@@ -174,8 +174,70 @@ const Net = {
       try { ui.log('El estado de tu partida se ha corregido con el del anfitrión.', 'bad'); ui.updateStats(); ui.updateHand(); ui.redraw(); } catch (e) { }
     }
   },
+  /* ---------- Fase 4c: guardado online y reanudación ---------- */
+  /* Datos de red que acompañan a cada guardado (null fuera de una partida online). */
+  saveInfo() {
+    if (!this.online) return null;
+    const ans = {}; for (const k in this.ans) ans[k] = this._enc(this.ans[k]);
+    return { code: this.code, tok: this.me, hostTok: this.hostTok, role: this.role, owners: this.owners, names: this.names, seats: this.seats, setup: this.setup, epoch: this.epoch,
+      pn: this.pn, hi: this.role === 'host' ? this.hi : this.lastI, q: this.q.slice(), ans, subs: this.subs };
+  },
+  /* Devuelve al estado de red el que tenía al guardar (contadores de decisiones, órdenes y respuestas pendientes). */
+  restoreRuntime(n, hi) {
+    this.reset(); this.online = true; DEBUG_DICE = false; this.ses = Math.random().toString(36).slice(2, 6); this._inGame = true;
+    this.pn = n.pn || 0; this.q = (n.q || []).slice(); this.ans = {}; for (const k in (n.ans || {})) this.ans[k] = this._dec(n.ans[k]); this.subs = n.subs || {};
+    this.code = n.code; this.owners = n.owners; this.names = n.names || {}; this.setup = n.setup; this.hostTok = n.hostTok; this.seats = n.seats || []; this.me = n.tok;
+    try { sessionStorage.setItem('doz3.tok', n.tok); } catch (e) { }
+    if (hi !== undefined) this.lastI = hi;
+  },
+  /* Reanudar como anfitrión una partida online guardada: se reserva de nuevo el código de sala y los demás vuelven a entrar. */
+  async resumeHost(saved) {
+    const n = saved.net; if (!n || !n.code) return null;
+    ui._modal('<h2>Reanudando sala ' + Net._esc(n.code) + '…</h2><p>Reservando el código de sala. Puede tardar un minuto si la sala anterior aún no ha caducado.</p><div class="opts"><button id="rhCancel">Cancelar</button></div>');
+    let cancel = false; $('rhCancel').onclick = () => { cancel = true; };
+    let peer = null, err = null;
+    for (let k = 0; k < 14 && !peer && !cancel; k++) {
+      try { peer = await this._peer(this.PREFIX + n.code); } catch (e) { err = e; if (e.type !== 'unavailable-id') break; await new Promise(r => setTimeout(r, 5000)); }
+    }
+    ui._close();
+    if (!peer) { if (!cancel) await ui.waitAck('Reanudar partida online', err && err.type === 'unavailable-id' ? 'La sala ' + Net._esc(n.code) + ' sigue activa en otro dispositivo. Si es tu anfitrión anterior, únete a ella; si no, espera un minuto e inténtalo de nuevo.' : 'No se pudo reservar la sala: ' + Net._esc((err && (err.message || err.type)) || 'sin conexión') + '.'); return null; }
+    this.close(); this.peer = peer; this.role = 'host'; this.started = true; this.epoch = this.newEpoch();
+    this.restoreRuntime(n, 0); this.hi = 0; this.log = []; this.lastK = {}; this.away = {}; this.conns = {};
+    this.hostTok = this.me; /* el dispositivo que reanuda pasa a ser el anfitrión */
+    for (const o of new Set(this.owners)) if (o !== this.me) this.away[o] = Date.now();
+    n.hi = 0; n.epoch = this.epoch; n.hostTok = this.me; this.joinSave = JSON.stringify(Object.assign({}, saved, { net: n }));
+    this._hostWire(peer, null); peer.on('error', e => this._onError(e)); this._keepPeer(peer);
+    this._hostBar(); this.info();
+    return saved;
+  },
+  /* Reanudar desde un guardado con datos de red: como anfitrión o uniéndose a la sala que sigue activa. Devuelve la partida guardada a cargar o null. */
+  async resumeFlow(saved) {
+    const code = saved.net.code;
+    const v = await ui.choose({ title: 'Reanudar partida online', text: 'Sala <b>' + Net._esc(code) + '</b>. ¿La reanudas tú como anfitrión o te unes a la sala si otro dispositivo ya la ha reanudado?', options: [{ label: 'Reanudar como anfitrión', value: 'host' }, { label: 'Unirme a la sala activa', value: 'join' }], cancel: true });
+    if (v === 'host') return this.resumeHost(saved);
+    if (v === 'join') { this._joinCode = code; const r = await this._join(); this._joinCode = null; return r && r.resume ? r.resume : null; }
+    return null;
+  },
+  /* Invitado: llega la instantánea de la partida en curso (dispositivo recién abierto o de otra sala). */
+  _guestResume(m) {
+    if (this._inGame) { try { sessionStorage.setItem('doz3.rejoin', this.code || ''); sessionStorage.setItem('doz3.skipIntro', '1'); } catch (e) { } location.reload(); return; }
+    const saved = JSON.parse(m.save), n = saved.net || {};
+    this.started = true; this.epoch = m.epoch; this.hostTok = m.hostTok; this.owners = m.owners; this.names = m.names; this.setup = m.setup;
+    this.restoreRuntime(Object.assign({}, n, { code: this.code, tok: this.me, hostTok: m.hostTok, owners: m.owners, names: m.names, setup: m.setup, seats: m.seats }), n.hi || 0);
+    this.role = 'guest'; this.info();
+    if (this._resumeRes) { const r = this._resumeRes; this._resumeRes = null; saved.id = newSaveId(); r({ resume: saved }); }
+  },
+  /* Indicador de conexión (esquina inferior izquierda). */
+  info() {
+    let b = document.getElementById('netinfo');
+    if (!this.online) { if (b) b.hidden = true; return; }
+    if (!b) { b = document.createElement('div'); b.id = 'netinfo'; document.body.appendChild(b); }
+    const total = new Set(this.owners).size, conn = this.role === 'host' ? 1 + Object.keys(this.conns).length : (this._retrying ? 0 : 1);
+    b.hidden = false; b.textContent = '🌐 Sala ' + this.code + (this.role === 'host' ? ' · ' + conn + '/' + total + ' conectados' : (this._retrying ? ' · reconectando…' : ' · conectado'));
+  },
   /* Empieza la partida online en este dispositivo (se llama justo antes de crear la partida). */
-  begin() { this.reset(); this.online = true; DEBUG_DICE = false; },
+  begin() { this.reset(); this.online = true; DEBUG_DICE = false; this.ses = Math.random().toString(36).slice(2, 6); this._inGame = true; this.info(); },
+  newEpoch() { return Math.random().toString(36).slice(2, 10); },
   /* Envuelve los métodos de decisión de la interfaz: el asiento que decide es el jugador activo (G.act). */
   wrap(u) {
     for (const k of ['choose', 'chooseCards', 'askZeds', 'waitAck', 'pickUnit', 'pickSpace', 'superIntro', '_btn', '_ask', '_rollWait']) {
@@ -202,13 +264,13 @@ const Net = {
     });
   },
   _onError(e) { console.warn('Net', e); },
-  close() { try { if (this.peer) this.peer.destroy(); } catch (e) { } this.peer = null; this.conns = {}; this.role = null; this.online = false; this.seats = null; this.started = false; this._retrying = false; this.away = {}; this.cpDone = {}; this._bar(''); },
+  close() { try { if (this.peer) this.peer.destroy(); } catch (e) { } this.peer = null; this.conns = {}; this.role = null; this.online = false; this.seats = null; this.started = false; this._inGame = false; this._retrying = false; this.away = {}; this.cpDone = {}; this._bar(''); this.info(); },
   _esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); },
   /* Lista de asientos con su dueño. `me` = id de este dispositivo; con `claim` los asientos libres (del anfitrión) se pueden tomar. */
-  _seatsHtml(players, owners, names, me, claim) {
+  _seatsHtml(players, owners, names, me, claim, hostTok) {
     return '<div class="plrows">' + players.map((p, i) => {
-      const o = owners[i], mine = o === me, who = o === 'h' ? (me === 'h' ? 'Tú (anfitrión)' : 'Anfitrión') : (mine ? 'Tú' : (names[o] || 'Invitado'));
-      const btn = claim ? (mine ? '<button data-rel="' + i + '">Soltar</button>' : (o === 'h' ? '<button data-claim="' + i + '">Tomar</button>' : '')) : '';
+      const o = owners[i], mine = o === me, who = o === hostTok ? (me === hostTok ? 'Tú (anfitrión)' : 'Anfitrión') : (mine ? 'Tú' : (names[o] || 'Invitado'));
+      const btn = claim ? (mine ? '<button data-rel="' + i + '">Soltar</button>' : (o === hostTok ? '<button data-claim="' + i + '">Tomar</button>' : '')) : '';
       return '<div class="row"><span style="color:' + PL_COLORS[i % 4] + '">●</span> <b>' + Net._esc(p.name) + '</b> — ' + Net._esc(who) + ' ' + btn + '</div>';
     }).join('') + '</div>';
   },
@@ -226,29 +288,18 @@ const Net = {
     let peer = null, code;
     for (let k = 0; k < 6 && !peer; k++) { code = this.newCode(); try { peer = await this._peer(this.PREFIX + code); } catch (e) { if (e.type !== 'unavailable-id') { await ui.waitAck('Jugar online', 'No se pudo crear la sala: ' + Net._esc(e.message || e.type || e) + '.<br>Comprueba la conexión a Internet.'); return null; } } }
     if (!peer) { await ui.waitAck('Jugar online', 'No se pudo reservar un código de sala. Inténtalo de nuevo.'); return null; }
-    this.close(); this.peer = peer; this.role = 'host'; this.setup = setup; this.conns = {}; this.names = {}; this.away = {}; this.owners = setup.players.map(() => 'h');
+    this.close(); this.peer = peer; this.role = 'host'; this.setup = setup; this.conns = {}; this.names = {}; this.away = {}; this.hostTok = this.me = this._tok(); this.epoch = this.newEpoch(); this.owners = setup.players.map(() => this.hostTok);
     let render = () => { };
-    const broadcast = () => { for (const id in this.conns) this._send(this.conns[id], { t: 'lobby', players: setup.players, owners: this.owners, names: this.names, you: id }); render(); };
+    const broadcast = () => { for (const id in this.conns) this._send(this.conns[id], { t: 'lobby', players: setup.players, owners: this.owners, names: this.names, you: id, host: this.hostTok }); render(); };
     this.code = code; this._order = 0; this._lobbyRender = () => render(); this._lobbyBroadcast = broadcast;
-    peer.on('connection', c => {
-      c.on('data', m => {
-        if (!m || typeof m !== 'object') return;
-        if (m.t === 'hi') { this._hostHi(c, m); return; }
-        if (!c.tok) return;
-        if (this.started) { this.recv(m, c.tok); return; }
-        if (m.t === 'claim' && this.owners[m.seat] === 'h') this.owners[m.seat] = c.tok;
-        else if (m.t === 'release' && this.owners[m.seat] === c.tok) this.owners[m.seat] = 'h';
-        broadcast();
-      });
-      c.on('close', () => this._hostGone(c)); c.on('error', () => this._hostGone(c));
-    });
+    this._hostWire(peer, broadcast);
     peer.on('error', e => this._onError(e)); this._keepPeer(peer);
     return new Promise(res => {
       const link = location.origin + location.pathname + '#sala=' + code;
       render = () => {
         const n = Object.keys(this.conns).length;
         const b = ui._modal('<h2>Sala ' + code + '</h2><p>Dile a los demás que elijan «Jugar online → Unirse a una sala» y escriban <b style="font-size:22px;letter-spacing:3px">' + code + '</b>, o que abran este enlace:<br><small>' + Net._esc(link) + '</small></p>' +
-          this._seatsHtml(setup.players, this.owners, this.names, 'h', false) +
+          this._seatsHtml(setup.players, this.owners, this.names, this.hostTok, false, this.hostTok) +
           '<p>' + (n ? n + (n === 1 ? ' invitado conectado.' : ' invitados conectados.') : 'Esperando invitados…') + ' Los asientos que nadie tome los juegas tú.</p>' +
           '<div class="opts"><button class="primary" id="nbStart"' + (n ? '' : ' disabled') + '>Empezar la partida</button><button id="nbCopy">Copiar enlace</button><button id="nbCancel">Cancelar</button></div>');
         $('nbCopy').onclick = () => { try { navigator.clipboard.writeText(link); } catch (e) { } };
@@ -256,19 +307,20 @@ const Net = {
         $('nbStart').onclick = () => {
           this.started = true; ui._close();
           this.log = []; this.hi = 0; this.lastK = {};
-          for (const id in this.conns) this._send(this.conns[id], { t: 'start', setup, seats: this.owners.map((o, i) => o === id ? i : -1).filter(i => i >= 0) });
-          this.seats = this.owners.map((o, i) => o === 'h' ? i : -1).filter(i => i >= 0); this.me = 'h'; this.begin(); res(setup);
+          for (const id in this.conns) this._send(this.conns[id], { t: 'start', setup, owners: this.owners, names: this.names, host: this.hostTok, epoch: this.epoch, seats: this.owners.map((o, i) => o === id ? i : -1).filter(i => i >= 0) });
+          this.seats = this.owners.map((o, i) => o === this.hostTok ? i : -1).filter(i => i >= 0); this.begin(); res(setup);
         };
       };
       render();
     });
   },
   _tok() { try { let k = sessionStorage.getItem('doz3.tok'); if (!k) { k = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); sessionStorage.setItem('doz3.tok', k); } return k; } catch (e) { return this._tk || (this._tk = Math.random().toString(36).slice(2, 12)); } },
-  _join() {
+  _join(auto) {
     return new Promise(res => {
+      this._resumeRes = res;
       const ask = (msg) => {
         const b = ui._modal('<h2>Unirse a una sala</h2><p>Escribe el código de sala (4 caracteres).</p>' + (msg ? '<p style="color:#ff8a7a">' + Net._esc(msg) + '</p>' : '') + '<input id="njCode" maxlength="4" size="6" style="font-size:22px;letter-spacing:3px;text-transform:uppercase" autocomplete="off"><div class="opts"><button class="primary" id="njGo">Conectar</button><button id="njBack">Volver</button></div>');
-        const m = /sala=([A-Za-z0-9]{4})/.exec(location.hash); if (m) $('njCode').value = m[1].toUpperCase();
+        const m = /sala=([A-Za-z0-9]{4})/.exec(location.hash); if (m) $('njCode').value = m[1].toUpperCase(); if (this._joinCode) $('njCode').value = this._joinCode;
         $('njBack').onclick = () => { ui._close(); res(null); };
         $('njGo').onclick = () => go($('njCode').value.trim().toUpperCase());
         $('njCode').focus();
@@ -286,17 +338,18 @@ const Net = {
         const data = m => {
           if (!m || typeof m !== 'object') return;
           if (m.t === 'welcome') { this._guestWelcome(m); return; }
+          if (m.t === 'resume') { this._guestResume(m); return; }
           if (this.started) { this.recv(m, 'h'); return; }
           if (m.t === 'full') { clearTimeout(to); fail('La sala ' + code + ' está llena o ya ha empezado.'); return; }
           if (m.t === 'lobby') {
-            this.me = m.you;
+            this.me = m.you; this.hostTok = m.host;
             const c = this.conns.h;
-            ui._modal('<h2>Sala ' + code + '</h2><p>Toma tus asientos y espera a que el anfitrión empiece la partida.</p>' + this._seatsHtml(m.players, m.owners, m.names, m.you, true) + '<div class="opts"><button id="njLeave">Salir</button></div>');
+            ui._modal('<h2>Sala ' + code + '</h2><p>Toma tus asientos y espera a que el anfitrión empiece la partida.</p>' + this._seatsHtml(m.players, m.owners, m.names, m.you, true, m.host) + '<div class="opts"><button id="njLeave">Salir</button></div>');
             document.querySelectorAll('#modalbox [data-claim]').forEach(x => x.onclick = () => this._send(c, { t: 'claim', seat: +x.dataset.claim }));
             document.querySelectorAll('#modalbox [data-rel]').forEach(x => x.onclick = () => this._send(c, { t: 'release', seat: +x.dataset.rel }));
             $('njLeave').onclick = () => { Net.close(); ui._close(); res(null); };
           } else if (m.t === 'start') {
-            this.started = true; this.seats = m.seats; this.begin(); ui._close(); res(m.setup);
+            this.started = true; this.seats = m.seats; this.owners = m.owners; this.names = m.names; this.hostTok = m.host; this.epoch = m.epoch; this.setup = m.setup; this.begin(); ui._close(); res(m.setup);
           }
         };
         const lost = () => { if (this.started) this._guestLost(); else if (this.role === 'guest' && opened) { Net.close(); ui.waitAck('Jugar online', 'Se perdió la conexión con el anfitrión.').then(() => ask('')); } };
@@ -304,20 +357,21 @@ const Net = {
         this._guestConnect(() => { opened = true; clearTimeout(to); }, () => { if (!opened) { clearTimeout(to); fail('No se pudo conectar con la sala ' + code + '.'); } });
       };
       ask('');
+      if (auto && this._joinCode) go(this._joinCode);
     });
   },
   /* Abre (o reabre) la conexión con el anfitrión y se presenta con el identificador estable. */
   _guestConnect(onOpen, onFail) {
     const peer = this.peer; if (!peer || peer.destroyed) return;
     const c = peer.connect(this.PREFIX + this.code, { reliable: true }); this.conns = { h: c }; let ok = false;
-    c.on('open', () => { ok = true; if (onOpen) onOpen(); this._send(c, { t: 'hi', tok: this.me, lastI: this.lastI }); });
+    c.on('open', () => { ok = true; if (onOpen) onOpen(); this._send(c, { t: 'hi', tok: this.me, lastI: this.lastI, epoch: this.epoch, fresh: !this._inGame }); });
     c.on('data', m => this._guestData(m));
     c.on('close', () => { if (this.conns.h === c && ok) this._guestClosed(); });
     c.on('error', () => { if (!ok && onFail) onFail(); });
   },
   /* Conexión perdida durante la partida: se reintenta sin parar; la partida del invitado se queda esperando donde estaba. */
   _guestLost() {
-    if (this._retrying || !this.online) return; this._retrying = true; const t0 = Date.now();
+    if (this._retrying || !this.online) return; this._retrying = true; this.info(); const t0 = Date.now();
     try { ui.log('Se perdió la conexión con el anfitrión. Reconectando…', 'bad'); } catch (e) { }
     const loop = () => {
       if (!this._retrying || !this.online) return;
@@ -330,10 +384,24 @@ const Net = {
     loop();
   },
   _guestWelcome(m) {
-    this._retrying = false; this._bar('');
+    this._retrying = false; this._bar(''); this.info();
     const c = this.conns.h; this.outbox = this.outbox.filter(x => x.g > m.lastK);
     for (const x of this.outbox) this._send(c, x);
     try { ui.log('Conexión recuperada.', 'good'); } catch (e) { }
+  },
+  _hostWire(peer, broadcast) {
+    peer.on('connection', c => {
+      c.on('data', m => {
+        if (!m || typeof m !== 'object') return;
+        if (m.t === 'hi') { this._hostHi(c, m); return; }
+        if (!c.tok) return;
+        if (this.started) { this.recv(m, c.tok); return; }
+        if (m.t === 'claim' && this.owners[m.seat] === this.hostTok) this.owners[m.seat] = c.tok;
+        else if (m.t === 'release' && this.owners[m.seat] === c.tok) this.owners[m.seat] = this.hostTok;
+        if (broadcast) broadcast();
+      });
+      c.on('close', () => this._hostGone(c)); c.on('error', () => this._hostGone(c));
+    });
   },
   /* El Peer pierde la conexión con el servicio de señalización: se vuelve a conectar (las conexiones ya abiertas siguen vivas). */
   _keepPeer(peer) { peer.on('disconnected', () => { const tryAgain = () => { if (this.peer !== peer || peer.destroyed || !peer.disconnected) return; try { peer.reconnect(); } catch (e) { } setTimeout(tryAgain, 4000); }; setTimeout(tryAgain, 1000); }); },
@@ -344,10 +412,18 @@ const Net = {
       if (!this.owners.includes(tok)) { this._send(c, { t: 'full' }); setTimeout(() => c.close(), 300); return; }
       const old = this.conns[tok]; if (old && old !== c) { old.tok = null; try { old.close(); } catch (e) { } }
       c.tok = tok; this.conns[tok] = c; delete this.away[tok];
-      this._send(c, { t: 'welcome', lastK: this.lastK[tok] || 0 });
       const from = +m.lastI || 0;
-      for (const e of this.log) if (e.i > from && ((e.to === tok) || (e.to === null && e.origin !== tok))) this._send(c, e.m);
-      try { ui.log((this.names[tok] || 'Un invitado') + ' ha vuelto a conectarse.', 'good'); } catch (e) { } this._hostBar();
+      if (m.fresh || m.epoch !== this.epoch) {
+        /* Dispositivo sin partida en memoria (recarga, otro navegador) o de una sala anterior: entra desde la última instantánea y recibe lo posterior. */
+        const save = this.joinSave; if (!save) { this._send(c, { t: 'full' }); return; }
+        const base = (JSON.parse(save).net || {}).hi || 0;
+        this._send(c, { t: 'resume', save, epoch: this.epoch, hostTok: this.hostTok, owners: this.owners, names: this.names, setup: this.setup, seats: this.owners.map((o, i) => o === tok ? i : -1).filter(i => i >= 0) });
+        for (const e of this.log) if (e.i > base && (e.to === tok || e.to === null)) this._send(c, e.m);
+      } else {
+        this._send(c, { t: 'welcome', lastK: this.lastK[tok] || 0 });
+        for (const e of this.log) if (e.i > from && ((e.to === tok) || (e.to === null && e.origin !== tok))) this._send(c, e.m);
+      }
+      try { ui.log((this.names[tok] || 'Un invitado') + ' ha vuelto a conectarse.', 'good'); } catch (e) { } this._hostBar(); this.info();
       return;
     }
     if (Object.keys(this.conns).length >= this.setup.players.length - 1 && !this.conns[tok]) { this._send(c, { t: 'full' }); setTimeout(() => c.close(), 300); return; }
@@ -357,9 +433,9 @@ const Net = {
     const tok = c.tok; if (!tok || this.conns[tok] !== c) return;
     delete this.conns[tok];
     if (this.started) {
-      this.away[tok] = Date.now(); try { ui.log('Se perdió la conexión con ' + (this.names[tok] || 'un invitado') + '. La partida espera a que vuelva.', 'bad'); } catch (e) { }
+      this.away[tok] = Date.now(); this.info(); try { ui.log('Se perdió la conexión con ' + (this.names[tok] || 'un invitado') + '. La partida espera a que vuelva.', 'bad'); } catch (e) { }
       if (this._cpFin) this._cpFin(); this._hostBar();
-    } else { this.owners = this.owners.map(o => o === tok ? 'h' : o); this._lobbyBroadcast(); }
+    } else { this.owners = this.owners.map(o => o === tok ? this.hostTok : o); this._lobbyBroadcast(); }
   },
   _hostBar() { const a = Object.keys(this.away).map(k => this.names[k] || 'Invitado'); this._bar(a.length ? '⚠ Sin conexión: ' + a.join(', ') + '. La partida espera a que vuelvan.' : ''); },
   _bar(text) {
