@@ -47,7 +47,7 @@ const ui = {
     }, true);
     if (this.initMapZoom) this.initMapZoom();
     window.addEventListener('resize', () => this.arrange());
-    $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
+    $('evimg').addEventListener('click', () => { if (G.event) (ui._raw_waitAck || ui.waitAck).call(ui, G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
     $('optionsBtn').addEventListener('click', () => ui.showOptions());
     $('logBtn').addEventListener('click', () => downloadLog());
@@ -55,7 +55,7 @@ const ui = {
     $('cancelBtn').addEventListener('click', () => ui.cancelMode());
     $('rulesBtn').addEventListener('click', () => ui.showRules());
     $('cardsBtn').addEventListener('click', () => ui.showHeroCards());
-    if ($('undoBtn')) $('undoBtn').addEventListener('click', () => ui.undo());
+    if ($('undoBtn')) $('undoBtn').addEventListener('click', () => { if (ui.canCmd()) Net.cmd({ c: 'undo' }); });
     $('newBtn').addEventListener('click', () => { if (confirm('¿Volver al menú principal? La partida se guarda al terminar cada acción: lo que hayas hecho en la acción en curso se perderá.')) ui.reloadToMenu(); });
     this.arrange();
   },
@@ -138,15 +138,17 @@ const ui = {
     if (G.phase === 'actions' && !G.busy) h += '<button class="primary" id="endBtn" style="grid-column:1/3">Terminar fase de Acciones ▶</button>';
     $('status').innerHTML = h;
     const vb = $('visBtn'); if (vb) vb.onclick = () => this.willyVisions();
-    $('status').querySelectorAll('[data-pl]').forEach(b => b.onclick = () => { if (G.busy || !$('modal').hidden) return; G.act = +b.dataset.pl; this.updateStats(); });
+    $('status').querySelectorAll('[data-pl]').forEach(b => b.onclick = () => { if (G.busy || !$('modal').hidden) return; const i = +b.dataset.pl; if (Net.online && !Net.mine(i)) return; Net.cmd({ c: 'act_pl', i, seat: i }); });
     const tb = $('tieBtn'); if (tb) tb.onclick = () => this.tieBreak();
-    const eb = $('endBtn'); if (eb) eb.onclick = () => { if (ui._endRes) { const r = ui._endRes; ui._endRes = null; ui.mode = null; ui.setBanner(null); r(); } };
+    const eb = $('endBtn'); if (eb) eb.onclick = () => { if (ui.canCmd()) Net.cmd({ c: 'end' }); };
     this.renderActBox();
     this.renderUnitBox();
+    if (Net.online) Net.kick();
   },
   /* Desempate del cooperativo: un dado decide qué jugador manda en la discusión. */
-  async tieBreak() {
-    if (G.busy || !$('modal').hidden || !multiP()) return;
+  tieBreak() { if (G.busy || !$('modal').hidden || !multiP() || !this.canCmd()) return; Net.cmd({ c: 'tie' }); },
+  async _tieBreak() {
+    if (!multiP()) return;
     const n = nPlayers(), who = v => G.players[(v - 1) % n].name;
     G.busy = true;
     try { const [v] = await this.rollSimple('Desempate: ' + G.players.map((p, i) => p.name + ' (' + [1, 2, 3, 4, 5, 6].filter(x => (x - 1) % n === i).join('/') + ')').join(' · '), 1, d => 'Decide <b>' + who(d[0]) + '</b>.'); LOG('Desempate: decide ' + who(v) + '.', 'turn'); } finally { G.busy = false; }
@@ -154,13 +156,15 @@ const ui = {
   },
   /* Permiso explícito del dueño de un Héroe Personal para que otro jugador lo use este turno. */
   async askPermission(u) {
+    Net.forceSeat = u.owner;
     const ok = await this.choose({ title: 'Permiso de ' + ownerName(u), text: '<b>' + G.players[G.act].name + '</b> quiere usar a <b>' + u.name + '</b>, el Héroe Personal de <b>' + ownerName(u) + '</b>. ¿' + ownerName(u) + ' da su permiso?', options: [{ label: 'Sí, lo permite', value: true }, { label: 'No', value: false }] });
     if (ok) G.turn.perm[u.id + ':' + G.act] = true;
     return ok;
   },
   /* Visiones (Wilson el Ermitaño): en cualquier momento, mira la carta superior del mazo de Destino. Sin robarla ni cambiar el orden. */
-  async willyVisions() {
-    if (!alive('wilson') || G.busy || !$('modal').hidden) return;
+  willyVisions() { if (!alive('wilson') || G.busy || !$('modal').hidden || !this.canCmd()) return; Net.cmd({ c: 'vis' }); },
+  async _willyVisions() {
+    if (!alive('wilson')) return;
     if (!G.destDeck.length && !G.destDiscard.length) { this._modal('<h2>Visiones</h2><p>No quedan cartas de Destino.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>'); $('xb').onclick = () => ui._close(); return; }
     /* Mazo vacío: se baraja el descarte igual que al robar (drawDestiny) y se mira la primera carta de ese mazo nuevo. */
     if (!G.destDeck.length) G.destDeck = shuffle(G.destDiscard.splice(0));
@@ -211,10 +215,10 @@ const ui = {
     const h = $('hand'); h.innerHTML = '';
     for (const k of G.hand) {
       const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'd:' + k; d.innerHTML = '<b>' + DEST[k].name + '</b>';
-      if (handUsable(k) && !G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useHandCard(k)); d.appendChild(b); }
+      if (handUsable(k) && !G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => { if (ui.canCmd()) Net.cmd({ c: 'hand', k }); }; d.appendChild(b); }
       h.appendChild(d);
     }
-    for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
+    for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => { if (ui.canCmd()) Net.cmd({ c: 'rumor', k }); }; d.appendChild(b); } h.appendChild(d); }
   },
   _undo: [],
   _undoSnap() { return { s: JSON.stringify({ rng: rngState(), uid: UID, G: snapshotState() }) }; },
@@ -247,7 +251,7 @@ const ui = {
     b.textContent = t; b.hidden = false;
     if (c) c.hidden = !(this.mode && (this.mode.type !== 'pick' || this.mode.cancel));
   },
-  cancelMode() { if (this.mode && this.mode.type === 'pick' && this.mode.cancel) { const r = this.mode.resolve; this.mode = null; this.setBanner(null); this.redraw(); r(null); } else if (this.mode && this.mode.type !== 'pick') { this.mode = null; this.setBanner(null); this.redraw(); } },
+  cancelMode() { if (Net.waitCount) return; if (this.mode && this.mode.type === 'pick' && this.mode.cancel) { const r = this.mode.resolve; this.mode = null; this.setBanner(null); this.redraw(); r(null); } else if (this.mode && this.mode.type !== 'pick') { this.mode = null; this.setBanner(null); this.redraw(); } },
   renderUnitBox() {
     /* La unidad seleccionada puede haber muerto fuera de la fase de Acciones (Infección, Zeds): sigue en G.units pero en el Cementerio. */
     if (G.sel && G.units[G.sel] && !G.spaces[G.units[G.sel].space]) G.sel = null;
@@ -266,17 +270,39 @@ const ui = {
     box.querySelectorAll('[data-card]').forEach(b => b.onclick = () => ui.showHeroCard(u.key, b.dataset.card));
     this.bindSpecials(box);
   },
-  bindSpecials(box) { box.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { const s = G.turn.specials[+b.dataset.sp]; G.turn.specials.splice(+b.dataset.sp, 1); ui.guard(() => s.fn()); }); },
+  bindSpecials(box) { box.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { if (ui.canCmd()) Net.cmd({ c: 'sp', i: +b.dataset.sp }); }); },
+  /* Online: solo el dispositivo que lleva al jugador activo (G.act) puede dar órdenes. */
+  canCmd() { return !Net.online || Net.mine(G.act); },
+  moveMode(u) {
+    const extra = G.turn.vehicle && u.type === 'hero' && !['pepinillos', 'horacio'].includes(u.key) && isSurface(u.space) ? G.turn.vehicle : 0; let opts = reachable(u, extra); if (extra) { const base = reachable(u, 0); for (const k in opts) if (base[k] === undefined && !isSurface(k)) delete opts[k]; }
+    if (G.turn.heli && u.type === 'hero') { opts = {}; for (const k in G.spaces) if (isSurface(k) && canStop(u, k) && k !== u.space) opts[k] = 0; }
+    if (!canPay(u, 1, 'move')) opts = Object.fromEntries(Object.entries(opts).filter(([k]) => moveIsFree(u, k)));
+    return { type: 'move', unit: u, opts, extra };
+  },
+  /* Ejecución de Mover / Disparar (la misma en todos los dispositivos): el destino llega como orden de Net. */
+  execMove(u, sid) {
+    const m = this.moveMode(u), dist = m.opts[sid]; if (dist === undefined) return;
+    return ui.guard(async () => {
+      if (!moveIsFree(u, sid)) spendActions(u, 1, 'move'); if (m.extra && dist > u.mp) G.turn.vehicle = 0;
+      if (G.turn.heli && u.type === 'hero') { G.turn.heli = false; putUnit(u, sid); LOG(u.name + ' es recogido por el helicóptero.'); ui.redraw(); return; }
+      await doMove(u, sid, (m.opts.stealthPath && m.opts.stealthPath[sid]) || pathTo(m.opts.prev, u.space, sid));
+    });
+  },
+  execFire(u, sid, flags) {
+    const m = { type: 'fire', unit: u, opts: fireTargets(u), free: !!flags.free, fab: !!flags.fab }, dist = m.opts[sid]; if (dist === undefined) return;
+    return ui.guard(async () => {
+      if (m.free) { G.ammo--; G.charUsed.cit = true; await doFire(u, sid, dist, { shift: 1, shiftLabel: 'Ciudadela' }); }
+      else if (m.fab) { spendActions(u, 2, 'fire'); await doFire(u, sid, dist); }
+      else { spendActions(u, 1, 'fire'); await payFire(u); await doFire(u, sid, dist); }
+    });
+  },
   doAct(u, id) {
-    if (needsPermission(u)) { this.askPermission(u).then(ok => { if (ok) this.doAct(u, id); }); return; }
-    if (id === 'move') {
-      const extra = G.turn.vehicle && u.type === 'hero' && !['pepinillos', 'horacio'].includes(u.key) && isSurface(u.space) ? G.turn.vehicle : 0; let opts = reachable(u, extra); if (extra) { const base = reachable(u, 0); for (const k in opts) if (base[k] === undefined && !isSurface(k)) delete opts[k]; }
-      if (G.turn.heli && u.type === 'hero') { opts = {}; for (const k in G.spaces) if (isSurface(k) && canStop(u, k) && k !== u.space) opts[k] = 0; }
-      if (!canPay(u, 1, 'move')) opts = Object.fromEntries(Object.entries(opts).filter(([k]) => moveIsFree(u, k)));
-      ui.mode = { type: 'move', unit: u, opts, extra }; ui.setBanner('Elige el espacio de destino (Esc para cancelar)'); ui.redraw();
-    } else if (id === 'fire') { ui.mode = { type: 'fire', unit: u, opts: fireTargets(u) }; ui.setBanner('Elige el espacio del Zed objetivo'); ui.redraw(); }
+    if (!this.canCmd()) return;
+    if (needsPermission(u)) { Net.cmd({ c: 'perm', uid: u.id }).then(() => { if (G.turn && G.turn.perm && G.turn.perm[u.id + ':' + G.act]) this.doAct(u, id); }); return; }
+    if (id === 'move') { ui.mode = this.moveMode(u); ui.setBanner('Elige el espacio de destino (Esc para cancelar)'); ui.redraw(); }
+    else if (id === 'fire') { ui.mode = { type: 'fire', unit: u, opts: fireTargets(u) }; ui.setBanner('Elige el espacio del Zed objetivo'); ui.redraw(); }
     else if (id === 'fab') { ui.mode = { type: 'fire', unit: u, opts: fireTargets(u), fab: true }; ui.setBanner('Fabricar munición: elige el objetivo (2 acciones)'); ui.redraw(); }
-    else ui.guard(() => runAction(u, id));
+    else Net.cmd({ c: 'act', uid: u.id, id });
   },
 
   toMap(e) { const r = this.canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * this.canvas.width / r.width, y: (e.clientY - r.top) * this.canvas.height / r.height }; },
@@ -291,23 +317,15 @@ const ui = {
     else if (this._mapZoom) { this._mapZoom = false; this.zoomHide(); }
   },
   onClick(e) {
-    if (!G.units) return; const p = this.toMap(e), uid = this.hitUnit(p), sid = this.hitSpace(p), m = this.mode;
+    if (!G.units || Net.waitCount) return; const p = this.toMap(e), uid = this.hitUnit(p), sid = this.hitSpace(p), m = this.mode;
     if (this._pick) { if (uid && this._pick.ids.includes(uid)) this._pick.select(uid); return; }
     if (m && m.type === 'pick') { if (sid && m.ids.includes(sid)) { this.mode = null; this.setBanner(null); this.redraw(); m.resolve(sid); } return; }
     if (G.busy) return;
     if (m && (m.type === 'move' || m.type === 'fire')) {
-      if (sid && m.opts[sid] !== undefined) {
-        const u = m.unit, dist = m.opts[sid]; this.mode = null; this.setBanner(null);
-        if (m.type === 'move') ui.guard(async () => {
-          if (!moveIsFree(u, sid)) spendActions(u, 1, 'move'); if (m.extra && dist > u.mp) G.turn.vehicle = 0;
-          if (G.turn.heli && u.type === 'hero') { G.turn.heli = false; putUnit(u, sid); LOG(u.name + ' es recogido por el helicóptero.'); ui.redraw(); return; }
-          await doMove(u, sid, (m.opts.stealthPath && m.opts.stealthPath[sid]) || pathTo(m.opts.prev, u.space, sid));
-        });
-        else ui.guard(async () => {
-          if (m.free) { G.ammo--; G.charUsed.cit = true; await doFire(u, sid, dist, { shift: 1, shiftLabel: 'Ciudadela' }); }
-          else if (m.fab) { spendActions(u, 2, 'fire'); await doFire(u, sid, dist); }
-          else { spendActions(u, 1, 'fire'); await payFire(u); await doFire(u, sid, dist); }
-        });
+      if (sid && m.opts[sid] !== undefined && this.canCmd()) {
+        this.mode = null; this.setBanner(null);
+        if (m.type === 'move') Net.cmd({ c: 'move', uid: m.unit.id, dest: sid });
+        else Net.cmd({ c: 'fire', uid: m.unit.id, dest: sid, free: !!m.free, fab: !!m.fab });
         return;
       }
       this.mode = null; this.setBanner(null);
@@ -318,7 +336,7 @@ const ui = {
   selectUnit(uid) {
     G.sel = uid || null; this.updateStats(); this.redraw();
     const u = uid && G.units[uid]; if (!u || G.phase !== 'actions' || G.busy) return;
-    if (needsPermission(u)) return; /* solo se mira: el permiso se pide al elegir una acción */
+    if (needsPermission(u) || !this.canCmd()) return; /* solo se mira: el permiso se pide al elegir una acción */
     const mv = unitActions(u).find(a => a.id === 'move'); if (mv && mv.ok) this.doAct(u, 'move');
   },
   redraw() { if (!this.ctx || !G.spaces) return; cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.draw()); },
@@ -579,18 +597,22 @@ const ui = {
     FIRE.forEach((row, r) => { h += '<tr data-r="' + r + '"><td class="rowh">' + CAC_ROWS[r] + '</td>' + row.map((c, i) => '<td data-c="' + i + '" class="' + (i === col ? 'c-final' : '') + '">' + c + '</td>').join('') + '</tr>'; });
     return h + '</table>';
   },
-  async _rollDice(b, extra, onChange, cardApi) {
-    const got = await new Promise(r => { ui._rollGo = r;
+  _rollWait(extra, cardApi) {
+    return new Promise(r => { ui._rollGo = r; const n = Net.curN;
       $('rb').innerHTML = '<div id="cbcards"></div><button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>';
       const hasCards = !!(cardApi && cardApi.cards.length);
-      if (hasCards) cardApi.cards.forEach(c => {
+      const btns = []; Net.regSub(n, (e, k) => { if (e === 'card' && btns[k] && !btns[k].disabled) btns[k].onclick(); });
+      if (hasCards) cardApi.cards.forEach((c, i) => {
         const bt = document.createElement('button'); bt.className = 'cardbtn'; bt.textContent = '🃏 Jugar «' + DEST[c.key].name + '» (' + c.tag + ')';
-        bt.onclick = async () => { bt.disabled = true; await cardApi.use(c); bt.remove(); };
-        $('cbcards').appendChild(bt);
+        bt.onclick = async () => { Net.sub(n, 'card', i); bt.disabled = true; await cardApi.use(c); bt.remove(); };
+        $('cbcards').appendChild(bt); btns[i] = bt;
       });
       $('rollb').onclick = () => r('roll'); $('rollb').focus();
       if (ui.fast && !hasCards) r('roll'); /* con cartas disponibles no se tira solo: hay que poder jugarlas */
     });
+  },
+  async _rollDice(b, extra, onChange, cardApi) {
+    const got = await ui._rollWait(extra, cardApi);
     ui._rollGo = null;
     $('rb').innerHTML = '';
     if (got === 'cancel') return null; /* una carta (¡Tiradles algo!) ha cancelado el combate */

@@ -418,3 +418,7 @@ body.booting #app{visibility:hidden}
 #plbar .plchip.on b{color:#111}
 #plbar #tieBtn{margin-left:auto;font-size:12px;padding:3px 8px}
 .setup .row[hidden]{display:none !important}
+
+/* Multijugador: ventana de otro jugador en solo lectura */
+#modalbox.ro button,#modalbox.ro .cpc,#modalbox.ro input,#modalbox.ro select{pointer-events:none;opacity:.55}
+#modalbox .waitnote{margin-top:10px;padding:6px 10px;border-radius:8px;background:#0006;color:var(--gold);font-size:13px;text-align:center}
