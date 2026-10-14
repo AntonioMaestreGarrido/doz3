@@ -665,11 +665,12 @@ const ui = {
     $('flipb').onclick = () => ui.showHeroCard(k, back ? 'front' : 'back', fromList);
     $('xb').onclick = () => fromList ? ui.showHeroCards() : ui._close();
   },
-  setupScreen() {
+  setupScreen(online) {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
       const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
+      if (online) { $('goBtn').textContent = 'Crear sala'; ['seedMake', 'seedUse', 'seedPaste', 'seedCopy', 'seedTxt', 'seedOff'].forEach(i => { const e = $(i); if (e) e.hidden = true; }); }
       let seed = null; /* { code, seed } cuando hay un código de partida activo */
       const sels = () => ['heroSel', 'heroSel2', 'heroSel3', 'heroSel4'].map($);
       const upd = () => {
@@ -829,7 +830,7 @@ const ui = {
       const prev = $('title'); if (prev) prev.remove();
       const sv = listSaves(), t = document.createElement('div'); t.id = 'title';
       const info = sv.length ? sv.length + (sv.length === 1 ? ' partida' : ' partidas') + ' · ' + LEVELS[sv[0].G.lv].name + ', turno ' + sv[0].G.turnNo : 'No hay partidas guardadas';
-      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="load"' + (sv.length ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="options">Opciones</button><button data-a="ost">OST</button><button data-a="debug">Debug</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button><div id="buildTag">' + (typeof BUILD_TIME !== 'undefined' ? 'build ' + BUILD_TIME : '') + '</div>';
+      t.innerHTML = '<div class="tbtns"><button class="primary" data-a="new">Nueva partida</button><button data-a="online">Jugar online<small>2-4 jugadores, cada uno en su dispositivo</small></button><button data-a="load"' + (sv.length ? '' : ' disabled') + '>Cargar partida<small>' + info + '</small></button><button data-a="top">Top supervivientes</button><button data-a="options">Opciones</button><button data-a="ost">OST</button><button data-a="debug">Debug</button><button data-a="credits">Créditos</button></div><button class="mute" id="muteBtn" title="Música"></button><div id="buildTag">' + (typeof BUILD_TIME !== 'undefined' ? 'build ' + BUILD_TIME : '') + '</div>';
       document.body.appendChild(t);
       this.musicOn();
       const mb = $('muteBtn'), paint = () => { mb.textContent = Sound.music.on ? '🔊' : '🔇'; }; paint();

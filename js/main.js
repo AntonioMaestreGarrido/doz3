@@ -116,6 +116,7 @@ window.addEventListener('load', async () => {
   await ui.intro();
   while (true) {
     const a = await ui.titleScreen();
+    if (a === 'online') { const s = await Net.lobbyFlow(); if (s) { ui.musicStop(); ui.hideCover(); runGame(s); return; } continue; }
     if (a === 'load') { const id = await ui.slotsScreen(); const saved = id && loadSave(id); if (saved) { ui.musicStop(); ui.hideCover(); runGame(null, saved); return; } continue; }
     if (listSaves().length >= MAX_SLOTS) { const id = await ui.slotsScreen('full'); if (!id) continue; }
     const setup = await ui.setupScreen();

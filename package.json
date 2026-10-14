@@ -6,6 +6,7 @@
     "serve:dist": "python -m http.server 8790 --directory dist"
   },
   "devDependencies": {
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "peerjs": "^1.5.4"
   }
 }
