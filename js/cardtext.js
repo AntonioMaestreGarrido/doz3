@@ -47,7 +47,8 @@ function zoomInfo(spec) {
     if (u.type === 'zed') return { img: zedTokenImg(u), title: 'Unidad Zed (Fuerza ' + strength(u) + ')', tok: 1, html: cur + li(['Unidad Zed Normal. Con 3 Impactos pasa a su cara reducida; con otros 3 es eliminada.', 'Dos Zeds en el mismo espacio forman una Horda y luchan sumando su Fuerza (máximo 2 por espacio).']) };
     if (u.type === 'civ') return { img: null, title: 'Civiles Normales', html: cur + li(['Resisten 4 Impactos (2 por cara). Si reciben el último: tirada de Salvación (1-3 Cementerio; 4-6 Centro en el Juego Básico u Hospital en los niveles posteriores).', u.resist ? '<b>Resistiendo:</b> atrincheradas en un Pueblo; inmóviles hasta que los Zeds ataquen el Pueblo.' : 'Mueven 2 espacios por Acción.']) };
     const sp0 = Object.values(SPECIALS).find(s => s.type === u.type && s.name === u.name) || SPECIALS[u.skey];
-    return { img: unitAlt(u.skey) ? 'assets/arte_alt/cartas/h_' + u.skey + '.webp' : (sp0 && sp0.card ? 'assets/cartas/' + sp0.card + '.jpg' : null), title: u.name, html: cur + li(sp0 ? sp0.txt : ['Unidad especial.']) };
+    const sk = u.skey && SPECIALS[u.skey] ? u.skey : null, stk = sk && specialTok(sk, u.flipped), scard = sk && specialCard(sk);
+    return { img: stk || scard || null, title: u.name, tok: stk ? 1 : 0, civ: !!stk, html: cur + li(sp0 ? sp0.txt : ['Unidad especial.']) + (scard ? '<div class="zrow small">Selecciona la unidad para ver la carta entera' + (specialBack(sk) ? ' y su trasfondo' : '') + '.</div>' : '') };
   }
   return null;
 }
@@ -59,10 +60,16 @@ const TOKEN_IMGS = ['porter','alia','agee','betty','carter','darling','hauser','
    Si la opción está apagada o el personaje no tiene arte alternativo, se usa siempre el original (y si una imagen falla, el reintento de ui.js vuelve al original). */
 const ALT_KEYS = ['agee','alia','antidist','bauer','betty','bomberos','carter','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','porter','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed'];
 /* Arte alternativo de los Súper Zeds (counters de dos caras en assets/arte_alt/zeds, con las claves de SUPER_ZEDS). */
-const ALT_ZEDS = ['berserker'];
+const ALT_ZEDS = ['berserker', 'lobo', 'supurador', 'devastador', 'reanimador', 'ferreo', 'gigante', 'saltarin', 'condenado'];
+/* Zeds normales con arte alternativo: counters 300x300 en arte_alt/zeds (zed_full_2…9 y zed_red_1…5); el número va incluido en la imagen. */
+const zedAltN = u => { if (!u || u.type !== 'zed') return null; const f = !u.flipped, n = f ? u.full : u.red; return (f ? n >= 2 && n <= 9 : n >= 1 && n <= 5) ? 'zed_' + (f ? 'full_' : 'red_') + n : null; };
 /* Arte alternativo de unidades especiales (clave de SPECIALS): counter apaisado de dos caras en assets/arte_alt/unidades y carta en arte_alt/cartas (h_/hb_). */
-const ALT_UNITS = ['petra', 'diamante'];
+const ALT_UNITS = ['petra', 'diamante', 'saqueadores', 'bubba'];
 const unitAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_UNITS.includes(k));
+/* Unidades especiales (SPECIALS): counter para el tooltip y carta entera (frente y, con arte alternativo, trasera). */
+const specialTok = (k, red) => { const d = SPECIALS[k]; if (!d) return null; if (unitAlt(k)) return 'assets/arte_alt/unidades/' + k + (red ? '_r' : '') + '.webp'; const im = d.img || (k === 'petra' ? 'petra' : null); return im ? 'assets/tokens/' + im + '.png' : null; };
+const specialCard = k => { const d = SPECIALS[k]; if (!d) return null; return unitAlt(k) ? 'assets/arte_alt/cartas/h_' + k + '.webp' : (d.card ? 'assets/cartas/' + d.card + '.jpg' : null); };
+const specialBack = k => unitAlt(k) && SPECIALS[k] ? 'assets/arte_alt/cartas/hb_' + k + '.webp' : null;
 const zedAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_ZEDS.includes(k));
 const superImg = (k, red) => zedAlt(k) ? 'assets/arte_alt/zeds/' + SUPER_ZEDS[k].img + (red ? '_r' : '') + '.webp' : 'assets/tokens/' + SUPER_ZEDS[k].img + '.png';
 const heroAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_KEYS.includes(k));
@@ -78,4 +85,4 @@ function heroImg(k, red) { return heroTok(k, red) || heroCard(k); }
 const HERO_HINT = k => heroCard(k) ? '<div class="zrow small">Selecciona la unidad (o abre «Cartas de Héroe») para ver la carta entera y su trasfondo.</div>' : '';
 
 /* Ficha Zed real (cara completa 2-9, reducida 1-5); si no existe, la ilustración genérica. */
-function zedTokenImg(u) { const n = u.flipped ? u.red : u.full; return (u.flipped ? n >= 1 && n <= 5 : n >= 2 && n <= 9) ? 'assets/tokens/zeds/' + (u.flipped ? 'red_' : 'full_') + n + '.png' : 'assets/tokens/zed.png'; }
+function zedTokenImg(u) { const an = Opciones.artAlt && zedAltN(u); if (an) return 'assets/arte_alt/zeds/' + an + '.webp'; const n = u.flipped ? u.red : u.full; return (u.flipped ? n >= 1 && n <= 5 : n >= 2 && n <= 9) ? 'assets/tokens/zeds/' + (u.flipped ? 'red_' : 'full_') + n + '.png' : 'assets/tokens/zed.png'; }

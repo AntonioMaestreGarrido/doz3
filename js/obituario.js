@@ -119,7 +119,7 @@ const Obit = {
   silenciar() {
     try {
       if (ui._mus) ui.musicStop();
-      if (ui._bg) { ui._bg.forEach(a => { a.onended = null; a.pause(); }); [ui._dg, ui._ls].forEach(a => a && a.pause()); ui._bg = null; ui._danger = false; ui._lastStand = false; }
+      if (ui._bg) { if (ui._stopFade) ui._stopFade(); ui._curTrack = null; ui._bg.forEach(a => { a.onended = null; a.pause(); }); [ui._dg, ui._ls].forEach(a => a && a.pause()); ui._bg = null; ui._danger = false; ui._lastStand = false; }
       if (ui._endMus) ui._endMus.pause();
     } catch (e) { }
   },

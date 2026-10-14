@@ -8,6 +8,8 @@ function loadImg(k, src) { return new Promise(res => { const i = new Image(); i.
 async function loadAltArt() {
   if (typeof Opciones === 'undefined' || !Opciones.artAlt || typeof ALT_KEYS === 'undefined') return;
   const list = []; for (const k of ALT_KEYS) { if (!IMG['alt_' + k]) list.push(['alt_' + k, 'assets/arte_alt/tokens/' + k + '.webp']); if (!IMG['alt_' + k + '_r']) list.push(['alt_' + k + '_r', 'assets/arte_alt/tokens/' + k + '_r.webp']); }
+  for (let n = 2; n <= 9; n++) if (!IMG['altzn_zed_full_' + n]) list.push(['altzn_zed_full_' + n, 'assets/arte_alt/zeds/zed_full_' + n + '.webp']);
+  for (let n = 1; n <= 5; n++) if (!IMG['altzn_zed_red_' + n]) list.push(['altzn_zed_red_' + n, 'assets/arte_alt/zeds/zed_red_' + n + '.webp']);
   for (const k of ALT_ZEDS) { const f = SUPER_ZEDS[k].img; for (const [id, suf] of [['altz_' + k, ''], ['altz_' + k + '_r', '_r']]) if (!IMG[id]) list.push([id, 'assets/arte_alt/zeds/' + f + suf + '.webp']); }
   for (const k of ALT_UNITS) for (const [id, suf] of [['altu_' + k, ''], ['altu_' + k + '_r', '_r']]) if (!IMG[id]) list.push([id, 'assets/arte_alt/unidades/' + k + suf + '.webp']);
   await Promise.all(list.map(([k, src]) => loadImg(k, src)));
@@ -22,6 +24,16 @@ async function loadAssets() {
   for (const k of ['petra', 'aldeanos', 'refugiados', 'civ1', 'civ2', 'civ3']) list.push(['u_' + k, 'assets/tokens/' + k + '.png']);
   list.push(['marines', 'assets/tokens/marines.png'], ['guardia', 'assets/tokens/guardia.png'], ['porter_r', 'assets/tokens/porter_r.png']);
   await Promise.all(list.map(([k, s]) => loadImg(k, s)));
+}
+/* Heridas de los Zeds con arte alternativo: una X de arañazo en rojo sangre por Impacto (3 por cara), abajo y centradas. */
+const SCRATCH_X = ['M3 5 Q14 8 21 19 Q28 30 38 36 Q30 38 22 29 Q15 20 3 5ZM37 4 Q27 10 22 18 Q16 28 6 37 Q12 26 19 17 Q26 8 37 4Z',
+  'M4 8 Q13 7 20 17 Q26 27 37 34 Q29 37 21 27 Q13 19 4 8ZM36 6 Q28 9 21 20 Q15 30 8 37 Q10 27 17 18 Q25 9 36 6Z',
+  'M2 6 Q11 10 20 21 Q27 31 39 35 Q30 38 21 30 Q12 22 2 6ZM38 7 Q29 11 21 17 Q15 26 5 36 Q10 24 18 15 Q27 8 38 7Z'].map(d => new Path2D(d));
+function scratchHits(c, n, red, hw, hh, w, right) {   /* right: los Súper Zeds llevan la caja de Fuerza abajo a la izquierda, así que las X van a la derecha */
+  const sz = w * 0.19, gap = w * 0.03, k = Math.min(n, 3), tw = k * sz + (k - 1) * gap, x0 = right ? hw - 5 - tw : -tw / 2;
+  c.save(); c.shadowColor = 'rgba(255,255,255,.55)'; c.shadowBlur = 3; c.fillStyle = red ? '#8a1812' : '#c0140c';
+  for (let i = 0; i < k; i++) { c.save(); c.translate(x0 + i * (sz + gap), hh - sz - 4); c.scale(sz / 40, sz / 40); c.fill(SCRATCH_X[i % 3]); c.restore(); }
+  c.restore();
 }
 const SIDE_COL = { train: '#555', civ: '#2b5c85', civh: '#5a2a7a', hero: '#1d3a2a', refugee: '#2f7a45', aldeano: '#a58a1d', raider: '#8a3d12', marine: '#3b4d2a', guard: '#2a4d3b', petra: '#5a2a7a' };
 
@@ -40,7 +52,7 @@ const ui = {
     document.addEventListener('error', e => {
       const t = e.target;
       /* Arte alternativo que no carga: vuelve a la imagen original. */
-      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)_r\.webp$/, 'assets/tokens/$1_reverso.png').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/unidades\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
+      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/zeds\/zed_(full|red)_(\d)\.webp$/, 'assets/tokens/zeds/$1_$2.png').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)_r\.webp$/, 'assets/tokens/$1_reverso.png').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/unidades\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
       if (!t || t.tagName !== 'IMG' || !/assets\/cartas\//.test(t.getAttribute('src') || '')) return;
       const base = t.getAttribute('src').split('?')[0], n = +(t.dataset.retry || 0); if (n >= 4) return; t.dataset.retry = n + 1;
       setTimeout(() => { t.src = base + '?r=' + Date.now(); }, 400 * (n + 1));
@@ -259,11 +271,12 @@ const ui = {
     const tags = []; if (u.ecg) tags.push('En coma'); if (u.resist) tags.push('Resistiendo'); if (u.armed) tags.push('Bien Armados 1►'); if (u.leader) tags.push('Líder Civil 1►'); if (u.keepCalm) tags.push('Keep calm 2►'); if (u.trained) tags.push('Entrenados +2'); if (freeTotal(u)) tags.push('Acciones gratis: ' + freeLabel(u));
     h += tags.map(t => '<span class="pill">' + t + '</span>').join('');
     if (u.key && heroCard(u.key)) h += '<div class="acts cardbtns"><button data-card="front">Ver carta entera</button><button data-card="back">Ver trasera (trasfondo)</button></div>';
+    else if (u.skey && specialCard(u.skey)) h += '<div class="acts cardbtns"><button data-card="front">Ver carta entera</button>' + (specialBack(u.skey) ? '<button data-card="back">Ver trasera (trasfondo)</button>' : '') + '</div>';
     const acts = unitActions(u);
     if (acts.length) h += '<div class="acts">' + acts.map(a => '<button data-act="' + a.id + '" class="' + (a.id === 'move' && a.ok ? 'primary' : '') + '" ' + (a.ok ? '' : 'disabled') + '>' + a.label + '</button>').join('') + '</div>';
     box.innerHTML = h + sph;
     box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => ui.doAct(u, b.dataset.act));
-    box.querySelectorAll('[data-card]').forEach(b => b.onclick = () => ui.showHeroCard(u.key, b.dataset.card));
+    box.querySelectorAll('[data-card]').forEach(b => b.onclick = () => u.key && heroCard(u.key) ? ui.showHeroCard(u.key, b.dataset.card) : ui.showUnitCard(u.skey, b.dataset.card));
     this.bindSpecials(box);
   },
   bindSpecials(box) { box.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { const s = G.turn.specials[+b.dataset.sp]; G.turn.specials.splice(+b.dataset.sp, 1); ui.guard(() => s.fn()); }); },
@@ -340,7 +353,7 @@ const ui = {
       });
       soft.forEach((u, k) => { if (s.kind === 'camp') rects.push({ id: u.id, x: s.x + ((k % 8) - 3.5) * 36, y: s.y + 30 + Math.floor(k / 8) * 34, w: 30, h: 30 }); else rects.push({ id: u.id, x: s.x + 38 + k * 30, y: s.y + 46, w: 30, h: 30 }); });
     }
-    this.rects = rects;
+    this.rects = rects.filter(r => !this.inFlight(r.id));
   },
   draw() {
     const c = this.ctx, W = this.canvas.width, H = this.canvas.height;
@@ -376,12 +389,13 @@ const ui = {
     if (sel) { c.shadowColor = '#ffd54a'; c.shadowBlur = 26; } else if (r.glow) { c.shadowColor = r.glow; c.shadowBlur = 34; }
     if (u.type === 'train') { c.fillStyle = u.state === 'leaving' ? '#d9822b' : '#3c7fc4'; rr(c, -hw - 8, -hh / 2, r.w + 16, hh, 6); c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.fillText(u.tkey === 'local' ? 'TREN L' : 'TREN M', 0, 4); }
     else if (isZedSide(u)) {
-      const altz = u.type === 'super' && Opciones.artAlt && IMG['altz_' + u.key + (u.flipped ? '_r' : '')];
+      const altz = Opciones.artAlt && (u.type === 'super' ? IMG['altz_' + u.key + (u.flipped ? '_r' : '')] : (u.type === 'zed' && IMG['altzn_' + zedAltN(u)]));
       if (altz) {
         c.save(); rr(c, -hw, -hh, r.w, r.h, 8); c.clip(); c.drawImage(altz, -hw, -hh, r.w, r.h); c.restore();
         if (sel) { c.strokeStyle = '#ffd54a'; c.lineWidth = 5; rr(c, -hw, -hh, r.w, r.h, 8); c.stroke(); }
         c.shadowBlur = 0;
-        if (u.hits) { c.font = '700 15px Segoe UI'; c.fillStyle = '#ff6b6b'; c.strokeStyle = '#000'; c.lineWidth = 3; c.textAlign = 'left'; const t = '♥'.repeat(u.hits); c.strokeText(t, -hw + 3, hh - 5); c.fillText(t, -hw + 3, hh - 5); }
+        if (u.type === 'zed' && strength(u) !== (u.flipped ? u.red : u.full)) badge(c, hw - 14, hh - 14, String(strength(u)), u.flipped ? '#5a1010' : '#a52a1b', '#fff');
+        if (u.hits) { if (u.type === 'zed' || u.type === 'super') scratchHits(c, u.hits, u.flipped, hw, hh, r.w, u.type === 'super'); else { c.font = '700 15px Segoe UI'; c.fillStyle = '#ff6b6b'; c.strokeStyle = '#000'; c.lineWidth = 3; c.textAlign = 'left'; const t = '♥'.repeat(u.hits); c.strokeText(t, -hw + 3, hh - 5); c.fillText(t, -hw + 3, hh - 5); } }
         let ty2 = -hh + 10; for (const [f, t, col] of [['zresist', 'R', '#c26b00'], ['fast', '»', '#2a7fc2'], ['toxic', 'T', '#4a9a1a'], ['smart', 'I', '#7a3fc2'], ['leader', 'L', '#c22a2a'], ['pest', 'P', '#6a6a1a']]) if (u[f]) { tag(c, -hw + 11, ty2, t, col); ty2 += 18; }
       } else {
       const img = IMG[u.img] || IMG.zed;
@@ -511,7 +525,7 @@ const ui = {
     return new Promise(res => {
       const im = img ? '<img src="' + img + '" alt="" ' + (spec ? 'data-zoom="' + spec + '"' : '') + '>' : '';
       this._modal('<h2>' + title + '</h2><div class="cardrow">' + im + '<div><p>' + (text || '') + '</p></div></div><div class="opts"><button class="primary" id="ackb">Continuar</button></div>');
-      $('ackb').onclick = () => { ui._close(); res(); }; $('ackb').focus();
+      $('ackb').onclick = () => { ui._pkCapture(); ui._close(); res(); }; $('ackb').focus();
     });
   },
   /* Elegir unidad: panel inferior que no tapa el mapa. Un toque sobre una opción (o sobre la unidad en el mapa) la resalta y centra la cámara;
@@ -555,6 +569,8 @@ const ui = {
       }
     }
     if (DEBUG_DICE) await this._dbgDice([...b.querySelectorAll('.die')], dice, show); else await this._btn('rb', 'Continuar');
+    /* Registro: cada tirada con su resultado (para depurar). */
+    EVT('dado', null, { que: label, vals: dice.slice(), res: resultFn ? resultFn(dice).replace(/<[^>]+>/g, '') : null });
     this._close(); return dice;
   },
   /* Debug: botones Continuar / Debug. Con Debug, cada clic sobre un dado le sube el valor (1→6→1). Modifica vals en el sitio. */
@@ -634,7 +650,7 @@ const ui = {
       roll: async extra => {
         /* Cartas jugables antes de tirar: botones en esta ventana. Al jugar una, se recalcula la columna final. */
         const cardApi = info.cards && info.cards.length ? { cards: info.cards, use: async c => { await info.useCard(c); if (info.cancelled) { if (ui._rollGo) ui._rollGo('cancel'); return; } $('ccols').innerHTML = colsInner(); $('ctab').innerHTML = ui._cacTable(info.initCol, info.finalCol); } } : null;
-        const best = await ui._rollDice(b, extra, mark, cardApi); if (best) mark(best); return best;
+        const best = await ui._rollDice(b, extra, mark, cardApi); if (best) mark(best); EVT('dado', null, { que: 'Combate', extra: extra || 0, mejores: best }); return best;
       },
       ask: (t, o) => ui._ask('rb', t, o),
       reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
@@ -673,6 +689,15 @@ const ui = {
     this._modal('<h2>' + h.name + ' · ' + (back ? 'Trasera (trasfondo)' : 'Carta') + '</h2><div class="bigcard"><img src="' + (back ? heroBack(k) : heroCard(k)) + '" alt=""></div><div class="opts"><button id="flipb">' + (back ? 'Ver carta entera' : 'Ver trasera (trasfondo)') + '</button><button class="primary" id="xb">' + (fromList ? 'Volver al listado' : 'Cerrar') + '</button></div>', 'herocard');
     $('flipb').onclick = () => ui.showHeroCard(k, back ? 'front' : 'back', fromList);
     $('xb').onclick = () => fromList ? ui.showHeroCards() : ui._close();
+  },
+  /* Carta entera de una unidad especial (Marines, Guardia, Petra…): frente y, si existe, trasera. */
+  showUnitCard(k, side) {
+    const d = SPECIALS[k], front = specialCard(k); if (!d || !front) return;
+    this.zoomHide();
+    const back = side === 'back' && specialBack(k);
+    this._modal('<h2>' + d.name + ' · ' + (back ? 'Trasera (trasfondo)' : 'Carta') + '</h2><div class="bigcard"><img src="' + (back ? specialBack(k) : front) + '" alt=""></div><div class="opts">' + (specialBack(k) ? '<button id="flipb">' + (back ? 'Ver carta entera' : 'Ver trasera (trasfondo)') + '</button>' : '') + '<button class="primary" id="xb">Cerrar</button></div>', 'herocard');
+    if ($('flipb')) $('flipb').onclick = () => ui.showUnitCard(k, back ? 'front' : 'back');
+    $('xb').onclick = () => ui._close();
   },
   setupScreen() {
     return new Promise(res => {
@@ -804,6 +829,8 @@ const ui = {
   gameMusicEnd(win) {
     if (this._bg) { this._bg.forEach(a => { a.onended = null; a.pause(); }); this._dg.pause(); this._ls.pause(); this._bg = null; }
     this._danger = false; this._lastStand = false;
+    /* Solo debe sonar un tema: se corta el del menú si quedara alguno, y el de la victoria/derrota reemplaza al anterior. */
+    if (this._mus) { this._mus.pause(); this._mus = null; }
     try { if (this._endMus) this._endMus.pause(); } catch (e) { }
     if (!Sound.music.on) return;
     const a = this._endMus = new Audio('assets/sonidos/musica/' + (win ? 'musica_victoria' : 'musica_derrota') + '.mp3'); a.volume = .6 * Sound.music.vol;
@@ -813,12 +840,29 @@ const ui = {
   _gamePlay() {
     if (!this._bg) return;
     const bg = this._bg[this._bgI], danger = this._lastStand ? this._ls : this._dg;
-    const cur = this._danger ? danger : bg, others = [bg, this._dg, this._ls].filter(a => a !== cur);
-    bg.volume = .4 * Sound.music.vol; this._dg.volume = .5 * Sound.music.vol; this._ls.volume = .5 * Sound.music.vol;
-    others.forEach(a => a.pause());
-    if (!Sound.music.on) { cur.pause(); return; }
-    const p = cur.play(); if (p && p.catch) p.catch(() => { });
+    const cur = this._danger ? danger : bg, tracks = [bg, this._dg, this._ls], vmax = a => (a === bg ? .4 : .5) * Sound.music.vol;
+    /* Cada pista conserva su posición al pausarse (no se reinicia): el tema de fondo se reanuda donde se quedó. */
+    if (!Sound.music.on) { this._stopFade(); tracks.forEach(a => { a.volume = a === cur ? vmax(a) : 0; a.pause(); }); this._curTrack = cur; return; }
+    const changed = this._curTrack !== cur; this._curTrack = cur;
+    if (!changed && !this._fadeT) { /* mismo tema: solo ajusta volumen (p. ej. el deslizador) */
+      tracks.forEach(a => { if (a !== cur && !a.paused) a.pause(); }); cur.volume = vmax(cur);
+      const p = cur.play(); if (p && p.catch) p.catch(() => { }); return;
+    }
+    /* Cambio de tema: fundido cruzado (sube el nuevo y baja el anterior a la vez). Entrar en peligro es rápido; volver al fondo, más lento. */
+    const dur = cur === bg ? 2000 : 1000, STEP = 40;
+    if (cur.paused) { cur.volume = 0; const p = cur.play(); if (p && p.catch) p.catch(() => { }); }
+    this._stopFade();
+    this._fadeT = setInterval(() => {
+      let busy = false;
+      for (const a of tracks) {
+        const tgt = a === cur ? vmax(a) : 0, step = Math.max(vmax(a), .05) * STEP / dur;
+        if (a.volume < tgt) { a.volume = Math.min(tgt, a.volume + step); busy = true; } else if (a.volume > tgt) { a.volume = Math.max(tgt, a.volume - step); busy = true; }
+        if (a !== cur && a.volume <= 0 && !a.paused) a.pause();
+      }
+      if (!busy) this._stopFade();
+    }, STEP);
   },
+  _stopFade() { if (this._fadeT) { clearInterval(this._fadeT); this._fadeT = null; } },
   /* Lo llama el mapa: true si hay Zeds en el penúltimo espacio (o junto al Centro). Al entrar en peligro, la voz avisa. */
   setDanger(v) {
     if (G && G.phase === 'end') return; v = !!v; if (v === this._danger) return;
@@ -912,6 +956,8 @@ const ui = {
     G.phase = 'end'; EVT('end', null, { over: G.over, why: G.loseWhy || null }); this.updateStats(); this.gameMusicEnd(win);
     Voz.say(win ? 'victoria' : G.loseWhy === 'caos' ? 'derrota_caos' : 'derrota_centro');
     saveTop({ win, score: s.total, lv: G.lv.name, len: G.len.name, turns: G.turnNo, killed: G.stats.killed, date: Date.now() });
+    /* Victoria: antes de la pantalla final, todas las fichas bailan al ritmo de la música en torno al Centro (ver victoriaBaile). */
+    if (win) await this.victoriaBaile(Sound.music.on ? this._endMus : null);
     this._modal('<div class="endcard"><h2 class="' + (win ? 'good' : 'bad') + '">' + (win ? '¡HABÉIS GANADO!' : 'FARMINGDALE HA CAÍDO') + '</h2><p>' + (win ? 'Habéis sobrevivido a todas las cartas de Evento.' : why) + '</p><p>Unidades de jugador vivas: <b>' + s.units + '</b> · Aldeanos y Refugiados: <b>' + s.soft + '</b><br>Bien: <b>' + s.good + '</b> · Mal (Caos' + (win ? '' : ' + cartas sin revelar') + '): <b>' + s.bad + '</b><br>Zeds eliminados: <b>' + G.stats.killed + '</b></p><p style="font-size:20px">Puntuación: <b style="color:var(--gold)">' + s.total + '</b></p><p style="color:var(--mut);font-size:13px">' + t + '<br>' + chTxt + ' · ' + refTxt + (G.antidote ? ' · Antídoto descubierto' : '') + (G.weapon && G.weapon.parts.length ? ' · Súper Arma de ' + G.weapon.parts.length + ' componente(s)' : '') + '.</p><div class="opts" style="justify-content:center">' + (Obit.bajas().length ? '<button id="obBtn">Obituario</button>' : '') + '<button id="revBtn">Revisar el tablero</button><button id="chrBtn">Crónica de la partida</button><button id="logBtn2">Registro</button><button class="primary" id="nb">Nueva partida</button></div></div>');
     this._endHtml = $('modalbox').innerHTML; this._bindEnd();
   },

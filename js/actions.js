@@ -51,6 +51,7 @@ async function revealResearch() {
   if (!G.res.deck.length) { LOG('No quedan cartas de Investigación.'); return; }
   if (G.res.cur) G.res.disc.push(G.res.cur.id);
   const id = G.res.deck.shift(); G.res.cur = RES[id];
+  EVT('carta_inv', null, { id, nombre: RES[id].name, umbral: RES[id].th, quedan: G.res.deck.length });
   LOG('Nueva carta de Investigación: «' + RES[id].name + '».', 'dest');
   await UI.waitAck('Investigación: ' + RES[id].name, RES[id].txt + '<br><i>Siguiente investigación: tirada de ' + RES[id].th + (RES[id].th < 6 ? '+' : '') + (RES[id].sup ? ' y 1 Suministro' : '') + '.</i>', 'assets/cartas/i_' + (id === 'repetirlo' ? 'repetirlo' : id) + '.jpg', 'r:' + id);
   await applyResearch(RES[id]);
@@ -95,6 +96,7 @@ async function doInvestigate(u, free) {
   if (c.sup) G.supplies--;
   const dice = await UI.rollSimple('Investigar (hace falta ' + c.th + '+)', 1);
   let r = dice[0] + (u.key === 'agee' ? 1 : 0); if (u.key === 'agee') r = Math.min(6, r);
+  EVT('investigar', u.id, { carta: c.id, nombre: c.name, umbral: c.th, dado: dice[0], resultado: r, exito: r >= c.th, suministro: !!c.sup, sinAccion: !!usingSup });
   if (r >= c.th) { LOG('Investigación con éxito (' + r + ').', 'good'); G.turn.researched = true; await revealResearch(); }
   else LOG('La Investigación fracasa (' + r + ').', 'bad');
   UI.updateStats(); return true;
@@ -175,7 +177,7 @@ function unitActions(u) {
     if (u.key === 'kingman') { A.push({ id: 'bastion', label: 'Bastión (1 acc., 3 Sum.)', ok: !G.once.bast && pay(1) && G.supplies >= 3 && isRouteSp(u.space) && !isInit(u.space) && canBuildBar(u) }); A.push({ id: 'mines', label: 'Campo de Minas (1 acc., 2 Sum., 1 Mun.)', ok: !G.once.mines && !u.flipped && pay(1) && G.supplies >= 2 && G.ammo >= 1 && isRouteSp(u.space) && !isInit(u.space) }); }
     if (u.key === 'wzed') A.push({ id: 'wzed', label: 'Transmisión de Emergencia', ok: cu('wzed') });
     if (u.key === 'bomberos') { A.push({ id: 'libera', label: 'Liberar Civiles/Aldeanos', ok: cu('libera') && [u.space].concat(adjacentIds(u.space)).some(i => sp(i) && sp(i).kind === 'pueblo' && unitsAt(i).some(x => x.resist || x.type === 'aldeano')) }); A.push({ id: 'manguera', label: 'Mangueras (1 acc.)', ok: pay(1) && adjacentIds(u.space).some(i => zedsAt(i).length && !isInit(i)) }); }
-    if (hasPart('granada') && u.space) A.push({ id: 'granada', label: 'Granada de Gas (1 acc.)', ok: pay(1) && adjacentIds(u.space).some(i => zedsAt(i).length && !isInit(i)) });
+    if (weaponFor(u, 'granada') && u.space) A.push({ id: 'granada', label: 'Granada de Gas (1 acc.)', ok: pay(1) && adjacentIds(u.space).some(i => zedsAt(i).length && !isInit(i)) });
   }
   return A;
 }

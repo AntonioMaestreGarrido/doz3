@@ -2,6 +2,23 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-14 15:22
+
+### Mejoras
+- **Baile de la victoria:** al ganar, las fichas de jugador bailan al ritmo de la pista de victoria. Cada ficha salta al menos 10 veces en cada casilla y avanza por el tablero hasta el Centro; después, parejas de fichas intercambian sitio en cada pulso. Los Zeds se quedan quietos. Antes de la entrada de la batería (14 s) las fichas solo saltan en su casilla. El baile dura lo que suene la pista y se puede saltar con un clic o una tecla; luego las fichas vuelven al tablero.
+- **Mapa de beats de la victoria:** `assets/sonidos/musica/musica_victoria.beats.json`, generado con `tools/generar_beats.py` (librosa). Los cortes de batería (huecos de más de 1.2 s) dejan las fichas quietas.
+- **Cuando la batería para o se acelera:** las fichas no avanzan dentro de los cortes del mapa.
+- **Zeds con arte alternativo:** nueve tipos de Zed normal con su arte (fichas y heridas con una X roja por Impacto). La fuerza reducida aparece en la ficha.
+- **Unidades especiales:** carta entera de Marines, Guardia, Petra y otras, con su trasera cuando existe.
+- **Registro:** cada tirada de dados y cada Investigación quedan anotadas (para depurar).
+- **Apariciones:** las unidades que llegan en las fases de Zeds salen de una columna junto a la carta de evento.
+- **Súper Arma:** la Guardia Nacional solo se beneficia de las partes una vez llega al Centro de la Ciudad (y las conserva si luego sale).
+- **Música:** los cambios entre temas de fondo, peligro y Last Stand son fundidos cruzados.
+
+### Fixes
+- **Victoria «Al inicio de esta fase» (fin_b1):** el juego termina nada más empezar la fase, con su texto de victoria.
+- **Marines:** tienen Impactos (2 por cara), como los demás Civiles Especiales.
+
 ## 2026-10-14 08:13
 
 ### Mejoras

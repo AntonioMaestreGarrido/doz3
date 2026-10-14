@@ -44,7 +44,10 @@ function exportLog() {
     build: typeof BUILD_TIME !== 'undefined' ? BUILD_TIME : null,
     nivel: G.lv && G.lv.name, duracion: G.len && G.len.name, turno: G.turnNo, fase: G.phase, resultado: G.over || null,
     evento: G.event ? G.event.name : null, stats: G.stats, municion: G.ammo, suministros: G.supplies, infeccion: G.inf,
-    unidades: unitsSnapshot(), contadores: G.ust || {}, registro: G.evlog || []
+    unidades: unitsSnapshot(), contadores: G.ust || {}, registro: G.evlog || [],
+    investigacion: G.res ? { carta: G.res.cur && G.res.cur.id, mazo: G.res.deck.slice(), descarte: G.res.disc.slice() } : null,
+    componentes: G.weapon ? G.weapon.parts.slice() : [],
+    mazoEventos: (G.eventDeck || []).slice(), mazoDestino: (G.destDeck || []).slice(), caos: G.chaosLeft
   };
 }
 function downloadLog() {

@@ -64,14 +64,15 @@ async function playGame(setup, saved) {
       G.phase = 'fourR'; UI.updateStats(); await phase4R(); if (G.over) break;
       G.phase = 'infection'; UI.updateStats(); await phaseInfection(); if (G.over) break;
       G.phase = 'feeding'; UI.updateStats(); await phaseFeeding(); if (G.over) break;
-      if (ev.fin && ev.id !== 'fin_b2') { G.over = 'win'; break; }  /* «Al inicio de esta fase: ¡habéis ganado!» */
+      if (ev.finPronto) { G.over = 'win'; break; }  /* «Al inicio de esta fase: ¡habéis ganado!» (fin_b1) */
       G.phase = 'zeds'; UI.updateStats();
-      await withPeek(eventStart); if (G.over) break;
-      await pressure('s'); if (G.over) break;
-      await phaseZeds(); if (G.over) break;
-      await withPeek(eventAfterZeds); UI.release(); if (G.over) break;
-      await pressure('e'); if (G.over) break;
-      if (ev.fin) { G.over = 'win'; break; }  /* fin_b2: al inicio de la fase de Acciones, si seguís vivos */
+      /* Las unidades que aparecen en estas fases salen de una columna y vuelan a su espacio (anim.js spawnBatch). */
+      await UI.spawnBatch(() => withPeek(eventStart)); if (G.over) break;
+      await UI.spawnBatch(() => pressure('s')); if (G.over) break;
+      await UI.spawnBatch(() => phaseZeds()); if (G.over) break;
+      await UI.spawnBatch(() => withPeek(eventAfterZeds)); UI.release(); if (G.over) break;
+      await UI.spawnBatch(() => pressure('e')); if (G.over) break;
+      if (ev.fin) { G.over = 'win'; break; }  /* Resto de cartas fin (y fin_b2): tras la fase de Zeds, con sus rutas activadas */
     } else ev = G.event;
     const resumed = resume === 'actions'; resume = null;
     if (!ev.cer) {

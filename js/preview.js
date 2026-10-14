@@ -32,10 +32,18 @@ const Preview = {
   initFor(r) { const t = r + '0'; if (normalZedsAt(t).length >= zedCap(t)) { const f = firstOpenInitial(); return f || t; } return t; },
   chaosOf(r) { let n = 0; for (let i = 0; i <= lastOf(r); i++) n += sp(r + i).chaos || 0; return n; },
   block(lines) {
-    return lines && lines.length ? '<div class="willhappen"><b>Lo que va a pasar</b><ul>' + lines.map(l => '<li>' + l + '</li>').join('') + '</ul></div>' : '';
+    if (!lines || !lines.length) return '';
+    /* Cada línea lleva a su derecha las fichas Zed que nombra («Zed de Fuerza F (reducida R)»): así cada ficha queda junto a su ruta. */
+    const row = l => {
+      const ms = [...l.matchAll(/Zed de Fuerza (\d+) \(reducida (\d+)\)/g)];
+      if (!ms.length) return '<li>' + l + '</li>';
+      return '<li class="pkrow"><span class="wh-line"><span class="wh-txt">' + l + '</span><span class="wh-toks">' + ms.map(m => '<img class="pktok" alt="" src="' + zedTokenImg({ full: +m[1], red: +m[2], flipped: false }) + '" data-full="' + m[1] + '" data-red="' + m[2] + '">').join('') + '</span></span></li>';
+    };
+    return '<div class="willhappen"><b>Lo que va a pasar</b><ul>' + lines.map(row).join('') + '</ul></div>';
   },
   event(ev) { try { return this._event(ev) || []; } catch (e) { return []; } },
   destiny(id, route) { try { return this._destiny(id, route) || []; } catch (e) { return []; } },
+
 
   _event(ev) {
     const L = [], id = ev.id, inf = G.lv.infection;

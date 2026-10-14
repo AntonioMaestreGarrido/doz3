@@ -370,6 +370,10 @@ body:has(#title.bgnew) #modalbox.setup .opts{margin-top:6px}
 .willhappen{margin:8px 0 4px;padding:8px 12px;background:rgba(190,60,40,.16);border-left:4px solid #e8452f;border-radius:4px;font-size:14px;line-height:1.45;text-align:left}
 .willhappen b{color:#ff9a86;font-size:12px;text-transform:uppercase;letter-spacing:1px}
 .willhappen ul{margin:4px 0 0 18px;padding:0}.willhappen li{margin:3px 0}
+.willhappen .wh-line{display:flex;align-items:center;gap:10px}
+.willhappen .wh-txt{flex:1;min-width:0}
+.wh-toks{flex:0 0 auto;display:flex;gap:4px;margin:-8px 0}
+#modalbox .willhappen .pktok{width:56px;height:56px;max-width:none;object-fit:contain;box-shadow:none;filter:drop-shadow(0 2px 4px #000)}
 
 /* Obituario: pantalla completa con una baja cada vez */
 #obit{position:fixed;inset:0;z-index:90;background:#000;overflow:hidden;color:#efe6d2}
@@ -418,3 +422,6 @@ body.booting #app{visibility:hidden}
 #plbar .plchip.on b{color:#111}
 #plbar #tieBtn{margin-left:auto;font-size:12px;padding:3px 8px}
 .setup .row[hidden]{display:none !important}
+
+/* Capa de vuelo de las apariciones (anim.js drawSpawnFx): encima de la página, sin bloquear clics. */
+#spawnfx{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:45}

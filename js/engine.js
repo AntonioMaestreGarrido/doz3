@@ -83,6 +83,7 @@ const isCiv = u => u.type === 'civ';
 function putUnit(u, id) {
   if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); }
   u.space = id; if (id && G.spaces[id]) sp(id).units.push(u.id);
+  if (id === 'C' && u.type === 'guard') u.reachedC = true;   /* la Guardia Nacional conserva la Súper Arma una vez ha llegado al Centro */
 }
 function removeUnit(u) { if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); } u.space = null; }
 function unitsAt(id) { return sp(id).units.map(x => G.units[x]).filter(Boolean); }
@@ -401,10 +402,12 @@ function humanShifts(f, o) { // o: { attacking, space }
   if (f.type === 'marine') s.push({ label: 'Marines', v: 1 });
   if (f.bubba) s.push({ label: o.vsPlayers ? 'Banda de Bubba (contra jugadores)' : 'Banda de Bubba (contra Zeds)', v: o.vsPlayers ? -1 : 1 });
   if (o.attacking && f.keepCalm) s.push({ label: '«Keep calm»', v: 2 });
-  if (o.attacking && hasPart('nudillos') && f.side === 'pl') s.push({ label: 'Nudillos Zeds', v: 1 });
+  if (o.attacking && weaponFor(f, 'nudillos') && f.side === 'pl') s.push({ label: 'Nudillos Zeds', v: 1 });
   return s;
 }
 function hasPart(k) { return G.weapon && G.weapon.parts.includes(k); }
+/* Parte de la Súper Arma que beneficia a una unidad concreta: la Guardia Nacional no se beneficia hasta que llega al Centro de la Ciudad (y la conserva si luego sale). */
+function weaponFor(u, k) { return hasPart(k) && !(u && u.type === 'guard' && !u.reachedC && u.space !== 'C'); }
 function zedShifts(zs, o) {
   const s = [];
   if (zs.some(z => z.smart)) s.push({ label: 'Inteligentes', v: -1 });
@@ -495,7 +498,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   const zStr = zeds.reduce((a, z) => a + strength(z), 0), pStr = strength(fighter) + meleeStrengthBonus(fighter, { attacking: attackerHuman });
   const betty = fighter.key === 'betty' && zeds.every(z => isZedSide(z));
   const initCol = betty ? bettyCol(fighter) : ratioCol(zStr, pStr);
-  const shifts = betty ? (hasPart('nudillos') && attackerHuman ? [{ label: 'Nudillos Zeds', v: 1 }] : []) : humanShifts(fighter, { attacking: attackerHuman, vsPlayers: false });
+  const shifts = betty ? (weaponFor(fighter, 'nudillos') && attackerHuman ? [{ label: 'Nudillos Zeds', v: 1 }] : []) : humanShifts(fighter, { attacking: attackerHuman, vsPlayers: false });
   const vsPl = zeds.every(z => z.side === 'raid') && fighter.side === 'pl';
   const zs = betty ? [] : zedShifts(zeds, o); for (const s of zs) shifts.push(s);
   if (!attackerHuman && !betty) {
@@ -554,7 +557,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   EVT('melee', fighter.id, { at: attackerHuman ? 'h' : 'z', sp: space, zs: zeds.length, row, col: finalCol, zh, ph, win: zedLoses ? 1 : 0 });
   if (!o.noInf && G.lv.infection && !vsPl) await infUp(meleeInfection(zeds, fighter));
   ACTOR = fighter.side === 'pl' ? fighter.id : null;
-  try { await applyZedHits(zeds, zh); if (hasPart('cebo') && !attackerHuman) await applyZedHits(zeds, 1); } finally { ACTOR = null; }
+  try { await applyZedHits(zeds, zh); if (weaponFor(fighter, 'cebo') && !attackerHuman) await applyZedHits(zeds, 1); } finally { ACTOR = null; }
   if (fighter.space && fighter.space !== 'CEM') { if (fighter.side === 'raid') await hitRaider(fighter, ph); else await hitPlayer(fighter, ph); }
   if (o.trago || false) { if (fighter.space) await hitPlayer(fighter, 1); }
   if (isZedAtk && G.turn.noRetreatOnce && !o.second) {
@@ -780,7 +783,7 @@ async function doFire(u, targetId, dist, opts) {
   if (u.key === 'johnson') shifts.push({ label: 'Armas (Johnson)', v: 2 });
   if (u.type === 'marine' && dist > 1) shifts.push({ label: 'Largo Alcance', v: -1 });
   if (u.key === 'hunt' && dist === 2) shifts.push({ label: 'Largo Alcance (Hunt)', v: -1 });
-  if (hasPart('rifle') && u.side === 'pl') shifts.push({ label: 'Rifle Hipno-Z', v: 1 });
+  if (weaponFor(u, 'rifle') && u.side === 'pl') shifts.push({ label: 'Rifle Hipno-Z', v: 1 });
   if (G.turn.mercs) shifts.push({ label: 'Soldados de fortuna', v: 1 });
   if (opts.shift) shifts.push({ label: opts.shiftLabel || 'Bonificación', v: opts.shift });
   if (G.hand.includes('tiradles')) {/* se usa en combate */ }
@@ -792,7 +795,7 @@ async function doFire(u, targetId, dist, opts) {
   const row = sumRow(dice[0] + dice[1]); const hits = FIRE[row][col];
   h.setResult(row, col, hits); await h.done();
   EVT('shot', u.id, { to: targetId, d: dist, hits });
-  if (hits) { ACTOR = u.id; try { await applyZedHits([target], hits); } finally { ACTOR = null; } if (hits >= 2 && hasPart('balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
+  if (hits) { ACTOR = u.id; try { await applyZedHits([target], hits); } finally { ACTOR = null; } if (hits >= 2 && weaponFor(u, 'balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
   else LOG('El disparo no impacta.');
   if (u.key === 'piazza' && u.space && u.space !== 'C' && !opts.noVig) {
     // Retroceder = alejarse del objetivo, es decir, hacia el Centro (índice mayor en la ruta).

@@ -3,6 +3,7 @@
 
 Object.assign(ui, {
   anim: {}, ghosts: [], fx: [], camOn: true, camZoom: 1, moveMs: 560, dangerSet: {}, slow: 1.5,
+  flights: [], spawnOn: false, spawnN: 0,
   now() { return performance.now(); },
   dur() { return this.fast ? 90 : this.moveMs; },
   ease(t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; },
@@ -13,6 +14,11 @@ Object.assign(ui, {
     for (const r of this.rects) {
       seen.add(r.id); const u = G.units[r.id]; let a = this.anim[r.id];
       if (!a) {
+        if (this.spawnOn && u && !u._flown && u.type !== 'super' && !this.fast) { /* aparición: sale de la columna junto a la carta de evento */
+          u._flown = true; const k = this.spawnN++;
+          this.flights.push({ id: r.id, u, k, t0: now + k * 150, d: this.dur() * 1.6, from: this.takePk(u) }); this.spawnFxStart();
+          continue;
+        }
         a = this.anim[r.id] = { x: r.x, y: r.y, ox: r.x, oy: r.y, tx: r.x, ty: r.y, fx: r.x, fy: r.y, t0: 0, d: 0, moving: false, born: 0, trail: 0, u };
         if (G.turnNo > 0 && !this.fast) { a.born = now; this.pulse(r.x, r.y, u && isZedSide(u) ? '#ff4a3a' : '#5fd35a'); }
       } else if (a.tx !== r.x || a.ty !== r.y) {
@@ -30,20 +36,82 @@ Object.assign(ui, {
   },
   pos(a, now) {
     if (!a.moving) return { x: a.tx, y: a.ty };
-    const t = Math.min(1, (now - a.t0) / Math.max(1, a.d));
+    const t = Math.max(0, Math.min(1, (now - a.t0) / Math.max(1, a.d)));
     if (t >= 1) return { x: a.tx, y: a.ty };
     const e = this.ease(t); return { x: a.fx + (a.tx - a.fx) * e, y: a.fy + (a.ty - a.fy) * e };
   },
   isAnimating() {
     const now = this.now();
     for (const id in this.anim) { const a = this.anim[id]; if (a.moving && now - a.t0 < a.d) return true; if (a.born && now - a.born < 650) return true; }
-    return this.ghosts.some(g => now - g.t0 < g.d) || this.fx.some(f => now - f.t0 < f.d) || Object.keys(this.ufx).length > 0;
+    return !!this.vb || this.ghosts.some(g => now - g.t0 < g.d) || this.fx.some(f => now - f.t0 < f.d) || Object.keys(this.ufx).length > 0;
   },
   settle(max) {
     return new Promise(res => {
       if (this.fast) { setTimeout(res, 40); return; }
       const t0 = this.now(), lim = max || 1500;
       const tick = () => { if (!this.isAnimating() || this.now() - t0 > lim) res(); else requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+    });
+  },
+  /* Aparición en columna junto a la carta de evento: durante un bloque de apariciones (spawnBatch) cada unidad nueva
+     se dibuja en una columna al lado de la carta de evento y, cuando le llega su turno, vuela a su espacio.
+     Los Súper Zeds no entran aquí: ya tienen su presentación (superIntro). */
+  async spawnBatch(fn) {
+    if (this.fast || this.spawnOn) return fn();
+    this.spawnOn = true; this.spawnN = 0;
+    try { return await fn(); }
+    finally { this.syncAnim(); this.spawnOn = false; this.pkOrigins = null; this.redraw(); await this.settleFlights(); }
+  },
+  /* Antes de cerrar el aviso se guarda dónde están las fichas preparadas (en pantalla) para que las nuevas salgan de ahí. */
+  _pkCapture() {
+    const list = [...document.querySelectorAll('#modalbox .pktok')].map(el => { const r = el.getBoundingClientRect(); return { full: +el.dataset.full, red: +el.dataset.red, x: r.left + r.width / 2, y: r.top + r.height / 2, used: false }; });
+    /* Se acumulan: un aviso de Destino dentro del mismo bloque no borra las fichas del evento. */
+    this.pkOrigins = (this.pkOrigins || []).filter(p => !p.used).concat(list);
+  },
+  takePk(u) {
+    if (!u || !u.token || !this.pkOrigins) return null;
+    const o = this.pkOrigins.find(p => !p.used && p.full === u.token[0] && p.red === u.token[1]);
+    if (!o) return null; o.used = true; return { x: o.x, y: o.y };
+  },
+  inFlight(id) { return this.flights.some(f => f.id === id); },
+  spawnColumn(k) {
+    const ev = $('evimg'), r = ev && ev.getBoundingClientRect();
+    return r ? { x: r.left - 48, y: r.top + 20 + k * 72 } : { x: 20, y: 120 + k * 72 };
+  },
+  mapScreen(id) {
+    const cv = this.canvas, r = cv.getBoundingClientRect(), s = G.spaces[id];
+    return s ? { x: r.left + s.x * (r.width / cv.width), y: r.top + s.y * (r.height / cv.height) } : null;
+  },
+  spawnFxStart() {
+    if (this._spawnRaf) return;
+    const step = () => { this._spawnRaf = null; this.drawSpawnFx(); if (this.flights.length) this._spawnRaf = requestAnimationFrame(step); };
+    this._spawnRaf = requestAnimationFrame(step);
+  },
+  drawSpawnFx() {
+    const c = $('spawnfx'); if (!c) return;
+    const dpr = window.devicePixelRatio || 1;
+    if (c.width !== Math.round(innerWidth * dpr) || c.height !== Math.round(innerHeight * dpr)) { c.width = Math.round(innerWidth * dpr); c.height = Math.round(innerHeight * dpr); }
+    const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, innerWidth, innerHeight);
+    const now = this.now(), done = [];
+    for (const f of this.flights) {
+      const col = f.from || this.spawnColumn(f.k), tgt = this.mapScreen(f.u.space);
+      let x = col.x, y = col.y, sc = 1;
+      if (now >= f.t0 && tgt) {
+        const t = Math.min(1, (now - f.t0) / f.d), e = this.ease(t);
+        x = col.x + (tgt.x - col.x) * e; y = col.y + (tgt.y - col.y) * e - Math.sin(Math.PI * e) * 60; sc = 1 - .3 * e;
+      }
+      if (now >= f.t0 + f.d) done.push(f);
+      const img = IMG[f.u.img] || IMG.zed, S = 56 * sc;
+      if (img && img.complete && img.naturalWidth) g.drawImage(img, x - S / 2, y - S / 2, S, S);
+      else { g.fillStyle = isZedSide(f.u) ? '#ff4a3a' : '#5fd35a'; g.beginPath(); g.arc(x, y, S / 2, 0, 7); g.fill(); }
+    }
+    if (done.length) { this.flights = this.flights.filter(f => !done.includes(f)); this.redraw(); }
+  },
+  settleFlights() {
+    return new Promise(res => {
+      if (this.fast) { res(); return; }
+      const t0 = this.now();
+      const tick = () => { if (!this.flights.length || this.now() - t0 > 6000) res(); else requestAnimationFrame(tick); };
       requestAnimationFrame(tick);
     });
   },
@@ -79,6 +147,7 @@ Object.assign(ui, {
   /* ---- dibujo de fichas con animación ---- */
   drawUnits() {
     this.syncAnim(); const c = this.ctx, now = this.now();
+    if (this.vb) this.victoriaTick(now);
     // estelas
     for (const r of this.rects) {
       const a = this.anim[r.id]; if (!a) continue;
@@ -98,9 +167,10 @@ Object.assign(ui, {
     this.ghosts = this.ghosts.filter(g => now - g.t0 < g.d);
     for (const r of this.rects) {
       const u = G.units[r.id], a = this.anim[r.id]; if (!u || !a) continue;
-      const cur = this.pos(a, now); let scale = 1, glow = null;
+      let cur = this.pos(a, now); let scale = 1, glow = null;
       if (a.moving) { scale = 1.22; glow = isZedSide(u) ? '#ff3b2a' : '#4cff6a'; }
       if (a.born && now - a.born < 650) { const t = (now - a.born) / 650; scale = this.ease(t) * (1 + .25 * Math.sin(Math.PI * t)); glow = isZedSide(u) ? '#ff3b2a' : '#4cff6a'; }
+      const bp = this.vb && this.victoriaPos(r.id, now); if (bp) { cur = bp.p; scale = bp.s; glow = bp.g; }
       this.drawUnitFx(u, Object.assign({}, r, { x: cur.x, y: cur.y, scale, glow }));
     }
     // ondas
@@ -266,6 +336,152 @@ Object.assign(ui, {
     let keep = null; if (face) { keep = { flipped: u.flipped, hits: u.hits, ecg: u.ecg }; Object.assign(u, face); }
     c.save(); c.translate(x, y); c.scale(sx, 1); c.translate(-x, -y); this.drawUnit(u, Object.assign({}, o, { x, y })); c.restore();
     if (keep) Object.assign(u, keep);
+  },
+
+  /* ---- baile de la victoria ----
+     Al ganar, las fichas de jugador bailan al ritmo de la música (los Zeds se quedan quietos). Coreografía, medida en pulsos:
+     1) cada ficha salta en el sitio; 2) salta de espacio en espacio por la ciudad hasta el Centro; 3) ya en el Centro,
+     parejas de fichas intercambian sitio en cada pulso. Al acabar, vuelven a su espacio del tablero.
+     Los pulsos vienen de la pista: un analizador de graves detecta los golpes; sin sonido (o si no detecta nada), marca 120 BPM.
+     Se puede saltar con cualquier clic o tecla. */
+  victoriaBaile(audio) {
+    return new Promise(res => {
+      /* Solo bailan las fichas de jugador: los Zeds se quedan donde están. */
+      const rs = this.rects.filter(r => G.units[r.id] && this.anim[r.id] && !isZedSide(G.units[r.id]));
+      if (this.fast || !rs.length) return res();
+      const now0 = this.now(), n = rs.length, cols = Math.ceil(Math.sqrt(n)), rows = Math.ceil(n / cols);
+      const sz = Math.max(...rs.map(r => Math.max(r.w, r.h))), gap = sz * .9;
+      const B = this.vb = { t0: now0, ms: audio ? 300000 : 16000, audio, ivl: 500, last: 0, hist: [], avg: 0, beats: 0, abeats: 0, beatT: now0, prev: null, from: {}, to: {}, hops: {}, endB: 0, an: null, buf: null, fin: res };
+      /* Casilla de cada ficha alrededor del Centro (rejilla). */
+      const slot = i => ({ x: CENTRO.x + (i % cols - (cols - 1) / 2) * gap, y: CENTRO.y + (Math.floor(i / cols) - (rows - 1) / 2) * gap });
+      /* STAY: saltos en el sitio en cada casilla (mínimo 10). SWAPS: pulsos de intercambio en el Centro, de sobra para toda la canción. */
+      const STAY = 10, MAX_PATH = 8, ARC_A = 34, ARC_B = 46, ARC_C = 40, SWAPS = 600;
+      /* Fases 1 y 2: en cada casilla salta en el sitio STAY veces, luego salta a la siguiente, y así hasta su casilla del Centro. */
+      let tEnd = 0;
+      rs.forEach((r, i) => {
+        const from = this.pos(this.anim[r.id], now0), hops = [];
+        let p = from, t = 0; /* todas arrancan a la vez, en pulsos enteros */
+        const salto = (q, arc) => { hops.push({ t, x0: p.x, y0: p.y, x1: q.x, y1: q.y, arc }); p = q; t += 1; };
+        const ruta = this.victoriaRuta(G.units[r.id].space).slice(-MAX_PATH);
+        if (!ruta.length) ruta.push(CENTRO);
+        ruta[ruta.length - 1] = slot(i); /* el último salto cae en la casilla de la ficha, no en el hueco del Centro */
+        for (const q of ruta) { for (let k = 0; k < STAY; k++) salto(p, ARC_A); salto(q, ARC_B); }
+        for (let k = 0; k < STAY; k++) salto(p, ARC_A); /* en su casilla final también salta antes de los intercambios */
+        B.from[r.id] = from; B.hops[r.id] = hops; tEnd = Math.max(tEnd, t);
+      });
+      /* Fase 3: en el Centro, en cada pulso intercambian sitio las parejas de casillas (pares e impares alternos). */
+      const T = Math.ceil(tEnd), arr = rs.map(r => r.id);
+      /* Hasta T, cada ficha que termina antes sigue saltando en su casilla, para que todas empiecen los intercambios a la vez. */
+      for (const id of arr) { const hs = B.hops[id], L = hs[hs.length - 1]; for (let t = L.t + 1; t < T; t++) hs.push({ t, x0: L.x1, y0: L.y1, x1: L.x1, y1: L.y1, arc: ARC_A }); }
+      /* Cada pulso de intercambio: pares de casillas alternos. Cada ficha recibe exactamente un salto por pulso (con o sin cambio). */
+      for (let k = 0; k < SWAPS; k++) {
+        const par = k % 2, next = arr.slice();
+        for (let s = 0; s < n; s++) {
+          const partner = (s + par) % 2 === 0 ? s + 1 : s - 1, id = arr[s], a = slot(s);
+          const ok = partner >= 0 && partner < n, b = ok ? slot(partner) : a;
+          B.hops[id].push({ t: T + k, x0: a.x, y0: a.y, x1: b.x, y1: b.y, arc: ok ? ARC_C : ARC_A });
+          if (ok) next[partner] = id;
+        }
+        arr.splice(0, n, ...next);
+      }
+      arr.forEach((id, s) => { B.to[id] = slot(s); }); /* posición final: desde aquí vuelven al tablero */
+      B.endB = T + SWAPS + 1;
+      try {
+        if (audio) {
+          const AC = window.AudioContext || window.webkitAudioContext, ctx = this._vctx || (this._vctx = new AC());
+          if (ctx.state === 'suspended') ctx.resume();
+          const src = audio._vsrc || (audio._vsrc = ctx.createMediaElementSource(audio));
+          const an = ctx.createAnalyser(); an.fftSize = 256; src.connect(an); an.connect(ctx.destination);
+          B.an = an; B.buf = new Float32Array(an.frequencyBinCount); B.prev = new Float32Array(an.frequencyBinCount);
+        }
+      } catch (e) { B.an = null; }
+      /* Mapa de beats pregenerado (ver tools/generar_beats.py): si carga, los pulsos salen del reloj del audio; si no, se detectan en vivo. */
+      if (audio) fetch('assets/sonidos/musica/musica_victoria.beats.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(j => { if (this.vb === B) { B.map = j.beats; B.pre = j.entrada != null ? j.beats.filter(t => t < j.entrada).length : 0; } }).catch(() => { });
+      const skip = () => this.victoriaFin();
+      B.skip = skip; document.addEventListener('pointerdown', skip, true); document.addEventListener('keydown', skip, true);
+      this.redraw();
+    });
+  },
+  /* Camino de espacios desde un espacio hasta el Centro (BFS por la adyacencia del tablero). Devuelve coordenadas, terminando en el Centro. */
+  victoriaRuta(from) {
+    if (!from || !G.spaces[from]) return [CENTRO];
+    if (from === 'C') return [];
+    const prev = { [from]: null }, q = [from]; let found = false;
+    for (let k = 0; k < q.length && !found; k++) {
+      let nb = []; try { nb = neighbors(q[k]); } catch (e) { }
+      for (const x of nb) { if (x in prev || !G.spaces[x]) continue; prev[x] = q[k]; if (x === 'C') { found = true; break; } q.push(x); }
+    }
+    if (!found) return [CENTRO];
+    const ids = []; for (let c = 'C'; c !== from; c = prev[c]) ids.unshift(c);
+    return ids.map(id => id === 'C' ? CENTRO : G.spaces[id]);
+  },
+  /* Cada golpe es un pulso: mide el tempo con la mediana de los últimos intervalos (entre 60 y 210 BPM). */
+  victoriaGolpe(now) {
+    const B = this.vb; if (B.last) { const d = now - B.last; if (d > 280 && d < 1000) { B.hist.push(d); if (B.hist.length > 8) B.hist.shift(); const s = [...B.hist].sort((a, b) => a - b); B.ivl = s[s.length >> 1]; } }
+    B.last = now; B.beats++; B.beatT = now;
+  },
+  /* Tiempo de la coreografía en pulsos: 0 en el primer golpe, con la fracción dentro del pulso actual. */
+  victoriaBeat(now) {
+    const B = this.vb;
+    /* Con mapa: el reloj es el tiempo de la pista (entre dos golpes se interpola). */
+    if (B.map && B.audio && !B.audio.paused) {
+      const t = B.audio.currentTime, m = B.map; let lo = 0, hi = m.length - 1, k = -1;
+      while (lo <= hi) { const c = (lo + hi) >> 1; if (m[c] <= t) { k = c; lo = c + 1; } else hi = c - 1; }
+      if (k < 0) return -1;
+      const nx = k + 1 < m.length ? m[k + 1] : m[k] + .45;
+      /* Corte de batería (hueco sin pulsos): las fichas se quedan quietas en el último pulso hasta el siguiente. */
+      if (nx - m[k] > .7) return k;
+      return k + Math.min(1, (t - m[k]) / (nx - m[k]));
+    }
+    if (!B.beats) return -1;
+    return (B.beats - 1) + Math.min(1, Math.max(0, (now - B.beatT) / B.ivl));
+  },
+  /* Cada cuadro: sin mapa, busca golpes en los graves; si no los hay (sin sonido, o pista muda), marca el pulso a 120 BPM. */
+  victoriaTick(now) {
+    const B = this.vb;
+    if (B.audio && B.audio.ended) return this.victoriaFin();
+    if (now - B.t0 >= B.ms) return this.victoriaFin();
+    /* Con mapa, la coreografía dura lo que suene la pista (termina en audio.ended o al saltar). */
+    if (B.map && B.audio && !B.audio.paused) return;
+    if (B.an) {
+      /* Flujo espectral: cuánto sube la energía de los graves respecto al cuadro anterior (en dB, así no se satura con bajos sostenidos). */
+      B.an.getFloatFrequencyData(B.buf); let fl = 0;
+      for (let i = 1; i <= 6; i++) { const v = Math.max(-140, B.buf[i]), d = v - B.prev[i]; if (d > 0) fl += d; B.prev[i] = v; }
+      B.avg = B.avg * .9 + fl * .1;
+      if (fl > B.avg * 1.8 + 3 && now - B.last > 280) { B.abeats++; this.victoriaGolpe(now); }
+    }
+    if (!B.abeats && now - B.t0 > (B.an ? 1500 : 0) && now - B.last >= 500) this.victoriaGolpe(now);
+    if (this.victoriaBeat(now) >= B.endB) this.victoriaFin();
+  },
+  /* Posición, escala y brillo de una ficha en el pulso actual (null si no baila). Cada salto es un arco entre dos puntos. */
+  victoriaPos(id, now) {
+    const B = this.vb, hs = B.hops[id], f = B.from[id]; if (!hs || !f) return null;
+    /* Antes de la entrada de la batería (B.pre pulsos) las fichas solo saltan en su casilla, sin desplazarse. */
+    const b0 = this.victoriaBeat(now), b = b0 - (B.pre || 0);
+    if (b0 < 0 || b < 0) { const ph = b0 < 0 ? 0 : b0 - Math.floor(b0); return { p: { x: f.x, y: f.y - Math.abs(Math.sin(Math.PI * ph)) * 34 }, s: 1, g: null }; }
+    let x = f.x, y = f.y, cur = null, last = null;
+    /* Los saltos son consecutivos (uno por pulso): el índice sale directo, sin recorrer la lista. */
+    const i0 = Math.floor(b - hs[0].t);
+    if (i0 >= 0 && i0 < hs.length) cur = hs[i0];
+    else if (i0 >= hs.length) last = hs[hs.length - 1];
+    if (cur) { const q = b - cur.t; x = cur.x0 + (cur.x1 - cur.x0) * q; y = cur.y0 + (cur.y1 - cur.y0) * q - Math.sin(Math.PI * q) * cur.arc; }
+    else if (last) { x = last.x1; y = last.y1; }
+    const ph = b - Math.floor(b);
+    if (!cur && last) y -= Math.abs(Math.sin(Math.PI * ph)) * 12; /* parada: sigue latiendo con el pulso */
+    return { p: { x, y }, s: cur ? 1.1 : 1, g: cur ? '#ffd54a' : null };
+  },
+  /* Fin del baile: las fichas vuelven a su espacio en el tablero y, cuando terminan, se resuelve la promesa. */
+  victoriaFin() {
+    const B = this.vb; if (!B) return;
+    this.vb = null; document.removeEventListener('pointerdown', B.skip, true); document.removeEventListener('keydown', B.skip, true);
+    const now = this.now();
+    for (const r of this.rects) {
+      const a = this.anim[r.id]; if (!a || !B.to[r.id]) continue;
+      a.fx = a.ox = B.to[r.id].x; a.fy = a.oy = B.to[r.id].y; a.t0 = now; a.d = this.dur(); a.moving = true;
+    }
+    this.redraw();
+    this.settle(1500).then(B.fin);
   },
 
   /* bucle de dibujo mientras haya animaciones o peligro. Si solo late el aviso de peligro, unos 20 fps bastan:
