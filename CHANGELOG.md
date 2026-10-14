@@ -2,6 +2,14 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-14 08:13
+
+### Mejoras
+- **Guardia de Seguridad Diamante Rojo:** arte alternativo de su ficha y su carta, y texto completo de la carta (Patrulla del Túnel, Acceso Diamante Rojo…).
+- **Santana:** carta alternativa nueva y texto completo: la Carga del Toro no sirve contra Súper Zeds, resiste 4 Impactos como los Civiles y es mal tirador.
+
+### Fixes
+- **Súper Zed:** la partida podía quedarse parada con la ficha en grande en el centro de la pantalla. Ahora la ficha se coloca siempre (aunque el navegador pause la animación), se puede continuar con OK, con un clic en cualquier parte o con Intro/Espacio/Esc, y en pantallas bajas la ficha se encoge para que el botón OK no quede fuera.
 ## 2026-10-13 19:35
 
 ### Mejoras

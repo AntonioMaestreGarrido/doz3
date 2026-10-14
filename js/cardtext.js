@@ -61,7 +61,7 @@ const ALT_KEYS = ['agee','alia','antidist','bauer','betty','bomberos','carter','
 /* Arte alternativo de los Súper Zeds (counters de dos caras en assets/arte_alt/zeds, con las claves de SUPER_ZEDS). */
 const ALT_ZEDS = ['berserker'];
 /* Arte alternativo de unidades especiales (clave de SPECIALS): counter apaisado de dos caras en assets/arte_alt/unidades y carta en arte_alt/cartas (h_/hb_). */
-const ALT_UNITS = ['petra'];
+const ALT_UNITS = ['petra', 'diamante'];
 const unitAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_UNITS.includes(k));
 const zedAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_ZEDS.includes(k));
 const superImg = (k, red) => zedAlt(k) ? 'assets/arte_alt/zeds/' + SUPER_ZEDS[k].img + (red ? '_r' : '') + '.webp' : 'assets/tokens/' + SUPER_ZEDS[k].img + '.png';

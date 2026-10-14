@@ -474,8 +474,16 @@ const ui = {
       document.body.appendChild(ov);
       const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info');
       setTimeout(() => { info.hidden = false; }, 900);
-      const finish = () => { ov.remove(); res(); };
-      $('sfxOk').onclick = () => {
+      /* El vuelo depende de requestAnimationFrame, que el navegador puede pausar (ventana minimizada u oculta): con un temporizador de
+         reserva la ficha se coloca igual y la partida nunca se queda parada con la ficha en grande. */
+      let done = false, started = false;
+      const finish = () => { if (done) return; done = true; document.removeEventListener('keydown', onKey, true); ov.remove(); res(); };
+      const onKey = e => { if (!info.hidden && (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape')) { e.preventDefault(); e.stopPropagation(); go(); } };
+      document.addEventListener('keydown', onKey, true);
+      /* OK, o un clic en cualquier parte de la pantalla una vez visible el texto. El botón se busca dentro de esta capa (no por id global). */
+      ov.addEventListener('click', () => { if (!info.hidden) go(); });
+      const go = () => {
+        if (started) return; started = true;
         info.hidden = true;
         const dest = target && G.spaces[target];
         if (this.fast || !dest) { finish(); return; }
@@ -491,10 +499,11 @@ const ui = {
           const x = cx + (p.x - cx) * e, y = cy + (p.y - cy) * e - Math.sin(Math.PI * e) * 70;
           tok.style.transform = 'translate(' + (x - cx) + 'px,' + (y - cy) + 'px) scale(' + (1 - .86 * e) + ')';
           ov.style.background = 'rgba(0,0,0,' + (.82 * (1 - e)).toFixed(3) + ')';
-          if (t < 1) requestAnimationFrame(step);
+          if (t < 1 && !done) requestAnimationFrame(step);
           else finish();
         };
         requestAnimationFrame(step);
+        setTimeout(finish, dur + 600);
       };
     });
   },
