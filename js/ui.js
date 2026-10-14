@@ -701,7 +701,7 @@ const ui = {
   },
   setupScreen() {
     return new Promise(res => {
-      const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
+      const lvls = LEVELS.map(l => { const open = levelUnlocked(l.n); return '<label class="lvl' + (open ? '' : ' locked') + '"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + (open ? '' : ' disabled') + '><span><b>' + l.name + '</b><br><span>' + (open ? l.sub : 'Bloqueado: gana «' + LEVELS[l.n - 1].name + '» para jugarlo.') + '</span></span></label>'; }).join('');
       const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       let seed = null; /* { code, seed } cuando hay un código de partida activo */
@@ -722,7 +722,7 @@ const ui = {
       const players = () => { const np = +$('nPl').value; if (np < 2) return null; const nm = [...document.querySelectorAll('#plRows .plname')], hs = [...document.querySelectorAll('#plRows .plhero')]; return Array.from({ length: np }, (_, i) => ({ name: (nm[i] && nm[i].value.trim()) || 'Jugador ' + (i + 1), hero: (hs[i] && hs[i].value) || '' })); };
       const picked = () => { const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0 || +$('nPl').value > 1) return []; const v = sels().slice(0, $('heroAll').checked ? 4 : 1).map(e => e.value).filter(Boolean); return v; };
       const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4].filter(k => $('x' + k).checked), heroes: picked() });
-      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
+      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4').forEach(e => e.disabled = on || (e.name === 'lv' && !levelUnlocked(+e.value))); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
       const msg = (t, bad) => { $('seedMsg').hidden = !t; $('seedMsg').textContent = t || ''; $('seedMsg').style.color = bad ? '#ff8a7a' : ''; };
       b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #heroAll, #nPl').forEach(i => i.onchange = upd); upd();
       $('seedMake').onclick = () => {
@@ -743,6 +743,7 @@ const ui = {
       };
       $('seedUse').onclick = () => {
         let o; try { o = SeedCode.decode($('seedTxt').value); } catch (e) { msg(e.message, true); return; }
+        if (!levelUnlocked(o.level)) { msg('Esa semilla es de «' + LEVELS[o.level].name + '», un nivel que aún no has desbloqueado: gana «' + LEVELS[o.level - 1].name + '» primero.', true); return; }
         b.querySelector('input[name=lv][value="' + o.level + '"]').checked = true; [1, 2, 3, 4].forEach(k => $('x' + k).checked = o.exps.includes(k));
         $('heroAll').checked = o.heroes.length > 1; upd(); $('lenSel').value = o.len; o.heroes.forEach((k, i) => { sels()[i].value = k; });
         seed = { code: SeedCode.encode(o), seed: o.seed }; $('seedTxt').value = seed.code; lock(true);
@@ -955,6 +956,7 @@ const ui = {
     const why = G.loseWhy === 'caos' ? 'Habéis perdido por el Caos.' : 'Un Zed ha entrado en el Centro de la Ciudad.';
     G.phase = 'end'; EVT('end', null, { over: G.over, why: G.loseWhy || null }); this.updateStats(); this.gameMusicEnd(win);
     Voz.say(win ? 'victoria' : G.loseWhy === 'caos' ? 'derrota_caos' : 'derrota_centro');
+    if (win) recordWin(G.lv.n);
     saveTop({ win, score: s.total, lv: G.lv.name, len: G.len.name, turns: G.turnNo, killed: G.stats.killed, date: Date.now() });
     /* Victoria: antes de la pantalla final, todas las fichas bailan al ritmo de la música en torno al Centro (ver victoriaBaile). */
     if (win) await this.victoriaBaile(Sound.music.on ? this._endMus : null);

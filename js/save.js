@@ -124,3 +124,12 @@ function saveTop(r) {
   } catch (e) { console.warn('No se pudo guardar el ranking', e); }
 }
 function clearTop() { try { localStorage.removeItem(TOP_KEY); } catch (e) { } }
+
+/* Progreso: niveles ganados en este navegador. Para jugar el nivel N hay que haber ganado el N-1 (el Juego Básico siempre está abierto).
+   Si el almacenamiento no está disponible, no se bloquea nada. */
+const WINS_KEY = 'doz3.wins.v1';
+function loadWins() { try { const l = JSON.parse(localStorage.getItem(WINS_KEY) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return null; } }
+function recordWin(lvN) {
+  try { const l = loadWins() || []; if (!l.includes(lvN)) l.push(lvN); localStorage.setItem(WINS_KEY, JSON.stringify(l)); } catch (e) { console.warn('No se pudo guardar la victoria', e); }
+}
+function levelUnlocked(n) { if (n === 0) return true; const w = loadWins(); return w === null || w.includes(n - 1); }
