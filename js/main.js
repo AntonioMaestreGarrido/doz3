@@ -60,7 +60,7 @@ async function playGame(setup, saved) {
       UI.redraw();
       await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', '<div class="rulebox"><b>Regla</b><br>' + ev.txt.join('<br>') + '</div>' + Preview.block(Preview.event(ev)), 'assets/cartas/e_' + ev.id + '.jpg', 'e:' + ev.id);
       if (chaosLow()) { LOG('Quedan ' + G.chaosLeft + ' fichas de Caos.', 'bad'); await UI.waitAck('Fichas de Caos', chaosWarnText()); }
-      if (ev.guardia) { G.phase = 'zeds'; await withPeek(eventStart); await maintenance(); G.dangerNext = enPeligro(); saveGame('turn'); continue; }
+      if (ev.guardia) { G.phase = 'zeds'; await withPeek(eventStart); await maintenance(); G.dangerNext = enPeligro(); await Net.checkpoint(); saveGame('turn'); continue; }
       G.phase = 'fourR'; UI.updateStats(); await phase4R(); if (G.over) break;
       G.phase = 'infection'; UI.updateStats(); await phaseInfection(); if (G.over) break;
       G.phase = 'feeding'; UI.updateStats(); await phaseFeeding(); if (G.over) break;
@@ -95,6 +95,7 @@ async function playGame(setup, saved) {
     if (G.over) break;
     G.phase = 'maint'; await maintenance();
     G.dangerNext = enPeligro();
+    await Net.checkpoint();
     saveGame('turn');
     G.sel = G.sel && G.units[G.sel] && G.spaces[G.units[G.sel].space] ? G.sel : null; UI.updateStats(); UI.redraw();
   }

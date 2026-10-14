@@ -66,6 +66,10 @@ const Net = {
       if (this.role === 'host') for (const id in this.conns) if (id !== from) this._send(this.conns[id], m);
       if (m.t === 'ans') { const v = this._dec(m.v); if (this.res[m.n]) { const f = this.res[m.n]; delete this.res[m.n]; f(v); } else this.ans[m.n] = v; }
       else { const h = this.subH[m.n]; if (h) h(m.e, m.k); else (this.subs[m.n] = this.subs[m.n] || []).push([m.e, m.k]); }
+    } else if (m.t === 'hash') {
+      if (this.role === 'host') { const rec = this.cp[m.turn] = this.cp[m.turn] || {}; rec[from] = m.h; if (this._cpFin) this._cpFin(); }
+    } else if (m.t === 'verdict') {
+      if (this.cpV[m.turn]) this.cpV[m.turn](m);
     } else if (m.t === 'cmd') {
       if (this.role === 'host') this._seqCmd(m.cmd, from); else { this.q.push(m.cmd); this.kick(); }
     }
@@ -110,6 +114,55 @@ const Net = {
       case 'undo': await ui.undo(); return;
       case 'tie': if (!G.busy) { await ui._tieBreak(); ui.updateStats(); } return;
       case 'vis': await ui.guard(() => ui._willyVisions()); return;
+    }
+  },
+  /* ---------- Fase 4a: comprobación del estado al final de cada turno ----------
+     Cada dispositivo envía un resumen del estado al anfitrión; si el de algún invitado no coincide con el suyo, el anfitrión le manda el estado
+     completo y ese dispositivo lo carga. Es una barrera: nadie sigue hasta recibir el veredicto (con tiempo máximo por si alguien se cuelga). */
+  cp: {}, cpV: {},
+  stateJson() { const s = snapshotState(); delete s.sel; delete s.busy; delete s.saveId; s.rng = rngState(); s.uid = UID; return JSON.stringify(s); },
+  /* Resumen corto (cyrb53). */
+  hash(str) {
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+  },
+  async checkpoint() {
+    if (!this.online) return;
+    const turn = G.turnNo, h = this.hash(this.stateJson());
+    if (this.role === 'host') {
+      const rec = this.cp[turn] = this.cp[turn] || {};
+      rec.me = h;
+      await new Promise(res => {
+        const ready = () => Object.keys(this.conns).every(id => rec[id] !== undefined);
+        let to = null;
+        const fin = () => { clearTimeout(to); this._cpFin = null; res(); };
+        this._cpFin = () => { if (ready()) fin(); };
+        to = setTimeout(fin, 30000);
+        this._cpFin();
+      });
+      const snap = () => ({ G: snapshotState(), uid: UID, rng: rngState() });
+      let cache = null;
+      for (const id in this.conns) {
+        if (rec[id] === undefined) continue;
+        if (rec[id] === h) this._send(this.conns[id], { t: 'verdict', turn, ok: 1 });
+        else { cache = cache || JSON.parse(JSON.stringify(snap())); try { ui.log('Resincronizando a ' + (this.names[id] || 'un invitado') + ' (el estado no coincidía).', 'bad'); } catch (e) { } this._send(this.conns[id], { t: 'verdict', turn, snap: cache }); }
+      }
+      delete this.cp[turn];
+      return;
+    }
+    const v = await new Promise(res => {
+      const to = setTimeout(() => { delete this.cpV[turn]; res(null); }, 45000);
+      this.cpV[turn] = m => { clearTimeout(to); res(m); };
+      this._bcast({ t: 'hash', turn, h });
+    });
+    delete this.cpV[turn];
+    if (v && v.snap) {
+      const busy = G.busy, id = G.saveId;
+      applySave({ G: v.snap.G, uid: v.snap.uid, rng: v.snap.rng, dbg: false }); G.busy = busy; G.sel = null; G.saveId = id; G.online = true;
+      try { ui.log('El estado de tu partida se ha corregido con el del anfitrión.', 'bad'); ui.updateStats(); ui.updateHand(); ui.redraw(); } catch (e) { }
     }
   },
   /* Empieza la partida online en este dispositivo (se llama justo antes de crear la partida). */
@@ -179,7 +232,7 @@ const Net = {
         else if (m.t === 'release' && this.owners[m.seat] === c.peer) this.owners[m.seat] = 'h';
         broadcast();
       });
-      const gone = () => { if (this.started && this.online) { try { ui.log('Se perdió la conexión con ' + (this.names[c.peer] || 'un invitado') + '.', 'bad'); } catch (e) { } } if (!this.conns[c.peer]) return; delete this.conns[c.peer]; this.owners = this.owners.map(o => o === c.peer ? 'h' : o); if (!this.started) broadcast(); };
+      const gone = () => { if (this.started && this.online) { try { ui.log('Se perdió la conexión con ' + (this.names[c.peer] || 'un invitado') + '.', 'bad'); } catch (e) { } } if (!this.conns[c.peer]) return; delete this.conns[c.peer]; if (this._cpFin) this._cpFin(); this.owners = this.owners.map(o => o === c.peer ? 'h' : o); if (!this.started) broadcast(); };
       c.on('close', gone); c.on('error', gone);
     });
     peer.on('error', e => this._onError(e));
