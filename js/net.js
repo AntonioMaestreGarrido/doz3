@@ -16,12 +16,18 @@ const Net = {
   pn: 0, curN: 0, waitCount: 0, forceSeat: null, ans: {}, res: {}, subs: {}, subH: {}, q: [], waiters: {}, cn: 0, me: 'h',
   _enc(v) { return v === undefined ? { u: 1 } : v; },
   _dec(v) { return v && typeof v === 'object' && v.u === 1 ? undefined : v; },
-  reset() { this.pn = 0; this.curN = 0; this.waitCount = 0; this.forceSeat = null; this.ans = {}; this.res = {}; this.subs = {}; this.subH = {}; this.q = []; this.waiters = {}; this.cn = 0; },
+  reset() { this.pn = 0; this.curN = 0; this.waitCount = 0; this.forceSeat = null; this.ans = {}; this.res = {}; this.subs = {}; this.subH = {}; this.q = []; this.waiters = {}; this.cn = 0; this.log = []; this.hi = 0; this.lastK = {}; this.lastI = 0; this.gk = 0; this.outbox = []; },
   /* Envía a los demás (el anfitrión retransmite lo que le llega de un invitado). */
-  _bcast(m) {
-    if (this.role === 'host') for (const id in this.conns) this._send(this.conns[id], m);
-    else if (this.conns.h) this._send(this.conns.h, m);
+  _bcast(m) { if (this.role === 'host') this._hsend(null, m, 'h'); else this._gsend(m); },
+  /* Anfitrión → invitados, con número de secuencia y guardado en el registro para repetirlo a quien se reconecte.
+     to = un invitado concreto (null = todos menos origin). */
+  _hsend(to, m, origin) {
+    const mm = Object.assign({}, m, { i: ++this.hi }); this.log.push({ i: this.hi, to, origin, m: mm });
+    if (to) { const c = this.conns[to]; if (c) this._send(c, mm); }
+    else for (const id in this.conns) if (id !== origin) this._send(this.conns[id], mm);
   },
+  /* Invitado → anfitrión: numerado y guardado hasta que el anfitrión confirme haberlo recibido (por si la conexión se cae). */
+  _gsend(m) { const mm = Object.assign({}, m, { g: ++this.gk }); this.outbox.push(mm); if (this.conns.h && this.conns.h.open) this._send(this.conns.h, mm); },
   /* Punto de decisión del asiento `seat`. `local` abre la ventana y devuelve una promesa con el valor elegido. */
   decide(seat, kind, local, args) {
     if (!this.online) return local();
@@ -62,12 +68,15 @@ const Net = {
   /* Mensajes de partida (anfitrión e invitados). */
   recv(m, from) {
     if (!m || typeof m !== 'object') return;
+    if (this.role === 'host') { if (m.g !== undefined) { if (m.g <= (this.lastK[from] || 0)) return; this.lastK[from] = m.g; } }
+    else if (m.i !== undefined) { if (m.i <= this.lastI) return; this.lastI = m.i; }
     if (m.t === 'ans' || m.t === 'sub') {
-      if (this.role === 'host') for (const id in this.conns) if (id !== from) this._send(this.conns[id], m);
+      if (this.role === 'host') { const r = Object.assign({}, m); delete r.g; this._hsend(null, r, from); }
       if (m.t === 'ans') { const v = this._dec(m.v); if (this.res[m.n]) { const f = this.res[m.n]; delete this.res[m.n]; f(v); } else this.ans[m.n] = v; }
       else { const h = this.subH[m.n]; if (h) h(m.e, m.k); else (this.subs[m.n] = this.subs[m.n] || []).push([m.e, m.k]); }
     } else if (m.t === 'hash') {
-      if (this.role === 'host') { const rec = this.cp[m.turn] = this.cp[m.turn] || {}; rec[from] = m.h; if (this._cpFin) this._cpFin(); }
+      if (this.role === 'host' && this.cpDone[m.turn]) this._hsend(from, { t: 'verdict', turn: m.turn, ok: 1 });
+      else if (this.role === 'host') { const rec = this.cp[m.turn] = this.cp[m.turn] || {}; rec[from] = m.h; if (this._cpFin) this._cpFin(); }
     } else if (m.t === 'verdict') {
       if (this.cpV[m.turn]) this.cpV[m.turn](m);
     } else if (m.t === 'cmd') {
@@ -85,7 +94,7 @@ const Net = {
   },
   _seqCmd(c, from) {
     if (!c || (this.owners && this.owners[c.seat] !== from)) { const w = this.waiters[c && c.id]; if (w) { delete this.waiters[c.id]; w(); } return; }
-    for (const id in this.conns) this._send(this.conns[id], { t: 'cmd', cmd: c });
+    this._hsend(null, { t: 'cmd', cmd: c }, null);
     this.q.push(c); this.kick();
   },
   kick() { if (this._kick) return; this._kick = setTimeout(() => { this._kick = 0; this.pump(); }, 0); },
@@ -119,7 +128,7 @@ const Net = {
   /* ---------- Fase 4a: comprobación del estado al final de cada turno ----------
      Cada dispositivo envía un resumen del estado al anfitrión; si el de algún invitado no coincide con el suyo, el anfitrión le manda el estado
      completo y ese dispositivo lo carga. Es una barrera: nadie sigue hasta recibir el veredicto (con tiempo máximo por si alguien se cuelga). */
-  cp: {}, cpV: {},
+  cp: {}, cpV: {}, cpDone: {}, away: {},
   stateJson() { const s = snapshotState(); delete s.sel; delete s.busy; delete s.saveId; s.rng = rngState(); s.uid = UID; return JSON.stringify(s); },
   /* Resumen corto (cyrb53). */
   hash(str) {
@@ -147,10 +156,10 @@ const Net = {
       let cache = null;
       for (const id in this.conns) {
         if (rec[id] === undefined) continue;
-        if (rec[id] === h) this._send(this.conns[id], { t: 'verdict', turn, ok: 1 });
-        else { cache = cache || JSON.parse(JSON.stringify(snap())); try { ui.log('Resincronizando a ' + (this.names[id] || 'un invitado') + ' (el estado no coincidía).', 'bad'); } catch (e) { } this._send(this.conns[id], { t: 'verdict', turn, snap: cache }); }
+        if (rec[id] === h) this._hsend(id, { t: 'verdict', turn, ok: 1 });
+        else { cache = cache || JSON.parse(JSON.stringify(snap())); try { ui.log('Resincronizando a ' + (this.names[id] || 'un invitado') + ' (el estado no coincidía).', 'bad'); } catch (e) { } this._hsend(id, { t: 'verdict', turn, snap: cache }); }
       }
-      delete this.cp[turn];
+      delete this.cp[turn]; this.cpDone[turn] = true;
       return;
     }
     const v = await new Promise(res => {
@@ -193,7 +202,7 @@ const Net = {
     });
   },
   _onError(e) { console.warn('Net', e); },
-  close() { try { if (this.peer) this.peer.destroy(); } catch (e) { } this.peer = null; this.conns = {}; this.role = null; this.online = false; this.seats = null; },
+  close() { try { if (this.peer) this.peer.destroy(); } catch (e) { } this.peer = null; this.conns = {}; this.role = null; this.online = false; this.seats = null; this.started = false; this._retrying = false; this.away = {}; this.cpDone = {}; this._bar(''); },
   _esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); },
   /* Lista de asientos con su dueño. `me` = id de este dispositivo; con `claim` los asientos libres (del anfitrión) se pueden tomar. */
   _seatsHtml(players, owners, names, me, claim) {
@@ -217,25 +226,23 @@ const Net = {
     let peer = null, code;
     for (let k = 0; k < 6 && !peer; k++) { code = this.newCode(); try { peer = await this._peer(this.PREFIX + code); } catch (e) { if (e.type !== 'unavailable-id') { await ui.waitAck('Jugar online', 'No se pudo crear la sala: ' + Net._esc(e.message || e.type || e) + '.<br>Comprueba la conexión a Internet.'); return null; } } }
     if (!peer) { await ui.waitAck('Jugar online', 'No se pudo reservar un código de sala. Inténtalo de nuevo.'); return null; }
-    this.close(); this.peer = peer; this.role = 'host'; this.setup = setup; this.conns = {}; this.names = {}; this.owners = setup.players.map(() => 'h');
-    let order = 0, render = () => { };
+    this.close(); this.peer = peer; this.role = 'host'; this.setup = setup; this.conns = {}; this.names = {}; this.away = {}; this.owners = setup.players.map(() => 'h');
+    let render = () => { };
     const broadcast = () => { for (const id in this.conns) this._send(this.conns[id], { t: 'lobby', players: setup.players, owners: this.owners, names: this.names, you: id }); render(); };
+    this.code = code; this._order = 0; this._lobbyRender = () => render(); this._lobbyBroadcast = broadcast;
     peer.on('connection', c => {
-      c.on('open', () => {
-        if (this.started || Object.keys(this.conns).length >= setup.players.length - 1) { try { c.send({ t: 'full' }); } catch (e) { } setTimeout(() => c.close(), 300); return; }
-        this.conns[c.peer] = c; this.names[c.peer] = 'Invitado ' + (++order); broadcast();
-      });
       c.on('data', m => {
         if (!m || typeof m !== 'object') return;
-        if (this.started) { this.recv(m, c.peer); return; }
-        if (m.t === 'claim' && this.owners[m.seat] === 'h') this.owners[m.seat] = c.peer;
-        else if (m.t === 'release' && this.owners[m.seat] === c.peer) this.owners[m.seat] = 'h';
+        if (m.t === 'hi') { this._hostHi(c, m); return; }
+        if (!c.tok) return;
+        if (this.started) { this.recv(m, c.tok); return; }
+        if (m.t === 'claim' && this.owners[m.seat] === 'h') this.owners[m.seat] = c.tok;
+        else if (m.t === 'release' && this.owners[m.seat] === c.tok) this.owners[m.seat] = 'h';
         broadcast();
       });
-      const gone = () => { if (this.started && this.online) { try { ui.log('Se perdió la conexión con ' + (this.names[c.peer] || 'un invitado') + '.', 'bad'); } catch (e) { } } if (!this.conns[c.peer]) return; delete this.conns[c.peer]; if (this._cpFin) this._cpFin(); this.owners = this.owners.map(o => o === c.peer ? 'h' : o); if (!this.started) broadcast(); };
-      c.on('close', gone); c.on('error', gone);
+      c.on('close', () => this._hostGone(c)); c.on('error', () => this._hostGone(c));
     });
-    peer.on('error', e => this._onError(e));
+    peer.on('error', e => this._onError(e)); this._keepPeer(peer);
     return new Promise(res => {
       const link = location.origin + location.pathname + '#sala=' + code;
       render = () => {
@@ -248,6 +255,7 @@ const Net = {
         $('nbCancel').onclick = () => { ui._close(); Net.close(); res(null); };
         $('nbStart').onclick = () => {
           this.started = true; ui._close();
+          this.log = []; this.hi = 0; this.lastK = {};
           for (const id in this.conns) this._send(this.conns[id], { t: 'start', setup, seats: this.owners.map((o, i) => o === id ? i : -1).filter(i => i >= 0) });
           this.seats = this.owners.map((o, i) => o === 'h' ? i : -1).filter(i => i >= 0); this.me = 'h'; this.begin(); res(setup);
         };
@@ -255,6 +263,7 @@ const Net = {
       render();
     });
   },
+  _tok() { try { let k = sessionStorage.getItem('doz3.tok'); if (!k) { k = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); sessionStorage.setItem('doz3.tok', k); } return k; } catch (e) { return this._tk || (this._tk = Math.random().toString(36).slice(2, 12)); } },
   _join() {
     return new Promise(res => {
       const ask = (msg) => {
@@ -269,20 +278,19 @@ const Net = {
         ui._modal('<h2>Conectando…</h2><p>Sala ' + Net._esc(code) + '</p>');
         this.close(); let peer;
         try { peer = await this._peer(); } catch (e) { ask('No se pudo conectar con el servicio: ' + (e.message || e.type)); return; }
-        this.peer = peer; this.role = 'guest'; this.started = false;
-        const c = peer.connect(this.PREFIX + code, { reliable: true }); this.conns = { h: c }; let opened = false;
+        this.peer = peer; this.role = 'guest'; this.started = false; this.code = code; this.me = this._tok(); this._keepPeer(peer);
+        let opened = false;
         const fail = msg => { Net.close(); ask(msg); };
         const to = setTimeout(() => { if (!opened) fail('La sala ' + code + ' no responde. Revisa el código.'); }, 12000);
-        c.on('open', () => { opened = true; clearTimeout(to); });
-        c.on('error', () => { if (!opened) { clearTimeout(to); fail('No se pudo conectar con la sala ' + code + '.'); } });
         peer.on('error', e => { if (!opened && e.type === 'peer-unavailable') { clearTimeout(to); fail('No existe la sala ' + code + '.'); } });
-        c.on('close', () => { if (this.started) { try { ui.log('Se perdió la conexión con el anfitrión.', 'bad'); } catch (e) { } return; } if (this.role === 'guest' && opened) { Net.close(); ui.waitAck('Jugar online', 'Se perdió la conexión con el anfitrión.').then(() => ask('')); } });
-        c.on('data', m => {
+        const data = m => {
           if (!m || typeof m !== 'object') return;
+          if (m.t === 'welcome') { this._guestWelcome(m); return; }
           if (this.started) { this.recv(m, 'h'); return; }
           if (m.t === 'full') { clearTimeout(to); fail('La sala ' + code + ' está llena o ya ha empezado.'); return; }
           if (m.t === 'lobby') {
             this.me = m.you;
+            const c = this.conns.h;
             ui._modal('<h2>Sala ' + code + '</h2><p>Toma tus asientos y espera a que el anfitrión empiece la partida.</p>' + this._seatsHtml(m.players, m.owners, m.names, m.you, true) + '<div class="opts"><button id="njLeave">Salir</button></div>');
             document.querySelectorAll('#modalbox [data-claim]').forEach(x => x.onclick = () => this._send(c, { t: 'claim', seat: +x.dataset.claim }));
             document.querySelectorAll('#modalbox [data-rel]').forEach(x => x.onclick = () => this._send(c, { t: 'release', seat: +x.dataset.rel }));
@@ -290,10 +298,75 @@ const Net = {
           } else if (m.t === 'start') {
             this.started = true; this.seats = m.seats; this.begin(); ui._close(); res(m.setup);
           }
-        });
+        };
+        const lost = () => { if (this.started) this._guestLost(); else if (this.role === 'guest' && opened) { Net.close(); ui.waitAck('Jugar online', 'Se perdió la conexión con el anfitrión.').then(() => ask('')); } };
+        this._guestData = data; this._guestClosed = lost;
+        this._guestConnect(() => { opened = true; clearTimeout(to); }, () => { if (!opened) { clearTimeout(to); fail('No se pudo conectar con la sala ' + code + '.'); } });
       };
       ask('');
     });
+  },
+  /* Abre (o reabre) la conexión con el anfitrión y se presenta con el identificador estable. */
+  _guestConnect(onOpen, onFail) {
+    const peer = this.peer; if (!peer || peer.destroyed) return;
+    const c = peer.connect(this.PREFIX + this.code, { reliable: true }); this.conns = { h: c }; let ok = false;
+    c.on('open', () => { ok = true; if (onOpen) onOpen(); this._send(c, { t: 'hi', tok: this.me, lastI: this.lastI }); });
+    c.on('data', m => this._guestData(m));
+    c.on('close', () => { if (this.conns.h === c && ok) this._guestClosed(); });
+    c.on('error', () => { if (!ok && onFail) onFail(); });
+  },
+  /* Conexión perdida durante la partida: se reintenta sin parar; la partida del invitado se queda esperando donde estaba. */
+  _guestLost() {
+    if (this._retrying || !this.online) return; this._retrying = true; const t0 = Date.now();
+    try { ui.log('Se perdió la conexión con el anfitrión. Reconectando…', 'bad'); } catch (e) { }
+    const loop = () => {
+      if (!this._retrying || !this.online) return;
+      const s = Math.round((Date.now() - t0) / 1000);
+      this._bar('⚠ Sin conexión con el anfitrión (' + s + ' s). Reconectando…' + (s > 60 ? ' Si el anfitrión cerró la partida, tendrá que reanudarla desde su guardado.' : ''));
+      const peer = this.peer;
+      if (peer && !peer.destroyed) { if (peer.disconnected) { try { peer.reconnect(); } catch (e) { } } this._guestConnect(null, null); }
+      setTimeout(loop, 4000);
+    };
+    loop();
+  },
+  _guestWelcome(m) {
+    this._retrying = false; this._bar('');
+    const c = this.conns.h; this.outbox = this.outbox.filter(x => x.g > m.lastK);
+    for (const x of this.outbox) this._send(c, x);
+    try { ui.log('Conexión recuperada.', 'good'); } catch (e) { }
+  },
+  /* El Peer pierde la conexión con el servicio de señalización: se vuelve a conectar (las conexiones ya abiertas siguen vivas). */
+  _keepPeer(peer) { peer.on('disconnected', () => { const tryAgain = () => { if (this.peer !== peer || peer.destroyed || !peer.disconnected) return; try { peer.reconnect(); } catch (e) { } setTimeout(tryAgain, 4000); }; setTimeout(tryAgain, 1000); }); },
+  /* Anfitrión: un dispositivo se presenta con su identificador estable (tok). Antes de empezar entra al lobby; después, es una reconexión. */
+  _hostHi(c, m) {
+    const tok = String(m.tok || '').slice(0, 24); if (!tok) return;
+    if (this.started) {
+      if (!this.owners.includes(tok)) { this._send(c, { t: 'full' }); setTimeout(() => c.close(), 300); return; }
+      const old = this.conns[tok]; if (old && old !== c) { old.tok = null; try { old.close(); } catch (e) { } }
+      c.tok = tok; this.conns[tok] = c; delete this.away[tok];
+      this._send(c, { t: 'welcome', lastK: this.lastK[tok] || 0 });
+      const from = +m.lastI || 0;
+      for (const e of this.log) if (e.i > from && ((e.to === tok) || (e.to === null && e.origin !== tok))) this._send(c, e.m);
+      try { ui.log((this.names[tok] || 'Un invitado') + ' ha vuelto a conectarse.', 'good'); } catch (e) { } this._hostBar();
+      return;
+    }
+    if (Object.keys(this.conns).length >= this.setup.players.length - 1 && !this.conns[tok]) { this._send(c, { t: 'full' }); setTimeout(() => c.close(), 300); return; }
+    c.tok = tok; this.conns[tok] = c; if (!this.names[tok]) this.names[tok] = 'Invitado ' + (++this._order); this._lobbyBroadcast();
+  },
+  _hostGone(c) {
+    const tok = c.tok; if (!tok || this.conns[tok] !== c) return;
+    delete this.conns[tok];
+    if (this.started) {
+      this.away[tok] = Date.now(); try { ui.log('Se perdió la conexión con ' + (this.names[tok] || 'un invitado') + '. La partida espera a que vuelva.', 'bad'); } catch (e) { }
+      if (this._cpFin) this._cpFin(); this._hostBar();
+    } else { this.owners = this.owners.map(o => o === tok ? 'h' : o); this._lobbyBroadcast(); }
+  },
+  _hostBar() { const a = Object.keys(this.away).map(k => this.names[k] || 'Invitado'); this._bar(a.length ? '⚠ Sin conexión: ' + a.join(', ') + '. La partida espera a que vuelvan.' : ''); },
+  _bar(text) {
+    let b = document.getElementById('netbar');
+    if (!text) { if (b) b.hidden = true; return; }
+    if (!b) { b = document.createElement('div'); b.id = 'netbar'; document.body.appendChild(b); }
+    b.hidden = false; b.textContent = text;
   },
   _send(c, m) { try { c.send(m); } catch (e) { console.warn('Net send', e); } }
 };
