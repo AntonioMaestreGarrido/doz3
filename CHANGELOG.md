@@ -25,6 +25,7 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
 - **Wilson «Atajos» con el Túnel:** desde un espacio del Túnel se puede saltar al mismo número de la Autovía o de las Afueras, y viceversa (1 Movimiento).
 - **Atajos de Wilson encadenados:** un movimiento solo puede usar un atajo. Antes Wilson podía saltar de Montaña a Bosque y de ahí a Afueras en un mismo movimiento.
 - **Retirada tras perder un combate:** una unidad que pierde un combate no puede retroceder por el atajo de Wilson. Si el espacio de vuelta solo se alcanza por atajo, se retira hacia el Centro.
+- **Arte alternativo de Eventos y Destino:** con «Usar arte alternativo» activado, las cartas de Evento y de Destino usan las ilustraciones de `assets/arte_alt/eventos` y `destino` (las que existan; el resto usa la original). Se aplica también a la ventana de la carta, al zoom y a la vista previa de cartas.
 - **Xeno Jones en la fase 4R:** cada activación de Refugiados puede gastarse en trasladarlo: desde cualquier sitio, al Laboratorio o a una Oficina del Personal; desde el Laboratorio o el Hospital, a cualquier espacio vacío que no sea Inicial. No gasta Acción de Personaje.
 - **Fichas de «Lo que va a pasar»:** con el arte alternativo activado, las fichas Zed de la vista previa usan el arte nuevo.
 - **Visiones de Wilson:** el botón pasa a la ficha de Wilson, entre sus acciones, en lugar de estar en el panel de estado.

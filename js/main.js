@@ -8,7 +8,7 @@ async function revealEvent() {
   if (G.eventsRevealed >= G.totalEvents - 2) Voz.say('amanece');
   if (G.ammo <= 1) Voz.say('municion');
   G.pool = newPool(ev.acc); G.charUsed = {}; G.firstFreeUsed = {};
-  $('evimg').src = 'assets/cartas/e_' + id + '.jpg'; $('evimg').dataset.zoom = 'e:' + id;
+  $('evimg').src = evImg(id); $('evimg').dataset.zoom = 'e:' + id;
   UI.log('— Turno ' + G.turnNo + ': «' + ev.name + '» —', 'turn'); UI.updateStats();
 }
 const FINISH = () => G.over;
@@ -26,7 +26,7 @@ function enPeligro() { return G.routes.some(rt => { const L = lastOf(rt); return
 async function warmEventCards() {
   for (const id of [...new Set((G.eventDeck || []).concat(G.event ? [G.event.id] : []))]) {
     if (G.over) return;
-    try { await fetch('assets/cartas/e_' + id + '.jpg'); } catch (e) { /* sin red: se reintenta al mostrarla */ }
+    try { await fetch(evImg(id)); } catch (e) { /* sin red: se reintenta al mostrarla */ }
     await new Promise(r => setTimeout(r, 150));
   }
 }
@@ -37,7 +37,7 @@ async function playGame(setup, saved) {
   if (saved) {
     applySave(saved); resume = saved.at;
     ui.setMap(G.lv.board); G.busy = true;
-    if (G.event) { $('evimg').src = 'assets/cartas/e_' + G.event.id + '.jpg'; $('evimg').dataset.zoom = 'e:' + G.event.id; }
+    if (G.event) { $('evimg').src = evImg(G.event.id); $('evimg').dataset.zoom = 'e:' + G.event.id; }
     UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     UI.log('Partida recuperada — ' + G.lv.name + ' (' + G.len.name + '), turno ' + G.turnNo + '.', 'turn');
   } else {
@@ -58,7 +58,7 @@ async function playGame(setup, saved) {
     if (resume !== 'actions') {
       await revealEvent(); ev = G.event;
       UI.redraw();
-      await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', '<div class="rulebox"><b>Regla</b><br>' + ev.txt.join('<br>') + '</div>' + Preview.block(Preview.event(ev)), 'assets/cartas/e_' + ev.id + '.jpg', 'e:' + ev.id);
+      await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', '<div class="rulebox"><b>Regla</b><br>' + ev.txt.join('<br>') + '</div>' + Preview.block(Preview.event(ev)), evImg(ev.id), 'e:' + ev.id);
       if (chaosLow()) { LOG('Quedan ' + G.chaosLeft + ' fichas de Caos.', 'bad'); await UI.waitAck('Fichas de Caos', chaosWarnText()); }
       if (ev.guardia) { G.phase = 'zeds'; await UI.spawnBatch(() => withPeek(eventStart)); await maintenance(); G.dangerNext = enPeligro(); saveGame('turn'); continue; }
       G.phase = 'fourR'; UI.updateStats(); await UI.spawnBatch(() => withPeek(() => eventAtPhase('4'))); if (G.over) break; await phase4R(); if (G.over) break;

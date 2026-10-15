@@ -60,7 +60,7 @@ const ui = {
     }, true);
     if (this.initMapZoom) this.initMapZoom();
     window.addEventListener('resize', () => this.arrange());
-    $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), 'assets/cartas/e_' + G.event.id + '.jpg', 'e:' + G.event.id); });
+    $('evimg').addEventListener('click', () => { if (G.event) ui.waitAck(G.event.name, G.event.txt.join('<br>'), evImg(G.event.id), 'e:' + G.event.id); });
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
     $('optionsBtn').addEventListener('click', () => ui.showOptions());
     $('logBtn').addEventListener('click', () => downloadLog());
@@ -786,7 +786,7 @@ const ui = {
       '<p class="ophint">Cambia las ilustraciones de cartas, fichas y obituario por el arte alternativo.</p>' +
       '<div class="opts"><button class="primary" id="sndOk">Cerrar</button></div>', 'sound');
     this._bindSound();
-    $('optArt').onchange = e => { Opciones.set({ artAlt: e.target.checked }); loadAltArt().then(() => ui.redraw()); };
+    $('optArt').onchange = e => { Opciones.set({ artAlt: e.target.checked }); if (G.event) $('evimg').src = evImg(G.event.id); loadAltArt().then(() => ui.redraw()); };
     $('sndOk').onclick = () => ui._close();
   },
   hideCover() { const t = $('title'); if (t) t.remove(); },

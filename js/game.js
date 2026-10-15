@@ -146,7 +146,7 @@ async function drawDestiny() {
   return { id, route };
 }
 const DEST_IMG = { sin_nombre: 'hombre', heroe_d: 'llega_heroe', techo: 'techo_tunel', planes: 'planes_marteuse', cama: 'cama_hospital', heli_noticias: 'helicoptero_noticias', senal: 'senal_rescate', tiradles: 'tiradles_algo', llamamiento: 'llamamiento' };
-const destImg = id => 'assets/cartas/d_' + (DEST_IMG[id] || id) + '.jpg';
+const destImg = id => destImgBase(DEST_IMG[id] || id);
 async function resolveTwist(dr) {
   if (!dr) return; const d = DEST[dr.id];
   if (d.keep) {

@@ -83,7 +83,7 @@ const isCiv = u => u.type === 'civ';
 function putUnit(u, id) {
   if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); }
   u.space = id; if (id && G.spaces[id]) sp(id).units.push(u.id);
-  if (id === 'C' && u.type === 'guard') u.reachedC = true;   /* la Guardia Nacional conserva la Súper Arma una vez ha llegado al Centro */
+  if (u.type === 'guard' && id && G.spaces[id] && isCity(id)) u.reachedC = true;   /* la Guardia Nacional conserva la Súper Arma una vez ha llegado a un espacio de Ciudad o al Centro */
 }
 function removeUnit(u) { if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); } u.space = null; }
 function unitsAt(id) { return sp(id).units.map(x => G.units[x]).filter(Boolean); }
@@ -414,8 +414,8 @@ function humanShifts(f, o) { // o: { attacking, space }
   return s;
 }
 function hasPart(k) { return G.weapon && G.weapon.parts.includes(k); }
-/* Parte de la Súper Arma que beneficia a una unidad concreta: la Guardia Nacional no se beneficia hasta que llega al Centro de la Ciudad (y la conserva si luego sale). */
-function weaponFor(u, k) { return hasPart(k) && !(u && u.type === 'guard' && !u.reachedC && u.space !== 'C'); }
+/* Parte de la Súper Arma que beneficia a una unidad concreta: la Guardia Nacional no se beneficia hasta que llega a un espacio de Ciudad o al Centro (y la conserva si luego sale). */
+function weaponFor(u, k) { return hasPart(k) && !(u && u.type === 'guard' && !u.reachedC && !(u.space && G.spaces[u.space] && isCity(u.space))); }
 function zedShifts(zs, o) {
   const s = [];
   if (zs.some(z => z.smart)) s.push({ label: 'Inteligentes', v: -1 });
