@@ -2,6 +2,39 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-15 16:20
+
+### Mejoras
+- **Fase de cada carta de Evento:** cada carta se resuelve en la fase que marca la pestaña de la imagen original (4R, Infección, Zeds o Acciones); el texto da el momento exacto. La tabla `EV_FASE` de `js/expansions.js` recoge las 100 cartas y la ficha de la carta muestra su fase. Las vistas previas de Desesperación, Odio, Tóxicos, Moteros e Inteligentes avisan de que se resuelven en Acciones con el tablero de ese momento.
+- **Catálogo de cartas:** `catalogo/catalogo_cartas.html` (buscador por texto, id, tipo, fase y nivel) y `catalogo/catalogo_cartas.md`, generados con `npm run catalogo` a partir de los datos del juego: 246 entradas (Eventos, Destino, Investigación, héroes, unidades, Súper Zeds, Rumores y Súper Arma), con la fase y la función que aplica cada efecto.
+- **Arte alternativo:** fichas de los Zeds normales (heridas con una X de arañazo por Impacto), de los Súper Zeds, de Noelle y de las Alimañas, con la ficha en vuelo al llegar.
+
+### Fixes
+- **Cartas con la pestaña en otra fase:** 4R (Artefacto, Hace falta, Saqueadores, Turba), Infección (Contaminación, Aquí, doctor) y Acciones (Accidente, Armados, Civiles heroicos, Crisis, Desesperación, Elwood, Fortuna, Helicóptero, Héroe, Keep calm, Marines, Misiles, Moteros, Murciélagos, Odio, Tóxicos; y al final de Acciones Frenesí, Súper enloquecidos e Inteligentes) se aplicaban al inicio de la fase de los Zeds. Ahora cada una va en su fase. Los Saqueadores se mueven el turno en que aparecen.
+- **De una vez por todas, buenas noches:** ya no gana antes de la fase de los Zeds; gana al inicio de Acciones, con las rutas activadas, como las demás cartas de victoria.
+- **Atajos (Evento):** el botón se puede repetir tantas veces como se quiera.
+
+## 2026-10-15 12:39
+
+### Fixes
+- **Llegada de la Banda de Bubba (y Brotes):** las unidades que aparecen en la fase de Infección (Brotes y sus cartas de Destino) ahora también vuelan desde la columna junto a la carta de evento, como el resto de apariciones. Antes aparecían de golpe.
+- **Carta «¡Llega la Guardia Nacional!»:** la Destino que roba al entrar y las unidades que aparecen con ella vuelan desde la columna junto a la carta de evento.
+- **Cartas de Destino que traen unidades (p. ej. «Banda de Bubba DeNardo»):** las unidades que aparecen al resolver una carta de Destino vuelan desde la columna, sea cual sea la fase en que se roba (también los Rumores).
+- **«Llega un Héroe» (Destino):** primero se revela la carta del Héroe que llega y después se elige el espacio donde se coloca (antes era al revés).
+- **Wilson «Atajos»:** el atajo lo puede usar cualquier unidad agrupada con él (o que pase por su espacio), no solo él mismo. Si Wilson está en una Cripta, sus unidades salen sin tirar.
+- **Wilson «Atajos» con el Túnel:** desde un espacio del Túnel se puede saltar al mismo número de la Autovía o de las Afueras, y viceversa (1 Movimiento).
+- **Atajos de Wilson encadenados:** un movimiento solo puede usar un atajo. Antes Wilson podía saltar de Montaña a Bosque y de ahí a Afueras en un mismo movimiento.
+- **Retirada tras perder un combate:** una unidad que pierde un combate no puede retroceder por el atajo de Wilson. Si el espacio de vuelta solo se alcanza por atajo, se retira hacia el Centro.
+- **Xeno Jones en la fase 4R:** cada activación de Refugiados puede gastarse en trasladarlo: desde cualquier sitio, al Laboratorio o a una Oficina del Personal; desde el Laboratorio o el Hospital, a cualquier espacio vacío que no sea Inicial. No gasta Acción de Personaje.
+- **Fichas de «Lo que va a pasar»:** con el arte alternativo activado, las fichas Zed de la vista previa usan el arte nuevo.
+- **Visiones de Wilson:** el botón pasa a la ficha de Wilson, entre sus acciones, en lugar de estar en el panel de estado.
+- **Zed que entra en un espacio con Saqueadores o unidades de jugador:** ahora empieza el combate también si el espacio es un Inicial o si hay Saqueadores (antes no combatía).
+
+## 2026-10-15 12:26
+
+### Fixes
+- **Mensajero del Clarín en la preparación:** si sale como Civil Heroico inicial, ahora trae otra Civil Heroica al empezar la partida, igual que al entrar en juego durante la partida.
+
 ## 2026-10-15 04:30
 
 ### Fixes

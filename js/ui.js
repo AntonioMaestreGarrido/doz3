@@ -10,6 +10,7 @@ async function loadAltArt() {
   const list = []; for (const k of ALT_KEYS) { if (!IMG['alt_' + k]) list.push(['alt_' + k, 'assets/arte_alt/tokens/' + k + '.webp']); if (!IMG['alt_' + k + '_r']) list.push(['alt_' + k + '_r', 'assets/arte_alt/tokens/' + k + '_r.webp']); }
   for (let n = 2; n <= 9; n++) if (!IMG['altzn_zed_full_' + n]) list.push(['altzn_zed_full_' + n, 'assets/arte_alt/zeds/zed_full_' + n + '.webp']);
   for (let n = 1; n <= 5; n++) if (!IMG['altzn_zed_red_' + n]) list.push(['altzn_zed_red_' + n, 'assets/arte_alt/zeds/zed_red_' + n + '.webp']);
+  for (const k of ALT_SPREADERS) for (const [id, suf] of [['altz_' + k, ''], ['altz_' + k + '_r', '_r']]) if (!IMG[id]) list.push([id, 'assets/arte_alt/zeds/sz_' + k + suf + '.webp']);
   for (const k of ALT_ZEDS) { const f = SUPER_ZEDS[k].img; for (const [id, suf] of [['altz_' + k, ''], ['altz_' + k + '_r', '_r']]) if (!IMG[id]) list.push([id, 'assets/arte_alt/zeds/' + f + suf + '.webp']); }
   for (const k of ALT_UNITS) for (const [id, suf] of [['altu_' + k, ''], ['altu_' + k + '_r', '_r']]) if (!IMG[id]) list.push([id, 'assets/arte_alt/unidades/' + k + suf + '.webp']);
   await Promise.all(list.map(([k, src]) => loadImg(k, src)));
@@ -146,10 +147,8 @@ const ui = {
     if (L.fourR) h += '<div>Caos: <b>' + chaosOnMap() + '</b> (quedan ' + G.chaosLeft + ')</div>';
     if (L.res && G.res) h += '<div style="grid-column:1/3" data-zoom="r:' + G.res.cur.id + '">Investigación: <b>' + G.res.cur.name + '</b> (' + G.res.cur.th + '+' + (G.res.cur.sup ? ', 1 Sum.' : '') + ') · quedan ' + G.res.deck.length + (G.weapon ? '<br>Súper Arma: ' + G.weapon.parts.map(k => '<img class="wpart" src="assets/tokens/arma_' + k + (WEAPON_EXT[k] || '.png') + '" title="' + WEAPON_PARTS[k].name + '" alt="' + WEAPON_PARTS[k].name + '">').join('') : '') + '</div>';
     h += '<div style="grid-column:1/3;font-size:12px;color:var(--mut)">Cartas de Evento: ' + done + ' / ' + tot + '</div><div class="bar"><i style="width:' + (tot ? 100 * done / tot : 0) + '%"></i></div>';
-    if (alive('wilson')) h += '<button id="visBtn" style="grid-column:1/3">🔮 Visiones de Wilson: mirar la carta de Destino</button>';
     if (G.phase === 'actions' && !G.busy) h += '<button class="primary" id="endBtn" style="grid-column:1/3">Terminar fase de Acciones ▶</button>';
     $('status').innerHTML = h;
-    const vb = $('visBtn'); if (vb) vb.onclick = () => this.willyVisions();
     $('status').querySelectorAll('[data-pl]').forEach(b => b.onclick = () => { if (G.busy || !$('modal').hidden) return; G.act = +b.dataset.pl; this.updateStats(); });
     const tb = $('tieBtn'); if (tb) tb.onclick = () => this.tieBreak();
     const eb = $('endBtn'); if (eb) eb.onclick = () => { if (ui._endRes) { const r = ui._endRes; ui._endRes = null; ui.mode = null; ui.setBanner(null); r(); } };
@@ -389,13 +388,13 @@ const ui = {
     if (sel) { c.shadowColor = '#ffd54a'; c.shadowBlur = 26; } else if (r.glow) { c.shadowColor = r.glow; c.shadowBlur = 34; }
     if (u.type === 'train') { c.fillStyle = u.state === 'leaving' ? '#d9822b' : '#3c7fc4'; rr(c, -hw - 8, -hh / 2, r.w + 16, hh, 6); c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.fillText(u.tkey === 'local' ? 'TREN L' : 'TREN M', 0, 4); }
     else if (isZedSide(u)) {
-      const altz = Opciones.artAlt && (u.type === 'super' ? IMG['altz_' + u.key + (u.flipped ? '_r' : '')] : (u.type === 'zed' && IMG['altzn_' + zedAltN(u)]));
+      const altz = Opciones.artAlt && (u.type === 'super' ? IMG['altz_' + u.key + (u.flipped ? '_r' : '')] : u.type === 'spreader' ? IMG['altz_' + u.skey + (u.flipped ? '_r' : '')] : (u.type === 'zed' && IMG['altzn_' + zedAltN(u)]));
       if (altz) {
         c.save(); rr(c, -hw, -hh, r.w, r.h, 8); c.clip(); c.drawImage(altz, -hw, -hh, r.w, r.h); c.restore();
         if (sel) { c.strokeStyle = '#ffd54a'; c.lineWidth = 5; rr(c, -hw, -hh, r.w, r.h, 8); c.stroke(); }
         c.shadowBlur = 0;
-        if (u.type === 'zed' && strength(u) !== (u.flipped ? u.red : u.full)) badge(c, hw - 14, hh - 14, String(strength(u)), u.flipped ? '#5a1010' : '#a52a1b', '#fff');
-        if (u.hits) { if (u.type === 'zed' || u.type === 'super') scratchHits(c, u.hits, u.flipped, hw, hh, r.w, u.type === 'super'); else { c.font = '700 15px Segoe UI'; c.fillStyle = '#ff6b6b'; c.strokeStyle = '#000'; c.lineWidth = 3; c.textAlign = 'left'; const t = '♥'.repeat(u.hits); c.strokeText(t, -hw + 3, hh - 5); c.fillText(t, -hw + 3, hh - 5); } }
+        if ((u.type === 'zed' || u.type === 'spreader') && strength(u) !== (u.flipped ? u.red : u.full)) badge(c, hw - 14, hh - 14, String(strength(u)), u.flipped ? '#5a1010' : '#a52a1b', '#fff');
+        if (u.hits) { if (u.type === 'zed' || u.type === 'super' || u.type === 'spreader') scratchHits(c, u.hits, u.flipped, hw, hh, r.w, u.type !== 'zed'); else { c.font = '700 15px Segoe UI'; c.fillStyle = '#ff6b6b'; c.strokeStyle = '#000'; c.lineWidth = 3; c.textAlign = 'left'; const t = '♥'.repeat(u.hits); c.strokeText(t, -hw + 3, hh - 5); c.fillText(t, -hw + 3, hh - 5); } }
         let ty2 = -hh + 10; for (const [f, t, col] of [['zresist', 'R', '#c26b00'], ['fast', '»', '#2a7fc2'], ['toxic', 'T', '#4a9a1a'], ['smart', 'I', '#7a3fc2'], ['leader', 'L', '#c22a2a'], ['pest', 'P', '#6a6a1a']]) if (u[f]) { tag(c, -hw + 11, ty2, t, col); ty2 += 18; }
       } else {
       const img = IMG[u.img] || IMG.zed;

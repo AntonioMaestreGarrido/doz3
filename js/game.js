@@ -34,11 +34,13 @@ function heroAllowed(key) {
   if (!G.lv || G.lv.n === 0) return true;
   return CIVH_POOL.includes(key) ? civhAvail(key) && HEROES[key].lv <= MAX_CIVH_LV[G.lv.n] : heroPoolFor(G.lv.n).includes(key);
 }
-async function spawnHero(key, where) {
+/* choose: lista de espacios entre los que elige el jugador DESPUÉS de revelar la ficha (carta «Llega un Héroe»). */
+async function spawnHero(key, where, choose) {
   if (!heroAllowed(key)) { LOG('«' + HEROES[key].name + '» no puede entrar en una partida de este nivel.', 'bad'); return null; }
-  const u = makeHero(key, where);
   const isCiv = HEROES[key].type === 'civh' || CIVH_POOL.includes(key);
-  await UI.waitAck(isCiv ? '¡Llega un Civil Heroico!' : '¡Llega un Héroe!', '<b>' + HEROES[key].name + '</b> entra en juego en ' + spaceLabel(where) + '.', heroCard(key) || 'assets/cartas/' + (HEROES[key].card || 'h_' + key) + '.jpg', 'h:' + key);
+  await UI.waitAck(isCiv ? '¡Llega un Civil Heroico!' : '¡Llega un Héroe!', '<b>' + HEROES[key].name + '</b> ' + (choose ? 'llega a la partida.' : 'entra en juego en ' + spaceLabel(where) + '.'), heroCard(key) || 'assets/cartas/' + (HEROES[key].card || 'h_' + key) + '.jpg', 'h:' + key);
+  if (choose) where = await UI.pickSpace(choose, 'Llega un Héroe: elige el espacio (Centro o un Inicial).');
+  const u = makeHero(key, where);
   await heroEnters(u); LOG('Entra en juego: ' + u.name + '.', 'good'); UI.redraw(); return u; }
 function randomAvailableHero() {
   const pool = heroPoolFor(G.lv.n).filter(k => !hero(k) && !G.cemetery.some(u => u.key === k));
@@ -111,6 +113,8 @@ function newGame(levelIdx, lenIdx, personal) {
     plist.forEach((p, i) => { if (!inits.some(x => x.owner === i)) { const u = inits.find(x => x.owner == null); if (u) u.owner = i; } });
   }
   const ch = makeHero(civhKey, 'C'); if (civhKey === 'salvacion' && L.supplies) G.supplies += 2;
+  /* Mensajero del Clarín: «al entrar en juego trae otra Civil Heroica» (también si sale en la preparación). */
+  if (civhKey === 'clarin') { const k2 = pickCivh(); if (k2) makeHero(k2, 'C'); }
   if (L.tunnel) { makeSpecial('diamante', 'T8'); makeSpecial('diamante', 'T6'); }
   G.eventDeck = buildEventDeck(len); G.totalEvents = G.eventDeck.length;
   G.destDeck = buildDestinyDeck();
@@ -153,7 +157,8 @@ async function resolveTwist(dr) {
   const saved = { q: G.turn.peekQ, on: G.turn.peekOn }; G.turn.peekQ = { zed: [], sup: [] };
   await UI.waitAck('Destino: ' + d.name, '<div class="rulebox"><b>Regla</b><br>' + d.txt + '</div>' + Preview.block(Preview.destiny(dr.id, dr.route)), destImg(dr.id), 'd:' + dr.id);
   G.turn.peekOn = true;
-  try { await DEST_FX(dr.id, dr.route); } finally { G.turn.peekQ = saved.q; G.turn.peekOn = saved.on; }
+  /* Las unidades que trae la carta de Destino (p. ej. la Banda de Bubba) vuelan desde la columna, esté donde esté la carta en el turno. */
+  try { await UI.spawnBatch(() => DEST_FX(dr.id, dr.route)); } finally { G.turn.peekQ = saved.q; G.turn.peekOn = saved.on; }
   G.destDiscard.push(dr.id);
 }
 async function lossChoice(n, opts) { // pierdes n en combinación de opciones: s (Suministros), a (Munición), i (Infección), p (Impactos)

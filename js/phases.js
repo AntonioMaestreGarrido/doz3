@@ -245,6 +245,14 @@ async function phaseZeds() {
 }
 
 /* ---------- 4R ---------- */
+/* Xeno Jones (fase 4R): gasta 1 activación de Refugiados para trasladarse. Desde cualquier sitio, al Laboratorio o a una Oficina del Personal;
+   desde el Laboratorio o el Hospital, a cualquier espacio vacío (sin unidades, aunque tenga fichas) que no sea Inicial. */
+function jonesDests() {
+  const j = alive('jones'); if (!j || !j.space || !canAct(j)) return [];
+  const hosp = ['LAB', 'H1', 'H2', 'H3', 'H4', 'O1', 'O2'];
+  const ids = hosp.includes(j.space) ? Object.keys(G.spaces) : ['LAB', 'O1', 'O2'];
+  return ids.filter(id => G.spaces[id] && id !== j.space && !isInit(id) && sp(id).kind !== 'crypt' && unitsAt(id).length === 0 && playerRoom(id, j));
+}
 async function phase4R() {
   if (!G.lv.fourR) return;
   const ev = G.event;
@@ -272,11 +280,12 @@ async function phase4R() {
     const trainsOn = () => (typeof expOn === 'function' && expOn(3)) ? allUnits(t => t.type === 'train' && t.space && !t.movedR && !sp(t.space).chaos) : [];
     for (let k = 0; k < n; k++) {
       const cands = allUnits(x => x.type === 'refugee' && x.space && isRouteSp(x.space) && !zedsAt(nextToward(x.space)).length && !x.movedR);
-      const tcands = trainsOn();
-      if (!cands.length && !tcands.length) break;
-      if (tcands.length) { /* Expansión 3: una activación «R» puede usarse para activar 1 Tren en lugar de 1 unidad de Refugiados */
-        const v = await UI.choose({ title: 'Fase 4R: activación ' + (k + 1) + '/' + n, text: 'Gasta esta activación «R» en un Refugiado o en un Tren.', options: tcands.map(t => ({ label: 'Mover el ' + t.name, value: t.id })).concat(cands.length ? [{ label: 'Mover Refugiados', value: 'r' }] : []).concat([{ label: 'No usarla', value: '' }]) });
+      const tcands = trainsOn(), jt = jonesDests();
+      if (!cands.length && !tcands.length && !jt.length) break;
+      if (tcands.length || jt.length) { /* Expansión 3: una activación «R» puede usarse para activar 1 Tren en lugar de 1 unidad de Refugiados */
+        const v = await UI.choose({ title: 'Fase 4R: activación ' + (k + 1) + '/' + n, text: 'Gasta esta activación «R» en un Refugiado' + (tcands.length ? ' o en un Tren' : '') + (jt.length ? ' (o Jones se traslada)' : '') + '.', options: tcands.map(t => ({ label: 'Mover el ' + t.name, value: t.id })).concat(cands.length ? [{ label: 'Mover Refugiados', value: 'r' }] : []).concat(jt.length ? [{ label: 'Jones se traslada', value: 'j' }] : []).concat([{ label: 'No usarla', value: '' }]) });
         if (!v) continue;
+        if (v === 'j') { const d = await UI.pickSpace(jt, 'Jones: elige el espacio de destino.', true); if (d == null) continue; const j = alive('jones'); putUnit(j, d); LOG('Jones se traslada a ' + spaceLabel(d) + ' (activación de Refugiados).', 'good'); UI.focus(d, 1.7); UI.redraw(); await UI.settle(); continue; }
         if (v !== 'r') { const t = G.units[v]; t.movedR = true; const extra = await doTrainAction(t, 'tmove', { free: true }); if (extra) k++; continue; }
       }
       const w = cands.length === 1 ? cands[0].id : await UI.pickUnit(cands, 'Refugiados 4R: elige la unidad que huye ' + (k + 1) + '/' + n + '.');
@@ -302,6 +311,13 @@ async function phaseInfection() {
   if (G.event.inf === 'B') {
     const bd = await zenReroll([d6(), d6()], 'Tirada de Brote'); const a = bd[0], b = bd[1]; LOG('Tirada de Brote: ' + (a + b) + ' (Infección ' + G.inf + ').');
     if (a + b <= G.inf) { LOG('¡Estalla un Brote!', 'bad'); await announceOutbreak(); }
+  }
+}
+/* Cartas con pestaña en Infección y efecto «Al final de esta fase» (¡Aquí está el Doctor!). */
+async function eventAfterInfection() {
+  const ev = G.event; if (!ev || G.over || evFase(ev) !== 'i') return;
+  switch (ev.id) {
+    case 'aqui_doctor': await wildOutbreakNow(); break;
   }
 }
 /* Al fallar la tirada de Brote se explica qué va a pasar y luego se resuelve. El Zed que aparece se asoma (peekZeds)
@@ -349,15 +365,31 @@ async function sneakAttack(label) {
   await resolveTwist(dr);
 }
 function newTurnFlags() { G.turn = newTurn(); }
+/* Fase de un Evento (tabla EV_FASE de expansions.js): la pestaña de la carta. Los turnos especiales ('-') se resuelven como la fase de los Zeds. */
+const evFase = ev => (!ev || !ev.fase || ev.fase === '-') ? 'z' : ev.fase;
+/* Efecto de la carta al inicio de su fase: main.js lo llama al empezar la fase 4R ('4'), de Infección ('i') y de Acciones ('a'); eventStart lo hace en la de los Zeds ('z'). */
+async function eventAtPhase(f) {
+  const ev = G.event; if (!ev || G.over || ev.cer || evFase(ev) !== f) return;
+  if (f === 'a' && ev.freeSearch) await eventFreeSearch(ev);
+  await eventEffect(ev);
+}
+async function eventFreeSearch(ev) {
+  for (const u of allUnits(x => ['hero', 'civh'].includes(x.type) && x.space && canSearch(x))) { const v = await UI.choose({ title: 'Búsqueda gratis', text: u.name + ' puede Buscar gratis en ' + spaceLabel(u.space) + '.', options: [{ label: 'Buscar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') await doSearch(u); }
+}
+/* Inicio de la fase de los Zeds: banderas de turno y efecto de las cartas con pestaña en Zeds. */
 async function eventStart() {
   const ev = G.event, id = ev.id;
   if (ev.noTerrain) G.turn.noTerrain = true; if (ev.smash) G.turn.smash = true; if (ev.chaos2) G.turn.chaos2 = true;
   if (ev.noSurfaceMove) G.turn.noSurfaceMove = true; if (ev.mercs) G.turn.mercs = true; if (ev.flamed) G.turn.flamed = true;
   if (ev.noRetreatOnce) G.turn.noRetreatOnce = true; if (ev.outbreakLocal) G.turn.outbreakLocal = true;
   if (ev.assault) { G.turn.noTerrain = true; await infUp(routeZeds(ev.assault).length); if (G.routes.includes(ev.assault)) await placeZedInitial(ev.assault); return; }
-  const lowestInitial = () => { let best = null; for (const r of G.routes) { const zs = zedsAt(r + '0'); const m = zs.length ? Math.min(...zs.map(strength)) : -1; if (!best || m < best.m) best = { id: r + '0', m }; } return best.id; };
   if (ev.negation) G.turn.negation = true; if (ev.freeFromC) G.turn.freeFromC = true; if (ev.noFight) G.turn.noFight = true; if (ev.panic) G.turn.panic = true;
-  if (ev.freeSearch) { for (const u of allUnits(x => ['hero', 'civh'].includes(x.type) && x.space && canSearch(x))) { const v = await UI.choose({ title: 'Búsqueda gratis', text: u.name + ' puede Buscar gratis en ' + spaceLabel(u.space) + '.', options: [{ label: 'Buscar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') await doSearch(u); } }
+  if (evFase(ev) === 'z') await eventEffect(ev);
+}
+/* Efecto propio de la carta (el mismo para cualquier fase: se llama desde eventStart o eventAtPhase). */
+async function eventEffect(ev) {
+  const id = ev.id;
+  const lowestInitial = () => { let best = null; for (const r of G.routes) { const zs = zedsAt(r + '0'); const m = zs.length ? Math.min(...zs.map(strength)) : -1; if (!best || m < best.m) best = { id: r + '0', m }; } return best.id; };
   switch (id) {
     case 'entusiasma': { const dr = await drawDestiny(); if (dr) { const us = []; for (let i = 0; i <= lastOf(dr.route); i++) us.push(...plAt(dr.route + i)); us.push(...plAt('C')); us.forEach(u => u.freeMF = (u.freeMF || 0) + 1); LOG(us.length + ' unidades reciben 1 Acción gratis (Mover o disparar).', 'good'); await resolveTwist(dr); } break; }
     case 'cardio': { G.turn.cardio = true; const empty = G.routes.map(r => r + '0').filter(i => !zedsAt(i).length); const t = empty.length ? await UI.pickSpace(empty, 'Cardio: elige un espacio Inicial vacío para el nuevo Zed.') : lowestInitial(); await placeZedAt(t, 'Cardio'); break; }
@@ -366,7 +398,7 @@ async function eventStart() {
     case 'propagacion': { const dr = await drawDestiny(); if (dr) { G.turn.propag = true; await placeZedInitial(dr.route); await resolveTwist(dr); } break; }
     case 'pelo': for (const r of G.routes) await placeZedInitial(r); for (const z of allUnits(isZedSide)) z.hits = 0; break;
     case 'odio': { const zs = allUnits(x => x.type === 'zed' && strength(x) <= 3 && isRouteSp(x.space)).sort((a, b) => sp(b.space).i - sp(a.space).i); let n = 0; for (const z of zs) { const w = z.space; discardZed(z); const nz = makeZed(); if (nz) { putUnit(nz, w); n++; } } LOG(n + ' Zeds débiles sustituidos por Zeds de Fuerza completa.', 'bad'); break; }
-    case 'heroe_b': case 'heroe_g': { const k = randomAvailableHero(); if (k) { const inits = ['C'].concat(G.routes.map(r => r + '0')); const w = await UI.pickSpace(inits, 'Llega un Héroe: elige el espacio (Centro o un Inicial).'); await spawnHero(k, w); } else LOG('No quedan Héroes disponibles.'); break; }
+    case 'heroe_b': case 'heroe_g': { const k = randomAvailableHero(); if (k) { const inits = ['C'].concat(G.routes.map(r => r + '0')); await spawnHero(k, null, inits); } else LOG('No quedan Héroes disponibles.'); break; }
     case 'keepcalm': { const hs = allUnits(x => x.type === 'hero' && x.space); if (hs.length) { const v = await UI.pickUnit(hs, '«Keep calm»: elige un Héroe (2 columnas a favor al atacar).'); G.units[v].keepCalm = true; } break; }
     case 'mina': { const mid = 'M3'; G.turn.block.push(mid); for (const u of plAt(mid)) { await hitPlayer(u, 1); if (u.space === mid) retreatPlayers([u], 'C'); }
       for (const z of zedsAt(mid).slice()) { if (!G.units[z.id] || z.space !== mid) continue; await hitZed(z); if (G.units[z.id] && z.space === mid) await retreatZeds([z], zedOrigin(z)); } break; }
@@ -430,9 +462,6 @@ async function eventAfterZeds() {
   if (G.over) return;
   switch (id) {
     case 'que_olor': { const c = allUnits(x => isFighter(x) && x.space && x.space !== 'C' && sp(x.space).kind !== 'bed' && !sp(x.space).kind.match(/office|lab|camp/) && !isInit(x.space) && x.side === 'pl'); if (c.length) { const v = await UI.pickUnit(c, '¿Qué es ese olor?: elige la unidad que será atacada.'); const u = G.units[v]; const z = makeZed(); if (z) { z.flipped = true; putUnit(z, u.space); const r = await melee({ zeds: [z], hum: [u], space: u.space, attacker: 'z', from: prevToward(u.space) }); if (z.space && r.zedWon) { z.flipped = false; z.hits = Math.min(z.hits, 2); } } } break; }
-    case 'frenesi': case 'super_enloq': { G.turn.frenzy = true; const sups = allUnits(x => x.type === 'super' && x.space && isRouteSp(x.space)).sort((a, b) => (lastOf(sp(a.space).route) - sp(a.space).i) - (lastOf(sp(b.space).route) - sp(b.space).i)); sups.forEach(z => z.moved = false); for (const z of sups) { if (z.space && G.units[z.id]) await moveGroup([z], z.space); if (G.over) return; } G.turn.frenzy = false; break; }
-    case 'aqui_doctor': await wildOutbreakNow(); break;
-    case 'inteligentes': { await placeZedAt('F0', 'Zeds Inteligentes'); const t = strongestNormalZed(); if (t) t.smart = true; break; }
     case 'feria': { for (const r of ['T']) for (const i of [3, 5]) { const id2 = 'T' + i; if (!G.spaces[id2]) continue; const n = await rollShown('La feria de las tinieblas (' + spaceLabel(id2) + ')', v => '<b>' + v + '</b>: ' + (v === 1 ? '2 Zeds' : v <= 5 ? '1 Zed' : 'ningún Zed')); const k = n === 1 ? 2 : n <= 5 ? 1 : 0; for (let j = 0; j < k; j++) await placeZedAt(id2, 'La feria de las tinieblas'); } break; }
     case 'conductos': for (const i of [3, 5]) { const id2 = 'T' + i; if (!G.spaces[id2]) continue; for (const z of zedsAt(id2).slice()) { const n = await rollShown('Conductos del vapor', v => v <= 2 ? '<b>' + v + '</b>: el Zed intenta entrar en la Central Nuclear' : v <= 5 ? '<b>' + v + '</b>: el Zed intenta entrar en la Granja' : '<b>' + v + '</b>: no pasa nada'); if (n <= 2) await sewerMove(z, 'A4'); else if (n <= 5) await sewerMove(z, 'B4'); } } break;
     case 'alcantarilla': case 'irrupcion': { const map = { 1: 'F3', 2: 'A4', 4: 'M3', 3: 'B4', 5: 'B4' }; const tm = { 7: 'F3', 6: 'A4', 4: 'M3', 3: 'B4', 5: 'B4' }; for (const n of [7, 6, 5, 4, 3]) { const id2 = 'T' + (lastOf('T') - n); if (!G.spaces[id2]) continue; for (const z of zedsAt(id2).slice()) await sewerMove(z, tm[n]); } break; }
@@ -479,6 +508,8 @@ async function eventEnd() {
   const ev = G.event, id = ev.id;
   const pl = id2 => plAt(id2).length > 0;
   switch (id) {
+    case 'frenesi': case 'super_enloq': { G.turn.frenzy = true; const sups = allUnits(x => x.type === 'super' && x.space && isRouteSp(x.space)).sort((a, b) => (lastOf(sp(a.space).route) - sp(a.space).i) - (lastOf(sp(b.space).route) - sp(b.space).i)); sups.forEach(z => z.moved = false); for (const z of sups) { if (z.space && G.units[z.id]) await moveGroup([z], z.space); if (G.over) return; } G.turn.frenzy = false; break; }
+    case 'inteligentes': { await placeZedAt('F0', 'Zeds Inteligentes'); const t = strongestNormalZed(); if (t) t.smart = true; break; }
     case 'cabana': if (pl('M5')) { G.ammo = Math.min(20, G.ammo + 2); LOG('Botín de la cabaña: +2 Munición.', 'good'); } break;
     case 'despensa': if (pl('B7')) { G.supplies = Math.min(20, G.supplies + 4); LOG('Botín de la despensa: +4 Suministros.', 'good'); } break;
     case 'granero': if (pl('B4')) { const n = await rollShown('Granero: Suministros', v => '<b>' + v + '</b>: +' + v + ' Suministros'); G.supplies = Math.min(20, G.supplies + n); LOG('Granero: +' + n + ' Suministros.', 'good'); } break;

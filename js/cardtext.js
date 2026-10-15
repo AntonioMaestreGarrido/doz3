@@ -10,7 +10,7 @@ function zoomInfo(spec) {
   if (kind === 'e') {
     const ev = EV[key]; if (!ev) return null;
     const rutas = ev.cer ? 'Todas las rutas (tú eliges el orden)' : ev.z.map(z => z === '*' ? 'Todas las rutas (tú eliges el orden)' : z === 'D2' ? 'La ruta de una carta de Destino, 2 veces' : ROUTE_NAMES_ES[z]).join(' → ') || '—';
-    return { img: 'assets/cartas/e_' + key + '.jpg', title: ev.name, html: '<div class="zk">Carta de Evento · ' + (ev.fin ? 'Fin de la partida' : 'Acto ' + ev.act) + (ev.sp ? ' · Especial' : '') + '</div>' + li(ev.txt) +
+    return { img: 'assets/cartas/e_' + key + '.jpg', title: ev.name, html: '<div class="zk">Carta de Evento · ' + (ev.fin ? 'Fin de la partida' : 'Acto ' + ev.act) + (ev.sp ? ' · Especial' : '') + (ev.fase && ev.fase !== '-' ? ' · ' + FASE_NOMBRE[ev.fase] : '') + '</div>' + li(ev.txt) +
       '<div class="zrow"><b>Fase de los Zeds:</b> ' + rutas + '</div><div class="zrow"><b>Acciones de Evento:</b> ' + (ev.cer || ev.fin ? 'ninguna' : ev.acc) + '</div>' + (G.lv && G.lv.fourR ? '<div class="zrow small">4R (Refugiados): ' + ev.r4 + ' · Infección: ' + (ev.inf ? 'tirada de Brote' : 'no') + ' · Alimentación: ' + ALIM_TXT(ev.al) + '</div>' : '') };
   }
   if (kind === 'd') {
@@ -43,7 +43,7 @@ function zoomInfo(spec) {
     const cur = '<div class="zrow cur">' + state.join('<br>') + '</div>' + (tags.length ? '<div class="zrow">' + tags.map(t => '<span class="pill">' + t + '</span>').join('') + '</div>' : '');
     if (u.key && HEROES[u.key]) { const h = HEROES[u.key]; return { img: heroImg(u.key, u.flipped), title: h.name, tok: heroTok(u.key) ? 1 : 0, civ: h.type === 'civh', html: '<div class="zk">' + h.cls + ' · Movimiento ' + h.mp + '</div>' + cur + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(u.key) }; }
     if (u.type === 'super') { const d = SUPER_ZEDS[u.key]; return { img: superImg(u.key, u.flipped), title: 'Súper Zed: ' + d.name, tok: 1, html: cur + li([d.txt, 'Un Súper Zed eliminado se retira de la partida. Si entra en el Centro, pierdes.']) }; }
-    if (u.type === 'spreader') return { img: 'assets/tokens/zed.png', title: u.name, tok: 1, html: cur + li(['Propagador de Enfermedad: +1 Infección en cada fase de Infección mientras no esté en un espacio Inicial. No cuenta para el límite de agrupamiento. Al ser eliminado: tirada 1-3 vuelve al Inicial, 4-6 sale de la partida.']) };
+    if (u.type === 'spreader') return { img: spreaderAlt(u) ? spreaderImg(u) : 'assets/tokens/zed.png', title: u.name, tok: 1, html: cur + li(['Propagador de Enfermedad: +1 Infección en cada fase de Infección mientras no esté en un espacio Inicial. No cuenta para el límite de agrupamiento. Al ser eliminado: tirada 1-3 vuelve al Inicial, 4-6 sale de la partida.']) };
     if (u.type === 'zed') return { img: zedTokenImg(u), title: 'Unidad Zed (Fuerza ' + strength(u) + ')', tok: 1, html: cur + li(['Unidad Zed Normal. Con 3 Impactos pasa a su cara reducida; con otros 3 es eliminada.', 'Dos Zeds en el mismo espacio forman una Horda y luchan sumando su Fuerza (máximo 2 por espacio).']) };
     if (u.type === 'civ') return { img: null, title: 'Civiles Normales', html: cur + li(['Resisten 4 Impactos (2 por cara). Si reciben el último: tirada de Salvación (1-3 Cementerio; 4-6 Centro en el Juego Básico u Hospital en los niveles posteriores).', u.resist ? '<b>Resistiendo:</b> atrincheradas en un Pueblo; inmóviles hasta que los Zeds ataquen el Pueblo.' : 'Mueven 2 espacios por Acción.']) };
     const sp0 = Object.values(SPECIALS).find(s => s.type === u.type && s.name === u.name) || SPECIALS[u.skey];
@@ -60,6 +60,10 @@ const TOKEN_IMGS = ['porter','alia','agee','betty','carter','darling','hauser','
    Si la opción está apagada o el personaje no tiene arte alternativo, se usa siempre el original (y si una imagen falla, el reintento de ui.js vuelve al original). */
 const ALT_KEYS = ['agee','alia','antidist','bauer','betty','bomberos','carter','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','porter','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed'];
 /* Arte alternativo de los Súper Zeds (counters de dos caras en assets/arte_alt/zeds, con las claves de SUPER_ZEDS). */
+/* Propagadores con arte alternativo (clave de SPREADERS): mismo formato que los Súper Zeds, sz_<clave>.webp y sz_<clave>_r.webp. */
+const ALT_SPREADERS = ['noelle', 'alimanas'];
+const spreaderAlt = u => !!(u && u.type === 'spreader' && typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_SPREADERS.includes(u.skey));
+const spreaderImg = u => 'assets/arte_alt/zeds/sz_' + u.skey + (u.flipped ? '_r' : '') + '.webp';
 const ALT_ZEDS = ['berserker', 'lobo', 'supurador', 'devastador', 'reanimador', 'ferreo', 'gigante', 'saltarin', 'condenado'];
 /* Zeds normales con arte alternativo: counters 300x300 en arte_alt/zeds (zed_full_2…9 y zed_red_1…5); el número va incluido en la imagen. */
 const zedAltN = u => { if (!u || u.type !== 'zed') return null; const f = !u.flipped, n = f ? u.full : u.red; return (f ? n >= 2 && n <= 9 : n >= 1 && n <= 5) ? 'zed_' + (f ? 'full_' : 'red_') + n : null; };

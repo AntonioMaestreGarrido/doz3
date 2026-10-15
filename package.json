@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "node build.mjs",
+    "catalogo": "node tools/generar_catalogo.mjs",
     "serve:dist": "python -m http.server 8790 --directory dist"
   },
   "devDependencies": {

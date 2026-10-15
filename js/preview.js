@@ -37,11 +37,16 @@ const Preview = {
     const row = l => {
       const ms = [...l.matchAll(/Zed de Fuerza (\d+) \(reducida (\d+)\)/g)];
       if (!ms.length) return '<li>' + l + '</li>';
-      return '<li class="pkrow"><span class="wh-line"><span class="wh-txt">' + l + '</span><span class="wh-toks">' + ms.map(m => '<img class="pktok" alt="" src="' + zedTokenImg({ full: +m[1], red: +m[2], flipped: false }) + '" data-full="' + m[1] + '" data-red="' + m[2] + '">').join('') + '</span></span></li>';
+      return '<li class="pkrow"><span class="wh-line"><span class="wh-txt">' + l + '</span><span class="wh-toks">' + ms.map(m => '<img class="pktok" alt="" src="' + zedTokenImg({ type: 'zed', full: +m[1], red: +m[2], flipped: false }) + '" data-full="' + m[1] + '" data-red="' + m[2] + '">').join('') + '</span></span></li>';
     };
     return '<div class="willhappen"><b>Lo que va a pasar</b><ul>' + lines.map(row).join('') + '</ul></div>';
   },
-  event(ev) { try { return this._event(ev) || []; } catch (e) { return []; } },
+  /* Cartas que se resuelven en una fase posterior a la revelación: lo que anunciarían depende del tablero de ese momento, así que no se anticipa. */
+  TARDE: { desesperacion: 'al inicio de la fase de Acciones', odio: 'al inicio de la fase de Acciones', toxicos: 'al inicio de la fase de Acciones', moteros: 'al inicio de la fase de Acciones', inteligentes: 'al final de la fase de Acciones' },
+  event(ev) {
+    if (this.TARDE[ev.id] && ev.fase === 'a') return ['Se resuelve ' + this.TARDE[ev.id] + ', con la situación del tablero de ese momento (los Zeds se mueven antes).'];
+    try { return this._event(ev) || []; } catch (e) { return []; }
+  },
   destiny(id, route) { try { return this._destiny(id, route) || []; } catch (e) { return []; } },
 
 
@@ -95,7 +100,7 @@ const Preview = {
         break;
       }
       case 'aqui_doctor': {
-        L.push('Al final de la fase, la Infección sube de ' + G.inf + ' a 13 y estalla un Brote Descontrolado: tirada de Brote (baja la Infección) y aparecerá un Súper Zed — ' + this.st(peekSuper()) + ' — en la ruta que decida la carta de Destino.');
+        L.push('Al final de la fase de Infección, la Infección sube de ' + G.inf + ' a 13 y estalla un Brote Descontrolado: tirada de Brote (baja la Infección) y aparecerá un Súper Zed — ' + this.st(peekSuper()) + ' — en la ruta que decida la carta de Destino.');
         break;
       }
       case 'que_demonios': {

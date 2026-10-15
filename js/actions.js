@@ -157,6 +157,8 @@ function unitActions(u) {
   if (G.lv.fourR && canBuild(u)) A.push({ id: 'build', label: 'Construir Barricada', ok: pay(1) });
   if (G.lv.res && u.sci && u.space === 'LAB' && act && !G.turn.researched) A.push({ id: 'investigate', label: 'Investigar', ok: pay(1) ? (!G.res.cur.sup || G.supplies > 0) : (alreadyHas('escasean') && G.supplies >= 1 + (G.res.cur.sup ? 1 : 0)) });
   if (u.space && sp(u.space).kind === 'camp' && u.type === 'refugee' && !G.turn.equipped && !u.vip) A.push({ id: 'equip', label: 'Equipar Refugiados (gratis)', ok: G.cemetery.some(x => x.type === 'civ') });
+  /* Visiones de Wilson: en cualquier momento, sin gastar Acción. */
+  if (u.key === 'wilson' && u.space) A.push({ id: 'visions', label: '🔮 Visiones: mirar la carta superior de Destino', ok: true });
   if (act && !isSoft(u)) {
     const cu = k => !G.charUsed[k];
     if (u.key === 'schmidt') A.push({ id: 'ini', label: 'Iniciativa', ok: cu('ini') });
@@ -209,6 +211,7 @@ async function runAction(u, id) {
     case 'investigate': await doInvestigate(u); break;
     case 'equip': { const cs = G.cemetery.filter(x => x.type === 'civ'); const v = await UI.choose({ title: 'Equipar Refugiados', text: 'Elige la unidad de Civiles Normales que regresa.', options: cs.map(c => ({ label: 'Civiles ' + c.full + '/' + c.red, value: c.id })), cancel: true }); if (v == null) break; const c = G.units[v]; G.cemetery = G.cemetery.filter(x => x !== c); removeUnit(u); delete G.units[u.id]; putUnit(c, 'C'); c.flipped = true; c.hits = 0; G.turn.equipped = true; LOG('Refugiados equipados: Civiles vuelven al Centro.', 'good'); break; }
     case 'ini': G.charUsed.ini = true; u.free++; LOG('Schmidt usa Iniciativa: 1 acción gratis para él.', 'good'); break;
+    case 'visions': await UI.willyVisions(); break;
     case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
     case 'calle': { const c = calleTargets(u); if (!c.length) { LOG('No hay Civiles que puedan avanzar.'); break; } const v = c.length === 1 ? c[0].id : await UI.pickUnit(c, 'Elige la unidad que avanza hacia el Centro.', true); if (v == null) break; const x = G.units[v], ds = calleDests(x); const d = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Alia: elige el destino de ' + x.name + ' (hasta 2 espacios hacia el Centro).', true); if (d == null) break; G.charUsed.calle = true; if (x.resist) { x.resist = false; LOG(x.name + ' deja de estar Resistiendo.'); } LOG('Alia manda a ' + x.name + ' hacia el Centro.', 'good'); await doMove(x, d, [x.space, d]); break; }

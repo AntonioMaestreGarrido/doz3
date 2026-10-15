@@ -114,6 +114,7 @@ Object.assign(ui, {
   flightImg(u) {
     let src = null;
     if (u.type === 'zed') src = zedTokenImg(u);
+    else if (spreaderAlt(u)) src = spreaderImg(u);
     else if (u.type === 'super' && u.key && zedAlt(u.key)) src = superImg(u.key, u.flipped);
     else if (u.key && HEROES[u.key] && heroAlt(u.key)) src = heroTok(u.key, u.flipped);
     else if (u.skey && unitAlt(u.skey)) src = specialTok(u.skey, u.flipped);

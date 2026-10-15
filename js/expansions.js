@@ -325,3 +325,112 @@ const PRESSURE = {
 const PRESSURE_SEQ = { bajo_pies: ['sP', 'sM'], contaminacion: ['sP', 'sM'], doc_problema: ['sP', 'sM'], artefacto: ['sP', 'sM'], oh_no: ['sP', 'sM'], resiste: ['sP', 'sM'], duros: ['eP', 'eM'], no_detendran: ['eP', 'eM'], aqui_doctor: ['eM', 'eP'] };
 for (const k in PRESSURE) for (const id of PRESSURE[k]) if (EV[id]) EV[id].pr = [k];
 for (const id in PRESSURE_SEQ) if (EV[id]) EV[id].pr = PRESSURE_SEQ[id];
+
+/* ---------- Fase de cada Evento ----------
+   Es la columna cuya pestaña se extiende hasta el texto en la carta original (carpeta con pestañas); el texto de la carta da el momento exacto dentro de la fase.
+   z = fase de los Zeds · a = fase de Acciones · 4 = fase 4R · i = fase de Infección · za = Zeds y Acciones (fin_b2) · - = sin pestaña (turnos especiales).
+   La usa phases.js (eventAtPhase) para resolver el efecto en su fase, cardtext.js para la ficha de la carta y tools/generar_catalogo.mjs para el catálogo. */
+const EV_FASE = {
+  accidente: 'a',        // Accidente en el Laboratorio
+  agua: 'z',             // El suministro de agua se ha contaminado
+  alcantarilla: 'z',     // Zeds de alcantarilla
+  aqui_doctor: 'i',      // ¡Aquí está el Doctor!
+  armados: 'a',          // Civiles Bien Armados
+  artefacto: '4',        // Encuentras un artefacto alienígena
+  asalto_a: 'z',         // Asalto nocturno en la Autovía
+  asalto_b: 'z',         // Asalto nocturno en el Bosque
+  asalto_f: 'z',         // Asalto nocturno en las Afueras
+  asalto_m: 'z',         // Asalto nocturno en la Montaña
+  atajos: 'a',           // «Atajos» experimentales
+  bajo_pies: 'z',        // Justo bajo nuestros pies
+  bomberos: 'a',         // Los Aldeanos organizan unidades de bomberos
+  brote_local: 'z',      // Brote local de Zeds
+  cabana: 'a',           // Encuentras una cabaña de caza
+  campanas: 'z',         // Campanas en la cafetería del infierno
+  caos_abs: 'z',         // Caos absoluto
+  caos_control: 'z',     // El caos se extiende sin control
+  cardio: 'z',           // Regla n.º 7: Cardio
+  catastrofe: 'z',       // Catástrofe nuclear
+  cerebros_b1: '-',      // ¡CEREBROS!
+  cerebros_b2: '-',      // ¡CEREBROS!
+  cerebros_g: '-',       // ¡CEREBROS!
+  cerebros_y1: '-',      // ¡CEREBROS!
+  cerebros_y2: '-',      // ¡CEREBROS!
+  civ_heroicos: 'a',     // Llegan Civiles Heroicos
+  conductos: 'z',        // Conexión por los conductos del vapor
+  contaminacion: 'i',    // Contaminación en el Hospital
+  crisis: 'a',           // Crisis nerviosa
+  descubrimiento: 'a',   // Descubrimiento en la Investigación
+  desde_lab: 'z',        // Desde el laboratorio del Dr. Marteuse
+  desesperacion: 'a',    // Aumenta la desesperación
+  despensa: 'a',         // Encuentras una despensa
+  doc_problema: 'z',     // Doc… Tenemos un gran problema
+  donde_todos: 'z',      // ¿De dónde salen todos?
+  duros: 'z',            // ¡Zeds duros de mollera!
+  eficiencia: 'a',       // Eficiencia en el Hospital
+  elwood: 'a',           // Elwood Berra llega al Hospital
+  entusiasma: 'z',       // ¡Esto me entusiasma tanto!
+  errantes: 'z',         // Zeds errantes
+  experimentos: 'z',     // Experimentos explosivos
+  feria: 'z',            // La feria de las tinieblas
+  fin_b1: 'a',           // De una vez por todas, buenas noches
+  fin_b2: 'za',          // Para bien o para mal, yo soy el que tiene el arma
+  fin_g: 'a',            // ¿Quieres un trozo de mí?
+  fin_o: 'a',            // ¡Fin de la partida, tío!
+  fin_r: 'a',            // Por fin ha terminado la larga pesadilla
+  fin_y: 'a',            // Es hora de actuar o callar
+  flambeados: 'z',       // Zeds flambeados
+  fortuna: 'a',          // La fortuna favorece a los que se preparan
+  frenesi: 'a',          // Frenesí Súper Zed
+  gente: 'a',            // Gente, ¡vamos a movernos!
+  granero: 'a',          // Encuentras un granero lleno
+  guardia: '-',          // ¡Llega la Guardia Nacional!
+  hace_falta: '4',       // Hace falta un Pueblo…
+  helicoptero: 'a',      // Ataque del helicóptero de la Guardia Nacional
+  heroe_b: 'a',          // Llega un Héroe
+  heroe_g: 'a',          // Llega un Héroe
+  hinchados: 'z',        // Los Zeds hinchados estallan
+  inteligentes: 'a',     // Zeds Inteligentes
+  irrupcion: 'z',        // Una irrupción desde las profundidades
+  jornada: 'a',          // Trabajando una jornada doble
+  keepcalm: 'a',         // «Keep calm» y mata Zeds
+  marines: 'a',          // El equipo de Marines despliega sus tropas
+  materiales: 'a',       // Materiales de Investigación
+  mina: 'z',             // ¡Explosión en la Mina!
+  misiles: 'a',          // Misiles del dron del Ejército
+  misterioso: 'z',       // El misterioso Dr. Marteuse
+  monstruo: 'a',         // ¿Quién es el verdadero monstruo, Doc?
+  moteros: 'a',          // Banda de moteros Los Ángeles de Petra
+  murcielagos: 'a',      // Enjambre de murciélagos del Túnel
+  negacion: 'a',         // La negación no es un río de Egipto
+  no_comer: 'z',         // No den de comer a los Zeds
+  no_detendran: 'z',     // ¡No se detendrán ante nada!
+  no_escapatoria: 'z',   // No hay escapatoria
+  no_hay_tiempo: 'a',    // ¡No hay tiempo para eso!
+  noche: 'z',            // Al caer la noche
+  noelle: 'z',           // Noelle «Hell» Razer
+  odio: 'a',             // Odio cuando pasa eso
+  oh_malo: 'z',          // Oh, esto es malo…
+  oh_no: 'z',            // ¡Oh, no! ¡Otra vez no!
+  panico: 'a',           // El pánico es autopreservación
+  pelo: 'z',             // ¿Me tomas el pelo?
+  propagacion: 'z',      // La «propagación» de la enfermedad Zed
+  que_demonios: 'z',     // ¿Qué demonios es eso?
+  que_diablos: 'z',      // ¿Qué diablos? ¿Hay más?
+  que_olor: 'z',         // ¿Qué es ese olor?
+  queda_alguno: 'a',     // ¿Queda alguno?
+  rapidos: 'z',          // Zeds Rápidos
+  renqueantes: 'z',      // Zeds renqueantes
+  resiste: 'z',          // Resiste con más fuerza cuando resistas en soledad
+  resistentes: 'z',      // Zeds Resistentes
+  rumores: 'a',          // Rumores de contagio por el aire
+  saqueadores: '4',      // ¡Aparecen Saqueadores!
+  shhh: 'a',             // ¡Shhh! Sé que están ahí fuera…
+  soldados: 'a',         // Soldados de fortuna
+  super_enloq: 'a',      // Los Súper Zeds enloquecen
+  toxicos: 'a',          // Zeds Tóxicos
+  tsunami: 'z',          // Tsunami zombi
+  turba: '4',            // Aparece una turba no identificada
+};
+for (const k in EV_FASE) if (EV[k]) EV[k].fase = EV_FASE[k];
+const FASE_NOMBRE = { z: 'Fase de los Zeds', a: 'Fase de Acciones', '4': 'Fase 4R', i: 'Fase de Infección', za: 'Fases de los Zeds y de Acciones', '-': 'Sin fase (turno especial)' };
