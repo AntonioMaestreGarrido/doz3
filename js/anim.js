@@ -101,11 +101,28 @@ Object.assign(ui, {
         x = col.x + (tgt.x - col.x) * e; y = col.y + (tgt.y - col.y) * e - Math.sin(Math.PI * e) * 60; sc = 1 - .3 * e;
       }
       if (now >= f.t0 + f.d) done.push(f);
-      const img = IMG[f.u.img] || IMG.zed, S = 56 * sc;
-      if (img && img.complete && img.naturalWidth) g.drawImage(img, x - S / 2, y - S / 2, S, S);
+      const img = this.flightImg(f.u), S = 56 * sc;
+      if (img && img.complete && img.naturalWidth) {   /* se respeta la proporción de la ficha (verticales de héroes, apaisadas de civiles heroicos) */
+        const ar = img.naturalWidth / img.naturalHeight, w = ar > 1.05 ? S * 1.4 : ar < .95 ? S * 1.5 * ar : S, h = ar > 1.05 ? S * 1.4 / ar : ar < .95 ? S * 1.5 : S;
+        g.drawImage(img, x - w / 2, y - h / 2, w, h);
+      }
       else { g.fillStyle = isZedSide(f.u) ? '#ff4a3a' : '#5fd35a'; g.beginPath(); g.arc(x, y, S / 2, 0, 7); g.fill(); }
     }
-    if (done.length) { this.flights = this.flights.filter(f => !done.includes(f)); this.redraw(); }
+    if (done.length) { this.flights = this.flights.filter(f => !done.includes(f)); if (!this.flights.length) g.clearRect(0, 0, innerWidth, innerHeight); this.redraw(); }   /* sin vuelos no hay más fotogramas: se limpia aquí para que no quede la última ficha pegada */
+  },
+  /* Imagen de una ficha en vuelo: la misma que tendrá en el tablero (los Zeds siguen la opción de arte alternativo). */
+  flightImg(u) {
+    let src = null;
+    if (u.type === 'zed') src = zedTokenImg(u);
+    else if (u.type === 'super' && u.key && zedAlt(u.key)) src = superImg(u.key, u.flipped);
+    else if (u.key && HEROES[u.key] && heroAlt(u.key)) src = heroTok(u.key, u.flipped);
+    else if (u.skey && unitAlt(u.skey)) src = specialTok(u.skey, u.flipped);
+    if (src) {
+      this._fim = this._fim || {};
+      if (!this._fim[src]) { const i = new Image(); i.src = src; this._fim[src] = i; }
+      return this._fim[src];
+    }
+    return IMG[u.img] || IMG.zed;
   },
   settleFlights() {
     return new Promise(res => {

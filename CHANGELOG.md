@@ -2,6 +2,12 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-15 04:30
+
+### Fixes
+- **Llegada de unidades:** la ficha que vuela hasta el mapa usa ahora el arte alternativo (héroes, civiles heroicos, Súper Zeds y unidades especiales) y conserva su proporción. Además ya no se queda la última ficha pegada en pantalla al terminar el vuelo.
+- **Zeds con arte alternativo:** las fichas vuelven a los colores originales de las ilustraciones (se quita el filtro de brillo y saturación).
+
 ## 2026-10-14 15:22
 
 ### Mejoras
