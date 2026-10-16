@@ -458,6 +458,7 @@ async function tiradlesAttack(zeds) {
 async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCol, noInf, assassin }
   let zeds = o.zeds.filter(z => z.space), hum = o.hum.filter(u => u.space);
   if (!zeds.length || !hum.length) return {};
+  UI._combatCount++; /* un combate no se puede deshacer, tenga o no dados tirados (ver ui.guard) */
   const attackerHuman = o.attacker === 'h';
   const space = o.space;
   let fighter = hum[0];

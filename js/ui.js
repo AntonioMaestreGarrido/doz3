@@ -228,6 +228,7 @@ const ui = {
     for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
   },
   _undo: [],
+  _combatCount: 0,
   _undoSnap() { return { s: JSON.stringify({ rng: rngState(), uid: UID, G: snapshotState() }) }; },
   undoClear() { this._undo = []; this.updateUndo(); },
   updateUndo() { const b = $('undoBtn'); if (!b) return; const n = this._undo.length, ok = n > 0 && G.phase === 'actions' && !G.busy && !G.over; b.disabled = !ok; b.textContent = '↶ Deshacer' + (n ? ' (' + n + ')' : ''); },
@@ -241,13 +242,13 @@ const ui = {
   },
   async guard(fn) {
     if (G.busy) return;
-    /* Deshacer: se guarda el estado antes de cada acción. Si la acción usa el generador aleatorio (una tirada, robar carta…) ya no se puede volver más atrás de ella. */
+    /* Deshacer: se guarda el estado antes de cada acción. Si la acción usa el generador aleatorio (una tirada, robar carta…) o provoca un combate, ya no se puede volver más atrás de ella. */
     const undoable = G.phase === 'actions' && !G.over && !(G.event && G.event.cer);
-    const pre = undoable ? ui._undoSnap() : null, rng0 = rngState();
+    const pre = undoable ? ui._undoSnap() : null, rng0 = rngState(), cb0 = ui._combatCount;
     G.busy = true; ui.mode = null; ui.setBanner(null); ui.updateStats(); ui.updateHand();
     try { await fn(); } catch (e) { console.error(e); ui.log('Error: ' + e.message, 'bad'); }
     G.busy = false;
-    if (pre) { if (rngState() !== rng0) ui._undo = []; else if (!G.over && ui._undoSnap().s !== pre.s) { ui._undo.push(pre); if (ui._undo.length > 60) ui._undo.shift(); } }
+    if (pre) { if (rngState() !== rng0 || ui._combatCount !== cb0) ui._undo = []; else if (!G.over && ui._undoSnap().s !== pre.s) { ui._undo.push(pre); if (ui._undo.length > 60) ui._undo.shift(); } }
     if (G.sel && !G.units[G.sel]) G.sel = null;
     if (G.phase === 'actions' && !G.over && !G.event.cer) saveGame('actions');
     if (G.over && ui._endRes) { const r = ui._endRes; ui._endRes = null; r(); }
