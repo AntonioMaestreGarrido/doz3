@@ -458,7 +458,6 @@ async function tiradlesAttack(zeds) {
 async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCol, noInf, assassin }
   let zeds = o.zeds.filter(z => z.space), hum = o.hum.filter(u => u.space);
   if (!zeds.length || !hum.length) return {};
-  UI._combatCount++; /* un combate no se puede deshacer, tenga o no dados tirados (ver ui.guard) */
   const attackerHuman = o.attacker === 'h';
   const space = o.space;
   let fighter = hum[0];
@@ -528,10 +527,11 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   const wilsonBuddy = wilsonWith(fighter);
   const wzed = !attackerHuman && fighter.side === 'pl' && alive('wzed') && isCity(space);
   let extraDice = (wilsonBuddy ? 1 : 0) + (wzed ? 1 : 0);
-  const cinfo = { title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, cards: combatCards(fighter, attackerHuman) };
+  const cinfo = { canUndo: !!o.undoable && attackerHuman, title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, cards: combatCards(fighter, attackerHuman) };
   cinfo.useCard = async c => { if (c.cancel) { cinfo.cancelled = true; return; } if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
   const h = UI.combatOpen(cinfo);
   let dice = await h.roll(extraDice);
+  if (dice === null && cinfo.undone) { UI._close(); return { undone: true }; }
   if (dice === null) { /* ¡Tiradles algo!: se cancela este combate. Ataque de Fuerza 2 contra los atacantes; si quedan Zeds y la unidad sigue en el espacio, combate Cuerpo a Cuerpo. */
     UI._close();
     await tiradlesAttack(zeds);
@@ -747,7 +747,8 @@ function pathTo(prev, start, dest) {
   return c === start ? p.reverse() : null;
 }
 /* path: recorrido de la acción de Mover. Si se pierde el combate, la unidad se retira UN espacio (al anterior del recorrido). */
-async function doMove(u, dest, path) {
+async function doMove(u, dest, path, undoable) {
+  const rng0 = rngState(); /* si antes del combate ya se ha tirado algún dado, no se puede deshacer */
   /* Atajo de Wilson: si está en la Cripta, sus unidades salen sin tirar. */
   const wAtajo = alive('wilson') && u.space && alive('wilson').space === u.space;
   if (u.space && G.spaces[u.space] && sp(u.space).kind === 'crypt' && !u.dr && !wAtajo && !(await cryptRollPlayer(u))) return;
@@ -762,7 +763,8 @@ async function doMove(u, dest, path) {
   if (zs.length) {
     let assassin = false;
     if (u.key === 'darling') { const r = await rollShownFor(u, 'Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r); if (r >= 3) assassin = true; else if (r === 1) {/* combate normal */} else { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { putUnit(u, from); return; } } }
-    const rr0 = await melee({ zeds: zs, hum: [u], space: dest, attacker: 'h', from: prevSp, back, assassin, noInf: assassin });
+    const rr0 = await melee({ zeds: zs, hum: [u], space: dest, attacker: 'h', from: prevSp, back, assassin, noInf: assassin, undoable: undoable && rngState() === rng0 });
+    if (rr0.undone) { UI._undoRequested = true; return; }
     if (u.key === 'betty' && rr0.humanWon) await bettyChain(u);
   } else if (rs.length) { await melee({ zeds: rs, hum: [u], space: dest, attacker: 'h', from: prevSp, back }); }
   if (dest === 'C' && u.space === 'C') { /* nada */ }

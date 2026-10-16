@@ -2,10 +2,10 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
-## 2026-10-16 05:34
+## 2026-10-16 06:10
 
 ### Fixes
-- **Deshacer y combates:** un movimiento (o cualquier acción) que provoca un combate ya no se puede deshacer, aunque todavía no se haya tirado ningún dado. Antes el botón Deshacer seguía ofreciendo volver atrás mientras no hubiera tiradas.
+- **Deshacer en combates provocados por tu movimiento:** si un movimiento te lleva a un combate, la ventana de combate muestra «↶ Deshacer el movimiento» junto a «Tirar dados». Mientras no se tire ningún dado, puedes volver atrás (la unidad vuelve a su espacio y se recupera lo gastado). Una vez tirados los dados, ya no se puede deshacer.
 
 ## 2026-10-15 16:20
 

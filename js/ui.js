@@ -228,7 +228,7 @@ const ui = {
     for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
   },
   _undo: [],
-  _combatCount: 0,
+  _undoRequested: false,
   _undoSnap() { return { s: JSON.stringify({ rng: rngState(), uid: UID, G: snapshotState() }) }; },
   undoClear() { this._undo = []; this.updateUndo(); },
   updateUndo() { const b = $('undoBtn'); if (!b) return; const n = this._undo.length, ok = n > 0 && G.phase === 'actions' && !G.busy && !G.over; b.disabled = !ok; b.textContent = '↶ Deshacer' + (n ? ' (' + n + ')' : ''); },
@@ -242,13 +242,15 @@ const ui = {
   },
   async guard(fn) {
     if (G.busy) return;
-    /* Deshacer: se guarda el estado antes de cada acción. Si la acción usa el generador aleatorio (una tirada, robar carta…) o provoca un combate, ya no se puede volver más atrás de ella. */
+    /* Deshacer: se guarda el estado antes de cada acción. Si la acción usa el generador aleatorio (una tirada, robar carta…) ya no se puede volver más atrás de ella. */
     const undoable = G.phase === 'actions' && !G.over && !(G.event && G.event.cer);
-    const pre = undoable ? ui._undoSnap() : null, rng0 = rngState(), cb0 = ui._combatCount;
+    const pre = undoable ? ui._undoSnap() : null, rng0 = rngState();
     G.busy = true; ui.mode = null; ui.setBanner(null); ui.updateStats(); ui.updateHand();
     try { await fn(); } catch (e) { console.error(e); ui.log('Error: ' + e.message, 'bad'); }
     G.busy = false;
-    if (pre) { if (rngState() !== rng0 || ui._combatCount !== cb0) ui._undo = []; else if (!G.over && ui._undoSnap().s !== pre.s) { ui._undo.push(pre); if (ui._undo.length > 60) ui._undo.shift(); } }
+    if (ui._undoRequested) { /* «Deshacer el movimiento» en la ventana de combate, antes de tirar: vuelve al estado previo a la acción. */
+      ui._undoRequested = false; if (pre) { const s = JSON.parse(pre.s); restoreState(s.G); UID = s.uid; rngRestore(s.rng); G.sel = null; ui.log('↶ Movimiento deshecho antes de tirar los dados.', 'turn'); }
+    } else if (pre) { if (rngState() !== rng0) ui._undo = []; else if (!G.over && ui._undoSnap().s !== pre.s) { ui._undo.push(pre); if (ui._undo.length > 60) ui._undo.shift(); } }
     if (G.sel && !G.units[G.sel]) G.sel = null;
     if (G.phase === 'actions' && !G.over && !G.event.cer) saveGame('actions');
     if (G.over && ui._endRes) { const r = ui._endRes; ui._endRes = null; r(); }
@@ -314,7 +316,7 @@ const ui = {
         if (m.type === 'move') ui.guard(async () => {
           if (!moveIsFree(u, sid)) spendActions(u, 1, 'move'); if (m.extra && dist > u.mp) G.turn.vehicle = 0;
           if (G.turn.heli && u.type === 'hero') { G.turn.heli = false; putUnit(u, sid); LOG(u.name + ' es recogido por el helicóptero.'); ui.redraw(); return; }
-          await doMove(u, sid, (m.opts.stealthPath && m.opts.stealthPath[sid]) || pathTo(m.opts.prev, u.space, sid));
+          await doMove(u, sid, (m.opts.stealthPath && m.opts.stealthPath[sid]) || pathTo(m.opts.prev, u.space, sid), true);
         });
         else ui.guard(async () => {
           if (m.free) { G.ammo--; G.charUsed.cit = true; await doFire(u, sid, dist, { shift: 1, shiftLabel: 'Ciudadela' }); }
@@ -604,9 +606,9 @@ const ui = {
     FIRE.forEach((row, r) => { h += '<tr data-r="' + r + '"><td class="rowh">' + CAC_ROWS[r] + '</td>' + row.map((c, i) => '<td data-c="' + i + '" class="' + (i === col ? 'c-final' : '') + '">' + c + '</td>').join('') + '</tr>'; });
     return h + '</table>';
   },
-  async _rollDice(b, extra, onChange, cardApi) {
+  async _rollDice(b, extra, onChange, cardApi, undoApi) {
     const got = await new Promise(r => { ui._rollGo = r;
-      $('rb').innerHTML = '<div id="cbcards"></div><button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>';
+      $('rb').innerHTML = '<div id="cbcards"></div><button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>' + (undoApi ? ' <button id="undob">↶ Deshacer el movimiento</button>' : '');
       const hasCards = !!(cardApi && cardApi.cards.length);
       if (hasCards) cardApi.cards.forEach(c => {
         const bt = document.createElement('button'); bt.className = 'cardbtn'; bt.textContent = '🃏 Jugar «' + DEST[c.key].name + '» (' + c.tag + ')';
@@ -614,7 +616,8 @@ const ui = {
         $('cbcards').appendChild(bt);
       });
       $('rollb').onclick = () => r('roll'); $('rollb').focus();
-      if (ui.fast && !hasCards) r('roll'); /* con cartas disponibles no se tira solo: hay que poder jugarlas */
+      if (undoApi) $('undob').onclick = () => undoApi();
+      if (ui.fast && !hasCards && !undoApi) r('roll'); /* con cartas disponibles no se tira solo: hay que poder jugarlas */
     });
     ui._rollGo = null;
     $('rb').innerHTML = '';
@@ -650,7 +653,8 @@ const ui = {
       roll: async extra => {
         /* Cartas jugables antes de tirar: botones en esta ventana. Al jugar una, se recalcula la columna final. */
         const cardApi = info.cards && info.cards.length ? { cards: info.cards, use: async c => { await info.useCard(c); if (info.cancelled) { if (ui._rollGo) ui._rollGo('cancel'); return; } $('ccols').innerHTML = colsInner(); $('ctab').innerHTML = ui._cacTable(info.initCol, info.finalCol); } } : null;
-        const best = await ui._rollDice(b, extra, mark, cardApi); if (best) mark(best); EVT('dado', null, { que: 'Combate', extra: extra || 0, mejores: best }); return best;
+        const undoApi = info.canUndo ? () => { info.undone = true; if (ui._rollGo) ui._rollGo('cancel'); } : null;
+        const best = await ui._rollDice(b, extra, mark, cardApi, undoApi); if (best) mark(best); EVT('dado', null, { que: 'Combate', extra: extra || 0, mejores: best }); return best;
       },
       ask: (t, o) => ui._ask('rb', t, o),
       reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
