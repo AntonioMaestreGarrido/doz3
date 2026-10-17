@@ -143,7 +143,9 @@ function drawNormalToken() {
   return G.reserve.splice(rnd(G.reserve.length), 1)[0];
 }
 function makeZed() {
-  const t = drawNormalToken(); if (!t) return null;
+  const t = drawNormalToken();
+  /* Sin Zeds normales: en su lugar sale un Súper Zed al azar, si quedan. */
+  if (!t) return G.supers.length ? makeSuper() : null;
   return newUnit({ side: 'zed', type: 'zed', name: 'Zed', full: t[0], red: t[1], hf: 3, hr: 3, token: t });
 }
 function makeSuper() {
