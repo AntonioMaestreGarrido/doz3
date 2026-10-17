@@ -16,9 +16,20 @@ const FINISH = () => G.over;
 /* Zeds en el penúltimo espacio de alguna ruta o junto al Centro: el tema de peligro suena al empezar el siguiente turno. */
 /* Pocas fichas de Caos (3 o menos, solo en niveles con Caos): cuenta como peligro y se avisa al empezar el turno. */
 const chaosLow = () => !!(G.lv && G.lv.fourR && G.chaosLeft <= 3);
+/* Solo información visible en el tablero: los espacios con nombre, sin Caos, a los que un Zed podría entrar en su próximo avance. No mira la carta de Destino. */
+function chaosThreats() {
+  const ids = new Set();
+  for (const z of allUnits(isZedSide)) {
+    if (!z.space || !isRouteSp(z.space)) continue;
+    const d = nextToward(z.space);
+    if (d !== 'C' && isNamed(d) && !sp(d).chaos && !isInit(d) && sp(d).kind !== 'crypt') ids.add(d);
+  }
+  return [...ids];
+}
 function chaosWarnText() {
-  const n = G.chaosLeft;
-  return n === 1 ? 'Queda <b>1</b> ficha de Caos. Si hay que colocar otra, perdéis la partida.' : 'Quedan <b>' + n + '</b> fichas de Caos. Si se acaban y hay que colocar otra, perdéis la partida.';
+  const n = G.chaosLeft, th = chaosThreats();
+  const base = n === 1 ? 'Queda <b>1</b> ficha de Caos. Si hay que colocar otra, perdéis la partida.' : 'Quedan <b>' + n + '</b> fichas de Caos. Si se acaban y hay que colocar otra, perdéis la partida.';
+  return base + (th.length ? '<br><br>Si no actuáis, los Zeds que están junto a estos espacios podrían entrar en ellos y colocar Caos: <b>' + th.map(spaceLabel).join(', ') + '</b>.' : '');
 }
 function enPeligro() { return G.routes.some(rt => { const L = lastOf(rt); return [L, L - 1].some(k => k >= 1 && zedsAt(rt + k).length); }); }
 
