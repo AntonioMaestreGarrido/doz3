@@ -530,7 +530,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   const wzed = !attackerHuman && fighter.side === 'pl' && alive('wzed') && isCity(space);
   let extraDice = (wilsonBuddy ? 1 : 0) + (wzed ? 1 : 0);
   /* Lo mismo que se sumará a la Infección al final (ver más abajo), para anunciarlo antes de tirar. */
-  const infGain = !o.noInf && G.lv.infection && !vsPl ? meleeInfection(zeds, fighter) : 0;
+  const infGain = !G.lv.infection ? null : o.noInf || vsPl ? 0 : meleeInfection(zeds, fighter);
   const cinfo = { title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, infGain, cards: combatCards(fighter, attackerHuman) };
   cinfo.useCard = async c => { if (c.cancel) { cinfo.cancelled = true; return; } if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
   const h = UI.combatOpen(cinfo);
