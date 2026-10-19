@@ -230,7 +230,7 @@ body:has(#title.bg) #modalbox.setup{background:rgba(14,11,8,.62)}
 .pickopts button{flex:1 1 200px;text-align:left}
 .pickopts button.on{border-color:var(--gold);background:#4a3a1c;box-shadow:0 0 0 1px var(--gold) inset}
 #cancelBtn.cancel{background:#7a2a1b;border-color:#e8452f;color:#fff}
-#cancelBtn[hidden]{display:none}
+#cancelBtn[hidden],#mazosBtn[hidden]{display:none}
 /* Zoom del mapa */
 #map{touch-action:none}
 #zoomctl{position:absolute;right:8px;bottom:8px;z-index:6;display:flex;flex-direction:column;gap:6px}

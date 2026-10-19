@@ -64,6 +64,7 @@ const ui = {
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
     $('optionsBtn').addEventListener('click', () => ui.showOptions());
     $('logBtn').addEventListener('click', () => downloadLog());
+    $('mazosBtn').hidden = !ui.dbgDice; /* el botón Mazos solo aparece con la casilla de depuración de dados */
     $('mazosBtn').addEventListener('click', () => ui.showDecks());
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
     $('cancelBtn').addEventListener('click', () => ui.cancelMode());
@@ -930,7 +931,7 @@ const ui = {
   },
   /* Menú Debug: herramientas de prueba. Por ahora, simular el obituario con héroes y estadísticas inventados. */
   showDebug() {
-    const b = this._modal('<h2>🐞 Debug</h2><h3>Dados</h3><div class="row"><label><input type="checkbox" id="dbgDiceSw"' + (ui.dbgDice ? ' checked' : '') + '> Botón para cambiar los dados tras cada tirada</label></div><p class="pickhint">Solo vale para esta sesión: se apaga al recargar la página. Afecta a las partidas que empieces o cargues desde ahora.</p><h3>Obituario</h3><p class="pickhint">Marca los héroes que quieras ver; las estadísticas se inventan al lanzar.</p><div class="dbgbox"><div class="row"><button type="button" id="obAll">Marcar todos</button> <button type="button" id="obClr">Ninguno</button> <span id="obCnt" class="pickhint"></span></div><div id="obList" class="obchecks"></div><div class="row"><button type="button" class="primary" id="obGo">▶ Lanzar obituario</button> <span id="obMsg" class="pickhint"></span></div></div><div class="opts"><button id="xb">Cerrar</button></div>');
+    const b = this._modal('<h2>🐞 Debug</h2><h3>Dados</h3><div class="row"><label><input type="checkbox" id="dbgDiceSw"' + (ui.dbgDice ? ' checked' : '') + '> Botones de depuración: cambiar los dados tras cada tirada y ver los mazos (botón Mazos)</label></div><p class="pickhint">Solo vale para esta sesión: se apaga al recargar la página. Afecta a las partidas que empieces o cargues desde ahora.</p><h3>Obituario</h3><p class="pickhint">Marca los héroes que quieras ver; las estadísticas se inventan al lanzar.</p><div class="dbgbox"><div class="row"><button type="button" id="obAll">Marcar todos</button> <button type="button" id="obClr">Ninguno</button> <span id="obCnt" class="pickhint"></span></div><div id="obList" class="obchecks"></div><div class="row"><button type="button" class="primary" id="obGo">▶ Lanzar obituario</button> <span id="obMsg" class="pickhint"></span></div></div><div class="opts"><button id="xb">Cerrar</button></div>');
     const obKeys = ALT_KEYS.filter(k => HEROES[k]), rnd2 = (a, z) => a + Math.floor(Math.random() * (z - a + 1)), nom = k => HEROES[k].name.replace(/\s*\(.*?\)/, '');
     $('obList').innerHTML = obKeys.map(k => '<label class="obck"><input type="checkbox" value="' + k + '"> ' + nom(k) + '</label>').join('');
     const marcados = () => [...$('obList').querySelectorAll('input:checked')].map(e => e.value), cnt = () => { $('obCnt').textContent = marcados().length + ' de ' + obKeys.length + ' marcados'; };
@@ -938,7 +939,7 @@ const ui = {
     $('obAll').onclick = () => { $('obList').querySelectorAll('input').forEach(e => e.checked = true); cnt(); };
     $('obClr').onclick = () => { $('obList').querySelectorAll('input').forEach(e => e.checked = false); cnt(); };
     $('obGo').onclick = () => { const ks = marcados(); if (!ks.length) { $('obMsg').textContent = 'Marca al menos un héroe.'; return; } $('obMsg').textContent = ''; Obit.simular(ks.map(k => ({ key: k, kills: rnd2(2, 14), turno: rnd2(3, 20) }))); };
-    $('dbgDiceSw').onchange = e => { ui.dbgDice = e.target.checked; };
+    $('dbgDiceSw').onchange = e => { ui.dbgDice = e.target.checked; $('mazosBtn').hidden = !ui.dbgDice; };
     $('xb').onclick = () => this._close();
     cnt();
   },

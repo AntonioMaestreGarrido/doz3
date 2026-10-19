@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-19 04:41
+
+### Mejoras
+- **Debug · Mazos:** el botón «Mazos» solo aparece cuando está marcada la casilla de depuración de la pantalla Debug (la misma que cambia los dados tras cada tirada). Desmarcarla lo oculta al momento.
+
 ## 2026-10-19 03:18
 
 ### Mejoras
