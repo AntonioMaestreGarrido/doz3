@@ -134,9 +134,11 @@ function destRoutes(where) {
   if (where === 'T' && !G.routes.includes('T')) return R.filter(r => r !== 'T');
   return [where];
 }
+/* Espacios de una ruta (para enfocar la cámara al elegirla). */
+const routeSpaces = r => Object.keys(G.spaces).filter(id => G.spaces[id] && G.spaces[id].route === r);
 async function chooseRoute(c, text) {
   if (c.length === 1) return c[0];
-  return UI.choose({ title: 'Elige una ruta', text, options: c.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color })) });
+  return UI.choose({ title: 'Elige una ruta', text, options: c.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color, focus: routeSpaces(r) })) });
 }
 async function drawDestiny() {
   if (!G.destDeck.length) { G.destDeck = shuffle(G.destDiscard.splice(0)); EVT('destBarajar', null, { n: G.destDeck.length }); }

@@ -400,7 +400,8 @@ async function retreatZeds(zeds, startId) {
   for (const d in landed) {
     if (G.over || isInit(d)) continue;
     const zs = landed[d].filter(z => z.space === d);
-    if (zs.length && (plAt(d).length || raidAt(d).length || softAt(d).some(u => u.type === 'refugee'))) { LOG('Los Zeds se retiran a un espacio ocupado y atacan.', 'zed'); await zedAttack(zs, d, zedOrigin(zs[0])); }
+    const otros = u => !zs.includes(u);
+    if (zs.length && (plAt(d).some(otros) || raidAt(d).some(otros) || softAt(d).some(u => u.type === 'refugee' && otros(u)))) { LOG('Los Zeds se retiran a un espacio ocupado y atacan.', 'zed'); await zedAttack(zs, d, zedOrigin(zs[0])); }
   }
 }
 
@@ -630,7 +631,8 @@ function retreatRaiders(rs) { for (const r of rs) { const p = prevToward(r.space
 async function hitRaider(u, n) { for (let k = 0; k < n && u.space; k++) { const before = { flipped: u.flipped, hits: u.hits }; const r = hitUnitOnce(u); if (r === 'dead') { await sendCemetery(u, 'es destruida'); return; } if (r === 'flip') await UI.fxFlip(u, before); else await UI.fxHit(u); } }
 
 async function zedAttack(zeds, space, from) {
-  const pl = plAt(space).concat(raidAt(space)); const soft = softAt(space);
+  /* Un Zed (o una Banda que se retira) no lucha contra sí mismo: solo cuentan las demás unidades del espacio. */
+  const pl = plAt(space).concat(raidAt(space)).filter(x => !zeds.includes(x)); const soft = softAt(space);
   if (!pl.length) { await devourSoft(zeds, space); return {}; }
   const r = await melee({ zeds, hum: pl, space, attacker: 'z', from });
   if (r.fighter && r.fighter.key === 'betty' && r.humanWon && r.fighter.space) await bettyChain(r.fighter);

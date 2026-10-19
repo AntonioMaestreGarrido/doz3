@@ -2,6 +2,14 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-19 18:43
+
+### Mejoras
+- **Elegir ruta:** al tocar una ruta la cámara va a su zona y queda marcada; hay que pulsar «Aceptar» para confirmar. «Aleatorio» sigue resolviendo al instante.
+
+### Fixes
+- **Banda de Bubba que se retira:** al caer en un espacio vacío ya no lucha contra sí misma. Un Zed (o una Banda) que se retira no cuenta como ocupante de su nuevo espacio.
+
 ## 2026-10-19 17:27
 
 ### Mejoras

@@ -446,7 +446,16 @@ const ui = {
   choose({ title, text, options, cancel, img }) {
     return new Promise(res => {
       const b = this._modal('<h2>' + title + '</h2>' + (img ? '<div class="cardrow"><img src="' + img + '" alt=""><div><p>' + (text || '') + '</p></div></div>' : '<p>' + (text || '') + '</p>') + '<div class="opts"></div>'); const o = b.querySelector('.opts');
-      options.forEach(opt => { const bt = document.createElement('button'); bt.innerHTML = (opt.color ? '<span class="sw" style="background:' + opt.color + '"></span>' : '') + opt.label; bt.onclick = () => { ui._close(); res(opt.value); }; o.appendChild(bt); });
+      /* Opciones con focus (p. ej. rutas): al tocarlas la cámara va a su zona y queda marcada; sólo se confirma con «Aceptar». */
+      const guiada = options.some(opt => opt.focus);
+      let cur = null, ok = null;
+      options.forEach(opt => {
+        const bt = document.createElement('button'); bt.innerHTML = (opt.color ? '<span class="sw" style="background:' + opt.color + '"></span>' : '') + opt.label;
+        if (!guiada || !opt.focus) bt.onclick = () => { ui._close(); res(opt.value); };
+        else bt.onclick = () => { cur = opt; o.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === bt)); if (ok) ok.disabled = false; ui.focus(opt.focus); };
+        o.appendChild(bt);
+      });
+      if (guiada) { ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = 'Aceptar'; ok.disabled = true; ok.onclick = () => { if (cur) { ui._close(); res(cur.value); } }; o.appendChild(ok); }
       if (cancel) { const bt = document.createElement('button'); bt.textContent = 'Cancelar'; bt.onclick = () => { ui._close(); res(null); }; o.appendChild(bt); }
     });
   },

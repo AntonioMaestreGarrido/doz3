@@ -223,7 +223,7 @@ async function activateRoute(r, cer) {
 async function routeOrder(rem) {
   const out = [];
   while (rem.length > 1) {
-    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar, o activa el resto en orden aleatorio:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color })).concat([{ label: 'Aleatorio (resto)', value: 'rnd' }]) });
+    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar, o activa el resto en orden aleatorio:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color, focus: routeSpaces(r) })).concat([{ label: 'Aleatorio (resto)', value: 'rnd' }]) });
     if (v === 'rnd') { const a = rem.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return out.concat(a); }
     out.push(v); rem = rem.filter(x => x !== v);
   }
