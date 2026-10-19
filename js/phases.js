@@ -8,6 +8,8 @@ async function outbreak(wild, noReduce) {
   else if (!noReduce) { const [a, b] = await UI.rollSimple('Tirada de Brote: la Infección baja', 2, d => 'Total <b>' + (d[0] + d[1]) + '</b>: la Infección baja ' + (d[0] + d[1]) + '.'); LOG('Tirada de Brote: ' + (a + b) + '. La Infección baja.', 'good'); infDown(a + b); }
   const dr = await drawDestiny(); if (!dr) return;
   const r = dr.route; let target;
+  /* La carta de Destino solo elige la ruta del Brote: la causa de lo que aparece es el Brote. */
+  CAUSA = (wild ? 'Brote Descontrolado' : 'Brote') + ' en ' + ROUTES[r].name;
   if (r === 'T' || alreadyHas('vacunas')) target = r + '0';
   else {
     target = null;
@@ -221,7 +223,8 @@ async function activateRoute(r, cer) {
 async function routeOrder(rem) {
   const out = [];
   while (rem.length > 1) {
-    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color })) });
+    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar, o activa el resto en orden aleatorio:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color })).concat([{ label: 'Aleatorio (resto)', value: 'rnd' }]) });
+    if (v === 'rnd') { const a = rem.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return out.concat(a); }
     out.push(v); rem = rem.filter(x => x !== v);
   }
   out.push(rem[0]); return out;
@@ -230,7 +233,7 @@ async function phaseZeds() {
   const ev = G.event;
   if (ev.guardia) { return; }
   let list = [];
-  if (ev.cer) { await UI.announce('¡CEREBROS! Los Zeds que ganen avanzan otra vez', '#ff3b2a', 1200, true); await infUp(ev.skulls); LOG('¡CEREBROS!: todas las rutas se activan y los Zeds que ganen avanzan otra vez.', 'bad'); const o = await routeOrder(G.routes.slice()); for (const r of o) { await activateRoute(r, true); if (G.over) return; } return; }
+  if (ev.cer) { await UI.announce('¡CEREBROS! Los Zeds que ganen avanzan otra vez', '#ff3b2a', 1200, true); await infUp(ev.skulls); LOG('¡CEREBROS!: todas las rutas se activan y los Zeds que ganen avanzan otra vez.', 'bad'); const o = await routeOrder(G.routes.slice()); for (const r of o) { await conCausa(ROUTES[r].name + ' (CEREBROS)', () => activateRoute(r, true)); if (G.over) return; } return; }
   const anyOther = ev.z.includes('ANY');
   for (const x of ev.z) {
     if (x === 'ANY' || x === 'MIN2') continue;
@@ -240,8 +243,8 @@ async function phaseZeds() {
     else if (G.routes.includes(x)) list.push(x);
   }
   if (ev.z.includes('MIN2')) { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Ruta con menos Zeds: se activa 2 veces.'); list.push(r, r); }
-  for (const r of list) { await activateRoute(r, false); if (G.over) return; }
-  if (anyOther) { const rest = G.routes.filter(r => !list.includes(r)); if (rest.length) { const r = await chooseRoute(rest, 'Cualquier otra: elige la ruta que se activa.'); await activateRoute(r, false); } }
+  for (const r of list) { await conCausa(ROUTES[r].name, () => activateRoute(r, false)); if (G.over) return; }
+  if (anyOther) { const rest = G.routes.filter(r => !list.includes(r)); if (rest.length) { const r = await chooseRoute(rest, 'Cualquier otra: elige la ruta que se activa.'); await conCausa(ROUTES[r].name, () => activateRoute(r, false)); } }
 }
 
 /* ---------- 4R ---------- */
@@ -405,7 +408,7 @@ async function eventEffect(ev) {
     case 'resistentes': { await placeZedAt('M0', 'Zeds Resistentes'); const t = strongestNormalZed(); if (t) { t.zresist = true; LOG('Resistentes en un Zed de Fuerza ' + strength(t) + '.', 'bad'); } break; }
     case 'cerebros_b1': case 'cerebros_b2': break;
     case 'agua': await lossChoice(await rollShown('Agua contaminada: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' (Suministros o Impactos).'), ['s', 'p']); break;
-    case 'marines': { const dr = await drawDestiny(); if (dr) { const m = makeSpecial('marines', dr.route + '0'); G.ammo = Math.min(20, G.ammo + 4); LOG('Llegan los Marines (+4 Munición).', 'good'); await resolveTwist(dr); } break; }
+    case 'marines': { const dr = await drawDestiny(); if (dr) { const t = dr.route + '0'; const m = makeSpecial('marines', t); removeUnit(m); await UI.superIntro(m, t, 'assets/cartas/u_marines.jpg', SPECIALS.marines.txt.join(' ')); putUnit(m, t); UI.redraw(); G.ammo = Math.min(20, G.ammo + 4); LOG('Llegan los Marines (+4 Munición).', 'good'); await resolveTwist(dr); } break; }
     case 'toxicos': { await placeZedAt('A0', 'Zeds Tóxicos'); const t = strongestNormalZed(); if (t) t.toxic = true; break; }
     case 'rapidos': { await placeZedAt('B0', 'Zeds Rápidos'); const t = strongestNormalZed(); if (t) t.fast = true; break; }
     case 'turba': { const dr = await drawDestiny(); if (dr) { if (G.inf >= 8) await placeZedInitial(dr.route, makeSuper()); else { makeSpecial('vip', dr.route + '0', { name: 'Supervivientes V.I.P.', type: 'refugee' }); LOG('Aparecen los Supervivientes V.I.P.', 'good'); } await resolveTwist(dr); } break; }

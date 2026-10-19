@@ -2,6 +2,19 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-19 17:27
+
+### Mejoras
+- **Registro de partida exhaustivo:** guarda la semilla y la posición del generador en cada evento, y cada aparición, movimiento y retirada de Zeds con su causa (carta, ruta, Brote…). También las cartas de Destino, la Infección, los dados, las decisiones del jugador y los mensajes del log. Exportación con bloque `config` (semilla, nivel, héroes, expansiones).
+- **Marines:** la carta y la ficha aparecen juntas y la ficha vuela a su espacio, como los Súper Zeds.
+- **Orden de rutas:** nuevo botón «Aleatorio (resto)» que activa las rutas restantes en orden aleatorio.
+- **Tiradas con +1:** Investigar (Profesora Agee) y Buscar (Hauser, Hernández en Ciudad, carta «Ahora») muestran el modificador antes de tirar; después el dado se anima para sumarlo.
+- **Preguntas de Zeds:** la cámara se centra en los espacios de la pregunta (p. ej. «¡Mira! ¡Una distracción!»).
+
+### Fixes
+- **Súper Zeds del Brote:** los que salen de un Brote Descontrolado se registran con la causa «Brote», no con la carta de Destino que elige la ruta.
+- **Trabajando una jornada doble:** la opción de investigar gratis solo se ofrece si se puede pagar; antes la Infección subía aunque no hubiera Suministros.
+
 ## 2026-10-19 04:41
 
 ### Mejoras

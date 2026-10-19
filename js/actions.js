@@ -94,7 +94,7 @@ async function doInvestigate(u, free) {
   if (G.supplies < (usingSup ? 1 : 0) + (c.sup ? 1 : 0)) { LOG('Te faltan Suministros para investigar.', 'bad'); return false; }
   if (usingSup) { G.supplies--; } else if (!free) spendActions(u, 1);
   if (c.sup) G.supplies--;
-  const dice = await UI.rollSimple('Investigar (hace falta ' + c.th + '+)', 1);
+  const dice = await UI.rollSimple('Investigar (hace falta ' + c.th + '+)', 1, null, { mods: u.key === 'agee' ? [{ label: 'Profesora Agee', v: 1 }] : [] });
   let r = dice[0] + (u.key === 'agee' ? 1 : 0); if (u.key === 'agee') r = Math.min(6, r);
   EVT('investigar', u.id, { carta: c.id, nombre: c.name, umbral: c.th, dado: dice[0], resultado: r, exito: r >= c.th, suministro: !!c.sup, sinAccion: !!usingSup });
   if (r >= c.th) { LOG('Investigación con éxito (' + r + ').', 'good'); G.turn.researched = true; await revealResearch(); }

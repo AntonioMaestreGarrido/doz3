@@ -112,7 +112,7 @@ function runGame(setup, saved) {
   });
 }
 window.addEventListener('load', async () => {
-  bindUI(ui); window.UI = ui;
+  EVT_UI(ui); bindUI(ui); window.UI = ui;
   await ui.init();
   await ui.intro();
   while (true) {

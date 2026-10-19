@@ -471,6 +471,8 @@ const ui = {
   askZeds({ title, text, spaces, options }) {
     return new Promise(res => {
       this.marks = spaces; this.redraw();
+      /* La cámara va a los espacios de la pregunta, para ver de qué se está hablando. */
+      if (spaces && spaces.length) this.focus(spaces.length > 1 ? spaces : spaces[0]);
       const done = v => { ui._close(); ui.marks = null; ui.redraw(); res(v); };
       const b = this._modal('<h2>' + title + '</h2><p>' + text + '</p><div class="opts"></div>', 'pickpanel'); $('modal').classList.add('pick');
       const o = b.querySelector('.opts');
@@ -480,14 +482,16 @@ const ui = {
   confirm(text) { return this.choose({ title: 'Confirmar', text, options: [{ label: 'Sí', value: true }, { label: 'No', value: false }] }); },
   /* Súper Zed: la ficha aparece en grande en el centro con su nombre y su efecto (OK). Al pulsar OK vuela a su espacio y solo entonces se coloca.
      Con «Animaciones rápidas» no vuela: se muestra la información igual y se coloca al pulsar OK. */
-  superIntro(zed, target) {
+  /* Con carta (p. ej. Marines): la carta se muestra junto a la ficha y se desvanece al pulsar OK, cuando la ficha vuela. */
+  superIntro(zed, target, card, txt) {
     return new Promise(res => {
-      const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: '', img: null };
+      const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: txt || '', img: zed.img || null };
       const ov = document.createElement('div'); ov.className = 'superfx';
-      ov.innerHTML = '<div class="sfx-tok"><img src="' + (zed.key && SUPER_ZEDS[zed.key] ? superImg(zed.key, false) : 'assets/tokens/' + (d.img || 'sz_lobo') + '.png') + '" alt=""></div>' +
+      ov.innerHTML = '<div class="sfx-stage">' + (card ? '<div class="sfx-card"><img src="' + card + '" alt=""></div>' : '') +
+        '<div class="sfx-tok"><img src="' + (zed.key && SUPER_ZEDS[zed.key] ? superImg(zed.key, false) : 'assets/tokens/' + (d.img || 'sz_lobo') + '.png') + '" alt=""></div></div>' +
         '<div class="sfx-info" hidden><h2>' + d.name + '</h2><p>' + d.txt + '</p><button class="primary" id="sfxOk">OK</button></div>';
       document.body.appendChild(ov);
-      const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info');
+      const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info'), cardEl = ov.querySelector('.sfx-card');
       setTimeout(() => { info.hidden = false; }, 900);
       /* El vuelo depende de requestAnimationFrame, que el navegador puede pausar (ventana minimizada u oculta): con un temporizador de
          reserva la ficha se coloca igual y la partida nunca se queda parada con la ficha en grande. */
@@ -501,13 +505,15 @@ const ui = {
         if (started) return; started = true;
         info.hidden = true;
         const dest = target && G.spaces[target];
+        if (cardEl) cardEl.classList.add('out');
         if (this.fast || !dest) { finish(); return; }
         /* Vuelo por fotogramas: la ficha va al espacio de destino donde esté en pantalla en cada fotograma. El mapa no hace zoom ni se mueve. */
         if (this.view && this.view.z > 1.001) this.panTo(target);
         const cv = this.canvas, dur = 1600, ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         const live = () => { const r = cv.getBoundingClientRect(), k = r.width / cv.width; return { x: r.left + dest.x * k, y: r.top + dest.y * k }; };
-        const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+        /* El centro de partida es donde está la ficha en pantalla (con carta, va desplazada a un lado). */
         tok.style.animation = 'none';
+        const r0 = tok.getBoundingClientRect(), cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
         const t0 = performance.now();
         const step = now => {
           const t = Math.min(1, (now - t0) / dur), e = ease(t), p = live();
@@ -552,9 +558,14 @@ const ui = {
     });
   },
   pickSpace(ids, text, cancel) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res, cancel: !!cancel }; this.setBanner(text); this.redraw(); }); },
-  async rollSimple(label, n, resultFn) {
-    const b = this._modal('<h2>' + label + '</h2><div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div id="rres" style="text-align:center;margin:8px 0;font-size:15px"></div><div class="opts" id="rb"></div>', 'cbt');
+  /* opts.mods: modificadores de la tirada ([{label, v}]). Se muestran antes de tirar; tras la tirada el dado se anima para sumarlos.
+     El valor devuelto es el dado sin modificar: quien llama suma el modificador como antes. opts.modDie: índice del dado que suma (por defecto el mejor). */
+  async rollSimple(label, n, resultFn, opts) {
+    const mods = ((opts && opts.mods) || []).filter(m => m.v);
+    const mtxt = mods.length ? '<div class="rmods">Modificadores: ' + mods.map(m => m.label + ' ' + (m.v > 0 ? '+' : '') + m.v).join(' · ') + '</div>' : '';
+    const b = this._modal('<h2>' + label + '</h2>' + mtxt + '<div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div id="rres" style="text-align:center;margin:8px 0;font-size:15px"></div><div class="opts" id="rb"></div>', 'cbt');
     const dice = Array.from({ length: n }, d6); await this._animate(b.querySelectorAll('.die'), dice);
+    if (mods.length) { const mv = mods.reduce((a, m) => a + m.v, 0); const i = opts.modDie != null ? opts.modDie : (n === 1 ? 0 : dice.indexOf(Math.max(...dice))); await this._bump(b.querySelectorAll('.die')[i], dice[i], mv); }
     const show = () => { if (resultFn) $('rres').innerHTML = resultFn(dice); }; show();
     /* Pensar fríamente: se puede repetir cualquier dado con un 1 (con doble 1 se repiten los dos), igual que en combate. */
     if (G.hand && G.hand.includes('pensar') && dice.includes(1)) {
@@ -571,7 +582,7 @@ const ui = {
     }
     if (DEBUG_DICE) await this._dbgDice([...b.querySelectorAll('.die')], dice, show); else await this._btn('rb', 'Continuar');
     /* Registro: cada tirada con su resultado (para depurar). */
-    EVT('dado', null, { que: label, vals: dice.slice(), res: resultFn ? resultFn(dice).replace(/<[^>]+>/g, '') : null });
+    EVT('dado', null, { que: label, vals: dice.slice(), res: resultFn ? resultFn(dice).replace(/<[^>]+>/g, '') : null, mods: mods.length ? mods.map(m => m.label + ' ' + m.v).join(', ') : undefined });
     this._close(); return dice;
   },
   /* Debug: botones Continuar / Debug. Con Debug, cada clic sobre un dado le sube el valor (1→6→1). Modifica vals en el sitio. */
@@ -585,6 +596,19 @@ const ui = {
         const hint = document.createElement('div'); hint.style.cssText = 'width:100%;font-size:12px;color:#ffd54a;margin-top:4px'; hint.textContent = 'Mitad izquierda del dado: −1 · mitad derecha: +1'; rb.appendChild(hint); };
       ok.onclick = () => { els.forEach(e => { e.onclick = null; e.style.outline = ''; }); rb.innerHTML = ''; res(); };
       rb.append(ok, dbg); ok.focus();
+    });
+  },
+  /* Suma un modificador a un dado ya tirado: aparece una etiqueta «+v» y el dado da una vuelta hasta el valor final (tope 6). */
+  _bump(el, raw, mv) {
+    return new Promise(res => {
+      const end = Math.min(6, raw + mv);
+      const num = document.createElement('span'); num.textContent = raw;
+      const tag = document.createElement('div'); tag.className = 'rbump'; tag.textContent = (mv > 0 ? '+' : '') + mv;
+      el.textContent = ''; el.append(num, tag);
+      setTimeout(() => {
+        el.classList.add('roll'); const t = setInterval(() => num.textContent = fxD6(), 70);
+        setTimeout(() => { clearInterval(t); el.classList.remove('roll'); el.textContent = end; res(); }, this.fast ? 120 : 600);
+      }, this.fast ? 0 : 400);
     });
   },
   _animate(els, vals) {

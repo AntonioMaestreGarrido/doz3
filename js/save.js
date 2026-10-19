@@ -19,7 +19,8 @@ function mkSpecial(kind, n) {
     case 'jornada':
       s.label = 'Jornada doble: +1 Infección → Curar o Investigar gratis';
       s.fn = async () => {
-        const lab = G.res && !G.turn.researched ? unitsAt('LAB').filter(x => x.sci && canAct(x)) : [];
+        /* Investigar gratis solo se ofrece si se puede pagar: si la carta en curso cuesta Suministro, hace falta uno (la Infección ya se ha subido). */
+        const lab = G.res && G.res.cur && !G.turn.researched && (!G.res.cur.sup || G.supplies >= 1) ?unitsAt('LAB').filter(x => x.sci && canAct(x)) : [];
         const opts = [{ label: 'a) 1 Acción de Curar gratis', value: 'h' }].concat(lab.length ? [{ label: 'b) 1 Acción de Investigar gratis', value: 'i' }] : []).concat([{ label: 'Cancelar', value: '' }]);
         const v = await UI.choose({ title: 'Trabajando una jornada doble (' + (s.n + 1) + '/3)', text: 'Aumentas la Infección en 1 a cambio de:', options: opts });
         if (!v) { G.turn.specials.push(s); return; }

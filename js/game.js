@@ -78,7 +78,7 @@ let PENDING_PLAYERS = null;
 function newGame(levelIdx, lenIdx, personal) {
   const plist = PENDING_PLAYERS; PENDING_PLAYERS = null;
   if (plist && plist.length > 1) personal = plist.map(p => p.hero).filter(Boolean);
-  UID = 1; rngSeed(PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]); PENDING_SEED = null;
+  UID = 1; const SEMILLA = PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]; rngSeed(SEMILLA); PENDING_SEED = null; const RNG_INI = rngState();
   const L = LEVELS[levelIdx], len = L.lengths[lenIdx];
   Object.assign(G, {
     lv: L, len, units: {}, cemetery: [], reserve: ZED_TOKENS.map(t => t.slice()), supers: L.infection ? Object.keys(SUPER_ZEDS) : [],
@@ -86,6 +86,7 @@ function newGame(levelIdx, lenIdx, personal) {
     phase: 'setup', pool: { pl: [1], event: 0 }, charUsed: {}, once: {}, sel: null, speechUsed: false, antidote: false, berra: false, finalPlaced: false,
     weapon: null, res: null, turn: newTurn(), stats: { killed: 0, civLost: 0, heroLost: 0 }, evlog: [], ust: {}, evn: 0, inWild: false, spareCiv: null, upgrades: [], dangerNext: false
   });
+  G.seedUsed = SEMILLA; G.rngStart = RNG_INI; EVT('setup', null, { seed: SEMILLA, nivel: L.name, duracion: len.name });
   initPlayers(plist); G.pool = newPool(0);
   buildBoard();
   for (const r of G.routes) { const z = makeZed(); putUnit(z, r + '0'); }
@@ -138,17 +139,18 @@ async function chooseRoute(c, text) {
   return UI.choose({ title: 'Elige una ruta', text, options: c.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color })) });
 }
 async function drawDestiny() {
-  if (!G.destDeck.length) G.destDeck = shuffle(G.destDiscard.splice(0));
+  if (!G.destDeck.length) { G.destDeck = shuffle(G.destDiscard.splice(0)); EVT('destBarajar', null, { n: G.destDeck.length }); }
   if (!G.destDeck.length) { LOG('No quedan cartas de Destino.'); return null; }
   const id = G.destDeck.shift(), d = DEST[id];
   const route = await chooseRoute(destRoutes(d.where), 'Carta de Destino «' + d.name + '»: ' + ({ choice: 'a elección del jugador', more: 'empate de rutas con más Zeds', less: 'empate de rutas con menos Zeds', moreC: 'empate de rutas con más Caos', lessC: 'empate de rutas con menos Caos' }[d.where] || 'ruta destinada') + '.');
   LOG('Carta de Destino: «' + d.name + '» → ' + ROUTES[route].name + '.', 'dest');
+  EVT('dest', null, { id, nm: d.name, ruta: route, donde: d.where, quedan: G.destDeck.length }); CAUSA = 'Destino: ' + d.name;
   return { id, route };
 }
 const DEST_IMG = { sin_nombre: 'hombre', heroe_d: 'llega_heroe', techo: 'techo_tunel', planes: 'planes_marteuse', cama: 'cama_hospital', heli_noticias: 'helicoptero_noticias', senal: 'senal_rescate', tiradles: 'tiradles_algo', llamamiento: 'llamamiento' };
 const destImg = id => destImgBase(DEST_IMG[id] || id);
 async function resolveTwist(dr) {
-  if (!dr) return; const d = DEST[dr.id];
+  if (!dr) return; const d = DEST[dr.id]; CAUSA = null; /* fin de los efectos de la carta de Destino */
   if (d.keep) {
     G.hand.push(dr.id); UI.updateHand();
     await UI.waitAck('Destino: ' + d.name, 'Guardar para más tarde — se añade a tu mano.<br>' + d.txt, destImg(dr.id), 'd:' + dr.id);
