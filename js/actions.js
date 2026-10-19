@@ -60,7 +60,7 @@ async function revealResearch() {
 async function applyResearch(c) {
   switch (c.id) {
     case 'uhm': infDown(2); break;
-    case 'noticias': { const cs = G.cemetery.filter(isFighter); if (cs.length) { const v = await UI.chooseCards({ title: 'Nos llegaron noticias de tu muerte', text: 'Elige la unidad que regresa del Cementerio.', options: cs.map(u => unitOpt(u)) }); const u = G.units[v]; G.cemetery = G.cemetery.filter(x => x !== u); putUnit(u, 'C'); u.flipped = true; u.hits = capOf(u) - 1; } break; }
+    case 'noticias': { const cs = G.cemetery.filter(isFighter); if (cs.length) { const v = await UI.chooseCards({ title: 'Nos llegaron noticias de tu muerte', text: 'Elige la unidad que regresa del Cementerio.', options: cs.map(u => unitOpt(u)) }); const u = G.units[v]; G.cemetery = G.cemetery.filter(x => x.id !== u.id); putUnit(u, 'C'); u.flipped = true; u.hits = capOf(u) - 1; } break; }
     case 'folletos': { const cs = allUnits(x => x.type === 'civ' && curable(x)).slice(0, 2); for (const u of cs) { healUnit(u); infDown(1); } break; }
     case 'cecina': G.supplies = Math.min(20, G.supplies + 2); break;
     case 'musica': { const c = allUnits(x => isZedSide(x) && isRouteSp(x.space)).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, '¡Bajad la música!: elige un espacio; sus Zeds se retiran.'); await retreatZeds(zedsAt(t), zedOrigin(zedsAt(t)[0])); } break; }
@@ -105,7 +105,6 @@ async function doInvestigate(u, free) {
 /* ---------- construir ---------- */
 /* Darling «Zen»: una vez por turno, al jugar una carta de Destino «Guardar para más tarde» recibe 1 Acción de Personaje para su unidad. */
 function zenPlayed() { const d = alive('darling'); if (!d || !d.space || G.charUsed.zen) return; G.charUsed.zen = true; d.free = (d.free || 0) + 1; LOG('Zen: Alyssa Darling recibe 1 Acción gratis.', 'good'); }
-function buildCost() { let c = 2; return c; }
 /* Espacios donde la unidad puede levantar una Barricada (Bauer: el suyo o uno adyacente). */
 function barTargets(u) {
   const ids = u.key === 'bauer' ? [u.space].concat(adjacentIds(u.space)) : [u.space];
@@ -142,7 +141,7 @@ function mayDischargeBonus(u) { const m = alive('may'); if (G.phase === 'actions
 function unitActions(u) {
   const A = []; if (!u || u.side !== 'pl' || G.phase !== 'actions' || G.busy) return A;
   const act = canAct(u), pay = n => canPay(u, n);
-  A.push({ id: 'move', label: 'Mover', ok: act && (canPay(u, 1, 'move') || canMoveFree(u)) && !u.resist && u.type !== 'aldeano' });
+  A.push({ id: 'move', label: 'Mover', ok: act && (canPay(u, 1, 'move') || canMoveFree(u)) && !u.resist && u.type !== 'aldeano' && sp(u.space).kind !== 'camp' });
   if (!isSoft(u)) {
     const ammoNeed = u.type === 'guard' ? 2 : 1;
     const supCost = u.key === 'jones' || isPetra(u);
@@ -153,7 +152,7 @@ function unitActions(u) {
   }
   const bedAct = (act || u.ecg) && G.lv.infection && u.space && sp(u.space).kind === 'bed';
   if (bedAct && u.type !== 'aldeano') A.push({ id: 'cure', label: 'Curar', ok: curable(u) && (pay(1) || G.turn.freeHeal > 0 || G.turn.freeHealNoInf > 0) });
-  if (bedAct) A.push({ id: 'discharge', label: 'Dar de alta (gratis)', ok: !u.ecg || true });
+  if (bedAct) A.push({ id: 'discharge', label: 'Dar de alta (gratis)', ok: true });
   if (G.lv.fourR && canBuild(u)) A.push({ id: 'build', label: 'Construir Barricada', ok: pay(1) });
   if (G.lv.res && u.sci && u.space === 'LAB' && act && !G.turn.researched) A.push({ id: 'investigate', label: 'Investigar', ok: pay(1) ? (!G.res.cur.sup || G.supplies > 0) : (alreadyHas('escasean') && G.supplies >= 1 + (G.res.cur.sup ? 1 : 0)) });
   if (u.space && sp(u.space).kind === 'camp' && u.type === 'refugee' && !G.turn.equipped && !u.vip) A.push({ id: 'equip', label: 'Equipar Refugiados (gratis)', ok: G.cemetery.some(x => x.type === 'civ') });
@@ -209,7 +208,7 @@ async function runAction(u, id) {
     case 'puente': spendActions(u, 1); sp(u.space).bridge = null; LOG('La Cuadrilla de Bob Bauer retira la ficha del Puente colgante.', 'good'); UI.redraw(); break;
     case 'ferry': spendActions(u, 1); sp('F6').bridge = 'ferry'; LOG(u.name + ' da la vuelta al Puente: ahora es un Ferry.', 'good'); UI.redraw(); break;
     case 'investigate': await doInvestigate(u); break;
-    case 'equip': { const cs = G.cemetery.filter(x => x.type === 'civ'); const v = await UI.choose({ title: 'Equipar Refugiados', text: 'Elige la unidad de Civiles Normales que regresa.', options: cs.map(c => ({ label: 'Civiles ' + c.full + '/' + c.red, value: c.id })), cancel: true }); if (v == null) break; const c = G.units[v]; G.cemetery = G.cemetery.filter(x => x !== c); removeUnit(u); delete G.units[u.id]; putUnit(c, 'C'); c.flipped = true; c.hits = 0; G.turn.equipped = true; LOG('Refugiados equipados: Civiles vuelven al Centro.', 'good'); break; }
+    case 'equip': { const cs = G.cemetery.filter(x => x.type === 'civ'); const v = await UI.choose({ title: 'Equipar Refugiados', text: 'Elige la unidad de Civiles Normales que regresa.', options: cs.map(c => ({ label: 'Civiles ' + c.full + '/' + c.red, value: c.id })), cancel: true }); if (v == null) break; const c = G.units[v]; G.cemetery = G.cemetery.filter(x => x.id !== c.id); removeUnit(u); delete G.units[u.id]; putUnit(c, 'C'); c.flipped = true; c.hits = 0; G.turn.equipped = true; LOG('Refugiados equipados: Civiles vuelven al Centro.', 'good'); break; }
     case 'ini': G.charUsed.ini = true; u.free++; LOG('Schmidt usa Iniciativa: 1 acción gratis para él.', 'good'); break;
     case 'visions': await UI.willyVisions(); break;
     case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
@@ -239,7 +238,6 @@ async function runAction(u, id) {
     case 'granada': { const nb = adjacentIds(u.space).filter(i => zedsAt(i).length && !isInit(i)); if (!nb.length) { spendActions(u, 1); break; } const t = nb.length === 1 ? nb[0] : await UI.pickSpace(nb, 'Granada de Gas: elige el espacio adyacente.', true); if (t == null) break; spendActions(u, 1); for (let n = 1; n <= 4 && zedsAt(t).length; n++) { const zs = zedsAt(t); const cur = zs.length === 1 ? zs[0] : G.units[await UI.pickUnit(zs, 'Granada de Gas: reparte el Impacto ' + n + '/4 entre los Zeds de ' + spaceLabel(t) + '.')]; await hitZed(cur); } await placeChaos(t, 1); break; }
   }
 }
-const pay1 = u => canPay(u, 1);
 
 /* ---------- cartas de la mano ---------- */
 /* Coordinador de la comunidad: solo si queda una ficha de Civiles Normales (la reserva) o un Civil Heroico disponible */

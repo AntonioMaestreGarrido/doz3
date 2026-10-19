@@ -2,6 +2,26 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-19 19:53
+
+### Mejoras
+- **Guardado más ligero y seguro:** el registro de eventos se guarda aparte de la partida. Si el almacenamiento del navegador se llena, se recorta el registro antes que perder la partida, y si aun así no se puede guardar, el log de la partida lo avisa.
+- **Deshacer más rápido:** cada instantánea ya no copia el registro de eventos (pasa de cientos de KB a unos pocos).
+- **Mapa más fluido:** el fondo y los marcadores (Caos, Barricadas, Minas, Rumores, puente, «No Pasar») se pintan en una capa aparte que solo se rehace cuando cambian; cada fotograma de animación o de aviso de peligro cuesta menos de la mitad.
+- **Tras un error inesperado** la partida se recarga directamente desde su último guardado, en lugar de volver al menú.
+- **Códigos de partida:** el orden de los héroes queda fijo, así que añadir héroes nuevos no invalida los códigos ya compartidos.
+- **Arte alternativo:** más cartas de Evento y Destino en webp; la carta de los Ángeles de Petra se ve siempre.
+- Limpieza de código sin uso.
+
+### Fixes
+- **Volver del Cementerio** («Nos llegaron noticias de tu muerte», «Rumores de nuestra muerte», Equipar Refugiados): tras cargar o deshacer, la unidad seguía también en el Cementerio (salía en el Obituario y no podía volver a entrar). Las partidas guardadas con el fallo se corrigen al cargarlas.
+- **Cripta:** el Zed que sale de una Cripta respeta el límite de agrupamiento del espacio de destino.
+- **Evasiones** (Cardio, General Lee, Darling, trampas de Johnson, Alia): si la retirada acaba en un espacio con Zeds, hay combate, como en cualquier retirada.
+- **Campo de Refugiados:** las unidades del Campo ya no pueden volver a «llegar» al Centro (cada llegada repetida sumaba Infección, Rumores y beneficios V.I.P.).
+- **Lluvia torrencial:** el Zed que retrocede respeta el límite de agrupamiento.
+- **Odio cuando pasa eso:** el Zed nuevo ya no puede ser la misma ficha débil que se retira.
+- **Base aérea secreta:** la Acción de Evento extra respeta el máximo de 4.
+
 ## 2026-10-19 18:43
 
 ### Mejoras

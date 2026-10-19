@@ -72,7 +72,6 @@ newGame = function (levelIdx, lenIdx, personal, exps) {
   G.rumorPool = []; G.rumorsHeld = [];
   // mazos con las cartas nuevas
   if (expOn(1) || expOn(2)) {
-    const add = Object.keys(EV).filter(k => EV[k].exp && (EV[k].exp === 1 && expOn(1) || EV[k].exp === 2 && expOn(2)) && (EV[k].exp !== 2 || true));
     const extraE = Object.keys(EV).filter(k => EV[k].exp && ((EV[k].exp === 1 && expOn(1)) || (EV[k].exp === 2 && expOn(2))));
     if (G.lv.cols.includes('b')) {
       /* La Guardia Nacional se saca aquí y se vuelve a insertar abajo en su posición fija (si no, quedaría barajada con el Acto III). */
@@ -104,14 +103,6 @@ strength = function (u) {
   if (u.key === 'jaque') { const n = allUnits(x => x.space === 'CAMP' && (x.type === 'refugee')).length; return u.flipped ? 1 + Math.floor(n / 2) : 1 + n; }
   return _strength(u);
 };
-const _playerRoom = playerRoom;
-playerRoom = function (id, u) {
-  const s = sp(id); if (s.kind === 'bed') return !unitsAt(id).length;
-  if (u && id !== 'C' && unitsAt(id).some(x => x !== u && x.side === 'pl' && x.space === id && petraClash(u, x))) return false;   /* Aislamiento (Ángeles de Petra) */
-  const here = unitsAt(id).filter(x => (isFighter(x) || x.side === 'raid') && x !== u && !x.mount && !(u && u.mount === x.id) && !(u && x.mount === u.id) && x.type !== 'train').length;
-  if (s.route === 'T' && s.kind !== 'crypt' && s.i !== lastOf('T')) return here === 0 && !zedsAt(id).length;
-  return here < playerCap(id);
-};
 const _putUnit = putUnit;
 putUnit = function (u, id, why) {
   const from = u.space; _putUnit(u, id, why);
@@ -120,7 +111,6 @@ putUnit = function (u, id, why) {
 };
 const _terrainOf = terrainOf;
 terrainOf = function (id) { let t = _terrainOf(id); if (G.turn.noTerrain) return t; return t + trainsAt(id).length; };
-const _isFighter = isFighter;
 const _meleeInfection = meleeInfection;
 meleeInfection = function (zs, h) {
   if (h && (h.key === 'carter' || h.key === 'lee' || h.key === 'horacio')) return 0;
@@ -166,13 +156,12 @@ async function revealRumor(u, free) {
   await UI.waitAck('Rumor: ' + R.name, R.txt);
   if (R.t === 'U') { u.chips = (u.chips || []).concat(k); LOG(u.name + ' obtiene «' + R.name + '».', 'good'); }
   else if (R.t === 'G') { G.rumorsHeld.push(k); LOG('Guardas el Rumor «' + R.name + '».', 'good'); }
-  else if (k === 'cementerio') { const c = Object.values(G.spaces).filter(x => x.route && !x.name && x.i > 0); const t = await UI.pickSpace(c.map(x => x.id), 'Cementerio ancestral: elige un espacio sin nombre.'); sp(t).cem = true; await applyZedHits(zedsAt(t).flatMap(z => [z, z]).filter((z, i) => i < 99), 0); for (const z of zedsAt(t)) await applyZedHits([z], 2); }
+  else if (k === 'cementerio') { const c = Object.values(G.spaces).filter(x => x.route && !x.name && x.i > 0); const t = await UI.pickSpace(c.map(x => x.id), 'Cementerio ancestral: elige un espacio sin nombre.'); sp(t).cem = true; for (const z of zedsAt(t)) await applyZedHits([z], 2); }
   else if (k === 'registro') { sp('C').registro = true; }
   else if (k === 'base') { const c = SURFACE.map(r => r + (lastOf(r) - 1)); const t = await UI.pickSpace(c, 'Base aérea secreta: elige un espacio n.º 1.'); sp(t).base = true; }
   else if (k === 'tallmart') { const c = Object.values(G.spaces).filter(x => x.route && !x.name && x.i > 0 && x.kind !== 'crypt'); if (c.length) { const t = await UI.pickSpace(c.map(x => x.id), 'Tall-Mart: elige un espacio sin nombre.'); sp(t).name = 'Tall-Mart'; sp(t).tall = true; } }
   UI.redraw(); UI.updateStats();
 }
-function carriedChips(u) { return (u.chips || []); }
 async function useRumor(k) {
   const R = RUMORS[k]; const rm = () => { G.rumorsHeld.splice(G.rumorsHeld.indexOf(k), 1); };
   switch (k) {
@@ -180,7 +169,7 @@ async function useRumor(k) {
     case 'deposito': G.ammo = Math.min(20, G.ammo + 5); rm(); break;
     case 'plan': G.ammo = Math.min(20, G.ammo + 2); G.supplies = Math.min(20, G.supplies + 1); G.turn.combineFire = true; LOG('Plan de guerra negro: este turno las unidades agrupadas combinan su Fuerza al disparar.', 'good'); rm(); break;
     case 'tesis': { for (let i = 0; i < 3 && G.destDiscard.length; i++) { const opts = G.destDiscard.map((c, j) => ({ label: DEST[c].name, value: j, img: destImg(c), keep: DEST[c] && DEST[c].keep })).filter(o => o.keep); if (!opts.length) break; const v = await UI.chooseCards({ title: 'Tesis', text: 'Recupera una carta del descarte de Destino (' + (i + 1) + '/3):', options: opts, extra: [{ label: 'Terminar', value: -1 }] }); if (v < 0) break; const c = G.destDiscard.splice(v, 1)[0]; G.hand.push(c); LOG('Tesis: recuperas «' + DEST[c].name + '» y pasa a tu mano.', 'good'); } UI.updateHand(); rm(); break; }
-    case 'muerte': { for (let i = 0; i < 2; i++) { const cs = G.cemetery.filter(isFighter); if (!cs.length) break; const v = await UI.chooseCards({ title: 'Rumores de nuestra muerte', text: 'Elige una unidad:', options: cs.map(u => unitOpt(u)) }); const u = G.units[v]; G.cemetery = G.cemetery.filter(x => x !== u); putUnit(u, 'C'); u.flipped = true; u.hits = 0; u.ecg = false; } rm(); break; }
+    case 'muerte': { for (let i = 0; i < 2; i++) { const cs = G.cemetery.filter(isFighter); if (!cs.length) break; const v = await UI.chooseCards({ title: 'Rumores de nuestra muerte', text: 'Elige una unidad:', options: cs.map(u => unitOpt(u)) }); const u = G.units[v]; G.cemetery = G.cemetery.filter(x => x.id !== u.id); putUnit(u, 'C'); u.flipped = true; u.hits = 0; u.ecg = false; } rm(); break; }
     case 'ayuda': { const pool = heroPoolFor(G.lv.n).concat(CIVH_POOL.filter(x => civhAvail(x) && HEROES[x].lv <= MAX_CIVH_LV[G.lv.n])).filter((x, i, a) => a.indexOf(x) === i && !hero(x) && !G.cemetery.some(c => c.key === x)); const key = !pool.length ? null : pool.length === 1 ? pool[0] : await UI.chooseCards({ title: '¡Llegó la ayuda!', text: 'Elige la unidad que llega.', options: pool.map(heroOpt) }); if (key) { const w = await UI.pickSpace(['C'].concat(G.routes.filter(r => r !== 'T').map(r => r + '0')), '¡Llegó la ayuda!: elige el espacio.'); await spawnHero(key, w); rm(); } break; }
     case 'telefono': { const c = Object.values(G.spaces).filter(s => s.route && s.route !== 'T' && s.i > 0); const a = await UI.pickSpace(c.map(s => s.id), 'Napalm: primer espacio.', true); if (a == null) break; const adj = adjacentIds(a).filter(i => isRouteSp(i) && !isInit(i) && sp(i).route === sp(a).route); const b = adj.length ? await UI.pickSpace(adj, 'Napalm: espacio adyacente (o el mismo).') : a; for (const id of [a, b].filter((v, i, x) => x.indexOf(v) === i)) { for (const u of unitsAt(id).slice()) { if (isZedSide(u)) { if (u.type === 'super') { removeUnit(u); delete G.units[u.id]; } else if (u.type === 'spreader') { removeUnit(u); delete G.units[u.id]; } else discardZed(u); } else if (u.type === 'train' || u.type === 'aldeano') { removeUnit(u); delete G.units[u.id]; } else if (u.side === 'pl' || u.side === 'raid') { LOG(u.name + ' es calcinada: se elimina (con su tirada de Salvación).', 'bad'); await unitDown(u); } } const sx = sp(id); sx.bar = 0; sx.mine = 0; sx.rumor = null; await placeChaos(id, 1); } G.turn.block.push(sp(a).i < sp(b).i ? a : b); rm(); break; }
     case 'diario': { const sup = allUnits(x => x.type === 'super'); if (sup.length) { const v = await UI.pickUnit(sup, 'Elige el Súper Zed que se retira.', true); if (v == null) break; const z = G.units[v]; G.supers.push(z.key); removeUnit(z); delete G.units[z.id]; } if (G.res) await revealResearch(); rm(); break; }
@@ -199,18 +188,18 @@ async function trainDestinations(t) {
   const out = []; const cur = t.space;
   if (t.state === 'leaving') {
     const routes = cur === 'C' ? t.routes : [sp(cur).route];
-    for (const r of routes) { let i = cur === 'C' ? 0 : sp(cur).i; const start = cur === 'C' ? lastOf(r) : i; for (let k = cur === 'C' ? lastOf(r) : i - 1; k >= 1; k--) { const id = r + k; if (blocked(id)) break; if (sp(id).chaos && false) break; out.push(id); if (zedsAt(id).length) break; } }
+    for (const r of routes) { let i = cur === 'C' ? 0 : sp(cur).i; for (let k = cur === 'C' ? lastOf(r) : i - 1; k >= 1; k--) { const id = r + k; if (blocked(id)) break; out.push(id); if (zedsAt(id).length) break; } }
   } else {
     const r = sp(cur).route; for (let k = sp(cur).i + 1; k <= lastOf(r); k++) { const id = r + k; if (blocked(id)) break; out.push(id); if (zedsAt(id).length) break; }
     out.push('C');
   }
-  return out.filter(id => !(isInit(id)) || true);
+  return out;
 }
 async function moveTrain(t, dest) {
   const pass = unitsAt(t.space).filter(x => x.ride === t.id);
   putUnit(t, dest); for (const p of pass) putUnit(p, dest);
   LOG(t.name + ' llega a ' + spaceLabel(dest) + '.', 'good');
-  if (dest === 'C') { for (const p of allUnits(x => x.ride === t.id)) p.ride = null; t.state = 'leaving'; if (unitsAt('C').some(x => x.type === 'refugee' && x.ride === t.id)) { /* refugiados al campo */ } }
+  if (dest === 'C') { for (const p of allUnits(x => x.ride === t.id)) p.ride = null; t.state = 'leaving'; }
   else if (t.state === 'leaving' && TRAIN_STOPS[dest]) {
     const [k, txt] = TRAIN_STOPS[dest]; LOG('Parada especial: ' + txt, 'good');
     if (k === 'inf') infDown(4); else if (k === 'sup') G.supplies = Math.min(20, G.supplies + 3); else if (k === 'ammo') G.ammo = Math.min(20, G.ammo + 2); else if (k === 'evt') addEventActions(2);
@@ -238,9 +227,9 @@ function carterReach(u) { /* BFS permitiendo cruzar Zeds */
   const out = {}, best = { [u.space]: { c: 0, path: [] } }, q = [u.space];
   while (q.length) {
     const cur = q.shift();
-    for (const n of neighbors(cur)) { const s = sp(n); if (s.route === 'T' || isInit(n) && false || blocked(n) || !['B', 'M', 'A', 'F'].includes(s.route) && n !== 'C') continue; 
+    for (const n of neighbors(cur)) { const s = sp(n); if (s.route === 'T' || blocked(n) || !['B', 'M', 'A', 'F'].includes(s.route) && n !== 'C') continue; 
       const c = best[cur].c + moveCost(u, n); if (c > u.mp) continue;
-      if (!best[n] || c < best[n].c) { best[n] = { c, path: best[cur].path.concat([n]) }; if (!(zedsAt(cur).length && cur !== u.space)) q.push(n); else q.push(n); } }
+      if (!best[n] || c < best[n].c) { best[n] = { c, path: best[cur].path.concat([n]) }; q.push(n); } }
   }
   for (const id in best) if (id !== u.space) { const s = sp(id); if ((isInit(id) || playerRoom(id, u)) && !blocked(id)) out[id] = best[id]; }
   return out;
@@ -252,7 +241,6 @@ async function carterMove(u, dest, info) {
     putUnit(u, n); UI.redraw();
     const zs = zedsAt(n);
     if (zs.length) {
-      const nextCost = !last ? 1 : 99;
       if (!last && mp >= 1) { const r = await rollShown('Barrer Zeds', v => v >= 4 ? '<b>' + v + '</b>: eliminas a los Zeds del espacio' : '<b>' + v + '</b>: no lo consigues (necesita 4-6)'); LOG('Barrer Zeds (' + r + ')', r >= 4 ? 'good' : 'bad'); if (r >= 4) { for (const z of zs.slice()) await hitZed(z); continue; } }
       await melee({ zeds: zedsAt(n), hum: [u], space: n, attacker: 'h', from: here, noInf: true }); return;
     }
@@ -282,7 +270,6 @@ unitActions = function (u) {
     if (u.rider) A.push({ id: 'lhosp', label: 'Galope al Hospital con el jinete', ok: G.lv.infection && act && canPay(u, 1, 'move') && !(G.turn.cLock && u.space === 'C') });
   }
   if (u.mount) { A = A.filter(a => a.id !== 'move'); }
-  if (G.lv.fourR && expOn(3) && trainsAt(u.space).length && isFighter(u) && false) {}
   if (sp(u.space) && sp(u.space).rumor && ['hero', 'civh', 'marine', 'petra'].includes(u.type) && act) A.push({ id: 'rumor', label: 'Revelar Rumor (1 acc.)', ok: !sp(u.space).chaos && pay(1) });
   for (const k of (u.chips || [])) { if (k === 'sirena') A.push({ id: 'sirena', label: 'Sirena para Zeds (1 acc.)', ok: pay(1) && (G.sirenaUses || 0) < 2 && adjacentIds(u.space).some(i => zedsAt(i).length && !isInit(i)) }); }
   if ((u.chips || []).length && unitsAt(u.space).some(x => x !== u && isFighter(x))) A.push({ id: 'chipgive', label: 'Pasar ficha de Rumor (gratis)', ok: true });

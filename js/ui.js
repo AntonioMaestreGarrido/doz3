@@ -121,7 +121,9 @@ const ui = {
   zoomShow(spec, e) {
     let info; try { info = zoomInfo(spec); } catch (err) { info = null; }
     const z = $('zoom'); if (!info) { z.hidden = true; return; }
-    const sig = spec + (spec[0] === 'u' && G.units ? JSON.stringify(G.units[spec.slice(2)]) : '');
+    /* Firma con lo que muestra la ficha de una unidad (no se serializa la unidad entera en cada movimiento del ratón). */
+    const zu = spec[0] === 'u' && G.units ? G.units[spec.slice(2)] : null;
+    const sig = spec + (zu ? '|' + [strength(zu), zu.flipped, zu.hits, zu.space, zu.ecg, zu.resist, zu.armed, zu.leader, zu.trained, zu.keepCalm, freeTotal(zu), zu.zresist, zu.fast, zu.toxic, zu.smart, zu.pest, Opciones.artAlt].join(',') : '');
     if (z._spec !== sig) {
       z._spec = sig; z.className = info.img ? '' : 'noimg';
       z.innerHTML = (info.img ? '<img ' + (info.tok ? 'class="tok" ' : '') + 'src="' + info.img + '" alt="">' : '') + '<div class="zt"><h4>' + info.title + '</h4>' + info.html + '</div>';
@@ -230,14 +232,15 @@ const ui = {
     for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
   },
   _undo: [],
-  _undoSnap() { return { s: JSON.stringify({ rng: rngState(), uid: UID, G: snapshotState() }) }; },
+  /* Sin el registro de eventos (solo crece): al deshacer se recorta por número de evento. Así cada instantánea pesa unos KB y no cientos. */
+  _undoSnap() { const g = snapshotState(); delete g.evlog; return { s: JSON.stringify({ rng: rngState(), uid: UID, G: g }) }; },
   undoClear() { this._undo = []; this.updateUndo(); },
   updateUndo() { const b = $('undoBtn'); if (!b) return; const n = this._undo.length, ok = n > 0 && G.phase === 'actions' && !G.busy && !G.over; b.disabled = !ok; b.textContent = '↶ Deshacer' + (n ? ' (' + n + ')' : ''); },
   async undo() {
     if (G.busy || G.phase !== 'actions' || G.over || !this._undo.length) return;
     const p = this._undo.pop(), s = JSON.parse(p.s);
     this.mode = null; this.setBanner(null);
-    restoreState(s.G); UID = s.uid; rngRestore(s.rng); G.busy = false; G.sel = null;
+    const log = G.evlog || []; restoreState(s.G); G.evlog = log.filter(e => e.n <= (G.evn || 0)); UID = s.uid; rngRestore(s.rng); G.busy = false; G.sel = null;
     this.log('↶ Deshacer: se vuelve al estado anterior a la última acción.', 'turn');
     saveGame('actions'); this.updateStats(); this.updateHand(); this.redraw();
   },
@@ -356,15 +359,35 @@ const ui = {
     }
     this.rects = rects.filter(r => !this.inFlight(r.id));
   },
+  /* Firma de lo que se pinta en el fondo (mapa y marcadores): si no cambia, se reutiliza la capa ya pintada. */
+  _bgSig() {
+    let s = (this.board || '') + '|' + this.canvas.width + 'x' + this.canvas.height + '|' + ((G.turn && G.turn.block) || []).join(',');
+    for (const id in G.spaces) { const x = G.spaces[id]; if (x.chaos || x.bar || x.mine || x.rumor || x.cem || x.base || x.tall || x.registro || x.bridge) s += '|' + id + ':' + x.chaos + x.bar + x.mine + (x.rumor ? 'r' : '') + (x.cem ? 'c' : '') + (x.base ? 'b' : '') + (x.tall ? 't' : '') + (x.registro ? 'g' : '') + (x.bridge || ''); }
+    return s;
+  },
   draw() {
     const c = this.ctx, W = this.canvas.width, H = this.canvas.height;
-    const im = IMG[this.board === 'B' ? 'mapB' : 'mapA']; if (im) c.drawImage(im, 0, 0, W, H);
+    /* El fondo (mapa, Caos, Barricadas, Minas, Rumores, puente, «No Pasar») se pinta en una capa aparte y solo se rehace cuando cambia:
+       durante las animaciones y el aviso de peligro cada fotograma copia la capa en lugar de repetir decenas de dibujos. */
+    const sig = this._bgSig();
+    if (!this._bgLayer || this._bgKey !== sig) {
+      const bg = this._bgLayer || (this._bgLayer = document.createElement('canvas'));
+      if (bg.width !== W || bg.height !== H) { bg.width = W; bg.height = H; }
+      const g = bg.getContext('2d'); g.clearRect(0, 0, W, H); this.drawBoard(g, W, H); this._bgKey = sig;
+    }
+    c.drawImage(this._bgLayer, 0, 0);
     this.layout(); const m = this.mode;
     const ring = (id, col, lw, dash) => { const s = G.spaces[id]; c.beginPath(); c.arc(s.x, s.y, id === 'C' ? 150 : 72, 0, 7); c.lineWidth = lw; c.strokeStyle = col; c.setLineDash(dash || []); c.stroke(); c.setLineDash([]); };
     if (m && m.type === 'move') for (const id in m.opts) ring(id, controlled(id) ? '#ff5a44' : '#7bd45a', 7);
     if (m && m.type === 'fire') for (const id in m.opts) ring(id, '#ff5a44', 8);
     if (m && m.type === 'pick') for (const id of m.ids) ring(id, '#ffd54a', 8, [14, 8]);
     if (this.marks) for (const id of this.marks) ring(id, '#3ad6ff', 8, [10, 6]);
+    if (this.flash) { const t = (performance.now() - this.flash.t0) / 900; if (t < 1) { const r = this.flash.r; c.save(); c.globalAlpha = 1 - t; c.strokeStyle = ROUTES[r].color; c.lineWidth = 16; c.lineCap = 'round'; c.beginPath(); ROUTES[r].spaces.forEach((s, i) => i ? c.lineTo(s.x, s.y) : c.moveTo(s.x, s.y)); c.lineTo(CENTRO.x, CENTRO.y); c.stroke(); c.restore(); this.redraw(); } else this.flash = null; }
+    this.drawUnits();
+  },
+  /* Mapa y marcadores del tablero sobre el contexto c (la capa de fondo). */
+  drawBoard(c, W, H) {
+    const im = IMG[this.board === 'B' ? 'mapB' : 'mapA']; if (im) c.drawImage(im, 0, 0, W, H);
     for (const id in G.spaces) {
       const s = G.spaces[id];
       if (s.chaos && IMG.m_caos) { c.save(); c.drawImage(IMG.m_caos, s.x - 66, s.y - 66, 44, 42); if (s.chaos > 1) { c.font = '900 18px Impact'; c.fillStyle = '#fff'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.textBaseline = 'middle'; c.strokeText('x' + s.chaos, s.x - 44, s.y - 28); c.fillText('x' + s.chaos, s.x - 44, s.y - 28); } c.restore(); }
@@ -380,9 +403,7 @@ const ui = {
       else if (s.bridge === 'ferry') { c.save(); c.font = '900 18px Impact'; c.fillStyle = '#7bd4ff'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('FERRY', s.x, s.y + 62); c.fillText('FERRY', s.x, s.y + 62); c.restore(); }
       else if (s.bridge === 'down') { c.save(); c.font = '900 20px Impact'; c.fillStyle = '#ff3b2a'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('PUENTE ROTO', s.x, s.y + 62); c.fillText('PUENTE ROTO', s.x, s.y + 62); c.restore(); }
     }
-    if (this.flash) { const t = (performance.now() - this.flash.t0) / 900; if (t < 1) { const r = this.flash.r; c.save(); c.globalAlpha = 1 - t; c.strokeStyle = ROUTES[r].color; c.lineWidth = 16; c.lineCap = 'round'; c.beginPath(); ROUTES[r].spaces.forEach((s, i) => i ? c.lineTo(s.x, s.y) : c.moveTo(s.x, s.y)); c.lineTo(CENTRO.x, CENTRO.y); c.stroke(); c.restore(); this.redraw(); } else this.flash = null; }
     for (const id of (G.turn && G.turn.block) || []) { const s = G.spaces[id]; if (!s) continue; c.save(); c.font = '900 22px Impact'; c.fillStyle = '#ff3b2a'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('NO PASAR', s.x, s.y + 70); c.fillText('NO PASAR', s.x, s.y + 70); c.restore(); }
-    this.drawUnits();
   },
   drawUnit(u, r) {
     const c = this.ctx, sel = G.sel === u.id || this.hl === u.id;

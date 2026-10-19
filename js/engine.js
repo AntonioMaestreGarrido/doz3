@@ -68,7 +68,6 @@ const isNamed = id => { const s = sp(id); return !!s.name && s.kind !== 'bed' &&
 const isCity = id => sp(id).kind === 'city' || sp(id).kind === 'centro';
 const isSurface = id => !isRouteSp(id) ? (id === 'C' || sp(id).kind === 'bed' || sp(id).kind === 'office' || sp(id).kind === 'lab') : sp(id).route !== 'T';
 const isCrypt = id => sp(id).kind === 'crypt';
-function spaceKindLabel(id) { return sp(id).kind; }
 
 /* ================= UNIDADES ================= */
 let UID = 1;
@@ -126,7 +125,8 @@ const petraClash = (a, b) => (isPetra(a) && petraMate(b)) || (isPetra(b) && petr
 function playerRoom(id, u) {
   const s = sp(id); if (s.kind === 'bed') return !unitsAt(id).length;
   if (u && id !== 'C' && unitsAt(id).some(x => x !== u && x.side === 'pl' && x.space === id && petraClash(u, x))) return false;
-  const here = unitsAt(id).filter(x => (isFighter(x) || x.side === 'raid') && x !== u).length;
+  /* Para el agrupamiento no cuentan el jinete con su caballo (General Lee) ni los Trenes (exp. 3). */
+  const here = unitsAt(id).filter(x => (isFighter(x) || x.side === 'raid') && x !== u && !x.mount && !(u && u.mount === x.id) && !(u && x.mount === u.id) && x.type !== 'train').length;
   if (s.route === 'T' && s.kind !== 'crypt' && s.i !== lastOf('T')) return here === 0 && !zedsAt(id).length;
   return here < playerCap(id);
 }
@@ -217,7 +217,6 @@ function alreadyHas(rid) { return G.res && G.res.cur && G.res.cur.id === rid; }
 /* ================= INFECCIÓN ================= */
 async function infUp(n) {
   if (!G.lv.infection || n <= 0) return;
-  if (G.berraAnti === 'antidoto') {/* sin cambio */}
   const i0 = G.inf; G.inf = Math.min(13, G.inf + n); EVT('inf', null, { de: i0, to: G.inf, n }); UI.updateStats(); UI.fxInf(G.inf - i0);
   if (G.inf >= 13 && !G.inWild) { G.inWild = true; LOG('¡La Infección llega al máximo! Brote Descontrolado.', 'bad'); await outbreak(true); G.inWild = false; }
 }
@@ -487,10 +486,10 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     if (leeG) { const grp = [leeG].concat(leeG.rider && G.units[leeG.rider] ? [G.units[leeG.rider]] : []);
       if (!unitsAt(space).some(x => isFighter(x) && !grp.includes(x))) {
         const v = await UI.choose({ title: '¡Corre, Flicka, corre!', text: '¿Retiras al General Lee' + (grp.length > 1 ? ' y a su jinete' : '') + ' en lugar de luchar?', options: [{ label: 'Retirarse', value: 'y' }, { label: 'Luchar', value: 'n' }] });
-        if (v === 'y') { retreatPlayers([leeG], 'C'); return { evaded: true }; } } }
+        if (v === 'y') { await retreatAndFight([leeG], 'C'); return { evaded: true }; } } }
     if (G.turn.cardio) {
       const v = await UI.choose({ title: 'Regla n.º 7: Cardio', text: '¿Retiras a ' + fighter.name + ' en lugar de luchar?', options: [{ label: 'Retirarse', value: 'y' }, { label: 'Luchar', value: 'n' }] });
-      if (v === 'y') { retreatPlayers([fighter], 'C'); return { evaded: true }; }
+      if (v === 'y') { await retreatAndFight([fighter], 'C'); return { evaded: true }; }
     }
     if (fighter.key === 'pepinillos') {
       const r = await rollShownFor(fighter, 'Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido' : '<b>' + r + '</b>: combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos: ' + r);
@@ -499,18 +498,18 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     if (fighter.key === 'darling') {
       const r = await rollShownFor(fighter, 'Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r);
       if (r >= 3) { o.assassin = true; o.noInf = true; }
-      else if (r === 2) { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { retreatPlayers([fighter], 'C'); return { evaded: true }; } }
+      else if (r === 2) { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { await retreatAndFight([fighter], 'C'); return { evaded: true }; } }
     }
     if (fighter.key === 'alia' && sp(space).route && space !== 'C') {
       const bk = nextToward(space);
       if (bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter)) {
         const r = await rollShownFor(fighter, 'Evasión (Alia)', r => r >= 4 ? '<b>' + r + '</b>: se retira 1 espacio hacia el Centro antes del combate' : '<b>' + r + '</b>: no se retira (necesita 4-6)'); LOG('Evasión de Alia: ' + r);
-        if (r >= 4) { retreatPlayers([fighter], 'C'); LOG('Alia se escabulle antes del combate.', 'good'); return { evaded: true }; }
+        if (r >= 4) { LOG('Alia se escabulle antes del combate.', 'good'); await retreatAndFight([fighter], 'C'); return { evaded: true }; }
       }
     }
     if (fighter.key === 'johnson') {
       const r = await rollShownFor(fighter, 'Trampas de Johnson', r => r >= 4 ? '<b>' + r + '</b>: las trampas funcionan' : '<b>' + r + '</b>: las trampas fallan (necesita 4-6)'); LOG('Trampas de Johnson: ' + r);
-      if (r >= 4) { await hitZed(zeds[0]); retreatPlayers(unitsAt(space).filter(x => isFighter(x) && x.key !== 'pepinillos'), 'C'); LOG('Johnson retrocede (las trampas funcionan).', 'good'); return { evaded: true }; }
+      if (r >= 4) { await hitZed(zeds[0]); LOG('Johnson retrocede (las trampas funcionan).', 'good'); await retreatAndFight(unitsAt(space).filter(x => isFighter(x) && x.key !== 'pepinillos'), 'C'); return { evaded: true }; }
     }
   }
   if (!UI.fast) { if (zeds.length > 1) Sfx.horde(); else Sfx.growl(); }
@@ -526,7 +525,6 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     const sal = zeds.some(z => z.key === 'saltarin');
     const t = (G.lv.n >= 0 && !sal) ? terrainOf(space) : 0;
     if (t) shifts.push({ label: 'Terreno (' + spaceLabel(space) + ')', v: t });
-    if (fighter.res === undefined) {/* noop */ }
   }
   if (o.assassin && !betty) shifts.push({ label: 'Ataque asesino (Darling)', v: 2 });
   if (attackerHuman && fighter.key === 'alia' && o.from && sp(o.from) && sp(space).route && sp(o.from).route === sp(space).route && sp(space).i > sp(o.from).i) shifts.push({ label: 'Emboscada (Alia)', v: 2 });
@@ -625,7 +623,6 @@ async function retreatAndFight(units, dest, back) {
     await melee({ zeds: zedsAt(u.space), hum: [u], space: u.space, attacker: 'h', from: sp(u.space).route ? nextToward(u.space) : 'C' });
   }
 }
-function prevPlayerBack(u) { const p = u.space && sp(u.space).route ? nextToward(u.space) : null; return p && playerRoom(p, u) ? p : 'C'; }
 function zedOrigin(z) { const s = sp(z.space); return s.route ? s.route + Math.max(0, s.i - 1) : 'C'; }
 function retreatRaiders(rs) { for (const r of rs) { const p = prevToward(r.space); if (p) putUnit(r, p); } UI.redraw(); }
 async function hitRaider(u, n) { for (let k = 0; k < n && u.space; k++) { const before = { flipped: u.flipped, hits: u.hits }; const r = hitUnitOnce(u); if (r === 'dead') { await sendCemetery(u, 'es destruida'); return; } if (r === 'flip') await UI.fxFlip(u, before); else await UI.fxHit(u); } }
@@ -674,7 +671,7 @@ function canStop(u, id) {
   if (s.kind === 'camp') return false;
   if (!officeOk(u, s)) return false;
   if (!playerRoom(id, u) && !isSoft(u)) return false;
-  if (s.bridge === 'down' && true) return false;
+  if (s.bridge === 'down') return false;
   return true;
 }
 /* Wilson «Atajos»: de un espacio numerado al del mismo número en una ruta de superficie adyacente (1 Movimiento).
@@ -690,7 +687,8 @@ function shortcuts(u, cur) {
   return SHORT_ADJ[s.route].filter(r => G.routes.includes(r)).map(r => r + (lastOf(r) - n)).filter(id => G.spaces[id]);
 }
 function reachable(u, extra) {
-  const out = {}; if (!canAct(u) || u.resist || u.type === 'aldeano') return out;
+  /* Las unidades del Campo de Refugiados ya han llegado: no vuelven a moverse (si no, cada «llegada» repetida sumaría Infección, Rumores y beneficios V.I.P.). */
+  const out = {}; if (!canAct(u) || u.resist || u.type === 'aldeano' || sp(u.space).kind === 'camp') return out;
   if (G.turn.noSurfaceMove && isSurface(u.space)) return out;
   const mp = u.mp + (extra || 0), best = { [u.space]: 0 }, q = [u.space], prev = {}, viaSc = {};
   while (q.length) {
@@ -708,7 +706,6 @@ function reachable(u, extra) {
       if (s.bridge === 'down' && u.type !== 'zed') continue;
       if (!officeOk(u, s)) continue;
       if (s.kind === 'bed' && cur !== 'C' && sp(cur).kind !== 'office') continue;
-      if (s.kind === 'bed' && false) continue;
       if (isSoft(u) && (zedsAt(n).length)) continue;
       const c = best[cur] + (G.spaces[n] ? moveCost(u, n) : 1);
       if (c > mp) continue;
@@ -766,7 +763,6 @@ async function doMove(u, dest, path) {
   if (u.space && G.spaces[u.space] && sp(u.space).kind === 'crypt' && !u.dr && !wAtajo && !(await cryptRollPlayer(u))) return;
   const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); EVT('move', u.id, { from, to: dest }); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
   if (isSoft(u)) { if (dest === 'C') await refugeeArrives(u); return; }
-  if (dest === 'C' && u.space === 'C') {/* ok */ }
   const zs = zedsAt(dest), rs = raidAt(dest);
   if (u.key === 'pepinillos' && (zs.length || rs.length)) {
     const r = await rollShownFor(u, 'Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido, convive con ellos sin combate' : '<b>' + r + '</b>: lo descubren, combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos al entrar en ' + spaceLabel(dest) + ': ' + r);
@@ -778,7 +774,6 @@ async function doMove(u, dest, path) {
     const rr0 = await melee({ zeds: zs, hum: [u], space: dest, attacker: 'h', from: prevSp, back, assassin, noInf: assassin });
     if (u.key === 'betty' && rr0.humanWon) await bettyChain(u);
   } else if (rs.length) { await melee({ zeds: rs, hum: [u], space: dest, attacker: 'h', from: prevSp, back }); }
-  if (dest === 'C' && u.space === 'C') { /* nada */ }
 }
 
 /* ================= DISPARO ================= */
@@ -815,7 +810,6 @@ async function doFire(u, targetId, dist, opts) {
   if (weaponFor(u, 'rifle') && u.side === 'pl') shifts.push({ label: 'Rifle Hipno-Z', v: 1 });
   if (G.turn.mercs) shifts.push({ label: 'Soldados de fortuna', v: 1 });
   if (opts.shift) shifts.push({ label: opts.shiftLabel || 'Bonificación', v: opts.shift });
-  if (G.hand.includes('tiradles')) {/* se usa en combate */ }
   const col = clamp(clamp(str, 1, 7) - 1 + shifts.reduce((a, s) => a + s.v, 0), 0, 6);
   /* Dados extra al disparar (eliges los 2 mejores): May (Pistolera de primera) y Amuleto de la suerte de Wilson (agrupado, fuera del Centro). */
   const extraDice = (u.key === 'may' ? 1 : 0) + (wilsonWith(u) ? 1 : 0);
@@ -894,7 +888,6 @@ async function doSearch(u) {
     else { if (big) am = 1; else sup = 1; }
     if (choose) { const v = await UI.choose({ title: 'Buscar: elige', text: 'Resultado ' + res + ' en un espacio de Ciudad.', options: [{ label: '1 Suministro (tienes ' + G.supplies + ')', value: 's' }, { label: '1 Munición (tienes ' + G.ammo + ')', value: 'a' }] }); if (v === 'a') { sup = 0; am = 1; } }
     if (!G.lv.supplies) sup = 0;
-    if (G.res && G.res.cur && G.res.cur.id === 'cecina' && false) { }
     G.supplies = Math.min(20, G.supplies + sup); G.ammo = Math.min(20, G.ammo + am);
     msgs.push((sup ? '+' + sup + ' Suministro(s) ' : '') + (am ? '+' + am + ' Munición' : '') || 'solo hay Suministros (no se usan en el Juego Básico)');
   }

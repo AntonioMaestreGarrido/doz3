@@ -53,10 +53,6 @@ resolveTwist = async function (dr) {
 const _maint2 = maintenance;
 maintenance = async function () { for (const u of Object.values(G.units)) u.locked = false; await _maint2(); };
 
-const _eventEnd = eventEnd;
-eventEnd = async function () {
-  await _eventEnd();
-};
 /* Base aérea secreta: al final de la fase de Acciones (antes de cerrarla). Devuelve true si se elige la Acción de Evento extra. */
 async function baseAereaEnd() {
   if (G.turn.baseDone) return false;
@@ -66,7 +62,7 @@ async function baseAereaEnd() {
     const v = await UI.choose({ title: 'Base aérea secreta', text: 'Elige tu beneficio:', options: opts });
     if (v === 'h') { const c = allUnits(x => isFighter(x) && x.space && curable(x)); if (c.length) { const w = await UI.pickUnit(c, '¿A quién curas?'); healUnit(G.units[w]); G.units[w].curedTurn = G.turnNo; cureInf(); } }
     else if (v === 'i') { const c = G.res.cur, d = await UI.rollSimple('Investigar gratis (hace falta ' + c.th + '+)', 1); if (d[0] >= c.th) { G.turn.researched = true; await revealResearch(); } }
-    else { G.pool.event++; return true; }
+    else { addEventActions(1); return true; }
     return false;
   }
   return false;
@@ -77,7 +73,6 @@ async function startOfActions() {
   if (G.event && G.event.noPlayerAction) { G.pool.pl = G.pool.pl.map(() => 0); LOG('¡No hay tiempo para eso!: la Acción de Jugador no está disponible este turno.', 'bad'); }
   for (const u of Object.values(G.units)) if (u.side === 'pl' && (u.chips || []).includes('cristal') && u.space) { u.free++; }
   const j = alive('jaque'); if (j) { const r = await rollShown('Jaque Mates: Acción de Evento extra', v => v > G.pool.event ? '<b>' + v + '</b> &gt; tus ' + G.pool.event + ' Acciones de Evento: <b>+1 Acción de Evento</b>' : '<b>' + v + '</b> ≤ tus ' + G.pool.event + ' Acciones de Evento: sin Acción extra'); if (r > G.pool.event) { G.pool.event++; LOG('Jaque Mates: ' + r + ' > ' + (G.pool.event - 1) + ' → +1 Acción de Evento.', 'good'); } else LOG('Jaque Mates: ' + r + ' (sin Acción extra).'); }
-  for (const u of Object.values(G.units)) if (u.space && sp(u.space) && sp(u.space).rumor === undefined) {}
   // Rumores revelables gratis al inicio por héroes que ya están encima
   for (const s of Object.values(G.spaces)) if (s.rumor && !s.chaos) { const who = unitsAt(s.id).find(u => ['hero', 'civh', 'marine', 'petra'].includes(u.type)); if (who) { const v = await UI.choose({ title: 'Rumor', text: who.name + ' está sobre un Rumor boca abajo. ¿Lo revelas gratis ahora?', options: [{ label: 'Revelar', value: 'y' }, { label: 'Después', value: 'n' }] }); if (v === 'y') await revealRumor(who, true); } }
 }

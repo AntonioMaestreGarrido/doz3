@@ -151,7 +151,6 @@ Object.assign(ui, {
     this.view.z = zoom; this.view.tx = tx; this.view.ty = ty;
     cv.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + zoom + ')'; this.camZoom = zoom;
   },
-  release() { this.camZoom = 1; this.resetView(); },
 
   /* ---- avisos ---- */
   toast(text, color, ms, big) {
