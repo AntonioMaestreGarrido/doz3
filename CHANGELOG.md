@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-19 03:18
+
+### Mejoras
+- **Debug · Mazos:** nuevo botón «Mazos» en la cabecera (junto a «Registro») que muestra los mazos de Eventos y de Destino en el orden en que van a salir, con miniaturas numeradas (la 1 es la siguiente carta). Las cartas de Eventos marcan la final, y el descarte de Destino aparece debajo. Pasando el ratón sobre una carta se amplía.
+
 ## 2026-10-15 16:20
 
 ### Mejoras

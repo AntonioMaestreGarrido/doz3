@@ -64,6 +64,7 @@ const ui = {
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
     $('optionsBtn').addEventListener('click', () => ui.showOptions());
     $('logBtn').addEventListener('click', () => downloadLog());
+    $('mazosBtn').addEventListener('click', () => ui.showDecks());
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
     $('cancelBtn').addEventListener('click', () => ui.cancelMode());
     $('rulesBtn').addEventListener('click', () => ui.showRules());
@@ -940,6 +941,17 @@ const ui = {
     $('dbgDiceSw').onchange = e => { ui.dbgDice = e.target.checked; };
     $('xb').onclick = () => this._close();
     cnt();
+  },
+  /* Debug: mazos de Eventos y de Destino en el orden en que van a salir (el 1 es la siguiente carta). Pasa el ratón sobre una carta para verla ampliada. */
+  showDecks() {
+    if (typeof G === 'undefined' || !G || !G.eventDeck) { this._modal('<h2>🐞 Mazos</h2><p>Aún no hay partida en curso.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>'); $('xb').onclick = () => this._close(); return; }
+    const item = (i, zoom, img, name) => '<div class="dkc" data-zoom="' + zoom + '"><span class="dkn">' + (i + 1) + '</span><img src="' + img + '" alt="" loading="lazy"><span>' + name + '</span></div>';
+    const evs = G.eventDeck, dst = G.destDeck || [], dis = G.destDiscard || [];
+    const evHtml = evs.map((id, i) => item(i, 'e:' + id, evImg(id), EV[id].name + (EV[id].fin ? ' <i>(final)</i>' : ''))).join('') || '<p class="pickhint">No quedan cartas de Evento.</p>';
+    const dstHtml = dst.map((id, i) => item(i, 'd:' + id, destImg(id), DEST[id].name)).join('') || '<p class="pickhint">No quedan cartas en el mazo de Destino.</p>';
+    const disHtml = dis.length ? '<p class="pickhint">Descarte de Destino (' + dis.length + '): ' + dis.map(id => DEST[id].name).join(', ') + '.</p>' : '';
+    this._modal('<h2>🐞 Mazos</h2><h3>Eventos · quedan ' + evs.length + '</h3><div class="dkgrid">' + evHtml + '</div><h3>Destino · quedan ' + dst.length + '</h3><div class="dkgrid">' + dstHtml + '</div>' + disHtml + '<div class="opts"><button class="primary" id="xb">Cerrar</button></div>', 'dkpanel');
+    $('xb').onclick = () => this._close();
   },
   showCredits() {
     this._modal('<h2>Créditos</h2><p><b>Dawn of the Zeds</b> (3.ª edición)<br>Diseño del juego original: <b>Hermann Luttmann</b><br>Editorial: Victory Point Games</p><p>Esta adaptación web, en solitario o cooperativo hot seat, es un proyecto de aficionados, sin ánimo de lucro y no oficial. Las ilustraciones, cartas y marcas pertenecen a sus respectivos autores y editores.</p><p style="color:var(--mut);font-size:13px">Adaptación y programación: Antonio Maestre Garrido, con la ayuda de Claude.<br>' + (typeof BUILD_TIME !== 'undefined' ? 'Build: ' + BUILD_TIME : '') + '</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');
