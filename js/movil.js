@@ -313,3 +313,13 @@ Object.assign(ui, {
   ui._fireTable = function (c) { return compact(_fire.call(this, c)); };
   document.addEventListener('click', e => { const t = e.target.closest && e.target.closest('#modalbox table.tbl'); if (t && ui.mob) t.classList.toggle('compact'); });
 })();
+
+/* Elegir ruta en móvil: el aviso va abajo, como «Elige una unidad», para no tapar el mapa. Al tocar una ruta la cámara la encuadra. */
+(function () {
+  const _choose = ui.choose;
+  ui.choose = function (o) {
+    const p = _choose.call(this, o);
+    if (this.mob && o.options && o.options.some(opt => opt.focus)) { $('modal').classList.add('pick'); $('modalbox').classList.add('pickpanel'); }
+    return p;
+  };
+})();
