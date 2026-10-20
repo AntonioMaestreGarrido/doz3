@@ -116,8 +116,7 @@ Object.assign(ui, {
   async mobEndPhase() {
     if (!ui._endRes || G.busy || !$('modal').hidden) return;
     const left = plTok() + G.pool.event + allUnits(x => x.side === 'pl' && freeTotal(x) > 0).reduce((a, x) => a + freeTotal(x), 0);
-    /* Siempre se pregunta: el botón está a un toque del mapa y una fase terminada no se deshace. */
-    if (!(await this.confirm('¿Terminar la fase de Acciones?' + (left > 0 ? ' Aún te quedan ' + left + ' acción(es).' : '')))) return;
+    if (left > 0 && !(await this.confirm('¿Terminar la fase de Acciones? Aún te quedan ' + left + ' acción(es).'))) return;
     const eb = $('endBtn'); if (eb) eb.click(); else if (ui._endRes) { const r = ui._endRes; ui._endRes = null; ui.mode = null; ui.setBanner(null); r(); }
   },
 
@@ -263,12 +262,27 @@ Object.assign(ui, {
     });
   };
   ui.arrange = function () { _arrange.call(this); };
-  ui.updateStats = function () { _updateStats.call(this); if (this.mob) this.mobRefresh(); };
+  ui.updateStats = function () {
+    _updateStats.call(this); if (this.mob) this.mobRefresh();
+    /* Botón atrás (Android): en una partida no sale directamente; se pregunta. Se añade una entrada de historial al empezar la partida. */
+    if (G.lv && !this._guard) { this._guard = true; history.pushState({ dozGuard: 1 }, ''); }
+  };
+  window.addEventListener('popstate', async () => {
+    if (!G.lv || G.over) { ui._guard = false; return; }   /* sin partida (o terminada) el atrás sale normal */
+    history.pushState({ dozGuard: 1 }, '');                /* seguimos en la página */
+    if (!$('modal').hidden) return;                        /* ya hay una pregunta o aviso abierto */
+    const salir = await ui.choose({ title: 'Salir de la partida', text: '¿Volver al menú principal? La partida se guarda al terminar cada acción; lo que hayas hecho en la acción en curso se perderá.', options: [{ label: 'Volver al menú', value: true }, { label: 'Seguir jugando', value: false }] });
+    if (salir) ui.reloadToMenu();
+  });
   ui.setBanner = function (t) {
     if (this.mob && t) t = t.replace(/\s*\(Esc para cancelar\)/, '');
     _setBanner.call(this, t);
+    /* Al elegir destino el panel se pliega y el mapa ocupa la pantalla; al terminar vuelve. */
+    if (this.mob) this.mobFoldFor(!!t);
   };
   ui.selectUnit = function (uid, opts) {
+    /* En móvil, pulsar una unidad solo la selecciona: sus acciones aparecen abajo y «Mover» se pulsa aparte. */
+    if (this.mob && uid) opts = Object.assign({}, opts, { noMove: true });
     _selectUnit.call(this, uid, opts);
     /* Al pulsar una unidad siempre aparecen sus acciones abajo (sin depender de pliegues anteriores). */
     if (this.mob && uid) { this._mobFold = null; this.mobShowTab('unidad'); this.mobOpen = true; this.mobSheet(); }

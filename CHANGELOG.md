@@ -222,12 +222,13 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
 ### Fixes
 - **Evasiones con más unidades en el espacio:** si la unidad defensora esquiva el combate (Cardio, Sigilo de Pepinillos, Alyssa Darling con un 2, Evasión de Alia), los Zeds atacan igualmente a las demás unidades del espacio: se elige otra defensora. Antes se quedaban junto a los Zeds sin combatir.
 
-## 2026-10-20 17:22
+## 2026-10-20 17:27
 
 ### Fixes (móvil)
-- **Pulsar una unidad:** ya no hace falta tocar otra pestaña. Al elegir una unidad sus acciones aparecen abajo aunque el panel estuviera plegado.
-- **El panel ya no se pliega al elegir destino:** el mapa queda encima del panel, así que los destinos se ven sin plegarlo.
-- **«Fin ▶»:** siempre pide confirmación («¿Terminar la fase de Acciones?»), también cuando ya no quedan acciones, para no terminarla sin querer.
+- **Elegir destino:** el panel se pliega para ver el mapa, como antes. Al cancelar o terminar la elección vuelve.
+- **Pulsar una unidad:** el panel se despliega con sus acciones (aunque estuviera plegado). Ya no entra directamente en «Mover»: pulsa «Mover» para elegir destino.
+- **Botón atrás de Android:** dentro de una partida ya no sale directamente. Pregunta si quieres volver al menú principal (la partida se guarda al terminar cada acción). Con «Seguir jugando» la partida sigue.
+- **«Fin ▶»:** vuelve a preguntar solo si quedan acciones (se revierte el cambio de la versión anterior).
 
 ## 2026-10-19 19:53
 
