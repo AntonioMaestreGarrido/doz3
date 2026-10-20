@@ -116,7 +116,8 @@ Object.assign(ui, {
   async mobEndPhase() {
     if (!ui._endRes || G.busy || !$('modal').hidden) return;
     const left = plTok() + G.pool.event + allUnits(x => x.side === 'pl' && freeTotal(x) > 0).reduce((a, x) => a + freeTotal(x), 0);
-    if (left > 0 && !(await this.confirm('¿Terminar la fase de Acciones? Aún te quedan ' + left + ' acción(es).'))) return;
+    /* Siempre se pregunta: el botón está a un toque del mapa y una fase terminada no se deshace. */
+    if (!(await this.confirm('¿Terminar la fase de Acciones?' + (left > 0 ? ' Aún te quedan ' + left + ' acción(es).' : '')))) return;
     const eb = $('endBtn'); if (eb) eb.click(); else if (ui._endRes) { const r = ui._endRes; ui._endRes = null; ui.mode = null; ui.setBanner(null); r(); }
   },
 
@@ -266,11 +267,11 @@ Object.assign(ui, {
   ui.setBanner = function (t) {
     if (this.mob && t) t = t.replace(/\s*\(Esc para cancelar\)/, '');
     _setBanner.call(this, t);
-    if (this.mob) this.mobFoldFor(!!t);
   };
   ui.selectUnit = function (uid, opts) {
     _selectUnit.call(this, uid, opts);
-    if (this.mob && uid) { this.mobShowTab('unidad'); this.mobOpen = true; this.mobSheet(); }
+    /* Al pulsar una unidad siempre aparecen sus acciones abajo (sin depender de pliegues anteriores). */
+    if (this.mob && uid) { this._mobFold = null; this.mobShowTab('unidad'); this.mobOpen = true; this.mobSheet(); }
   };
   ui.applyView = function () { _applyView.call(this); if (this.mob) this.mobEdge(); };
   ui.draw = function () { _draw.call(this); if (this.mob) this.mobEdge(); };

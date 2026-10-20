@@ -2,6 +2,13 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-20 17:22
+
+### Fixes (móvil)
+- **Pulsar una unidad:** ya no hace falta tocar otra pestaña. Al elegir una unidad sus acciones aparecen abajo aunque el panel estuviera plegado.
+- **El panel ya no se pliega al elegir destino:** el mapa queda encima del panel, así que los destinos se ven sin plegarlo.
+- **«Fin ▶»:** siempre pide confirmación («¿Terminar la fase de Acciones?»), también cuando ya no quedan acciones, para no terminarla sin querer.
+
 ## 2026-10-20 17:15
 
 ### Fixes (móvil)
