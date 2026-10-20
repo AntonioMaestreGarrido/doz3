@@ -288,9 +288,11 @@ const ui = {
     if (needsPermission(u)) { this.askPermission(u).then(ok => { if (ok) this.doAct(u, id); }); return; }
     if (id === 'move') {
       const extra = G.turn.vehicle && u.type === 'hero' && !['pepinillos', 'horacio'].includes(u.key) && isSurface(u.space) ? G.turn.vehicle : 0; let opts = reachable(u, extra); if (extra) { const base = reachable(u, 0); for (const k in opts) if (base[k] === undefined && !isSurface(k)) delete opts[k]; }
-      if (G.turn.heli && u.type === 'hero') { opts = {}; for (const k in G.spaces) if (isSurface(k) && canStop(u, k) && k !== u.space) opts[k] = 0; }
+      /* Helicóptero de las Noticias-12: recoge al Héroe en la superficie y lo deja en otro espacio de la superficie (no en uno ocupado por Zeds o Saqueadores: «colocar» no es atacar). */
+      const heli = !!(G.turn.heli && u.type === 'hero' && isSurface(u.space));
+      if (heli) { opts = {}; for (const k in G.spaces) if (isSurface(k) && canStop(u, k) && k !== u.space && !zedsAt(k).length && !raidAt(k).length) opts[k] = 0; }
       if (!canPay(u, 1, 'move')) opts = Object.fromEntries(Object.entries(opts).filter(([k]) => moveIsFree(u, k)));
-      ui.mode = { type: 'move', unit: u, opts, extra }; ui.setBanner('Elige el espacio de destino (Esc para cancelar)'); ui.redraw();
+      ui.mode = { type: 'move', unit: u, opts, extra, heli }; ui.setBanner('Elige el espacio de destino (Esc para cancelar)'); ui.redraw();
     } else if (id === 'fire') { ui.mode = { type: 'fire', unit: u, opts: fireTargets(u) }; ui.setBanner('Elige el espacio del Zed objetivo'); ui.redraw(); }
     else if (id === 'fab') { ui.mode = { type: 'fire', unit: u, opts: fireTargets(u), fab: true }; ui.setBanner('Fabricar munición: elige el objetivo (2 acciones)'); ui.redraw(); }
     else ui.guard(() => runAction(u, id));
@@ -317,7 +319,7 @@ const ui = {
         const u = m.unit, dist = m.opts[sid]; this.mode = null; this.setBanner(null);
         if (m.type === 'move') ui.guard(async () => {
           if (!moveIsFree(u, sid)) spendActions(u, 1, 'move'); if (m.extra && dist > u.mp) G.turn.vehicle = 0;
-          if (G.turn.heli && u.type === 'hero') { G.turn.heli = false; putUnit(u, sid); LOG(u.name + ' es recogido por el helicóptero.'); ui.redraw(); return; }
+          if (m.heli) { G.turn.heli = false; putUnit(u, sid); LOG(u.name + ' es recogido por el helicóptero.'); ui.redraw(); return; }
           await doMove(u, sid, (m.opts.stealthPath && m.opts.stealthPath[sid]) || pathTo(m.opts.prev, u.space, sid));
         });
         else ui.guard(async () => {

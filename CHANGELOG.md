@@ -2,6 +2,17 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-20 06:44
+
+### Fixes (revisión de las cartas del Nivel V: ¡Montaje del Director!)
+- **Actos de las cartas:** «No hay escapatoria», «Conexión por los conductos del vapor» y «Aumenta la desesperación» son del Acto IV (4 estrellas), no del III; con las expansiones, «¡Shhh! Sé que están ahí fuera…» es del Acto III y «¡Esto me entusiasma tanto!» del IV. Antes salían un Acto antes de tiempo.
+- **La feria de las tinieblas** y **Conexión por los conductos del vapor:** se resuelven al inicio de la fase de los Zeds, como dice la carta (antes, al final). Los Zeds nuevos de las Criptas y los que salen por los conductos se activan con sus rutas ese mismo turno.
+- **Zeds que salen del Túnel** (Irrupción desde las profundidades, Zeds de alcantarilla, Conductos del vapor): luchan también contra los Saqueadores, ponen Caos en el espacio con nombre que controlan aunque haya habido combate, y respetan los espacios «No Pasar».
+- **Los Zeds hinchados estallan:** los Saqueadores alcanzados reciben los Impactos como Saqueadores (sin tirada de Salvación); los Trenes y Aldeanos ya no se tiran.
+- **Emerge un Zed alfa:** la ficha de Líder va al Zed Normal más fuerte de todo el mapa (empate: el más cercano al Centro) y se activa la ruta de ese Zed, no siempre las Afueras.
+- **¡Oh, no! ¡Otra vez no!:** solo ofrece fichas de Mejora que el Zed no tenga ya (una repetida se perdía).
+- **Helicóptero de las Noticias-12:** solo recoge Héroes que estén en la superficie y no los deja en espacios con Zeds o Saqueadores (antes quedaban junto a ellos sin combate). Ya no se gasta en un movimiento normal desde el Túnel.
+
 ## 2026-10-19 19:53
 
 ### Mejoras

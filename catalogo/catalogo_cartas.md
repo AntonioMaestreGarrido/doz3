@@ -1,6 +1,6 @@
 # Catálogo de cartas y unidades
 
-Generado por `tools/generar_catalogo.mjs` (`npm run catalogo`) a partir de los datos del juego (build 2026-10-15 13:24). **No se edita a mano.**
+Generado por `tools/generar_catalogo.mjs` (`npm run catalogo`) a partir de los datos del juego (build 2026-10-20 06:44). **No se edita a mano.**
 
 Cómo buscar: Ctrl+F por nombre, por `id` (el nombre interno que usa el código) o por una palabra del texto. El buscador visual está en `catalogo_cartas.html`.
 
@@ -140,7 +140,7 @@ Resuelve el código: phases.js › eventEnd: al final de la fase de Acciones
 ### brote_local — Brote local de Zeds
 Rojo (Nivel V) · Acto 1 · **Fase de los Zeds** · 4R: 1 · Infección: tirada de Brote · Alimentación: 1 · Zeds: Afueras → Montaña → Túnel · Acciones: 2
 
-> Al inicio, Z. Durante este turno, por cada unidad de Civiles Normales eliminada o ingresada en el Hospital (tras su tirada de Salvación), coloca una nueva unidad Zed en el espacio en el que fue eliminada y aplica el límite de agrupamiento si es necesario. Los nuevos Zeds no se mueven este turno.
+> Durante este turno, por cada unidad de Civiles Normales eliminada o ingresada en el Hospital (tras su tirada de Salvación), coloca una nueva unidad Zed en el espacio en el que fue eliminada y aplica el límite de agrupamiento si es necesario. Los nuevos Zeds no se mueven este turno.
 
 Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds; bandera de turno: Civil eliminado = Brote local
 
@@ -255,11 +255,11 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
 ![civ_heroicos](../assets/cartas/e_civ_heroicos.jpg)
 
 ### conductos — Conexión por los conductos del vapor
-Rojo (Nivel V) · Acto 3 · **Fase de los Zeds** · 4R: 1 · Infección: tirada de Brote · Alimentación: 0 · Zeds: Autovía → Autovía → Bosque → Bosque · Acciones: 3
+Rojo (Nivel V) · Acto 4 · **Fase de los Zeds** · 4R: 1 · Infección: tirada de Brote · Alimentación: 0 · Zeds: Autovía → Autovía → Bosque → Bosque · Acciones: 3
 
 > Al inicio de esta fase. Por cada unidad Zed en un espacio de Cripta, tira 1 dado: 1-2 = intenta entrar en la Central Nuclear; 3-5 = intenta entrar en la Granja (primero tira en la tabla de Cripta); 6 = no pasa nada. Si no hay sitio, se queda donde está.
 
-Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds; phases.js › eventAfterZeds: al final de la fase de los Zeds; conductos (Túnel)
+Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds; conductos (Túnel)
 
 ![conductos](../assets/cartas/e_conductos.jpg)
 
@@ -300,7 +300,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds
 ![desde_lab](../assets/cartas/e_desde_lab.jpg)
 
 ### desesperacion — Aumenta la desesperación
-Amarillo (Nivel III) · Acto 3 · **Fase de Acciones** · 4R: 2 · Infección: tirada de Brote · Alimentación: 2 · Zeds: Autovía → Afueras → Bosque · Acciones: 2
+Amarillo (Nivel III) · Acto 4 · **Fase de Acciones** · 4R: 2 · Infección: tirada de Brote · Alimentación: 2 · Zeds: Autovía → Afueras → Bosque · Acciones: 2
 
 > Al inicio: 1. Suma el número de unidades Zed (incluyendo Súper Zeds y Propagadores) en los espacios n.º 2, n.º 1 y n.º 0. 2. Pierdes esa cantidad en cualquier combinación de Suministros, Munición y/o Impactos a unidades de jugador.
 
@@ -363,7 +363,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
 ![elwood](../assets/cartas/e_elwood.jpg)
 
 ### entusiasma — ¡Esto me entusiasma tanto!
-Azul (Juego Básico y Nivel I) · Acto 3 · **Fase de los Zeds** · Expansión 1 · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 · Zeds: * · Acciones: 3
+Azul (Juego Básico y Nivel I) · Acto 4 · **Fase de los Zeds** · Expansión 1 · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 · Zeds: * · Acciones: 3
 
 > Al inicio de esta fase, roba 1 carta de Destino: cada unidad de jugador en la Ruta Destinada (incluyendo el Centro) puede realizar de inmediato una Acción de Mover gratis o un ataque con Arma de Fuego gratis (necesita Munición).
 
@@ -392,9 +392,9 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds
 ### feria — La feria de las tinieblas
 Rojo (Nivel V) · Acto 2 · **Fase de los Zeds** · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: * · Acciones: 3
 
-> Después de moverse los Zeds, en cada espacio de Cripta tira 1 dado: 1 = coloca 2 nuevas unidades Zed en ese espacio; 2-5 = coloca 1 nueva unidad Zed; 6 = sin efecto.
+> Al inicio: en cada espacio de Cripta tira 1 dado: 1 = coloca 2 nuevas unidades Zed en ese espacio; 2-5 = coloca 1 nueva unidad Zed; 6 = sin efecto.
 
-Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds; phases.js › eventAfterZeds: al final de la fase de los Zeds
+Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds
 
 ![feria](../assets/cartas/e_feria.jpg)
 
@@ -687,7 +687,7 @@ Resuelve el código: bandera de turno: los defensores no reciben Modificador por
 ![no_detendran](../assets/cartas/e_no_detendran.jpg)
 
 ### no_escapatoria — No hay escapatoria
-Rojo (Nivel V) · Acto 3 · **Fase de los Zeds** · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: Autovía → Afueras → Túnel → Túnel · Acciones: 2
+Rojo (Nivel V) · Acto 4 · **Fase de los Zeds** · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: Autovía → Afueras → Túnel → Túnel · Acciones: 2
 
 > Durante esta fase, tras el primer ataque Zed, ningún bando se retira: en su lugar, la unidad u Horda Zed ataca de inmediato otra vez (si puede). No puedes usar habilidades para evitar el segundo ataque.
 
@@ -865,7 +865,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase 4R
 ![saqueadores](../assets/cartas/e_saqueadores.jpg)
 
 ### shhh — ¡Shhh! Sé que están ahí fuera…
-Azul (Juego Básico y Nivel I) · Acto 2 · **Fase de Acciones** · Expansión 2 · 4R: 1 · Infección: No · Alimentación: 1 dado · Zeds: solo los Zeds de espacios Iniciales · Acciones: 3
+Azul (Juego Básico y Nivel I) · Acto 3 · **Fase de Acciones** · Expansión 2 · 4R: 1 · Infección: No · Alimentación: 1 dado · Zeds: solo los Zeds de espacios Iniciales · Acciones: 3
 
 > Los ataques con Arma de Fuego y Cuerpo a Cuerpo no están permitidos durante esta fase. Las Acciones de Mover no pueden finalizar de manera que una unidad de Jugador acabe en un espacio controlado por Zeds.
 
@@ -1686,7 +1686,7 @@ Fuerza 4 / 3 · Mov. 3
 ### guardia — Guardia Nacional
 Fuerza 10 / 6 · Mov. 1
 
-> Soporta 6 Impactos. Mueve 1 espacio en 4R y 1 por Acción de Mover (solo superficie). Cada disparo cuesta 2 Munición.
+> Soporta 6 Impactos. Mueve 1 espacio en 4R y 1 por Acción de Mover (solo superficie). Cada disparo cuesta 2 Munición. No puede usar la Súper Arma hasta llegar a un espacio de Ciudad o al Centro de la Ciudad (después la conserva).
 
 ![guardia](../assets/cartas/u_guardia.jpg)
 
