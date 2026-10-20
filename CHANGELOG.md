@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-20 17:01
+
+### Fixes (móvil)
+- **Elegir ruta en el móvil:** el aviso «Elige una ruta» ya no tapa el mapa: va abajo, como «Elige una unidad», y al tocar una ruta la cámara la encuadra por encima del panel.
+
 ## 2026-10-20 10:50
 
 ### Novedades: modo móvil

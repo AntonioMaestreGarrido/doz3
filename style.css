@@ -552,3 +552,8 @@ body.mob-land .cardrow img{width:auto;max-width:38vw;max-height:calc(100dvh - 13
 body.mob-land #modal.pick{justify-content:flex-end}
 body.mob-land #modal.pick #modalbox{width:min(380px,48vw);max-height:calc(100dvh - 20px)}
 body.mob .pickopts button{padding:10px;font-size:14px}
+/* Elegir ruta en móvil: el panel inferior deja ver el mapa; las rutas en dos columnas. */
+body.mob #modal.pick #modalbox{max-height:46dvh;padding:8px 10px;overflow:auto}
+body.mob #modal.pick .opts{gap:6px;margin-top:6px}
+body.mob #modal.pick .opts button{flex:1 1 44%;padding:9px 8px;font-size:14px;min-height:42px;text-align:left}
+body.mob #modal.pick .opts button:last-child:not(:nth-child(2n+1)){flex:1 1 100%}
