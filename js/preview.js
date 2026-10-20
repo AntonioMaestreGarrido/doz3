@@ -121,8 +121,8 @@ const Preview = {
         break;
       }
       case 'catastrofe': {
-        const us = plAt('A4'); L.push(us.length ? 'En A4 hay ' + us.map(u => u.name).join(', ') + ': sufre 2 Impactos y se retira.' : 'No hay nadie en A4: nadie sufre Impactos.');
-        L.push('Se coloca una ficha de Caos en A4 y ese espacio queda bloqueado este turno.');
+        const us = plAt('A4').concat(zedsAt('A4')); L.push(us.length ? 'En la Central Nuclear hay ' + us.map(u => u.name).join(', ') + ': cada unidad sufre 2 Impactos y se retira.' : 'No hay nadie en la Central Nuclear: nadie sufre Impactos.');
+        L.push('Se coloca una ficha de Caos en la Central Nuclear y ese espacio queda bloqueado este turno.');
         break;
       }
       case 'moteros': {
@@ -171,7 +171,7 @@ const Preview = {
         const zs = allUnits(z => z.type === 'zed' && isRouteSp(z.space)), m = zs.length ? Math.max(...zs.map(strength)) : 0, rs = [...new Set(zs.filter(z => strength(z) === m).map(z => sp(z.space).route))];
         L.push(zs.length ? 'El Zed Normal más fuerte del mapa (Fuerza ' + m + (rs.length === 1 ? ', en ' + this.rn(rs[0]) : '') + ') pasa a ser Zed Líder y se activa su ruta.' : 'No hay Zeds normales en el mapa: solo se activa ' + rn + '.'); break;
       }
-      case 'hedor': L.push(routeZeds(R).some(z => z.type === 'zed') ? 'Una ficha de Pestilentes se pone sobre un Zed de ' + rn + '.' : 'No hay Zeds normales en ' + rn + ': sin efecto.'); break;
+      case 'hedor': L.push(allUnits(z => z.type === 'zed' && isRouteSp(z.space)).length ? 'La ficha de Pestilentes se pone sobre el Zed Normal más alejado del Centro (el más fuerte si hay empate).' : 'No hay Zeds normales en el mapa: sin efecto.'); break;
       case 'florecimiento': {
         const zs = allUnits(isZedSide); if (!zs.length) { L.push('No hay Zeds en juego: sin efecto.'); break; }
         const m = Math.min(...zs.map(strength)), n = zs.filter(z => strength(z) === m).length;

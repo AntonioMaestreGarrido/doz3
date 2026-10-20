@@ -208,7 +208,7 @@ async function makeSuperA() {
   const k = await pickOfTwo(G.supers, x => SUPER_ZEDS[x].name + ' (Fuerza ' + SUPER_ZEDS[x].full + ' / reducida ' + SUPER_ZEDS[x].red + ')');
   return makeSuper(k);
 }
-const ZED_UPGRADES = { smart: 'Inteligentes', fast: 'Rápidos', toxic: 'Tóxicos', leader: 'Líder', zresist: 'Resistentes' };
+const ZED_UPGRADES = { smart: 'Inteligentes', fast: 'Rápidos', toxic: 'Tóxicos', leader: 'Líder', zresist: 'Resistentes', pest: 'Pestilentes' };
 function discardZed(u) {
   for (const k in ZED_UPGRADES) if (u[k]) (G.upgrades || (G.upgrades = [])).push(k); /* la ficha de Mejora Zed se retira de la partida */
   const keepTok = u.token;
@@ -632,7 +632,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if (!attackerHuman && !betty) {
     const sal = zeds.some(z => z.key === 'saltarin');
     /* El Terreno del espacio y el bono de los trenes (exp. 3, +1 cada uno) se muestran por separado. */
-    const tAll = (G.lv.n >= 0 && !sal) ? terrainOf(space) : 0;
+    const tAll = (G.lv.n >= 0 && !sal && !o.assassin) ? terrainOf(space) : 0;  /* el Ataque asesino de Darling se resuelve sin Modificador por Terreno */
     const tTren = tAll && !G.turn.noTerrain ? trainsAt(space).length : 0;
     const t = tAll - tTren;
     if (t) shifts.push({ label: 'Terreno (' + spaceLabel(space) + ')', v: t });
