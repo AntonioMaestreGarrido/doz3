@@ -65,14 +65,16 @@ Object.assign(ui, {
     /* Tras arrastrar no debe dispararse el clic sobre una unidad o espacio. */
     cv.addEventListener('click', e => { if (performance.now() - (self._mapDragT || 0) < 350) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
     let moved = false, last = null, pinch = null;
-    cv.addEventListener('pointerdown', e => {
+    /* Los gestos (arrastrar, pellizcar) se leen en toda la zona del mapa, también si empiezan sobre un botón flotante:
+       así el pellizco nunca hace zoom de la página (los botones no crecen) y siempre mueve el mapa. */
+    wrap.addEventListener('pointerdown', e => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       if (e.pointerType === 'mouse' || !e.isPrimary && !ptrs.size) { ptrs.clear(); pinch = null; }
       if (e.isPrimary && ptrs.size) { ptrs.clear(); pinch = null; live(); }
       ptrs.set(e.pointerId, local(e)); moved = false; last = local(e);
       if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 }; moved = true; still(); }
     });
-    cv.addEventListener('pointermove', e => {
+    wrap.addEventListener('pointermove', e => {
       if (!ptrs.has(e.pointerId)) return; const p = local(e); ptrs.set(e.pointerId, p);
       if (ptrs.size >= 2 && pinch) {
         const [a, b] = [...ptrs.values()], d = Math.hypot(a.x - b.x, a.y - b.y), cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
@@ -92,7 +94,7 @@ Object.assign(ui, {
       if (!ptrs.size) { moved = false; if (!wheelT) live(); cv.style.cursor = ''; }
       else if (ptrs.size === 1) { last = [...ptrs.values()][0]; }
     };
-    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => cv.addEventListener(n, end));
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(n => wrap.addEventListener(n, end));
     /* Red de seguridad: si se pierde un pointerup/cancel (soltar fuera del mapa, gestos del sistema, cambio de pestaña) el estado queda atascado. */
     const reset = () => { ptrs.clear(); pinch = null; if (moved) self._mapDragT = performance.now(); moved = false; clearTimeout(wheelT); wheelT = null; live(); cv.style.cursor = ''; };
     /* La cámara guiada (anim.js focus) no debe mover el mapa mientras el jugador lo arrastra, pellizca o usa la rueda. */
