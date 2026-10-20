@@ -21,7 +21,7 @@ CIVH_POOL.push('jaque');
 const EXP_HEROES = { 1: ['carter', 'lee', 'may'], 2: ['betty'], 4: ['porter', 'alia'] };
 /* Cartas nuevas de Evento y Destino */
 function evx(id, name, act, r4, inf, al, z, acc, txt, o) { EV[id] = Object.assign({ id, name, lvl: 'b', act, r4, inf, al, z, acc, txt, sp: 0, exp: 1 }, o || {}); }
-evx('fortuna', 'La fortuna favorece a los que se preparan', 1, 1, 'B', 'd', ['A', 'ANY'], 1, ['Al inicio de esta fase: cada Héroe y Civiles Heroicos en un espacio con nombre puede realizar gratis una Acción de Buscar.'], { freeSearch: 1, exp: 2 });
+evx('fortuna', 'La fortuna favorece a los que se preparan', 1, 1, 'B', 1, ['A', 'ANY'], 1, ['Al inicio de esta fase: cada Héroe y Civiles Heroicos en un espacio con nombre puede realizar gratis una Acción de Buscar.'], { freeSearch: 1, exp: 2 });
 evx('resiste', 'Resiste con más fuerza cuando resistas en soledad', 2, 1, 0, 0, ['A', 'F'], 2, ['(Efecto de Presión Zed: se ignora en solitario.)'], { exp: 2 });
 evx('negacion', 'La negación no es un río de Egipto', 1, 0, 'B', 'd', ['B', 'A'], 2, ['Durante esta fase, las unidades de jugador en un espacio adyacente a unidades Zed no pueden realizar Acciones de Mover ni ataques con Arma de Fuego.'], { negation: 1, exp: 2 });
 evx('gente', 'Gente, ¡vamos a movernos!', 1, 2, 0, 'd', ['B', 'M'], 4, ['Durante esta fase son gratis todas las Acciones de Mover que se inicien en el Centro de la Ciudad.'], { freeFromC: 1, exp: 2 });

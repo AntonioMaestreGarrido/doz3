@@ -44,6 +44,12 @@ DEST_FX = async function (id, route) {
 };
 const _resolveTwist = resolveTwist;
 resolveTwist = async function (dr) {
+  /* WZED «Comentando las noticias»: descarta 1 carta de Destino «Guardar para más tarde» para anular un Destino «Juega esta carta» recién robado. */
+  const keeps = dr && !DEST[dr.id].keep && alive('wzed') ? G.hand.filter(k => DEST[k] && DEST[k].keep) : [];
+  if (keeps.length) {
+    const v = await UI.chooseCards({ title: 'WZED: Comentando las noticias', text: 'Acaba de salir «' + DEST[dr.id].name + '». ¿Descartas una carta «Guardar para más tarde» para anularlo?', options: keeps.map(k => ({ value: k, label: DEST[k].name, img: destImg(k) })), extra: [{ label: 'No anularlo', value: null }] });
+    if (v) { G.hand.splice(G.hand.indexOf(v), 1); G.destDiscard.push(v, dr.id); UI.updateHand(); LOG('WZED: descartas «' + DEST[v].name + '» y se anula «' + DEST[dr.id].name + '».', 'good'); return; }
+  }
   if (dr && !DEST[dr.id].keep && G.hand.includes('pensar')) {
     const v = await UI.choose({ title: 'Pensar fríamente', text: 'Acaba de salir «' + DEST[dr.id].name + '». ¿Cancelas este evento?', img: destImg(dr.id), options: [{ label: 'Cancelarlo', value: 'y' }, { label: 'No', value: 'n' }] });
     if (v === 'y') { G.hand.splice(G.hand.indexOf('pensar'), 1); G.destDiscard.push('pensar', dr.id); zenPlayed(); UI.updateHand(); return; }

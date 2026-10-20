@@ -134,7 +134,7 @@ const HEROES = {
     txt: ['<b>Rapiñador:</b> tira 2 dados al Buscar.', '<b>Visiones:</b> puedes mirar la carta superior del mazo de Destino en cualquier momento.', '<b>Compañero:</b> la unidad agrupada con él tira 1 dado extra y elige los mejores (no en el Centro).'] },
   furias:    { name: 'Furias de Farmingdale', type: 'civh', cls: 'Civiles Heroicos', full: 6, red: 3, mp: 4, img: 'furias', lv: 1, res: 'r', nofire: 1, hf: 2, hr: 2, card: 'h_furias',
     txt: ['<b>Luchadoras:</b> no pueden disparar con Arma de Fuego.', '<b>Resistentes:</b> ignoran Impactos con 4-6. Mueven 4.'] },
-  bomberos:  { name: 'Voluntarios de Bomberos 129', type: 'civh', cls: 'Civiles Heroicos', full: 3, red: 2, mp: 3, img: 'bomberos', lv: 2, hf: 2, hr: 2, bonus: 1,
+  bomberos:  { name: 'Voluntarios de Bomberos 129', type: 'civh', cls: 'Civiles Heroicos', full: 3, red: 2, mp: 4, img: 'bomberos', lv: 2, hf: 2, hr: 2, bonus: 1,
     txt: ['1 columna a favor en todos los combates Cuerpo a Cuerpo.', '<b>Autoridad Civil:</b> Acción de Personaje: libera Civiles Resistiendo o convierte Aldeanos en Refugiados (en o adyacente a un Pueblo).', '<b>Mangueras:</b> tira 2 dados; si el total ≥ a la Fuerza de un Zed adyacente, se retira.'] },
   bauer:     { name: 'Cuadrilla de Bob Bauer', type: 'civh', cls: 'Civiles Heroicos', full: 3, red: 2, mp: 3, img: 'bauer', lv: 2, hf: 2, hr: 2,
     txt: ['<b>Dispositivos explosivos:</b> Acción de Personaje: convierte 2 Suministros en 1 Munición. Construye Barricadas por 1 Suministro.'] },

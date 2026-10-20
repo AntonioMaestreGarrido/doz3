@@ -2,6 +2,27 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-20 07:08
+
+### Fixes (revisión de todas las cartas contra las originales)
+- **Datos de cartas:** «Oh, esto es malo…» es amarilla (Nivel III), no verde: ya no sale en el Nivel II. «Los Aldeanos organizan unidades de bomberos» tiene Alimentación por tirada (no 2) y «La fortuna favorece a los que se preparan», Alimentación 1 (no tirada). Los Voluntarios de Bomberos 129 mueven 4 (no 3).
+- **Oh, esto es malo…:** el Zed aparece en el espacio n.º 1 de la ruta (junto a la Ciudad); antes salía en el n.º 6.
+- **Ataques sorpresa** (Justo bajo nuestros pies, Zeds errantes, Zeds renqueantes): suben la Infección como cualquier combate (💀 de la carta).
+- **Catástrofe nuclear:** los Zeds de la Central Nuclear también sufren 2 Impactos y se retiran.
+- **Lluvia torrencial:** los Zeds del espacio Inicial no tiran, y la ruta de la Montaña ya no se activa el resto del turno.
+- **Zeds que segregan un hedor nocivo:** la ficha va al Zed más alejado del Centro de todo el mapa; el ataque pestilente afecta también a Refugiados y Saqueadores, repartes los Impactos y, con 2 o más, las unidades se mueven 1 espacio hacia el Centro. Pestilentes cuenta como ficha de Mejora Zed.
+- **Lo haremos de otra manera:** con un 6 eliges la unidad de Civiles que Curas y la Infección baja como en cualquier Curación.
+- **El techo del Túnel se derrumba:** para escapar de las Criptas (n.º 5 y n.º 3) hay que pasar la tirada de Cripta; si falla, la unidad se retira 1 espacio.
+- **Avances en el Antídoto:** la primera vez, la Investigación sigue con la carta anterior (antes quedaba el Antídoto en Curso, con tirada de 6 y 1 Suministro).
+- **Saqueadores y Banda de Bubba** que llegan al Centro: pierdes su Fuerza en Suministros y también en Munición (antes se repartía entre ambos).
+- **Restaurar el orden:** la Descontaminación de Agee (−2 Infección) solo cuando restaura ella; el General Lee no restaura el orden.
+- **Sheriff Hunt:** Liderazgo también para Refugiados.
+- **Alyssa Darling:** el Ataque asesino al defender ya no suma el Modificador por Terreno.
+- **WZED «Comentando las noticias»:** puedes descartar una carta «Guardar para más tarde» para anular un Destino «Juega esta carta».
+- **Empates en el Zed Normal más fuerte** (Resistentes, Tóxicos, Rápidos, Inteligentes): eliges tú, como dice la carta.
+- **Efectos «Durante esta fase»** de las cartas de los Zeds (sin Terreno, Barricadas destruidas, No hay escapatoria, Flambeados, Brote local) terminan con la fase de los Zeds y ya no afectan a la fase de Acciones.
+- **Odio cuando pasa eso:** se sustituyen empezando por los Zeds más cercanos al Centro también en el Túnel.
+
 ## 2026-10-20 06:44
 
 ### Fixes (revisión de las cartas del Nivel V: ¡Montaje del Director!)

@@ -1,6 +1,6 @@
 # Catálogo de cartas y unidades
 
-Generado por `tools/generar_catalogo.mjs` (`npm run catalogo`) a partir de los datos del juego (build 2026-10-20 06:44). **No se edita a mano.**
+Generado por `tools/generar_catalogo.mjs` (`npm run catalogo`) a partir de los datos del juego (build 2026-10-20 07:08). **No se edita a mano.**
 
 Cómo buscar: Ctrl+F por nombre, por `id` (el nombre interno que usa el código) o por una palabra del texto. El buscador visual está en `catalogo_cartas.html`.
 
@@ -129,7 +129,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds
 ![bajo_pies](../assets/cartas/e_bajo_pies.jpg)
 
 ### bomberos — Los Aldeanos organizan unidades de bomberos
-Naranja (Nivel IV) · Acto 3 · **Fase de Acciones** · 4R: 2 · Infección: tirada de Brote · Alimentación: 2 · Zeds: Túnel → Túnel → Montaña · Acciones: 3
+Naranja (Nivel IV) · Acto 3 · **Fase de Acciones** · 4R: 2 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: Túnel → Túnel → Montaña · Acciones: 3
 
 > Al final de esta fase: puedes retirar cualquier cantidad de fichas de Caos en espacios de Pueblo; +1 de Infección por cada una que retires.
 
@@ -462,7 +462,7 @@ Resuelve el código: bandera de turno: Zeds flambeados (Caos)
 ![flambeados](../assets/cartas/e_flambeados.jpg)
 
 ### fortuna — La fortuna favorece a los que se preparan
-Azul (Juego Básico y Nivel I) · Acto 1 · **Fase de Acciones** · Expansión 2 · 4R: 1 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: Autovía → cualquier otra ruta (a tu elección) · Acciones: 1
+Azul (Juego Básico y Nivel I) · Acto 1 · **Fase de Acciones** · Expansión 2 · 4R: 1 · Infección: tirada de Brote · Alimentación: 1 · Zeds: Autovía → cualquier otra ruta (a tu elección) · Acciones: 1
 
 > Al inicio de esta fase: cada Héroe y Civiles Heroicos en un espacio con nombre puede realizar gratis una Acción de Buscar.
 
@@ -732,7 +732,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
 ![odio](../assets/cartas/e_odio.jpg)
 
 ### oh_malo — Oh, esto es malo…
-Verde (Nivel II) · Acto 4 · especial · **Fase de los Zeds** · 4R: 0 · Infección: No · Alimentación: 1 dado · Zeds: * · Acciones: 3
+Amarillo (Nivel III) · Acto 4 · especial · **Fase de los Zeds** · 4R: 0 · Infección: No · Alimentación: 1 dado · Zeds: * · Acciones: 3
 
 > Al inicio: 1. Roba Destino y coloca una unidad Zed en el espacio n.º 1 de la Ruta Destinada (límite de agrupamiento). 2. Retira todas las fichas de Impacto de los Zeds. Después se activan todas las rutas (tú eliges el orden).
 
@@ -1617,7 +1617,7 @@ Civiles Heroicos · Fuerza 3 / 2 · Mov. 3 · Nivel 2
 ![bauer](../assets/cartas/h_bauer.jpg)
 
 ### bomberos — Voluntarios de Bomberos 129
-Civiles Heroicos · Fuerza 3 / 2 · Mov. 3 · Nivel 2
+Civiles Heroicos · Fuerza 3 / 2 · Mov. 4 · Nivel 2
 
 > 1 columna a favor en todos los combates Cuerpo a Cuerpo. Autoridad Civil: Acción de Personaje: libera Civiles Resistiendo o convierte Aldeanos en Refugiados (en o adyacente a un Pueblo). Mangueras: tira 2 dados; si el total ≥ a la Fuerza de un Zed adyacente, se retira.
 

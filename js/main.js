@@ -72,6 +72,7 @@ async function playGame(setup, saved) {
       await UI.spawnBatch(() => phaseZeds()); if (G.over) break;
       await UI.spawnBatch(() => withPeek(eventAfterZeds)); UI.release(); if (G.over) break;
       await UI.spawnBatch(() => pressure('e')); if (G.over) break;
+      endZedPhaseFlags();
       if (ev.fin) { G.over = 'win'; break; }  /* Cartas fin (pestaña en Acciones): se gana al inicio de la fase de Acciones, es decir, tras la fase de Zeds con sus rutas activadas */
     } else ev = G.event;
     const resumed = resume === 'actions'; resume = null;

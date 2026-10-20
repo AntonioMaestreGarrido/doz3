@@ -170,7 +170,7 @@ function makeSuper() {
   const d = SUPER_ZEDS[k];
   return newUnit({ side: 'zed', type: 'super', key: k, name: d.name, full: d.full, red: d.red, hf: 3, hr: 3, img: d.img, resistZ: k === 'ferreo' });
 }
-const ZED_UPGRADES = { smart: 'Inteligentes', fast: 'Rápidos', toxic: 'Tóxicos', leader: 'Líder', zresist: 'Resistentes' };
+const ZED_UPGRADES = { smart: 'Inteligentes', fast: 'Rápidos', toxic: 'Tóxicos', leader: 'Líder', zresist: 'Resistentes', pest: 'Pestilentes' };
 function discardZed(u) {
   for (const k in ZED_UPGRADES) if (u[k]) (G.upgrades || (G.upgrades = [])).push(k); /* la ficha de Mejora Zed se retira de la partida */
   const keepTok = u.token;
@@ -523,7 +523,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   const zs = betty ? [] : zedShifts(zeds, o); for (const s of zs) shifts.push(s);
   if (!attackerHuman && !betty) {
     const sal = zeds.some(z => z.key === 'saltarin');
-    const t = (G.lv.n >= 0 && !sal) ? terrainOf(space) : 0;
+    const t = (!sal && !o.assassin) ? terrainOf(space) : 0;  /* el Ataque asesino de Darling se resuelve sin Modificador por Terreno */
     if (t) shifts.push({ label: 'Terreno (' + spaceLabel(space) + ')', v: t });
   }
   if (o.assassin && !betty) shifts.push({ label: 'Ataque asesino (Darling)', v: 2 });
