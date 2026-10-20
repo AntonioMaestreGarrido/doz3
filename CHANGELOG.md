@@ -222,10 +222,12 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
 ### Fixes
 - **Evasiones con más unidades en el espacio:** si la unidad defensora esquiva el combate (Cardio, Sigilo de Pepinillos, Alyssa Darling con un 2, Evasión de Alia), los Zeds atacan igualmente a las demás unidades del espacio: se elige otra defensora. Antes se quedaban junto a los Zeds sin combatir.
 
-## 2026-10-20 17:15
+## 2026-10-20 17:22
 
 ### Fixes (móvil)
-- **Pellizcar sobre el mapa:** si el pellizco empezaba sobre un botón flotante (◀ ▶, avisos, zoom), el navegador ampliaba toda la página y los botones crecían. Ahora un pellizco o arrastre en la zona del mapa siempre mueve el mapa y no hace zoom de la página.
+- **Pulsar una unidad:** ya no hace falta tocar otra pestaña. Al elegir una unidad sus acciones aparecen abajo aunque el panel estuviera plegado.
+- **El panel ya no se pliega al elegir destino:** el mapa queda encima del panel, así que los destinos se ven sin plegarlo.
+- **«Fin ▶»:** siempre pide confirmación («¿Terminar la fase de Acciones?»), también cuando ya no quedan acciones, para no terminarla sin querer.
 
 ## 2026-10-19 19:53
 
