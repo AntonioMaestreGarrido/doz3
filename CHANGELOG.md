@@ -2,6 +2,14 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-20 17:27
+
+### Fixes (móvil)
+- **Elegir destino:** el panel se pliega para ver el mapa, como antes. Al cancelar o terminar la elección vuelve.
+- **Pulsar una unidad:** el panel se despliega con sus acciones (aunque estuviera plegado). Ya no entra directamente en «Mover»: pulsa «Mover» para elegir destino.
+- **Botón atrás de Android:** dentro de una partida ya no sale directamente. Pregunta si quieres volver al menú principal (la partida se guarda al terminar cada acción). Con «Seguir jugando» la partida sigue.
+- **«Fin ▶»:** vuelve a preguntar solo si quedan acciones (se revierte el cambio de la versión anterior).
+
 ## 2026-10-20 17:22
 
 ### Fixes (móvil)
