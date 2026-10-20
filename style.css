@@ -557,3 +557,5 @@ body.mob #modal.pick #modalbox{max-height:46dvh;padding:8px 10px;overflow:auto}
 body.mob #modal.pick .opts{gap:6px;margin-top:6px}
 body.mob #modal.pick .opts button{flex:1 1 44%;padding:9px 8px;font-size:14px;min-height:42px;text-align:left}
 body.mob #modal.pick .opts button:last-child:not(:nth-child(2n+1)){flex:1 1 100%}
+/* Móvil: un pellizco sobre el mapa o sus botones flotantes mueve el mapa, nunca hace zoom de la página (los botones no crecen). */
+body.mob #mapwrap,body.mob #mapwrap *{touch-action:none}

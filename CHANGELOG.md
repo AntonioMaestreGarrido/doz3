@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-20 17:15
+
+### Fixes (móvil)
+- **Pellizcar sobre el mapa:** si el pellizco empezaba sobre un botón flotante (◀ ▶, avisos, zoom), el navegador ampliaba toda la página y los botones crecían. Ahora un pellizco o arrastre en la zona del mapa siempre mueve el mapa y no hace zoom de la página.
+
 ## 2026-10-20 17:01
 
 ### Fixes (móvil)
