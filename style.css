@@ -441,3 +441,118 @@ body.booting #app{visibility:hidden}
 
 /* Capa de vuelo de las apariciones (anim.js drawSpawnFx): encima de la página, sin bloquear clics. */
 #spawnfx{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:45}
+
+/* ================= Modo móvil (js/movil.js): mapa a pantalla completa, franja de estado, panel con pestañas ================= */
+#hud,#mtabs,#cyc,#edge,#radar{display:none}
+body.mob #app{height:100vh;height:100dvh;min-height:0}
+body.mob header{position:relative;flex-wrap:nowrap;gap:6px;padding:calc(env(safe-area-inset-top) + 4px) calc(env(safe-area-inset-right) + 6px) 4px calc(env(safe-area-inset-left) + 6px);border-bottom-width:1px}
+body.mob header h1,body.mob header nav{display:none}
+body.mob header.open nav{display:flex;flex-direction:column;align-items:stretch;position:absolute;right:6px;top:100%;z-index:60;background:var(--panel);border:1px solid var(--gold);border-radius:10px;padding:8px;gap:6px;box-shadow:0 8px 30px #000;min-width:230px;max-height:calc(100dvh - 60px);overflow:auto}
+body.mob header.open nav button{padding:11px 12px;font-size:15px;text-align:left}
+body.mob header.open nav .chk{font-size:14px;padding:6px 4px;color:var(--ink)}
+body.mob header.open nav .chk input{width:20px;height:20px}
+body.mob #hud{display:flex;align-items:center;gap:6px;width:100%;min-width:0}
+#hPh{font-size:13px;color:var(--gold);white-space:nowrap}
+#hPh b{color:#fff}
+#hStats{flex:1;min-width:0;display:flex;gap:9px;overflow-x:auto;white-space:nowrap;font-size:14px;font-weight:700;scrollbar-width:none}
+#hStats::-webkit-scrollbar{display:none}
+#hStats small{font-weight:400;color:var(--mut);font-size:11px}
+#hStats .ev{color:var(--mut);font-weight:600}
+#hud button{padding:6px 10px;font-size:17px;line-height:1;min-width:40px;min-height:36px}
+#hud #hPl{font-size:13px;border-width:2px;min-width:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.mob main{flex:1;min-height:0;display:flex;flex-direction:column}
+body.mob #mapwrap{flex:1;min-height:0;width:auto;aspect-ratio:auto;padding:0}
+body.mob #map{border:0}
+body.mob #routebtns,body.mob #zIn,body.mob #zOut{display:none}
+body.mob #zoomctl{top:6px;bottom:auto;right:calc(env(safe-area-inset-right) + 6px)}
+body.mob #zoomctl button{width:42px;height:42px;padding:0;font-size:18px}
+body.mob #cancelBtn{position:absolute;top:6px;left:calc(env(safe-area-inset-left) + 6px);z-index:8;padding:9px 12px;font-size:14px}
+body.mob #banner{top:6px;max-width:calc(100% - 190px);font-size:13px;line-height:1.25;padding:6px 12px;text-align:center;border-radius:14px}
+body.mob #toast{top:52px}
+body.mob #cancelBtn:not([hidden])~#banner{left:calc(env(safe-area-inset-left) + 112px);right:56px;transform:none;max-width:none}
+@media (max-width:420px){#hStats .ev{display:none}}
+/* Panel con pestañas: abajo en vertical */
+body.mob #side{flex:none;width:auto;height:46%;overflow-y:auto;overscroll-behavior:contain;border:0;border-top:1px solid var(--line);padding:0 6px calc(env(safe-area-inset-bottom) + 6px);gap:6px}
+body.mob #side>section{display:none}
+body.mob #side.tab-unidad #unitbox,body.mob #side.tab-acciones #actbox,body.mob #side.tab-evento #eventbox,body.mob #side.tab-mano #handbox,body.mob #side.tab-rutas #radar{display:block}
+body.mob #side.tab-evento #status{display:grid}
+body.mob #side.tab-registro #logbox{display:flex}
+body.mob #side #status{position:static;box-shadow:none}
+body.mob #log{max-height:none}
+body.mob #evimg{width:auto;max-width:100%;max-height:58vh}
+body.mob.mob-fold #side{height:auto;overflow:hidden}
+body.mob.mob-fold #side>section{display:none!important}
+body.mob #mtabs{display:flex;gap:3px;position:sticky;top:0;z-index:7;background:var(--panel);padding:5px 0 4px;margin:0 -2px}
+#mtabs button{flex:1 1 0;min-width:0;padding:4px 1px 3px;font-size:10px;line-height:1.15;display:flex;flex-direction:column;align-items:center;gap:1px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+#mtabs button.on{border-color:var(--gold);color:var(--gold);background:#3a2f20}
+#mtabs button i{position:absolute;top:-3px;right:-2px;font:700 10px/16px "Segoe UI";font-style:normal;background:#2f6b3a;color:#fff;border-radius:8px;min-width:16px;padding:0 3px}
+#mtabs button i:empty{display:none}
+#mtabs .ti{font-size:16px;line-height:1.1}
+#mtabs #mEnd{flex:0 0 auto;padding:6px 10px;font-size:14px;justify-content:center}
+#mtabs #mEnd[hidden]{display:none}
+body.mob #unitbox .acts button{flex:1 1 45%;font-size:14px;padding:10px 6px;min-height:42px}
+body.mob #hand .hc button{padding:7px 12px;font-size:13px}
+/* Horizontal: el panel va a la derecha, a toda la altura */
+body.mob-land main{flex-direction:row}
+body.mob-land #side{height:auto;width:min(330px,42vw);border-top:0;border-left:1px solid var(--line);padding-right:calc(env(safe-area-inset-right) + 6px)}
+body.mob-land #zoomctl{right:6px}
+/* Recorrer unidades y Zeds */
+body.mob #cyc{display:flex;justify-content:space-between;gap:6px;position:absolute;left:calc(env(safe-area-inset-left) + 6px);right:6px;bottom:6px;z-index:7;pointer-events:none}
+#cyc .grp{display:flex;gap:3px;pointer-events:auto;min-width:0}
+#cyc button{min-height:42px;min-width:42px;padding:6px 8px;font-size:15px;background:rgba(14,11,8,.86);box-shadow:0 2px 10px #000}
+#cyc #cName{font-size:12px;max-width:31vw;}
+#cyc #zName{font-size:12px;max-width:25vw;}
+#cyc #cName,#cyc #zName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.mob-land #cyc #cName,body.mob-land #cyc #zName{max-width:18vw}
+#cyc .z button{border-color:#7a2a1b}
+#cyc button.hint{border-color:var(--gold);animation:cychint 1s ease-in-out infinite}
+@keyframes cychint{50%{background:#7a5a1b;box-shadow:0 0 14px var(--gold)}}
+/* Flechas hacia Zeds junto al Centro fuera de la vista */
+body.mob #edge{display:block;position:absolute;inset:0;pointer-events:none;z-index:6}
+#edge .ed{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;padding:4px 8px;font-size:11px;font-weight:800;color:#fff;background:rgba(122,26,14,.92);border:1px solid #ff5a44;border-radius:12px;display:flex;align-items:center;gap:4px;box-shadow:0 0 12px rgba(255,60,40,.7)}
+#edge .ed.n0{animation:cychint 0.8s ease-in-out infinite;border-color:#fff}
+#edge .ed i{font-style:normal;display:inline-block}
+/* Esquema de rutas */
+#radar .rad{width:100%;border-collapse:separate;border-spacing:2px;table-layout:fixed}
+#radar .rad th{font-size:10px;color:var(--mut);font-weight:600;padding:0}
+#radar .rad th.rl{font-size:11px;font-weight:800;text-align:left;width:54px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#radar .rad td{height:38px;background:#1b160f;border:1px solid #3a2f20;border-radius:5px;text-align:center;vertical-align:middle;font-size:12px;line-height:1.05;cursor:pointer;position:relative;padding:0}
+#radar .rad td.na{background:none;border:0;cursor:default}
+#radar .rad td.nm{background:#2a2216}
+#radar .rad td.ini{background:#14110d;border-style:dashed}
+#radar .rad td.cr{border-style:dotted;border-color:#7a6a4a}
+#radar .rad td.ch{border:2px solid #ff7a2a}
+#radar .rad td.dg{background:#4a1410;border-color:#ff3b2a}
+#radar td b{display:block;font-weight:800}
+#radar b.z{color:#ff8a76;font-size:14px}#radar b.z.s{color:#e0a0ff}
+#radar b.z small{font-size:9px;color:#ffb0a0;font-weight:600}
+#radar b.p{color:#9bd68a}#radar b.r{color:#ffb347}
+#radar i.br{position:absolute;left:2px;bottom:2px;width:9px;height:4px;background:#c8a04a;border-radius:1px}
+#radar .radc{margin-top:6px;padding:7px;background:#1b160f;border:1px solid #3a2f20;border-radius:6px;font-size:13px;cursor:pointer}
+#radar .radk{margin-top:6px;font-size:11px;color:var(--mut);line-height:1.5}
+#radar .radk b{display:inline}
+/* Ventanas en móvil */
+body.mob #modal{padding:6px calc(env(safe-area-inset-right) + 6px) calc(env(safe-area-inset-bottom) + 6px) calc(env(safe-area-inset-left) + 6px)}
+body.mob #modalbox{max-height:calc(100dvh - 12px);padding:12px;max-width:100%}
+body.mob #modalbox h2{font-size:17px}
+body.mob .opts button{padding:11px 16px;font-size:15px;min-height:44px}
+body.mob .cbt{min-width:0}
+body.mob .sides{gap:6px;margin-bottom:4px}
+body.mob .side{padding:5px}
+body.mob .side .big{font-size:26px}
+body.mob .die{width:48px;height:48px;font-size:28px}
+table.tbl.compact{width:auto;margin:0 auto;font-size:15px}
+table.tbl.compact th:not(:first-child):not(.c-final),table.tbl.compact td[data-c]:not(.c-final){display:none}
+table.tbl.compact td,table.tbl.compact th{padding:4px 14px}
+.tblhint{font-size:11px;color:var(--mut);text-align:center;margin:2px 0}
+body.mob-land #modalbox.cbt:has(table){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:14px;align-items:start}
+body.mob-land #modalbox.cbt:has(table)>*{grid-column:1}
+body.mob-land #modalbox.cbt:has(table)>h2{grid-column:1/3}
+body.mob-land #modalbox.cbt:has(table)>table,body.mob-land #modalbox.cbt:has(table)>#ctab,body.mob-land #modalbox.cbt:has(table)>.tblhint{grid-column:2;grid-row:2/span 8}
+body.mob-land #modalbox.cbt:has(table)>.tblhint{grid-row:2;align-self:start}
+body.mob-land #modalbox.cbt:has(table)>table{grid-row:3/span 8}
+body.mob-land .cardrow{flex-direction:row}
+body.mob-land .cardrow img{width:auto;max-width:38vw;max-height:calc(100dvh - 130px)}
+body.mob-land #modal.pick{justify-content:flex-end}
+body.mob-land #modal.pick #modalbox{width:min(380px,48vw);max-height:calc(100dvh - 20px)}
+body.mob .pickopts button{padding:10px;font-size:14px}
