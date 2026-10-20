@@ -4,7 +4,7 @@
 const CACHE = 'doz3-v70';
 const SHELL = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'assets/portada.jpg', 'assets/fondo_nueva.webp', 'assets/fondo_ranking.webp',
   'js/version.js', 'js/data.js', 'js/events.js', 'js/dest.js', 'js/evlog.js', 'js/preview.js', 'js/obituario.js', 'js/engine.js', 'js/game.js', 'js/phases.js', 'js/actions.js', 'js/cardtext.js', 'js/ui.js', 'js/anim.js',
-  'js/expansions.js', 'js/expansions2.js', 'js/sfx.js', 'js/sound.js', 'js/opciones.js', 'js/voz.js', 'js/ost.js', 'assets/sonidos/letras/letras.js', 'assets/sonidos/efectos/sfx_disparo.mp3', 'assets/sonidos/efectos/sfx_disparo_largo.mp3', 'js/mapzoom.js', 'js/seedcode.js', 'js/save.js', 'js/main.js', 'js/bot.js'];
+  'js/expansions.js', 'js/expansions2.js', 'js/sfx.js', 'js/sound.js', 'js/opciones.js', 'js/voz.js', 'js/ost.js', 'assets/sonidos/letras/letras.js', 'assets/sonidos/efectos/sfx_disparo.mp3', 'assets/sonidos/efectos/sfx_disparo_largo.mp3', 'js/mapzoom.js', 'js/movil.js', 'js/seedcode.js', 'js/save.js', 'js/main.js', 'js/bot.js'];
 
 /* Fichas, mapas e intro: se guardan en segundo plano tras instalar (sin bloquear ni fallar la instalación) para que la segunda visita y el modo sin conexión vayan desde caché. */
 const PRECACHE = [
