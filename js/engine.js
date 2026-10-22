@@ -479,6 +479,13 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   }
   if (!attackerHuman) for (const u of unitsAt(space)) if (u.resist && (fighter.side === 'pl')) { u.resist = false; LOG(u.name + ' deja de estar Resistiendo.'); }
   const isZedAtk = !attackerHuman && fighter.side === 'pl';
+  /* Si la defensora se escabulle (Cardio, Sigilo de Pepinillos, Darling, Evasión de Alia), los Zeds atacan igualmente a las demás unidades del espacio: se elige otra defensora. */
+  const sigue = async () => {
+    const zl = zeds.filter(z => z.space === space && G.units[z.id]), hl = hum.filter(u => u !== fighter && u.space === space);
+    if (G.over || !zl.length || !hl.length) return { evaded: true };
+    LOG(fighter.name + ' evita el combate: los Zeds atacan a las demás unidades de ' + spaceLabel(space) + '.', 'zed');
+    return melee(Object.assign({}, o, { zeds: zl, hum: hl }));
+  };
   // Habilidades de evasión al ser atacado por Zeds
   if (isZedAtk && !G.turn.noEvade && !o.second) {
     /* ¡Corre, Flicka, corre!: el General Lee (y su jinete) puede retirarse antes de ser atacado. */
@@ -489,22 +496,22 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
         if (v === 'y') { await retreatAndFight([leeG], 'C'); return { evaded: true }; } } }
     if (G.turn.cardio) {
       const v = await UI.choose({ title: 'Regla n.º 7: Cardio', text: '¿Retiras a ' + fighter.name + ' en lugar de luchar?', options: [{ label: 'Retirarse', value: 'y' }, { label: 'Luchar', value: 'n' }] });
-      if (v === 'y') { await retreatAndFight([fighter], 'C'); return { evaded: true }; }
+      if (v === 'y') { await retreatAndFight([fighter], 'C'); return await sigue(); }
     }
     if (fighter.key === 'pepinillos') {
       const r = await rollShownFor(fighter, 'Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido' : '<b>' + r + '</b>: combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos: ' + r);
-      if (r >= 2) { LOG('Pepinillos pasa desapercibido.', 'good'); return { evaded: true }; }
+      if (r >= 2) { LOG('Pepinillos pasa desapercibido.', 'good'); return await sigue(); }
     }
     if (fighter.key === 'darling') {
       const r = await rollShownFor(fighter, 'Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r);
       if (r >= 3) { o.assassin = true; o.noInf = true; }
-      else if (r === 2) { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { await retreatAndFight([fighter], 'C'); return { evaded: true }; } }
+      else if (r === 2) { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { await retreatAndFight([fighter], 'C'); return await sigue(); } }
     }
     if (fighter.key === 'alia' && sp(space).route && space !== 'C') {
       const bk = nextToward(space);
       if (bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter)) {
         const r = await rollShownFor(fighter, 'Evasión (Alia)', r => r >= 4 ? '<b>' + r + '</b>: se retira 1 espacio hacia el Centro antes del combate' : '<b>' + r + '</b>: no se retira (necesita 4-6)'); LOG('Evasión de Alia: ' + r);
-        if (r >= 4) { LOG('Alia se escabulle antes del combate.', 'good'); await retreatAndFight([fighter], 'C'); return { evaded: true }; }
+        if (r >= 4) { LOG('Alia se escabulle antes del combate.', 'good'); await retreatAndFight([fighter], 'C'); return await sigue(); }
       }
     }
     if (fighter.key === 'johnson') {

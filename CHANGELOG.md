@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-22 17:34
+
+### Fixes
+- **Evasiones con más unidades en el espacio:** si la unidad defensora esquiva el combate (Cardio, Sigilo de Pepinillos, Alyssa Darling con un 2, Evasión de Alia), los Zeds atacan igualmente a las demás unidades del espacio: se elige otra defensora. Antes se quedaban junto a los Zeds sin combatir.
+
 ## 2026-10-19 19:53
 
 ### Mejoras
