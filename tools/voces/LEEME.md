@@ -3,9 +3,35 @@
 Texto a voz local con [ResembleAI/Chatterbox-Multilingual-es-es](https://huggingface.co/ResembleAI/Chatterbox-Multilingual-es-es)
 (licencia MIT), con clonación de voz a partir de un audio corto.
 
-Ojo: el ejemplo de la ficha del modelo (`pip install chatterbox-tts` + `ChatterboxTTS.from_pretrained`) carga el modelo
-**inglés**, no este. Para usar el ajuste fino español hace falta el código del Space oficial
-(`ResembleAI/Chatterbox-Multilingual-TTS-es-es`), que es lo que descargan estos scripts.
+## Importante: `from_pretrained` no sirve
+
+El ejemplo de la ficha del modelo (`pip install chatterbox-tts` y luego `ChatterboxTTS.from_pretrained(...)`) **no carga
+este modelo**: descarga y usa el modelo base **inglés** (`ResembleAI/chatterbox`). Con él el español sale con acento
+inglés o directamente mal. Tampoco vale el paquete `chatterbox-tts` de PyPI, porque su código no sabe leer los pesos
+españoles (`t3_es_es.safetensors`, `s3gen_v3.pt` y el vocabulario `grapheme_mtl_merged_expanded_v1.json`).
+
+El ajuste fino español solo funciona con el código del Space oficial
+[`ResembleAI/Chatterbox-Multilingual-TTS-es-es`](https://huggingface.co/spaces/ResembleAI/Chatterbox-Multilingual-TTS-es-es).
+Estos scripts lo hacen así:
+
+1. `descargar.py` baja el código del Space a `chatterbox_es\` y los pesos españoles (más `ve.pt` y `conds.pt` del
+   modelo base) a `modelos\es-es\`, con revisiones fijas para que código y pesos casen.
+2. `generar.py` añade `chatterbox_es\chatterbox\src` al principio de `sys.path` (para que se use ese código y no un
+   `chatterbox-tts` instalado) y carga el modelo con `from_local` desde esa carpeta:
+
+```python
+import sys
+sys.path.insert(0, r'C:\IA\voces\chatterbox_es\chatterbox\src')
+from chatterbox.tts import ChatterboxTTS
+
+modelo = ChatterboxTTS.from_local(r'C:\IA\voces\modelos\es-es', 'cuda')  # o 'cpu'
+modelo.prepare_conditionals(r'C:\IA\voces\voces\es_es_f1.wav')           # voz de referencia
+wav = modelo.generate('Hola, esto es una prueba.', language_id='es')
+```
+
+Si quieres usarlo desde tu propio código, lo más sencillo es importar las funciones de `generar.py`
+(`cargar_modelo`, `preparar_voz`, `sintetizar`, `guardar`), como hace `interfaz.py`. No instales `chatterbox-tts` en el
+mismo entorno: no hace falta y puede confundirse con el código del Space.
 
 ## Instalación en `C:\IA\voces`
 
