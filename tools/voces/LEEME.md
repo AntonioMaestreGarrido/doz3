@@ -40,6 +40,9 @@ mismo entorno: no hace falta y puede confundirse con el código del Space.
 2. Copia el contenido de esta carpeta (`tools/voces`) a `C:\IA\voces`.
 3. Doble clic en `instalar.bat`. Crea `venv\`, instala PyTorch (con CUDA si hay tarjeta NVIDIA, si no la versión CPU)
    y las dependencias, y descarga el modelo (~3,2 GB) en `modelos\es-es\` y la voz de muestra en `voces\`.
+   Elige CUDA 12.8 para las tarjetas RTX y CUDA 12.6 para las GTX 10 o anteriores (las versiones cu128 de PyTorch ya
+   no las admiten). Si un antivirus inspecciona el HTTPS (Avast, Kaspersky…), usa `certificados.pem`, que genera con
+   los certificados raíz de Windows, para que pip y las descargas no fallen con `CERTIFICATE_VERIFY_FAILED`.
 
 Hace falta unos 10 GB libres. Con GPU NVIDIA (≥ 6 GB de VRAM) una frase tarda unos segundos; en CPU funciona, pero
 es bastante más lento.

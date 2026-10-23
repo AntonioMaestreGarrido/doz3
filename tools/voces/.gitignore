@@ -4,3 +4,4 @@ modelos/
 salidas/
 voces/*.wav
 __pycache__/
+certificados.pem
