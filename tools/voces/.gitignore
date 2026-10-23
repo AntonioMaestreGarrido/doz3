@@ -1,0 +1,6 @@
+venv/
+chatterbox_es/
+modelos/
+salidas/
+voces/*.wav
+__pycache__/
