@@ -108,13 +108,20 @@ function runGame(setup, saved) {
   playGame(setup, saved).catch(async e => {
     console.error(e); ui.log('Error: ' + e.message, 'bad');
     try { await ui.waitAck('Error inesperado', 'La partida se ha detenido por un error (<i>' + e.message + '</i>).<br>Pulsa Continuar para recargarla desde el último guardado.'); } catch (e2) { }
+    /* Al recargar se salta la intro y se carga directamente la ranura de esta partida (ver el arranque, abajo). */
+    /* Si esta partida ya venía de una recuperación automática y vuelve a fallar, se va al menú (sin bucle de recargas). */
+    try { if (G.saveId && sessionStorage.getItem('doz3.resumed') !== G.saveId) sessionStorage.setItem('doz3.resume', G.saveId); sessionStorage.setItem('doz3.skipIntro', '1'); } catch (e3) { }
     location.reload();
   });
 }
 window.addEventListener('load', async () => {
-  bindUI(ui); window.UI = ui;
+  EVT_UI(ui); bindUI(ui); window.UI = ui;
   await ui.init();
   await ui.intro();
+  /* Vuelta tras un error inesperado: se recupera el último guardado de la partida que falló. */
+  let resumeId = null; try { resumeId = sessionStorage.getItem('doz3.resume'); sessionStorage.removeItem('doz3.resume'); sessionStorage.removeItem('doz3.resumed'); } catch (e) { }
+  const resumed = resumeId && loadSave(resumeId);
+  if (resumed) { try { sessionStorage.setItem('doz3.resumed', resumeId); } catch (e) { } ui.musicStop(); ui.hideCover(); runGame(null, resumed); return; }
   while (true) {
     const a = await ui.titleScreen();
     if (a === 'load') { const id = await ui.slotsScreen(); const saved = id && loadSave(id); if (saved) { ui.musicStop(); ui.hideCover(); runGame(null, saved); return; } continue; }
