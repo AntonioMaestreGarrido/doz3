@@ -23,9 +23,13 @@ if not exist venv\Scripts\python.exe (
 )
 venv\Scripts\python -m pip install --upgrade pip || goto :error
 
-rem PyTorch con CUDA 12.8 si hay tarjeta NVIDIA (sirve tambien para las RTX 50); si no, version CPU (bastante mas lenta).
+rem PyTorch: CUDA 12.8 para NVIDIA RTX 20 o posteriores (incluidas las RTX 50), CUDA 12.6 para GTX 9xx/10xx,
+rem y version CPU (bastante mas lenta) si no hay tarjeta NVIDIA.
 set TORCH=cpu
-nvidia-smi >nul 2>&1 && set TORCH=cu128
+set CAP=
+nvidia-smi >nul 2>&1 && set TORCH=cu126
+for /f "tokens=1 delims=." %%c in ('nvidia-smi --query-gpu^=compute_cap --format^=csv^,noheader 2^>nul') do set CAP=%%c
+if defined CAP if %CAP% GEQ 7 set TORCH=cu128
 echo Instalando PyTorch (%TORCH%) ...
 venv\Scripts\python -m pip install torch==2.8.0 torchaudio==2.8.0 --index-url https://download.pytorch.org/whl/%TORCH% || goto :error
 

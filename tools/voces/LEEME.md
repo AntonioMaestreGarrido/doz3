@@ -48,3 +48,32 @@ pausado), `--temperatura`, `--semilla` (para repetir un resultado), `--mp3` (nec
 - Para un tono más dramático: `--exageracion 0.7` o más y `--cfg 0.3`.
 - Los textos largos se trocean por frases automáticamente.
 - Los audios llevan una marca de agua inaudible (Perth) que pone el propio modelo.
+
+## Seed-VC: cambiar la voz de un audio
+
+[Seed-VC](https://github.com/Plachtaa/seed-vc) (GPL-3.0) convierte un audio a otra voz con 1–30 s de referencia y
+sin entrenar nada. Combinado con lo anterior: Chatterbox pone el texto y la entonación, y Seed-VC el timbre exacto de
+la voz de referencia.
+
+Instalación: doble clic en `instalar_seedvc.bat` (después de `instalar.bat` o por separado). Usa su propio entorno,
+`venv-seedvc\`, porque necesita otras versiones de algunas librerías; requiere Python 3.10 o 3.11. Al final hace una
+conversión de prueba que descarga los modelos (~1,5 GB) en `seed-vc\checkpoints\`.
+
+```bat
+convertir.bat salidas\hola.wav --voz voces\lider.wav
+convertir.bat salidas --voz voces\lider --mp3
+```
+
+- La entrada puede ser un audio o una carpeta (convierte todos). Los resultados van a `convertidos\`.
+- `--voz` puede ser un audio o una carpeta de clips de la misma persona: se unen hasta 25 s, que es lo que aprovecha
+  el modelo. Las 20 frases del líder del juego suman unos 53 s, así que bastan.
+- `--pasos` 10 (rápido) a 50 (mejor calidad), 30 por defecto; `--velocidad` >1 alarga el audio; `--canto` usa el
+  modelo de canto (sigue la melodía) y admite `--semitonos`.
+- Interfaz web: `interfaz_seedvc.bat` (http://127.0.0.1:7861).
+
+Flujo para frases nuevas del juego:
+
+```bat
+generar.bat --lista frases.txt --exageracion 0.7
+convertir.bat salidas --voz voces\lider --mp3
+```

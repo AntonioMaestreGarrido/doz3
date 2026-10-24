@@ -4,3 +4,7 @@ modelos/
 salidas/
 voces/*.wav
 __pycache__/
+venv-seedvc/
+seed-vc/
+convertidos/
+_seedvc_tmp/
