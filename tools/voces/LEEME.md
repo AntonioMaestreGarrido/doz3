@@ -99,6 +99,8 @@ convertir.bat salidas --voz voces\lider --mp3
 - `--pasos` 10 (rápido) a 50 (mejor calidad), 30 por defecto; `--velocidad` >1 alarga el audio; `--canto` usa el
   modelo de canto (sigue la melodía) y admite `--semitonos`.
 - Interfaz web: `interfaz_seedvc.bat` (http://127.0.0.1:7861).
+- Con GPU NVIDIA tarda menos que la duración del audio. En CPU es muy lento (en la prueba, ~1 min por segundo de
+  audio con 30 pasos); con `--pasos 10` va unas tres veces más rápido.
 
 Flujo para frases nuevas del juego:
 
