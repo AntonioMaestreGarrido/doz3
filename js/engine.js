@@ -153,7 +153,9 @@ function drawNormalToken() {
   return G.reserve.splice(rnd(G.reserve.length), 1)[0];
 }
 function makeZed() {
-  const t = drawNormalToken(); if (!t) return null;
+  const t = drawNormalToken();
+  /* Sin Zeds normales: en su lugar sale un Súper Zed al azar, si quedan. */
+  if (!t) return G.supers.length ? makeSuper() : null;
   EVT('ficha', null, { fu: t[0], rd: t[1], quedan: G.reserve.length });
   return newUnit({ side: 'zed', type: 'zed', name: 'Zed', full: t[0], red: t[1], hf: 3, hr: 3, token: t });
 }
@@ -545,7 +547,9 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   const wilsonBuddy = wilsonWith(fighter);
   const wzed = !attackerHuman && fighter.side === 'pl' && alive('wzed') && isCity(space);
   let extraDice = (wilsonBuddy ? 1 : 0) + (wzed ? 1 : 0);
-  const cinfo = { title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, cards: combatCards(fighter, attackerHuman) };
+  /* Lo mismo que se sumará a la Infección al final (ver más abajo), para anunciarlo antes de tirar. */
+  const infGain = !G.lv.infection ? null : o.noInf || vsPl ? 0 : meleeInfection(zeds, fighter);
+  const cinfo = { title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, infGain, cards: combatCards(fighter, attackerHuman) };
   cinfo.useCard = async c => { if (c.cancel) { cinfo.cancelled = true; return; } if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
   const h = UI.combatOpen(cinfo);
   let dice = await h.roll(extraDice);
