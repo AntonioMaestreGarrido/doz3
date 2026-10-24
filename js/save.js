@@ -19,7 +19,8 @@ function mkSpecial(kind, n) {
     case 'jornada':
       s.label = 'Jornada doble: +1 Infección → Curar o Investigar gratis';
       s.fn = async () => {
-        const lab = G.res && !G.turn.researched ? unitsAt('LAB').filter(x => x.sci && canAct(x)) : [];
+        /* Investigar gratis solo se ofrece si se puede pagar: si la carta en curso cuesta Suministro, hace falta uno (la Infección ya se ha subido). */
+        const lab = G.res && G.res.cur && !G.turn.researched && (!G.res.cur.sup || G.supplies >= 1) ?unitsAt('LAB').filter(x => x.sci && canAct(x)) : [];
         const opts = [{ label: 'a) 1 Acción de Curar gratis', value: 'h' }].concat(lab.length ? [{ label: 'b) 1 Acción de Investigar gratis', value: 'i' }] : []).concat([{ label: 'Cancelar', value: '' }]);
         const v = await UI.choose({ title: 'Trabajando una jornada doble (' + (s.n + 1) + '/3)', text: 'Aumentas la Infección en 1 a cambio de:', options: opts });
         if (!v) { G.turn.specials.push(s); return; }
@@ -63,6 +64,9 @@ function restoreState(g) {
   Object.assign(G, g);
   G.lv = LEVELS[g.lv]; G.len = G.lv.lengths[g.len]; G.event = g.event ? EV[g.event] : null;
   if (g.res) G.res.cur = g.res.cur ? RES[g.res.cur] : null;
+  /* Las unidades del Cementerio siguen en G.units: tras el JSON son copias separadas, así que se vuelven a enlazar con el mismo objeto. */
+  /* Partidas guardadas con el fallo antiguo: se quitan las unidades que ya volvieron al tablero y las repetidas. */
+  if (G.cemetery) { const seen = new Set(); G.cemetery = G.cemetery.map(c => (c && G.units[c.id]) || c).filter(c => c && c.space === 'CEM' && !seen.has(c.id) && seen.add(c.id)); }
   G.turn.specials = g.turn.specials.map(s => mkSpecial(s.kind, s.n));
   /* Partidas guardadas antes del modo cooperativo: un solo jugador. */
   if (!G.players) { initPlayers(null); G.pool = { pl: [(g.pool && g.pool.player) ? 1 : 0], event: g.pool ? g.pool.event : 0 }; }
@@ -89,15 +93,30 @@ function slotMeta(g) {
   const lv = LEVELS[g.lv];
   return { lv: lv.name, len: lv.lengths[g.len] ? lv.lengths[g.len].name : '', turn: g.turnNo, players: g.players ? g.players.length : 1, heroes: (g.heroKeys || []).map(k => HEROES[k] ? HEROES[k].name : k), date: Date.now() };
 }
+/* El registro de eventos (G.evlog, para depurar) va en su propia clave: doz3.log.<id>. Así un registro grande nunca impide guardar la partida:
+   si no cabe, se recorta, y si ni así cabe, se guarda la partida sin él. */
+const LOG_PREFIX = 'doz3.log.';
+function trySet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+/* Sin sitio: se liberan los registros de las otras partidas guardadas (las partidas no se tocan). */
+function freeOtherLogs(keep) { for (const id of slotIds()) if (id !== keep) try { localStorage.removeItem(LOG_PREFIX + id); } catch (e) { } }
+let saveWarned = false;
 /* at: 'actions' (a mitad de la fase de Acciones) o 'turn' (al empezar un turno). */
 function saveGame(at) {
-  try {
-    if (!G.lv || G.over) return;
-    if (!G.saveId) G.saveId = newSaveId();
-    const snap = snapshotState();
-    localStorage.setItem(SLOT_PREFIX + G.saveId, JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), dbg: !!DEBUG_DICE, G: snap, meta: slotMeta(snap) }));
-    const ids = slotIds(); if (ids[0] !== G.saveId) setSlotIds([G.saveId].concat(ids.filter(x => x !== G.saveId)));
-  } catch (e) { console.warn('No se pudo guardar la partida', e); }
+  if (!G.lv || G.over) return;
+  if (!G.saveId) G.saveId = newSaveId();
+  const snap = snapshotState(); delete snap.evlog;
+  const data = JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), dbg: !!DEBUG_DICE, G: snap, meta: slotMeta(snap) });
+  let ok = trySet(SLOT_PREFIX + G.saveId, data);
+  if (!ok) { try { localStorage.removeItem(LOG_PREFIX + G.saveId); } catch (e) { } freeOtherLogs(G.saveId); ok = trySet(SLOT_PREFIX + G.saveId, data); }
+  if (!ok) {
+    console.warn('No se pudo guardar la partida: el almacenamiento del navegador está lleno.');
+    if (!saveWarned && typeof UI !== 'undefined' && UI) { saveWarned = true; UI.log('No se ha podido guardar la partida: el almacenamiento del navegador está lleno. Borra alguna partida guardada desde «Cargar partida».', 'bad'); }
+    return;
+  }
+  saveWarned = false;
+  const ids = slotIds(); if (ids[0] !== G.saveId) setSlotIds([G.saveId].concat(ids.filter(x => x !== G.saveId)));
+  const log = G.evlog || [];
+  if (!trySet(LOG_PREFIX + G.saveId, JSON.stringify(log)) && !trySet(LOG_PREFIX + G.saveId, JSON.stringify(log.slice(-1000)))) { try { localStorage.removeItem(LOG_PREFIX + G.saveId); } catch (e) { } }
 }
 /* Lista de partidas guardadas (la más reciente primero). */
 function listSaves() {
@@ -109,8 +128,13 @@ function listSaves() {
   if (out.length !== ids.length) setSlotIds(out.map(s => s.id));
   return out;
 }
-function loadSave(id) { return listSaves().find(s => s.id === id) || null; }
-function deleteSave(id) { if (!id) return; try { localStorage.removeItem(SLOT_PREFIX + id); } catch (e) { } setSlotIds(slotIds().filter(x => x !== id)); }
+function loadSave(id) {
+  const s = listSaves().find(x => x.id === id) || null;
+  /* Las partidas antiguas llevan el registro dentro; las nuevas, en su clave aparte. */
+  if (s && !s.G.evlog) { try { const l = JSON.parse(localStorage.getItem(LOG_PREFIX + id) || '[]'); s.G.evlog = Array.isArray(l) ? l : []; } catch (e) { s.G.evlog = []; } }
+  return s;
+}
+function deleteSave(id) { if (!id) return; try { localStorage.removeItem(SLOT_PREFIX + id); localStorage.removeItem(LOG_PREFIX + id); } catch (e) { } setSlotIds(slotIds().filter(x => x !== id)); }
 function applySave(s) { restoreState(s.G); G.saveId = s.id || G.saveId; UID = s.uid; rngRestore(s.rng); DEBUG_DICE = !!s.dbg || !!ui.dbgDice; /* el modo debug se guarda con la partida */ }
 
 /* Ranking local de partidas terminadas (victorias primero, luego por puntos). */

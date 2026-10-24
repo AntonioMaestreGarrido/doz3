@@ -2,6 +2,62 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-22 17:34
+
+### Fixes
+- **Evasiones con más unidades en el espacio:** si la unidad defensora esquiva el combate (Cardio, Sigilo de Pepinillos, Alyssa Darling con un 2, Evasión de Alia), los Zeds atacan igualmente a las demás unidades del espacio: se elige otra defensora. Antes se quedaban junto a los Zeds sin combatir.
+
+## 2026-10-19 19:53
+
+### Mejoras
+- **Guardado más ligero y seguro:** el registro de eventos se guarda aparte de la partida. Si el almacenamiento del navegador se llena, se recorta el registro antes que perder la partida, y si aun así no se puede guardar, el log de la partida lo avisa.
+- **Deshacer más rápido:** cada instantánea ya no copia el registro de eventos (pasa de cientos de KB a unos pocos).
+- **Mapa más fluido:** el fondo y los marcadores (Caos, Barricadas, Minas, Rumores, puente, «No Pasar») se pintan en una capa aparte que solo se rehace cuando cambian; cada fotograma de animación o de aviso de peligro cuesta menos de la mitad.
+- **Tras un error inesperado** la partida se recarga directamente desde su último guardado, en lugar de volver al menú.
+- **Códigos de partida:** el orden de los héroes queda fijo, así que añadir héroes nuevos no invalida los códigos ya compartidos.
+- **Arte alternativo:** más cartas de Evento y Destino en webp; la carta de los Ángeles de Petra se ve siempre.
+- Limpieza de código sin uso.
+
+### Fixes
+- **Volver del Cementerio** («Nos llegaron noticias de tu muerte», «Rumores de nuestra muerte», Equipar Refugiados): tras cargar o deshacer, la unidad seguía también en el Cementerio (salía en el Obituario y no podía volver a entrar). Las partidas guardadas con el fallo se corrigen al cargarlas.
+- **Cripta:** el Zed que sale de una Cripta respeta el límite de agrupamiento del espacio de destino.
+- **Evasiones** (Cardio, General Lee, Darling, trampas de Johnson, Alia): si la retirada acaba en un espacio con Zeds, hay combate, como en cualquier retirada.
+- **Campo de Refugiados:** las unidades del Campo ya no pueden volver a «llegar» al Centro (cada llegada repetida sumaba Infección, Rumores y beneficios V.I.P.).
+- **Lluvia torrencial:** el Zed que retrocede respeta el límite de agrupamiento.
+- **Odio cuando pasa eso:** el Zed nuevo ya no puede ser la misma ficha débil que se retira.
+- **Base aérea secreta:** la Acción de Evento extra respeta el máximo de 4.
+
+## 2026-10-19 18:43
+
+### Mejoras
+- **Elegir ruta:** al tocar una ruta la cámara va a su zona y queda marcada; hay que pulsar «Aceptar» para confirmar. «Aleatorio» sigue resolviendo al instante.
+
+### Fixes
+- **Banda de Bubba que se retira:** al caer en un espacio vacío ya no lucha contra sí misma. Un Zed (o una Banda) que se retira no cuenta como ocupante de su nuevo espacio.
+
+## 2026-10-19 17:27
+
+### Mejoras
+- **Registro de partida exhaustivo:** guarda la semilla y la posición del generador en cada evento, y cada aparición, movimiento y retirada de Zeds con su causa (carta, ruta, Brote…). También las cartas de Destino, la Infección, los dados, las decisiones del jugador y los mensajes del log. Exportación con bloque `config` (semilla, nivel, héroes, expansiones).
+- **Marines:** la carta y la ficha aparecen juntas y la ficha vuela a su espacio, como los Súper Zeds.
+- **Orden de rutas:** nuevo botón «Aleatorio (resto)» que activa las rutas restantes en orden aleatorio.
+- **Tiradas con +1:** Investigar (Profesora Agee) y Buscar (Hauser, Hernández en Ciudad, carta «Ahora») muestran el modificador antes de tirar; después el dado se anima para sumarlo.
+- **Preguntas de Zeds:** la cámara se centra en los espacios de la pregunta (p. ej. «¡Mira! ¡Una distracción!»).
+
+### Fixes
+- **Súper Zeds del Brote:** los que salen de un Brote Descontrolado se registran con la causa «Brote», no con la carta de Destino que elige la ruta.
+- **Trabajando una jornada doble:** la opción de investigar gratis solo se ofrece si se puede pagar; antes la Infección subía aunque no hubiera Suministros.
+
+## 2026-10-19 04:41
+
+### Mejoras
+- **Debug · Mazos:** el botón «Mazos» solo aparece cuando está marcada la casilla de depuración de la pantalla Debug (la misma que cambia los dados tras cada tirada). Desmarcarla lo oculta al momento.
+
+## 2026-10-19 03:18
+
+### Mejoras
+- **Debug · Mazos:** nuevo botón «Mazos» en la cabecera (junto a «Registro») que muestra los mazos de Eventos y de Destino en el orden en que van a salir, con miniaturas numeradas (la 1 es la siguiente carta). Las cartas de Eventos marcan la final, y el descarte de Destino aparece debajo. Pasando el ratón sobre una carta se amplía.
+
 ## 2026-10-15 16:20
 
 ### Mejoras

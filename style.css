@@ -90,6 +90,10 @@ table.tbl td.hit{background:#e6b84a;color:#000;font-weight:900;outline:2px solid
 .dice{display:flex;gap:12px;justify-content:center;margin:10px 0}
 .die{width:56px;height:56px;border-radius:10px;background:#f3ead2;color:#111;font:900 32px Impact;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px #000, inset 0 -3px 0 #c9b98b}
 .die.roll{animation:shake .12s infinite}
+.die{position:relative}
+.rbump{position:absolute;top:-12px;right:-14px;background:#ffd54a;color:#222;border-radius:12px;padding:1px 7px;font:800 14px Arial,sans-serif;box-shadow:0 2px 6px #000}
+.rmods{font-size:14px;color:#ffd54a;margin:2px 0 6px}
+.opts button.on{outline:3px solid #ffd54a;outline-offset:2px}
 @keyframes shake{0%{transform:rotate(-8deg)}50%{transform:rotate(9deg) translateY(-3px)}100%{transform:rotate(-8deg)}}
 .result{text-align:center;font-size:15px;margin:6px 0;min-height:44px}
 .result b.z{color:#ff8a76}.result b.p{color:#9bd68a}
@@ -230,7 +234,7 @@ body:has(#title.bg) #modalbox.setup{background:rgba(14,11,8,.62)}
 .pickopts button{flex:1 1 200px;text-align:left}
 .pickopts button.on{border-color:var(--gold);background:#4a3a1c;box-shadow:0 0 0 1px var(--gold) inset}
 #cancelBtn.cancel{background:#7a2a1b;border-color:#e8452f;color:#fff}
-#cancelBtn[hidden]{display:none}
+#cancelBtn[hidden],#mazosBtn[hidden]{display:none}
 /* Zoom del mapa */
 #map{touch-action:none}
 #zoomctl{position:absolute;right:8px;bottom:8px;z-index:6;display:flex;flex-direction:column;gap:6px}
@@ -394,6 +398,10 @@ body:has(#title.bgnew) #modalbox.setup .opts{margin-top:6px}
 .dbgbox .row{margin:4px 0}.oblist{display:flex;flex-direction:column;gap:4px;margin:6px 0;max-height:30vh;overflow:auto}
 .obchip{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12.5px}.obchip input{width:56px}.obchip button{padding:1px 8px}
 
+.dkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:36vh;overflow:auto;margin:6px 0;padding:4px}
+.dkc{position:relative;font-size:12px;text-align:center;line-height:1.2}
+.dkc img{width:100%;height:auto;border-radius:4px;display:block;margin-bottom:2px}
+.dkn{position:absolute;top:3px;left:3px;background:#000c;color:var(--gold);border-radius:4px;padding:0 5px;font-weight:bold}
 .obchecks{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:2px 10px;max-height:38vh;overflow:auto;margin:6px 0;padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
 .obck{font-size:13px;cursor:pointer;padding:2px 0;white-space:nowrap}.obck input{margin-right:4px}
 
@@ -401,6 +409,10 @@ body:has(#title.bgnew) #modalbox.setup .opts{margin-top:6px}
 .superfx{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:safe center;overflow:auto;padding:16px;text-align:center}
 .superfx .sfx-tok{animation:sfxGrow .9s cubic-bezier(.2,.7,.2,1) both;will-change:transform,opacity}
 .superfx .sfx-tok img{width:min(64vw,340px,48vh);height:auto;filter:drop-shadow(0 0 22px rgba(255,80,60,.55))}
+.superfx .sfx-stage{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:clamp(14px,4vw,40px)}
+.superfx .sfx-card{width:min(38vw,230px);animation:sfxFade .6s ease-out both;transition:opacity .5s}
+.superfx .sfx-card img{width:100%;height:auto;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.superfx .sfx-card.out{opacity:0}
 .superfx .sfx-info{max-width:min(92vw,460px);margin-top:14px;animation:sfxFade .6s ease-out both}
 .superfx .sfx-info h2{margin:0 0 8px;color:var(--gold)}
 .superfx .sfx-info p{margin:0 0 14px;line-height:1.4}

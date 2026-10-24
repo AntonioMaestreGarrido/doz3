@@ -137,9 +137,12 @@ Object.assign(ui, {
   pulseSpace(id, col) { const s = G.spaces[id]; if (s) this.pulse(s.x, s.y, col || '#ff4a3a'); },
 
   /* ---- cámara guiada ---- */
+  /* id: un espacio, o una lista de espacios (la cámara se centra en su punto medio). */
   focus(id, zoom) {
-    if (!this.camOn || this.fast || !G.spaces || !G.spaces[id] || (this.userBusy && this.userBusy())) return;
-    const s = G.spaces[id], cv = this.canvas, wrap = $('mapwrap'); zoom = zoom || 1.9;
+    const ids = Array.isArray(id) ? id.filter(x => G.spaces && G.spaces[x]) : null;
+    if (!this.camOn || this.fast || !G.spaces || (ids ? !ids.length : !G.spaces[id]) || (this.userBusy && this.userBusy())) return;
+    const s = ids ? { x: ids.reduce((a, x) => a + G.spaces[x].x, 0) / ids.length, y: ids.reduce((a, x) => a + G.spaces[x].y, 0) / ids.length } : G.spaces[id];
+    const cv = this.canvas, wrap = $('mapwrap'); zoom = zoom || (ids && ids.length > 1 ? 1.5 : 1.9);
     const k = cv.clientWidth / cv.width, px = s.x * k, py = s.y * k;
     const ol = cv.offsetLeft, ot = cv.offsetTop, cw = cv.clientWidth, ch = cv.clientHeight, ww = wrap.clientWidth, wh = wrap.clientHeight;
     let tx = ww / 2 - ol - px * zoom, ty = wh / 2 - ot - py * zoom;
@@ -148,7 +151,6 @@ Object.assign(ui, {
     this.view.z = zoom; this.view.tx = tx; this.view.ty = ty;
     cv.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + zoom + ')'; this.camZoom = zoom;
   },
-  release() { this.camZoom = 1; this.resetView(); },
 
   /* ---- avisos ---- */
   toast(text, color, ms, big) {

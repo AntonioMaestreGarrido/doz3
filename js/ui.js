@@ -64,6 +64,8 @@ const ui = {
     $('fastChk').addEventListener('change', e => { ui.fast = e.target.checked; if (ui.fast) ui.release(); });
     $('optionsBtn').addEventListener('click', () => ui.showOptions());
     $('logBtn').addEventListener('click', () => downloadLog());
+    $('mazosBtn').hidden = !ui.dbgDice; /* el botón Mazos solo aparece con la casilla de depuración de dados */
+    $('mazosBtn').addEventListener('click', () => ui.showDecks());
     $('camChk').addEventListener('change', e => { ui.camOn = e.target.checked; if (!ui.camOn) ui.release(); });
     $('cancelBtn').addEventListener('click', () => ui.cancelMode());
     $('rulesBtn').addEventListener('click', () => ui.showRules());
@@ -119,7 +121,9 @@ const ui = {
   zoomShow(spec, e) {
     let info; try { info = zoomInfo(spec); } catch (err) { info = null; }
     const z = $('zoom'); if (!info) { z.hidden = true; return; }
-    const sig = spec + (spec[0] === 'u' && G.units ? JSON.stringify(G.units[spec.slice(2)]) : '');
+    /* Firma con lo que muestra la ficha de una unidad (no se serializa la unidad entera en cada movimiento del ratón). */
+    const zu = spec[0] === 'u' && G.units ? G.units[spec.slice(2)] : null;
+    const sig = spec + (zu ? '|' + [strength(zu), zu.flipped, zu.hits, zu.space, zu.ecg, zu.resist, zu.armed, zu.leader, zu.trained, zu.keepCalm, freeTotal(zu), zu.zresist, zu.fast, zu.toxic, zu.smart, zu.pest, Opciones.artAlt].join(',') : '');
     if (z._spec !== sig) {
       z._spec = sig; z.className = info.img ? '' : 'noimg';
       z.innerHTML = (info.img ? '<img ' + (info.tok ? 'class="tok" ' : '') + 'src="' + info.img + '" alt="">' : '') + '<div class="zt"><h4>' + info.title + '</h4>' + info.html + '</div>';
@@ -228,14 +232,15 @@ const ui = {
     for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
   },
   _undo: [],
-  _undoSnap() { return { s: JSON.stringify({ rng: rngState(), uid: UID, G: snapshotState() }) }; },
+  /* Sin el registro de eventos (solo crece): al deshacer se recorta por número de evento. Así cada instantánea pesa unos KB y no cientos. */
+  _undoSnap() { const g = snapshotState(); delete g.evlog; return { s: JSON.stringify({ rng: rngState(), uid: UID, G: g }) }; },
   undoClear() { this._undo = []; this.updateUndo(); },
   updateUndo() { const b = $('undoBtn'); if (!b) return; const n = this._undo.length, ok = n > 0 && G.phase === 'actions' && !G.busy && !G.over; b.disabled = !ok; b.textContent = '↶ Deshacer' + (n ? ' (' + n + ')' : ''); },
   async undo() {
     if (G.busy || G.phase !== 'actions' || G.over || !this._undo.length) return;
     const p = this._undo.pop(), s = JSON.parse(p.s);
     this.mode = null; this.setBanner(null);
-    restoreState(s.G); UID = s.uid; rngRestore(s.rng); G.busy = false; G.sel = null;
+    const log = G.evlog || []; restoreState(s.G); G.evlog = log.filter(e => e.n <= (G.evn || 0)); UID = s.uid; rngRestore(s.rng); G.busy = false; G.sel = null;
     this.log('↶ Deshacer: se vuelve al estado anterior a la última acción.', 'turn');
     saveGame('actions'); this.updateStats(); this.updateHand(); this.redraw();
   },
@@ -354,15 +359,35 @@ const ui = {
     }
     this.rects = rects.filter(r => !this.inFlight(r.id));
   },
+  /* Firma de lo que se pinta en el fondo (mapa y marcadores): si no cambia, se reutiliza la capa ya pintada. */
+  _bgSig() {
+    let s = (this.board || '') + '|' + this.canvas.width + 'x' + this.canvas.height + '|' + ((G.turn && G.turn.block) || []).join(',');
+    for (const id in G.spaces) { const x = G.spaces[id]; if (x.chaos || x.bar || x.mine || x.rumor || x.cem || x.base || x.tall || x.registro || x.bridge) s += '|' + id + ':' + x.chaos + x.bar + x.mine + (x.rumor ? 'r' : '') + (x.cem ? 'c' : '') + (x.base ? 'b' : '') + (x.tall ? 't' : '') + (x.registro ? 'g' : '') + (x.bridge || ''); }
+    return s;
+  },
   draw() {
     const c = this.ctx, W = this.canvas.width, H = this.canvas.height;
-    const im = IMG[this.board === 'B' ? 'mapB' : 'mapA']; if (im) c.drawImage(im, 0, 0, W, H);
+    /* El fondo (mapa, Caos, Barricadas, Minas, Rumores, puente, «No Pasar») se pinta en una capa aparte y solo se rehace cuando cambia:
+       durante las animaciones y el aviso de peligro cada fotograma copia la capa en lugar de repetir decenas de dibujos. */
+    const sig = this._bgSig();
+    if (!this._bgLayer || this._bgKey !== sig) {
+      const bg = this._bgLayer || (this._bgLayer = document.createElement('canvas'));
+      if (bg.width !== W || bg.height !== H) { bg.width = W; bg.height = H; }
+      const g = bg.getContext('2d'); g.clearRect(0, 0, W, H); this.drawBoard(g, W, H); this._bgKey = sig;
+    }
+    c.drawImage(this._bgLayer, 0, 0);
     this.layout(); const m = this.mode;
     const ring = (id, col, lw, dash) => { const s = G.spaces[id]; c.beginPath(); c.arc(s.x, s.y, id === 'C' ? 150 : 72, 0, 7); c.lineWidth = lw; c.strokeStyle = col; c.setLineDash(dash || []); c.stroke(); c.setLineDash([]); };
     if (m && m.type === 'move') for (const id in m.opts) ring(id, controlled(id) ? '#ff5a44' : '#7bd45a', 7);
     if (m && m.type === 'fire') for (const id in m.opts) ring(id, '#ff5a44', 8);
     if (m && m.type === 'pick') for (const id of m.ids) ring(id, '#ffd54a', 8, [14, 8]);
     if (this.marks) for (const id of this.marks) ring(id, '#3ad6ff', 8, [10, 6]);
+    if (this.flash) { const t = (performance.now() - this.flash.t0) / 900; if (t < 1) { const r = this.flash.r; c.save(); c.globalAlpha = 1 - t; c.strokeStyle = ROUTES[r].color; c.lineWidth = 16; c.lineCap = 'round'; c.beginPath(); ROUTES[r].spaces.forEach((s, i) => i ? c.lineTo(s.x, s.y) : c.moveTo(s.x, s.y)); c.lineTo(CENTRO.x, CENTRO.y); c.stroke(); c.restore(); this.redraw(); } else this.flash = null; }
+    this.drawUnits();
+  },
+  /* Mapa y marcadores del tablero sobre el contexto c (la capa de fondo). */
+  drawBoard(c, W, H) {
+    const im = IMG[this.board === 'B' ? 'mapB' : 'mapA']; if (im) c.drawImage(im, 0, 0, W, H);
     for (const id in G.spaces) {
       const s = G.spaces[id];
       if (s.chaos && IMG.m_caos) { c.save(); c.drawImage(IMG.m_caos, s.x - 66, s.y - 66, 44, 42); if (s.chaos > 1) { c.font = '900 18px Impact'; c.fillStyle = '#fff'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.textBaseline = 'middle'; c.strokeText('x' + s.chaos, s.x - 44, s.y - 28); c.fillText('x' + s.chaos, s.x - 44, s.y - 28); } c.restore(); }
@@ -378,9 +403,7 @@ const ui = {
       else if (s.bridge === 'ferry') { c.save(); c.font = '900 18px Impact'; c.fillStyle = '#7bd4ff'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('FERRY', s.x, s.y + 62); c.fillText('FERRY', s.x, s.y + 62); c.restore(); }
       else if (s.bridge === 'down') { c.save(); c.font = '900 20px Impact'; c.fillStyle = '#ff3b2a'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('PUENTE ROTO', s.x, s.y + 62); c.fillText('PUENTE ROTO', s.x, s.y + 62); c.restore(); }
     }
-    if (this.flash) { const t = (performance.now() - this.flash.t0) / 900; if (t < 1) { const r = this.flash.r; c.save(); c.globalAlpha = 1 - t; c.strokeStyle = ROUTES[r].color; c.lineWidth = 16; c.lineCap = 'round'; c.beginPath(); ROUTES[r].spaces.forEach((s, i) => i ? c.lineTo(s.x, s.y) : c.moveTo(s.x, s.y)); c.lineTo(CENTRO.x, CENTRO.y); c.stroke(); c.restore(); this.redraw(); } else this.flash = null; }
     for (const id of (G.turn && G.turn.block) || []) { const s = G.spaces[id]; if (!s) continue; c.save(); c.font = '900 22px Impact'; c.fillStyle = '#ff3b2a'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('NO PASAR', s.x, s.y + 70); c.fillText('NO PASAR', s.x, s.y + 70); c.restore(); }
-    this.drawUnits();
   },
   drawUnit(u, r) {
     const c = this.ctx, sel = G.sel === u.id || this.hl === u.id;
@@ -444,7 +467,16 @@ const ui = {
   choose({ title, text, options, cancel, img }) {
     return new Promise(res => {
       const b = this._modal('<h2>' + title + '</h2>' + (img ? '<div class="cardrow"><img src="' + img + '" alt=""><div><p>' + (text || '') + '</p></div></div>' : '<p>' + (text || '') + '</p>') + '<div class="opts"></div>'); const o = b.querySelector('.opts');
-      options.forEach(opt => { const bt = document.createElement('button'); bt.innerHTML = (opt.color ? '<span class="sw" style="background:' + opt.color + '"></span>' : '') + opt.label; bt.onclick = () => { ui._close(); res(opt.value); }; o.appendChild(bt); });
+      /* Opciones con focus (p. ej. rutas): al tocarlas la cámara va a su zona y queda marcada; sólo se confirma con «Aceptar». */
+      const guiada = options.some(opt => opt.focus);
+      let cur = null, ok = null;
+      options.forEach(opt => {
+        const bt = document.createElement('button'); bt.innerHTML = (opt.color ? '<span class="sw" style="background:' + opt.color + '"></span>' : '') + opt.label;
+        if (!guiada || !opt.focus) bt.onclick = () => { ui._close(); res(opt.value); };
+        else bt.onclick = () => { cur = opt; o.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === bt)); if (ok) ok.disabled = false; ui.focus(opt.focus); };
+        o.appendChild(bt);
+      });
+      if (guiada) { ok = document.createElement('button'); ok.className = 'primary'; ok.textContent = 'Aceptar'; ok.disabled = true; ok.onclick = () => { if (cur) { ui._close(); res(cur.value); } }; o.appendChild(ok); }
       if (cancel) { const bt = document.createElement('button'); bt.textContent = 'Cancelar'; bt.onclick = () => { ui._close(); res(null); }; o.appendChild(bt); }
     });
   },
@@ -469,6 +501,8 @@ const ui = {
   askZeds({ title, text, spaces, options }) {
     return new Promise(res => {
       this.marks = spaces; this.redraw();
+      /* La cámara va a los espacios de la pregunta, para ver de qué se está hablando. */
+      if (spaces && spaces.length) this.focus(spaces.length > 1 ? spaces : spaces[0]);
       const done = v => { ui._close(); ui.marks = null; ui.redraw(); res(v); };
       const b = this._modal('<h2>' + title + '</h2><p>' + text + '</p><div class="opts"></div>', 'pickpanel'); $('modal').classList.add('pick');
       const o = b.querySelector('.opts');
@@ -478,14 +512,16 @@ const ui = {
   confirm(text) { return this.choose({ title: 'Confirmar', text, options: [{ label: 'Sí', value: true }, { label: 'No', value: false }] }); },
   /* Súper Zed: la ficha aparece en grande en el centro con su nombre y su efecto (OK). Al pulsar OK vuela a su espacio y solo entonces se coloca.
      Con «Animaciones rápidas» no vuela: se muestra la información igual y se coloca al pulsar OK. */
-  superIntro(zed, target) {
+  /* Con carta (p. ej. Marines): la carta se muestra junto a la ficha y se desvanece al pulsar OK, cuando la ficha vuela. */
+  superIntro(zed, target, card, txt) {
     return new Promise(res => {
-      const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: '', img: null };
+      const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: txt || '', img: zed.img || null };
       const ov = document.createElement('div'); ov.className = 'superfx';
-      ov.innerHTML = '<div class="sfx-tok"><img src="' + (zed.key && SUPER_ZEDS[zed.key] ? superImg(zed.key, false) : 'assets/tokens/' + (d.img || 'sz_lobo') + '.png') + '" alt=""></div>' +
+      ov.innerHTML = '<div class="sfx-stage">' + (card ? '<div class="sfx-card"><img src="' + card + '" alt=""></div>' : '') +
+        '<div class="sfx-tok"><img src="' + (zed.key && SUPER_ZEDS[zed.key] ? superImg(zed.key, false) : 'assets/tokens/' + (d.img || 'sz_lobo') + '.png') + '" alt=""></div></div>' +
         '<div class="sfx-info" hidden><h2>' + d.name + '</h2><p>' + d.txt + '</p><button class="primary" id="sfxOk">OK</button></div>';
       document.body.appendChild(ov);
-      const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info');
+      const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info'), cardEl = ov.querySelector('.sfx-card');
       setTimeout(() => { info.hidden = false; }, 900);
       /* El vuelo depende de requestAnimationFrame, que el navegador puede pausar (ventana minimizada u oculta): con un temporizador de
          reserva la ficha se coloca igual y la partida nunca se queda parada con la ficha en grande. */
@@ -499,13 +535,15 @@ const ui = {
         if (started) return; started = true;
         info.hidden = true;
         const dest = target && G.spaces[target];
+        if (cardEl) cardEl.classList.add('out');
         if (this.fast || !dest) { finish(); return; }
         /* Vuelo por fotogramas: la ficha va al espacio de destino donde esté en pantalla en cada fotograma. El mapa no hace zoom ni se mueve. */
         if (this.view && this.view.z > 1.001) this.panTo(target);
         const cv = this.canvas, dur = 1600, ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         const live = () => { const r = cv.getBoundingClientRect(), k = r.width / cv.width; return { x: r.left + dest.x * k, y: r.top + dest.y * k }; };
-        const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+        /* El centro de partida es donde está la ficha en pantalla (con carta, va desplazada a un lado). */
         tok.style.animation = 'none';
+        const r0 = tok.getBoundingClientRect(), cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
         const t0 = performance.now();
         const step = now => {
           const t = Math.min(1, (now - t0) / dur), e = ease(t), p = live();
@@ -550,9 +588,14 @@ const ui = {
     });
   },
   pickSpace(ids, text, cancel) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res, cancel: !!cancel }; this.setBanner(text); this.redraw(); }); },
-  async rollSimple(label, n, resultFn) {
-    const b = this._modal('<h2>' + label + '</h2><div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div id="rres" style="text-align:center;margin:8px 0;font-size:15px"></div><div class="opts" id="rb"></div>', 'cbt');
+  /* opts.mods: modificadores de la tirada ([{label, v}]). Se muestran antes de tirar; tras la tirada el dado se anima para sumarlos.
+     El valor devuelto es el dado sin modificar: quien llama suma el modificador como antes. opts.modDie: índice del dado que suma (por defecto el mejor). */
+  async rollSimple(label, n, resultFn, opts) {
+    const mods = ((opts && opts.mods) || []).filter(m => m.v);
+    const mtxt = mods.length ? '<div class="rmods">Modificadores: ' + mods.map(m => m.label + ' ' + (m.v > 0 ? '+' : '') + m.v).join(' · ') + '</div>' : '';
+    const b = this._modal('<h2>' + label + '</h2>' + mtxt + '<div class="dice">' + '<div class="die roll">?</div>'.repeat(n) + '</div><div id="rres" style="text-align:center;margin:8px 0;font-size:15px"></div><div class="opts" id="rb"></div>', 'cbt');
     const dice = Array.from({ length: n }, d6); await this._animate(b.querySelectorAll('.die'), dice);
+    if (mods.length) { const mv = mods.reduce((a, m) => a + m.v, 0); const i = opts.modDie != null ? opts.modDie : (n === 1 ? 0 : dice.indexOf(Math.max(...dice))); await this._bump(b.querySelectorAll('.die')[i], dice[i], mv); }
     const show = () => { if (resultFn) $('rres').innerHTML = resultFn(dice); }; show();
     /* Pensar fríamente: se puede repetir cualquier dado con un 1 (con doble 1 se repiten los dos), igual que en combate. */
     if (G.hand && G.hand.includes('pensar') && dice.includes(1)) {
@@ -569,7 +612,7 @@ const ui = {
     }
     if (DEBUG_DICE) await this._dbgDice([...b.querySelectorAll('.die')], dice, show); else await this._btn('rb', 'Continuar');
     /* Registro: cada tirada con su resultado (para depurar). */
-    EVT('dado', null, { que: label, vals: dice.slice(), res: resultFn ? resultFn(dice).replace(/<[^>]+>/g, '') : null });
+    EVT('dado', null, { que: label, vals: dice.slice(), res: resultFn ? resultFn(dice).replace(/<[^>]+>/g, '') : null, mods: mods.length ? mods.map(m => m.label + ' ' + m.v).join(', ') : undefined });
     this._close(); return dice;
   },
   /* Debug: botones Continuar / Debug. Con Debug, cada clic sobre un dado le sube el valor (1→6→1). Modifica vals en el sitio. */
@@ -583,6 +626,19 @@ const ui = {
         const hint = document.createElement('div'); hint.style.cssText = 'width:100%;font-size:12px;color:#ffd54a;margin-top:4px'; hint.textContent = 'Mitad izquierda del dado: −1 · mitad derecha: +1'; rb.appendChild(hint); };
       ok.onclick = () => { els.forEach(e => { e.onclick = null; e.style.outline = ''; }); rb.innerHTML = ''; res(); };
       rb.append(ok, dbg); ok.focus();
+    });
+  },
+  /* Suma un modificador a un dado ya tirado: aparece una etiqueta «+v» y el dado da una vuelta hasta el valor final (tope 6). */
+  _bump(el, raw, mv) {
+    return new Promise(res => {
+      const end = Math.min(6, raw + mv);
+      const num = document.createElement('span'); num.textContent = raw;
+      const tag = document.createElement('div'); tag.className = 'rbump'; tag.textContent = (mv > 0 ? '+' : '') + mv;
+      el.textContent = ''; el.append(num, tag);
+      setTimeout(() => {
+        el.classList.add('roll'); const t = setInterval(() => num.textContent = fxD6(), 70);
+        setTimeout(() => { clearInterval(t); el.classList.remove('roll'); el.textContent = end; res(); }, this.fast ? 120 : 600);
+      }, this.fast ? 0 : 400);
     });
   },
   _animate(els, vals) {
@@ -929,7 +985,7 @@ const ui = {
   },
   /* Menú Debug: herramientas de prueba. Por ahora, simular el obituario con héroes y estadísticas inventados. */
   showDebug() {
-    const b = this._modal('<h2>🐞 Debug</h2><h3>Dados</h3><div class="row"><label><input type="checkbox" id="dbgDiceSw"' + (ui.dbgDice ? ' checked' : '') + '> Botón para cambiar los dados tras cada tirada</label></div><p class="pickhint">Solo vale para esta sesión: se apaga al recargar la página. Afecta a las partidas que empieces o cargues desde ahora.</p><h3>Obituario</h3><p class="pickhint">Marca los héroes que quieras ver; las estadísticas se inventan al lanzar.</p><div class="dbgbox"><div class="row"><button type="button" id="obAll">Marcar todos</button> <button type="button" id="obClr">Ninguno</button> <span id="obCnt" class="pickhint"></span></div><div id="obList" class="obchecks"></div><div class="row"><button type="button" class="primary" id="obGo">▶ Lanzar obituario</button> <span id="obMsg" class="pickhint"></span></div></div><div class="opts"><button id="xb">Cerrar</button></div>');
+    const b = this._modal('<h2>🐞 Debug</h2><h3>Dados</h3><div class="row"><label><input type="checkbox" id="dbgDiceSw"' + (ui.dbgDice ? ' checked' : '') + '> Botones de depuración: cambiar los dados tras cada tirada y ver los mazos (botón Mazos)</label></div><p class="pickhint">Solo vale para esta sesión: se apaga al recargar la página. Afecta a las partidas que empieces o cargues desde ahora.</p><h3>Obituario</h3><p class="pickhint">Marca los héroes que quieras ver; las estadísticas se inventan al lanzar.</p><div class="dbgbox"><div class="row"><button type="button" id="obAll">Marcar todos</button> <button type="button" id="obClr">Ninguno</button> <span id="obCnt" class="pickhint"></span></div><div id="obList" class="obchecks"></div><div class="row"><button type="button" class="primary" id="obGo">▶ Lanzar obituario</button> <span id="obMsg" class="pickhint"></span></div></div><div class="opts"><button id="xb">Cerrar</button></div>');
     const obKeys = ALT_KEYS.filter(k => HEROES[k]), rnd2 = (a, z) => a + Math.floor(Math.random() * (z - a + 1)), nom = k => HEROES[k].name.replace(/\s*\(.*?\)/, '');
     $('obList').innerHTML = obKeys.map(k => '<label class="obck"><input type="checkbox" value="' + k + '"> ' + nom(k) + '</label>').join('');
     const marcados = () => [...$('obList').querySelectorAll('input:checked')].map(e => e.value), cnt = () => { $('obCnt').textContent = marcados().length + ' de ' + obKeys.length + ' marcados'; };
@@ -937,9 +993,20 @@ const ui = {
     $('obAll').onclick = () => { $('obList').querySelectorAll('input').forEach(e => e.checked = true); cnt(); };
     $('obClr').onclick = () => { $('obList').querySelectorAll('input').forEach(e => e.checked = false); cnt(); };
     $('obGo').onclick = () => { const ks = marcados(); if (!ks.length) { $('obMsg').textContent = 'Marca al menos un héroe.'; return; } $('obMsg').textContent = ''; Obit.simular(ks.map(k => ({ key: k, kills: rnd2(2, 14), turno: rnd2(3, 20) }))); };
-    $('dbgDiceSw').onchange = e => { ui.dbgDice = e.target.checked; };
+    $('dbgDiceSw').onchange = e => { ui.dbgDice = e.target.checked; $('mazosBtn').hidden = !ui.dbgDice; };
     $('xb').onclick = () => this._close();
     cnt();
+  },
+  /* Debug: mazos de Eventos y de Destino en el orden en que van a salir (el 1 es la siguiente carta). Pasa el ratón sobre una carta para verla ampliada. */
+  showDecks() {
+    if (typeof G === 'undefined' || !G || !G.eventDeck) { this._modal('<h2>🐞 Mazos</h2><p>Aún no hay partida en curso.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>'); $('xb').onclick = () => this._close(); return; }
+    const item = (i, zoom, img, name) => '<div class="dkc" data-zoom="' + zoom + '"><span class="dkn">' + (i + 1) + '</span><img src="' + img + '" alt="" loading="lazy"><span>' + name + '</span></div>';
+    const evs = G.eventDeck, dst = G.destDeck || [], dis = G.destDiscard || [];
+    const evHtml = evs.map((id, i) => item(i, 'e:' + id, evImg(id), EV[id].name + (EV[id].fin ? ' <i>(final)</i>' : ''))).join('') || '<p class="pickhint">No quedan cartas de Evento.</p>';
+    const dstHtml = dst.map((id, i) => item(i, 'd:' + id, destImg(id), DEST[id].name)).join('') || '<p class="pickhint">No quedan cartas en el mazo de Destino.</p>';
+    const disHtml = dis.length ? '<p class="pickhint">Descarte de Destino (' + dis.length + '): ' + dis.map(id => DEST[id].name).join(', ') + '.</p>' : '';
+    this._modal('<h2>🐞 Mazos</h2><h3>Eventos · quedan ' + evs.length + '</h3><div class="dkgrid">' + evHtml + '</div><h3>Destino · quedan ' + dst.length + '</h3><div class="dkgrid">' + dstHtml + '</div>' + disHtml + '<div class="opts"><button class="primary" id="xb">Cerrar</button></div>', 'dkpanel');
+    $('xb').onclick = () => this._close();
   },
   showCredits() {
     this._modal('<h2>Créditos</h2><p><b>Dawn of the Zeds</b> (3.ª edición)<br>Diseño del juego original: <b>Hermann Luttmann</b><br>Editorial: Victory Point Games</p><p>Esta adaptación web, en solitario o cooperativo hot seat, es un proyecto de aficionados, sin ánimo de lucro y no oficial. Las ilustraciones, cartas y marcas pertenecen a sus respectivos autores y editores.</p><p style="color:var(--mut);font-size:13px">Adaptación y programación: Antonio Maestre Garrido, con la ayuda de Claude.<br>' + (typeof BUILD_TIME !== 'undefined' ? 'Build: ' + BUILD_TIME : '') + '</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');

@@ -4,7 +4,11 @@
 const SeedCode = {
   VER: 1,
   ABC: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
-  heroList() { return Object.keys(HEROES); },
+  /* Orden fijo de los héroes en el código (el de Object.keys(HEROES) al crearlo): un héroe nuevo en mitad de data.js no debe cambiar los índices
+     de los códigos ya compartidos. Los héroes que se añadan después van al final, en el orden en que aparezcan. */
+  ORDER: ['piazza', 'hernandez', 'schmidt', 'hunt', 'hauser', 'johnson', 'kingman', 'pepinillos', 'santana', 'darling', 'staub', 'horacio', 'seaver', 'agee', 'jones', 'wright', 'wilson', 'furias', 'bomberos', 'bauer', 'antidist', 'salvacion', 'clarin', 'wzed', 'division12',
+    'may', 'betty', 'carter', 'lee', 'jaque', 'porter', 'alia'],
+  heroList() { return this.ORDER.concat(Object.keys(HEROES).filter(k => !this.ORDER.includes(k))); },
   sum(b) { let s = 7; for (const x of b) s = (s * 31 + x) & 255; return s; },
   random() { return crypto.getRandomValues(new Uint32Array(1))[0]; },
   /* o = { level, len, exps: [1..4], heroes: [claves de héroe elegidas, 0 a 4], seed } */
