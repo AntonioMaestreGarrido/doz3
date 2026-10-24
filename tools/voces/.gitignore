@@ -1,0 +1,11 @@
+venv/
+chatterbox_es/
+modelos/
+salidas/
+voces/*.wav
+__pycache__/
+certificados.pem
+venv-seedvc/
+seed-vc/
+convertidos/
+_seedvc_tmp/

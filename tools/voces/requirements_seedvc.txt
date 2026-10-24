@@ -1,0 +1,16 @@
+# Dependencias de Seed-VC para conversión de voz sin tiempo real (las de su requirements.txt menos las de
+# real-time-gui.py, entrenamiento y evaluación). torch/torchaudio los instala instalar_seedvc.bat aparte.
+numpy==1.26.4
+scipy==1.13.1
+librosa==0.10.2
+soundfile==0.12.1
+huggingface_hub>=0.28.1,<1.0
+transformers==4.46.3
+munch==4.0.0
+einops==0.8.0
+descript-audio-codec==1.0.0
+pydub==0.25.1
+hydra-core==1.3.2
+pyyaml
+python-dotenv
+gradio==5.23.0
