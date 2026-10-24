@@ -4,6 +4,7 @@ modelos/
 salidas/
 voces/*.wav
 __pycache__/
+certificados.pem
 venv-seedvc/
 seed-vc/
 convertidos/
