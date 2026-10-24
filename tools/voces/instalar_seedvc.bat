@@ -21,6 +21,11 @@ if not exist venv-seedvc\Scripts\python.exe (
   echo Creando entorno virtual en venv-seedvc\ ...
   %PY% -m venv venv-seedvc || goto :error
 )
+rem Certificados: los de certifi mas los raiz de Windows (igual que instalar.bat), por si un antivirus inspecciona el HTTPS.
+venv-seedvc\Scripts\python -c "import ssl; from pip._vendor import certifi; open('certificados.pem', 'w').write(open(certifi.where()).read() + ''.join(ssl.DER_cert_to_PEM_cert(c) for c, e, t in ssl.enum_certificates('ROOT') if e == 'x509_asn'))" || goto :error
+set "PIP_CERT=%CD%\certificados.pem"
+set "REQUESTS_CA_BUNDLE=%CD%\certificados.pem"
+set "SSL_CERT_FILE=%CD%\certificados.pem"
 venv-seedvc\Scripts\python -m pip install --upgrade pip || goto :error
 
 rem PyTorch: CUDA 12.8 para NVIDIA RTX 20 o posteriores (incluidas las RTX 50), CUDA 12.6 para GTX 9xx/10xx, CPU si no hay NVIDIA.
