@@ -1,2 +1,2 @@
 /* Fecha y hora de la última build (hora de Madrid). Se actualiza con cada cambio publicado. */
-const BUILD_TIME = '2026-10-22 17:34';
+const BUILD_TIME = '2026-10-24 19:35';
