@@ -103,9 +103,9 @@ for (const k of Object.keys(HEROES)) {
   });
 }
 for (const k of Object.keys(SPECIALS)) { const s = SPECIALS[k]; items.push({ tipo: 'Unidad especial', id: k, nombre: s.name, fuerza: s.full + ' / ' + s.red, movimiento: s.mp, texto: txt(s.txt), img: s.card ? img(s.card + '.jpg') : null }); }
-for (const k of Object.keys(SUPER_ZEDS)) { const s = SUPER_ZEDS[k]; items.push({ tipo: 'Súper Zed', id: k, nombre: s.name, fuerza: s.full + ' / ' + s.red, texto: txt(s.txt), img: exists('assets/tokens/' + s.img + '.png') ? 'assets/tokens/' + s.img + '.png' : null }); }
+for (const k of Object.keys(SUPER_ZEDS)) { const s = SUPER_ZEDS[k]; items.push({ tipo: 'Súper Zed', id: k, nombre: s.name, fuerza: s.full + ' / ' + s.red, texto: txt(s.txt), img: exists('assets/tokens/' + s.img + '.webp') ? 'assets/tokens/' + s.img + '.webp' : null }); }
 for (const k of Object.keys(SPREADERS || {})) { const s = SPREADERS[k]; items.push({ tipo: 'Propagador', id: k, nombre: s.name, fuerza: s.full + ' / ' + s.red, texto: '+1 Infección en cada fase de Infección mientras esté en juego fuera de un espacio Inicial.', img: null }); }
-for (const k of Object.keys(RUMORS || {})) { const r = RUMORS[k]; items.push({ tipo: 'Rumor', id: k, nombre: r.name, clase: { C: 'Se coloca', G: 'Se guarda', U: 'Se une' }[r.t] || r.t, texto: txt(r.txt), img: exists('assets/tokens/rumores/' + k + '.png') ? 'assets/tokens/rumores/' + k + '.png' : null }); }
+for (const k of Object.keys(RUMORS || {})) { const r = RUMORS[k]; items.push({ tipo: 'Rumor', id: k, nombre: r.name, clase: { C: 'Se coloca', G: 'Se guarda', U: 'Se une' }[r.t] || r.t, texto: txt(r.txt), img: exists('assets/tokens/rumores/' + k + '.webp') ? 'assets/tokens/rumores/' + k + '.webp' : null }); }
 for (const k of Object.keys(WEAPON_PARTS || {})) { const w = WEAPON_PARTS[k]; items.push({ tipo: 'Súper Arma', id: k, nombre: w.name, texto: txt(w.txt), img: null }); }
 
 const ORDEN = ['Evento', 'Destino', 'Investigación', 'Héroe', 'Civiles Heroicos', 'Unidad especial', 'Súper Zed', 'Propagador', 'Rumor', 'Súper Arma'];

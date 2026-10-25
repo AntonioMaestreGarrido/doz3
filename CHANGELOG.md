@@ -2,10 +2,34 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-25 14:51
+
+### Mejoras
+- **Carga mucho más rápida:** las fichas pasan de PNG a webp (de 8,1 MB a 1,2 MB), el mapa solo se descarga al elegirlo, héroes, Súper Zeds y Rumores se cargan en segundo plano y el service worker guarda fichas, mapas e intro para las siguientes visitas.
+
+### Fixes
+- **Cartas de Evento con arte alternativo que no cargaban:** la tabla de formatos de las imágenes alternativas apuntaba a `.jpg` donde ya hay `.webp`.
+
 ## 2026-10-24 19:35
 
 ### Fixes
 - **Deshacer en combates provocados por tu movimiento:** si un movimiento te lleva a un combate, la ventana de combate muestra «↶ Deshacer el movimiento» junto a «Tirar dados». Mientras no se tire ningún dado, puedes volver atrás (la unidad vuelve a su espacio y se recupera lo gastado). Una vez tirados los dados, ya no se puede deshacer.
+
+## 2026-10-23 17:18
+
+### Mejoras
+- **Cartas de Destino «en cualquier momento» jugables cuando hacen falta:** el juego ahora pregunta si quieres jugarlas en el momento clave, no solo en la fase de Acciones. **Don Barrelotodo**: al avisar de poco Caos (3 o menos) y siempre antes de colocar una ficha que causaría la derrota. **Tiempos desesperados / Hoguera macabra**: al empezar la fase de Infección con Infección 10+ y antes de un Brote Descontrolado. **La señal de rescate**: en Alimentación, si faltan Suministros. **Grupos de exploradores**: antes de activar los Zeds si hay Refugiados junto a ellos. Cada aviso sale una vez por turno, salvo los de derrota o Brote inminentes.
+
+## 2026-10-23 17:02
+
+### Mejoras
+- **«Llega un Héroe Científico»:** ahora eliges qué Héroe Científico disponible llega al Centro (antes se cogía el primero de la lista).
+
+## 2026-10-23 16:54
+
+### Mejoras
+- **Ventana de combate con el detalle de cada Zed:** cada Zed muestra su ficha, fuerza, Impactos, cara reducida y sus estados (Tóxicos, Inteligentes, Rápidos, Resistentes, Pestilentes, Líder Zed); los Súper Zeds, además, su habilidad. Pasar el ratón por la fila abre el tooltip completo.
+- **Modificadores de columna con su origen:** «Inteligentes», «Líder Zed» y «Zeds flambeados» indican qué Zed los causa.
 
 ## 2026-10-22 17:34
 

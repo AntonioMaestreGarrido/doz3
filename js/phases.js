@@ -33,6 +33,7 @@ async function wildOutbreakNow() {
 /* ---------- Caos ---------- */
 async function placeChaos(id, n) {
   if (!G.lv.fourR) return; const s = sp(id); n = n || (G.turn.chaos2 ? 2 : 1);
+  while (G.chaosLeft < n && await offerHandCards('chaos', '¡Solo quedan <b>' + G.chaosLeft + '</b> fichas de Caos y hay que colocar ' + n + '! Si no quedan, perdéis la partida.', true)) { }
   for (let k = 0; k < n; k++) { if (G.chaosLeft <= 0) { G.over = 'lose'; G.loseWhy = 'caos'; LOG('¡No quedan fichas de Caos! Has perdido.', 'bad'); return; } G.chaosLeft--; s.chaos++; }
   LOG('Caos en ' + spaceLabel(id) + '.', 'bad'); UI.pulseSpace(id, '#ff7a2a'); UI.toast('Caos en ' + spaceLabel(id), '#ff7a2a', 1200); UI.redraw();
 }
@@ -307,6 +308,7 @@ async function phase4R() {
 /* ---------- Infección y Alimentación ---------- */
 async function phaseInfection() {
   if (!G.lv.infection) return;
+  if (G.inf >= 10) await offerHandCards('inf', 'La Infección está en <b>' + G.inf + '</b> / 13.');
   const sps = allUnits(x => x.type === 'spreader' && x.space && isRouteSp(x.space) && !isInit(x.space));
   if (sps.length) { LOG(sps.length + ' Propagador(es) de Enfermedad: +' + sps.length + ' Infección.', 'bad'); await infUp(sps.length); }
   if (G.event.inf === 'B') {
@@ -343,6 +345,7 @@ async function phaseFeeding() {
   } else cost = n;
   if (cost >= 2 && alive('clarin')) { cost--; LOG('El Mensajero del Clarín: el segundo Suministro es gratis.'); }
   if (!cost) return;
+  if (G.supplies < cost) await offerHandCards('feed', 'Alimentación: hacen falta <b>' + cost + '</b> Suministros y solo tienes <b>' + G.supplies + '</b>; las unidades sufrirían Impactos.', true);
   const pay = Math.min(G.supplies, cost); G.supplies -= pay; LOG('Alimentación: −' + pay + ' Suministro(s).', 'bad');
   const miss = cost - pay;
   if (miss > 0) { LOG('¡Faltan ' + miss + ' Suministros! Impactos a tus unidades.', 'bad'); for (let k = 0; k < miss; k++) { const us = allUnits(x => isFighter(x) && x.space && x.space !== 'CEM'); if (!us.length) break; const w = await UI.pickUnit(us, 'Escasez de Suministros: elige la unidad que sufre 1 Impacto.'); await hitPlayer(G.units[w], 1); } }
@@ -368,10 +371,15 @@ async function sneakAttack(label) {
 /* Fase de un Evento (tabla EV_FASE de expansions.js): la pestaña de la carta. Los turnos especiales ('-') se resuelven como la fase de los Zeds. */
 const evFase = ev => (!ev || !ev.fase || ev.fase === '-') ? 'z' : ev.fase;
 /* Efecto de la carta al inicio de su fase: main.js lo llama al empezar la fase 4R ('4'), de Infección ('i') y de Acciones ('a'); eventStart lo hace en la de los Zeds ('z'). */
+/* Cartas cuyo icono Z va antes de su efecto: la presión se resuelve primero. El resto (efecto y después Z) va al revés. */
+const PRESSURE_FIRST = ['moteros', 'elwood', 'fortuna', 'helicoptero', 'murcielagos'];
 async function eventAtPhase(f) {
   const ev = G.event; if (!ev || G.over || ev.cer || evFase(ev) !== f) return;
+  const first = PRESSURE_FIRST.includes(ev.id);
+  if (first) await pressure('s', f);
   if (f === 'a' && ev.freeSearch) await eventFreeSearch(ev);
   await eventEffect(ev);
+  if (!first) await pressure('s', f);
 }
 async function eventFreeSearch(ev) {
   for (const u of allUnits(x => ['hero', 'civh'].includes(x.type) && x.space && canSearch(x))) { const v = await UI.choose({ title: 'Búsqueda gratis', text: u.name + ' puede Buscar gratis en ' + spaceLabel(u.space) + '.', options: [{ label: 'Buscar', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') await doSearch(u); }
@@ -385,6 +393,20 @@ async function eventStart() {
   if (ev.assault) { G.turn.noTerrain = true; await infUp(routeZeds(ev.assault).length); if (G.routes.includes(ev.assault)) await placeZedInitial(ev.assault); return; }
   if (ev.negation) G.turn.negation = true; if (ev.freeFromC) G.turn.freeFromC = true; if (ev.noFight) G.turn.noFight = true; if (ev.panic) G.turn.panic = true;
   if (evFase(ev) === 'z') await eventEffect(ev);
+}
+/* Ventana de acciones gratis (carta con flag freeWindow): se abre en la fase de Zeds, tras el inicio de la carta y antes de activar los Zeds.
+   Usa la interfaz normal de Acciones (la fase se muestra como 'actions'), pero solo permite las acciones gratis (freeFor).
+   Al pulsar «Terminar», las acciones gratis que sobren se pierden y la fase de Zeds sigue. */
+async function freeWindow() {
+  const ev = G.event; if (!ev || G.over || !ev.freeWindow) return;
+  if (!allUnits(u => u.side === 'pl' && freeTotal(u) > 0).length) return;
+  const prev = G.phase; G.phase = 'actions'; G.freeWin = true; G.busy = false;
+  UI.log('Acciones gratis de «' + ev.name + '»: cada unidad puede actuar gratis antes de que se activen los Zeds.', 'turn');
+  UI.updateStats(); UI.updateHand(); UI.redraw();
+  await new Promise(r => { ui._endRes = r; });
+  G.busy = true; ui.mode = null; ui.setBanner(null);
+  for (const u of Object.values(G.units)) if (u.side === 'pl') { u.free = 0; u.freeM = 0; u.freeMF = 0; }
+  G.freeWin = false; G.phase = prev;
 }
 /* Efecto propio de la carta (el mismo para cualquier fase: se llama desde eventStart o eventAtPhase). */
 async function eventEffect(ev) {
@@ -476,7 +498,11 @@ async function pressureMove(n) {
     const cands = [];
     for (const r of G.routes) for (let i = 0; i <= lastOf(r); i++) { const zs = zedsAt(r + i).filter(z => !done.has(z.id)); if (zs.length) cands.push({ id: r + i, zs, str: zs.reduce((a, z) => a + strength(z), 0) }); }
     if (!cands.length) return;
-    const m = Math.max(...cands.map(c => c.str)), top = cands.filter(c => c.str === m);
+    const m = Math.max(...cands.map(c => c.str));
+    let top = cands.filter(c => c.str === m);
+    /* Empate de Fuerza: la más cercana al Centro (pasos que le faltan hasta el Centro); solo si persiste, deciden los jugadores. */
+    const dC = id => { const q = sp(id); return lastOf(q.route) - q.i + 1; };
+    if (top.length > 1) { const dmin = Math.min(...top.map(c => dC(c.id))); top = top.filter(c => dC(c.id) === dmin); }
     let pick = top[0];
     if (top.length > 1) { const v = await UI.askZeds({ title: 'Presión Zed (Z): empate', text: 'Hay varias unidades u Hordas igual de fuertes. Los jugadores eligen cuál se mueve.', spaces: top.map(c => c.id), options: top.map(c => ({ label: zedGroupName(c.zs, c.id), value: c.id })) }); pick = top.find(c => c.id === v) || top[0]; }
     pick.zs.forEach(z => { done.add(z.id); z.moved = false; });
@@ -491,8 +517,9 @@ async function pressureSpawn(n) {
   }
 }
 /* when: 's' (efecto «al inicio» de la fase de los Zeds) o 'e' (al final). Solo con 2 o más Jugadores Héroe. */
-async function pressure(when) {
-  const ev = G.event; if (!multiP() || !ev || !ev.pr) return;
+/* Presión Zed: solo en la fase que indica la carta (f), al inicio ('s') o al final ('e') de esa fase. */
+async function pressure(when, f) {
+  const ev = G.event; if (!multiP() || !ev || !ev.pr || evFase(ev) !== f) return;
   const n = nPlayers() - 1;
   for (const t of ev.pr.filter(x => x[0] === when)) { if (G.over) return; await (t[1] === 'M' ? pressureMove(n) : pressureSpawn(n)); }
 }

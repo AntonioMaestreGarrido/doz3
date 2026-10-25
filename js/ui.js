@@ -15,16 +15,21 @@ async function loadAltArt() {
   for (const k of ALT_UNITS) for (const [id, suf] of [['altu_' + k, ''], ['altu_' + k + '_r', '_r']]) if (!IMG[id]) list.push([id, 'assets/arte_alt/unidades/' + k + suf + '.webp']);
   await Promise.all(list.map(([k, src]) => loadImg(k, src)));
 }
+/* Carga escalonada: lo imprescindible (ficha Zed y marcadores) se espera; héroes, Súper Zeds y Rumores se cargan en segundo plano y repintan al acabar. Cada mapa se carga al elegirlo (setMap). */
 async function loadAssets() {
-  const list = [['mapA', 'assets/mapa.jpg'], ['mapB', 'assets/mapaB.jpg'], ['zed', 'assets/tokens/zed.png']];
-  for (const k of Object.keys(HEROES)) if (HEROES[k].img) list.push([HEROES[k].img, 'assets/tokens/' + HEROES[k].img + '.png']);
-  for (const k of Object.keys(SUPER_ZEDS)) list.push([SUPER_ZEDS[k].img, 'assets/tokens/' + SUPER_ZEDS[k].img + '.png']);
-  list.push(['noelle', 'assets/tokens/noelle.png'], ['jaque', 'assets/tokens/jaque.png']);
-  for (const k of ['caos', 'barricada', 'bastion', 'mina_4', 'mina_7', 'puente', 'ecg']) list.push(['m_' + k, 'assets/tokens/marcadores/' + k + '.png']);
-  for (const k of Object.keys(RUMORS).concat('reverso')) list.push(['rum_' + k, 'assets/tokens/rumores/' + k + '.png']);
-  for (const k of ['petra', 'aldeanos', 'refugiados', 'civ1', 'civ2', 'civ3']) list.push(['u_' + k, 'assets/tokens/' + k + '.png']);
-  list.push(['marines', 'assets/tokens/marines.png'], ['guardia', 'assets/tokens/guardia.png'], ['porter_r', 'assets/tokens/porter_r.png']);
-  await Promise.all(list.map(([k, s]) => loadImg(k, s)));
+  const T = 'assets/tokens/', now = [['zed', T + 'zed.webp']], later = [];
+  for (const k of ['caos', 'barricada', 'bastion', 'mina_4', 'mina_7', 'puente', 'ecg']) now.push(['m_' + k, T + 'marcadores/' + k + '.webp']);
+  for (const k of ['petra', 'aldeanos', 'refugiados', 'civ1', 'civ2', 'civ3']) now.push(['u_' + k, T + k + '.webp']);
+  for (const k of Object.keys(HEROES)) if (HEROES[k].img) later.push([HEROES[k].img, T + HEROES[k].img + '.webp']);
+  for (const k of Object.keys(SUPER_ZEDS)) later.push([SUPER_ZEDS[k].img, T + SUPER_ZEDS[k].img + '.webp']);
+  later.push(['noelle', T + 'noelle.webp'], ['jaque', T + 'jaque.webp'], ['marines', T + 'marines.webp'], ['guardia', T + 'guardia.webp'], ['porter_r', T + 'porter_r.webp']);
+  for (const k of Object.keys(RUMORS).concat('reverso')) later.push(['rum_' + k, T + 'rumores/' + k + '.webp']);
+  await Promise.all(now.map(([k, s]) => loadImg(k, s)));
+  Promise.all(later.map(([k, s]) => loadImg(k, s))).then(() => { if (ui.ctx) ui.redraw(); });
+}
+function loadMap(board) {
+  const k = board === 'B' ? 'mapB' : 'mapA'; if (IMG[k]) return Promise.resolve();
+  return loadImg(k, board === 'B' ? 'assets/mapaB.jpg' : 'assets/mapa.jpg').then(() => { if (ui.ctx && ui.board === board) ui.redraw(); });
 }
 /* Heridas de los Zeds con arte alternativo: una X de arañazo en rojo sangre por Impacto (3 por cara), abajo y centradas. */
 const SCRATCH_X = ['M3 5 Q14 8 21 19 Q28 30 38 36 Q30 38 22 29 Q15 20 3 5ZM37 4 Q27 10 22 18 Q16 28 6 37 Q12 26 19 17 Q26 8 37 4Z',
@@ -53,7 +58,7 @@ const ui = {
     document.addEventListener('error', e => {
       const t = e.target;
       /* Arte alternativo que no carga: vuelve a la imagen original. */
-      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/zeds\/zed_(full|red)_(\d)\.webp$/, 'assets/tokens/zeds/$1_$2.png').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)_r\.webp$/, 'assets/tokens/$1_reverso.png').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/unidades\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.png'); if (o !== t.getAttribute('src')) t.src = o; return; }
+      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/zeds\/zed_(full|red)_(\d)\.webp$/, 'assets/tokens/zeds/$1_$2.webp').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)_r\.webp$/, 'assets/tokens/$1_reverso.webp').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)\.webp$/, 'assets/tokens/$1.webp').replace(/^assets\/arte_alt\/unidades\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.webp').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.webp'); if (o !== t.getAttribute('src')) t.src = o; return; }
       if (!t || t.tagName !== 'IMG' || !/assets\/cartas\//.test(t.getAttribute('src') || '')) return;
       const base = t.getAttribute('src').split('?')[0], n = +(t.dataset.retry || 0); if (n >= 4) return; t.dataset.retry = n + 1;
       setTimeout(() => { t.src = base + '?r=' + Date.now(); }, 400 * (n + 1));
@@ -110,7 +115,7 @@ const ui = {
     }
     this.fit();
   },
-  setMap(board) { this.board = board; this.mapH = board === 'B' ? 1541 : 1545; this.canvas.height = this.mapH; this.fit(); },
+  setMap(board) { loadMap(board); this.board = board; this.mapH = board === 'B' ? 1541 : 1545; this.canvas.height = this.mapH; this.fit(); },
   fit() {
     const w = $('mapwrap'); if (!w) return;
     const rb = $('routebtns'), bh = rb ? rb.offsetHeight + 6 : 0;
@@ -149,7 +154,7 @@ const ui = {
     h += '<div>Munición: <b>' + G.ammo + '</b></div><div>' + (L.supplies ? 'Suministros: <b>' + G.supplies + '</b>' : 'Reserva Zed: <b>' + G.reserve.length + '</b>') + '</div>';
     if (L.infection) h += '<div>Infección: <b id="infv" style="color:' + (G.inf >= 10 ? '#ff6b5a' : G.inf >= 7 ? '#ffb347' : '#fff') + '">' + G.inf + ' / 13</b>' + (G.antidote ? ' (Antídoto)' : '') + (G.berra ? ' (Elwood)' : '') + '</div>';
     if (L.fourR) h += '<div>Caos: <b>' + chaosOnMap() + '</b> (quedan ' + G.chaosLeft + ')</div>';
-    if (L.res && G.res) h += '<div style="grid-column:1/3" data-zoom="r:' + G.res.cur.id + '">Investigación: <b>' + G.res.cur.name + '</b> (' + G.res.cur.th + '+' + (G.res.cur.sup ? ', 1 Sum.' : '') + ') · quedan ' + G.res.deck.length + (G.weapon ? '<br>Súper Arma: ' + G.weapon.parts.map(k => '<img class="wpart" src="assets/tokens/arma_' + k + (WEAPON_EXT[k] || '.png') + '" title="' + WEAPON_PARTS[k].name + '" alt="' + WEAPON_PARTS[k].name + '">').join('') : '') + '</div>';
+    if (L.res && G.res) h += '<div style="grid-column:1/3" data-zoom="r:' + G.res.cur.id + '">Investigación: <b>' + G.res.cur.name + '</b> (' + G.res.cur.th + '+' + (G.res.cur.sup ? ', 1 Sum.' : '') + ') · quedan ' + G.res.deck.length + (G.weapon ? '<br>Súper Arma: ' + G.weapon.parts.map(k => '<img class="wpart" src="assets/tokens/arma_' + k + (WEAPON_EXT[k] || '.webp') + '" title="' + WEAPON_PARTS[k].name + '" alt="' + WEAPON_PARTS[k].name + '">').join('') : '') + '</div>';
     h += '<div style="grid-column:1/3;font-size:12px;color:var(--mut)">Cartas de Evento: ' + done + ' / ' + tot + '</div><div class="bar"><i style="width:' + (tot ? 100 * done / tot : 0) + '%"></i></div>';
     if (G.phase === 'actions' && !G.busy) h += '<button class="primary" id="endBtn" style="grid-column:1/3">Terminar fase de Acciones ▶</button>';
     $('status').innerHTML = h;
@@ -229,7 +234,7 @@ const ui = {
       if (handUsable(k) && !G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useHandCard(k)); d.appendChild(b); }
       h.appendChild(d);
     }
-    for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
+    for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.webp" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
   },
   _undo: [],
   _undoRequested: false,
@@ -521,7 +526,7 @@ const ui = {
       const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: txt || '', img: zed.img || null };
       const ov = document.createElement('div'); ov.className = 'superfx';
       ov.innerHTML = '<div class="sfx-stage">' + (card ? '<div class="sfx-card"><img src="' + card + '" alt=""></div>' : '') +
-        '<div class="sfx-tok"><img src="' + (zed.key && SUPER_ZEDS[zed.key] ? superImg(zed.key, false) : 'assets/tokens/' + (d.img || 'sz_lobo') + '.png') + '" alt=""></div></div>' +
+        '<div class="sfx-tok"><img src="' + (zed.key && SUPER_ZEDS[zed.key] ? superImg(zed.key, false) : 'assets/tokens/' + (d.img || 'sz_lobo') + '.webp') + '" alt=""></div></div>' +
         '<div class="sfx-info" hidden><h2>' + d.name + '</h2><p>' + d.txt + '</p><button class="primary" id="sfxOk">OK</button></div>';
       document.body.appendChild(ov);
       const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info'), cardEl = ov.querySelector('.sfx-card');
@@ -699,8 +704,9 @@ const ui = {
     return out;
   },
   combatOpen(info) {
-    const zs = info.zeds.map(z => z.name + ' ' + strength(z) + (z.hits ? ' <span class="bad">(' + '♥'.repeat(z.hits) + ')</span>' : '')).join(' + ');
-    const shHtml = () => info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
+    const zs = info.zeds.map(z => { const img = typeof zedImgOf === 'function' ? zedImgOf(z) : null, sup = z.type === 'super' && SUPER_ZEDS[z.key];
+      return '<div class="zrow2" data-zoom="u:' + z.id + '">' + (img ? '<img src="' + img + '" alt="">' : '') + '<div><b>' + z.name + ' ' + strength(z) + '</b>' + (z.hits ? ' <span class="bad">' + '♥'.repeat(z.hits) + '</span>' : '') + (z.flipped ? ' · cara reducida' : '') + (z.type === 'super' ? ' <span class="pill">Súper Zed</span>' : '') + (zedBadges(z).map(b => ' <span class="pill">' + b.ico + ' ' + b.txt + '</span>').join('')) + (sup ? '<div class="zab">' + sup.txt + '</div>' : '') + '</div></div>'; }).join('');
+    const shHtml = () => info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + (s.by ? ' <span class="mut">— ' + s.by + '</span>' : '') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
     const colsInner = () => 'Columna inicial: <b>' + CAC_COLS[info.initCol] + '</b><ul style="margin:2px 0 2px 18px;padding:0">' + shHtml() + '</ul>' + (info.extraDice ? '<div>+' + info.extraDice + ' dado(s) extra: se usan los 2 mejores.</div>' : '') + 'Columna final: <b style="color:var(--gold)">' + CAC_COLS[info.finalCol] + '</b>' + (info.infGain != null ? (info.infGain ? '<div class="bad">Este combate sube la Infección <b>+' + info.infGain + '</b>.</div>' : '<div>Este combate no sube la Infección.</div>') : '');
     const b = this._modal('<h2>' + info.title + '</h2><div class="sides"><div class="side z"><div>' + (info.zeds.length > 1 ? 'Horda' : 'Atacantes / Zeds') + '</div><div class="big" style="color:#ff8a76">' + info.zStr + '</div><div style="font-size:12px">' + zs + '</div></div><div class="vs">VS</div><div class="side"><div>' + info.fighter.name + '</div><div class="big" style="color:#9bd68a">' + info.pStr + '</div><div style="font-size:12px">Fuerza ' + (info.fighter.flipped ? 'reducida' : 'completa') + '</div></div></div><div class="cols" id="ccols">' + colsInner() + '</div><div id="ctab">' + this._cacTable(info.initCol, info.finalCol) + '</div><div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
     const mark = best => { const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.finalCol + '"]'); b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Suma <b>' + (best[0] + best[1]) + '</b>'; };

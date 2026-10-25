@@ -102,7 +102,8 @@ function freeOtherLogs(keep) { for (const id of slotIds()) if (id !== keep) try 
 let saveWarned = false;
 /* at: 'actions' (a mitad de la fase de Acciones) o 'turn' (al empezar un turno). */
 function saveGame(at) {
-  if (!G.lv || G.over) return;
+  /* Ventana de acciones gratis abierta (freeWindow): no se guarda, para que cargar la partida no salte la activación de los Zeds ni repita acciones gratis. Se retoma desde el último guardado de turno. */
+  if (!G.lv || G.over || G.freeWin) return;
   if (!G.saveId) G.saveId = newSaveId();
   const snap = snapshotState(); delete snap.evlog;
   const data = JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), dbg: !!DEBUG_DICE, G: snap, meta: slotMeta(snap) });

@@ -74,7 +74,7 @@ res('hormona', 'Hormona anticrecimiento', 'adv', 5, 1, 0, 'Puedes reemplazar una
 res('ahora', 'Campaña del «Ahora o nunca»', 'adv', 5, 1, 1, 'Mientras esta sea la carta en curso, incrementa en 1 el resultado de tus tiradas de Buscar.');
 res('antinatural', 'Selección antinatural Zed', 'adv', 5, 1, 1, 'Mientras esta sea la carta en curso, al colocar cualquier nueva unidad Zed o de Súper Zeds, roba dos unidades de ese tipo y elige cuál de ellas colocar.');
 res('vacunas', 'Las vacunas ayudan', 'adv', 5, 1, 1, 'Mientras esta sea la carta en curso, todos los Brotes colocan las nuevas unidades Zed y de Súper Zeds en los espacios Iniciales.');
-res('heroe_c', 'Llega un Héroe Científico', 'adv', 5, 1, 0, 'Coge una nueva unidad de Héroe Científico al azar y colócala en el Centro de la Ciudad.');
+res('heroe_c', 'Llega un Héroe Científico', 'adv', 5, 1, 0, 'Elige una nueva unidad de Héroe Científico disponible y colócala en el Centro de la Ciudad.');
 res('atascada', 'Investigación atascada', 'adv', 4, 1, 0, 'Sin Evento Especial.');
 res('antidoto', 'Avances en el Antídoto', 'spe', 6, 1, 0, 'Si el Componente Final no está en el Laboratorio, colócalo y baraja esta carta de nuevo en el mazo de Investigación. Si ya estaba, dale la vuelta (Antídoto): reduce la Infección en 1 al final de cada fase de Mantenimiento.');
 for (let k = 1; k <= 4; k++) res('arma' + k, 'Función para la Súper Arma', 'spe', 5, 1, 0, 'Elige un Componente de la Súper Arma y ponlo en juego. Si solo te falta el cuarto Componente, lo recibes únicamente si la Profesora Agee está en el Laboratorio.');

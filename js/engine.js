@@ -152,6 +152,7 @@ function drawNormalToken() {
   }
   return G.reserve.splice(rnd(G.reserve.length), 1)[0];
 }
+/* Sin Zeds normales en la reserva, se coge un Súper Zed al azar (regla general de Zeds). */
 function makeZed() {
   const t = drawNormalToken();
   /* Sin Zeds normales: en su lugar sale un Súper Zed al azar, si quedan. */
@@ -219,6 +220,7 @@ function alreadyHas(rid) { return G.res && G.res.cur && G.res.cur.id === rid; }
 /* ================= INFECCIÓN ================= */
 async function infUp(n) {
   if (!G.lv.infection || n <= 0) return;
+  while (G.inf + n >= 13 && !G.inWild && await offerHandCards('inf', 'La Infección subirá +' + n + ' y llegaría a 13: <b>Brote Descontrolado</b>.', true)) { }
   const i0 = G.inf; G.inf = Math.min(13, G.inf + n); EVT('inf', null, { de: i0, to: G.inf, n }); UI.updateStats(); UI.fxInf(G.inf - i0);
   if (G.inf >= 13 && !G.inWild) { G.inWild = true; LOG('¡La Infección llega al máximo! Brote Descontrolado.', 'bad'); await outbreak(true); G.inWild = false; }
 }
@@ -432,9 +434,10 @@ function hasPart(k) { return G.weapon && G.weapon.parts.includes(k); }
 function weaponFor(u, k) { return hasPart(k) && !(u && u.type === 'guard' && !u.reachedC && !(u.space && G.spaces[u.space] && isCity(u.space))); }
 function zedShifts(zs, o) {
   const s = [];
-  if (zs.some(z => z.smart)) s.push({ label: 'Inteligentes', v: -1 });
-  if (zs.some(z => z.leader)) s.push({ label: 'Líder Zed', v: -1 });
-  if (G.turn.flamed && zs.some(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id))) s.push({ label: 'Zeds flambeados', v: -2 });
+  const by = f => zs.filter(f).map(z => z.name + ' ' + strength(z)).join(', ');
+  if (zs.some(z => z.smart)) s.push({ label: 'Inteligentes', v: -1, by: by(z => z.smart) });
+  if (zs.some(z => z.leader)) s.push({ label: 'Líder Zed', v: -1, by: by(z => z.leader) });
+  if (G.turn.flamed && zs.some(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id))) s.push({ label: 'Zeds flambeados', v: -2, by: by(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id)) });
   if (G.turn.frenzy) s.push({ label: 'Súper Zeds enloquecidos', v: -2 });
   return s;
 }

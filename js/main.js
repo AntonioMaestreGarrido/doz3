@@ -71,19 +71,22 @@ async function playGame(setup, saved) {
       UI.redraw();
       await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', '<div class="rulebox"><b>Regla</b><br>' + ev.txt.join('<br>') + '</div>' + Preview.block(Preview.event(ev)), evImg(ev.id), 'e:' + ev.id);
       if (!G.reserve.length) { LOG('No quedan fichas Zed en la reserva.', 'bad'); await UI.waitAck('Sin fichas Zed', 'No quedan fichas Zed en la reserva. Cada nuevo Zed que haya que colocar será un Súper Zed al azar, mientras queden.'); }
-      if (chaosLow()) { LOG('Quedan ' + G.chaosLeft + ' fichas de Caos.', 'bad'); await UI.waitAck('Fichas de Caos', chaosWarnText()); }
+      if (chaosLow()) { LOG('Quedan ' + G.chaosLeft + ' fichas de Caos.', 'bad'); await UI.waitAck('Fichas de Caos', chaosWarnText()); await offerHandCards('chaos', chaosWarnText()); }
       if (ev.guardia) { G.phase = 'zeds'; await UI.spawnBatch(() => withPeek(eventStart)); await maintenance(); G.dangerNext = enPeligro(); saveGame('turn'); continue; }
       G.phase = 'fourR'; UI.updateStats(); await UI.spawnBatch(() => withPeek(() => eventAtPhase('4'))); if (G.over) break; await phase4R(); if (G.over) break;
+      await UI.spawnBatch(() => pressure('e', '4')); if (G.over) break;
       /* La fase de Infección puede estallar un Brote (y su carta de Destino): las unidades nuevas también vuelan desde la columna. */
-      G.phase = 'infection'; UI.updateStats(); await UI.spawnBatch(async () => { await withPeek(() => eventAtPhase('i')); if (G.over) return; await phaseInfection(); if (G.over) return; await withPeek(eventAfterInfection); }); if (G.over) break;
+      G.phase = 'infection'; UI.updateStats(); await UI.spawnBatch(async () => { await withPeek(() => eventAtPhase('i')); if (G.over) return; await phaseInfection(); if (G.over) return; await withPeek(eventAfterInfection); if (G.over) return; await pressure('e', 'i'); }); if (G.over) break;
       G.phase = 'feeding'; UI.updateStats(); await phaseFeeding(); if (G.over) break;
       G.phase = 'zeds'; UI.updateStats();
       /* Las unidades que aparecen en estas fases salen de una columna y vuelan a su espacio (anim.js spawnBatch). */
       await UI.spawnBatch(() => withPeek(eventStart)); if (G.over) break;
-      await UI.spawnBatch(() => pressure('s')); if (G.over) break;
+      await freeWindow(); if (G.over) break;
+      await UI.spawnBatch(() => pressure('s', 'z')); if (G.over) break;
+      await offerHandCards('zeds', 'Hay Refugiados junto a unidades Zed y las rutas están a punto de activarse.'); if (G.over) break;
       await UI.spawnBatch(() => phaseZeds()); if (G.over) break;
       await UI.spawnBatch(() => withPeek(eventAfterZeds)); UI.release(); if (G.over) break;
-      await UI.spawnBatch(() => pressure('e')); if (G.over) break;
+      await UI.spawnBatch(() => pressure('e', 'z')); if (G.over) break;
       if (ev.fin) { G.over = 'win'; break; }  /* Cartas fin (pestaña en Acciones): se gana al inicio de la fase de Acciones, es decir, tras la fase de Zeds con sus rutas activadas */
     } else ev = G.event;
     const resumed = resume === 'actions'; resume = null;
@@ -103,7 +106,8 @@ async function playGame(setup, saved) {
         G.busy = false; UI.updateStats(); UI.updateHand(); UI.redraw(); UI.log('Base aérea: tienes 1 Acción de Evento adicional; termina la fase cuando quieras.', 'good');
       }
       if (G.over) break;
-      await UI.spawnBatch(() => withPeek(eventEnd));
+      await UI.spawnBatch(() => withPeek(eventEnd)); if (G.over) break;
+      await UI.spawnBatch(() => pressure('e', 'a'));
     } else UI.log('¡CEREBROS!: no hay fase de Acciones.', 'bad');
     if (G.over) break;
     G.phase = 'maint'; await maintenance();
