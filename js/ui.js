@@ -278,7 +278,7 @@ const ui = {
     const box = $('unitbox'), u = G.sel && G.units[G.sel];
     let sph = '';
     if (G.phase === 'actions' && !G.busy && G.turn && G.turn.specials.length) sph = '<div class="acts" style="margin-top:6px">' + G.turn.specials.map((s, i) => '<button data-sp="' + i + '">' + s.label + '</button>').join('') + '</div>';
-    if (!u) { box.innerHTML = '<div class="lbl">Unidad</div><div style="color:var(--mut)">Pulsa una unidad del mapa para ver sus acciones. Pasa el ratón sobre cualquier ficha o carta para ver su texto ampliado.</div>' + sph; this.bindSpecials(box); return; }
+    if (!u) { box.innerHTML = '<div class="lbl">Unidad</div><div style="color:var(--mut)">Pulsa una unidad del mapa para ver sus acciones. Pasa el ratón (en táctil, mantén pulsado) sobre cualquier ficha o carta para ver su texto ampliado.</div>' + sph; this.bindSpecials(box); return; }
     let h = '<div class="lbl">Unidad seleccionada</div><h3>' + u.name + '</h3><div class="stat">Fuerza <b style="color:#fff">' + strength(u) + '</b> (' + (u.flipped ? 'reducida' : 'completa') + ') · Impactos ' + u.hits + '/' + capOf(u) + (u.mp ? ' · Mov. ' + u.mp : '') + '<br>' + spaceLabel(u.space) + '</div>';
     const tags = []; if (u.ecg) tags.push('En coma'); if (u.resist) tags.push('Resistiendo'); if (u.armed) tags.push('Bien Armados 1►'); if (u.leader) tags.push('Líder Civil 1►'); if (u.keepCalm) tags.push('Keep calm 2►'); if (u.trained) tags.push('Entrenados +2'); if (freeTotal(u)) tags.push('Acciones gratis: ' + freeLabel(u));
     h += tags.map(t => '<span class="pill">' + t + '</span>').join('');
@@ -339,10 +339,11 @@ const ui = {
     }
     this.selectUnit(uid);
   },
-  /* Al elegir una unidad en la fase de acciones se entra directamente en Mover (si está disponible). */
-  selectUnit(uid) {
+  /* Al elegir una unidad en la fase de acciones se entra directamente en Mover (si está disponible), salvo con opts.noMove
+     (recorrer unidades con los botones ◀ ▶ o Tab: solo se selecciona). */
+  selectUnit(uid, opts) {
     G.sel = uid || null; this.updateStats(); this.redraw();
-    const u = uid && G.units[uid]; if (!u || G.phase !== 'actions' || G.busy) return;
+    const u = uid && G.units[uid]; if (!u || G.phase !== 'actions' || G.busy || (opts && opts.noMove)) return;
     if (needsPermission(u)) return; /* solo se mira: el permiso se pide al elegir una acción */
     const mv = unitActions(u).find(a => a.id === 'move'); if (mv && mv.ok) this.doAct(u, 'move');
   },
@@ -851,10 +852,13 @@ const ui = {
     this._modal('<h2>Opciones</h2><h3 class="oph">Sonido</h3><p>Cada canal tiene su propio interruptor y volumen.</p>' + this._soundRows() +
       '<h3 class="oph">Arte</h3><div class="snd"><label class="chk"><input type="checkbox" id="optArt"' + (Opciones.artAlt ? ' checked' : '') + '> Usar arte alternativo</label></div>' +
       '<p class="ophint">Cambia las ilustraciones de cartas, fichas y obituario por el arte alternativo.</p>' +
+      '<h3 class="oph">Pantalla</h3><div class="snd"><label class="chk">Disposición de móvil <select id="optMovil">' + [['auto', 'Automática'], ['on', 'Siempre'], ['off', 'Nunca']].map(([v, t]) => '<option value="' + v + '"' + (Opciones.movil === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></label></div>' +
+      '<p class="ophint">Automática: en teléfonos, el mapa ocupa toda la pantalla y los paneles van en pestañas (abajo en vertical, a la derecha en horizontal).</p>' +
       '<div class="opts"><button class="primary" id="sndOk">Cerrar</button></div>', 'sound');
     this._bindSound();
     $('optArt').onchange = e => { Opciones.set({ artAlt: e.target.checked }); if (G.event) $('evimg').src = evImg(G.event.id); loadAltArt().then(() => ui.redraw()); };
     $('sndOk').onclick = () => ui._close();
+    if ($('optMovil')) $('optMovil').onchange = e => { Opciones.set({ movil: e.target.value }); if (ui.mobApply) ui.mobApply(); };
   },
   hideCover() { const t = $('title'); if (t) t.remove(); },
   /* Vuelve al menú de la portada sin repetir la intro. */
