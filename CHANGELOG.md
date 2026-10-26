@@ -2,6 +2,27 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-26 22:50
+
+### Novedades: modo móvil
+- **Panel con pestañas** (Unidad · Rutas · Acciones · Evento · Mano · Registro): abajo en vertical, a la derecha en horizontal. Tocar la pestaña abierta pliega el panel; al elegir un destino en el mapa se pliega solo y vuelve al terminar. «Fin ▶» siempre a mano (pide confirmación si quedan acciones).
+- **◀ ▶ Unidades:** recorre tus unidades (sin Refugiados, Aldeanos ni Trenes), primero las que aún pueden actuar, del Centro hacia fuera; la cámara va a cada una con un zoom en el que las fichas se leen bien y queda seleccionada sin entrar en Mover. El ▶ parpadea cuando la unidad elegida ya no puede actuar. En escritorio, Tab y Mayús+Tab hacen lo mismo.
+- **◀ ▶ Zeds:** recorre los espacios con Zeds, del más cercano al Centro al más lejano.
+- **Pestaña Rutas:** esquema de las cinco rutas (del Inicial al n.º 0) con la Fuerza Zed, tus unidades, Saqueadores, Caos y Barricadas de cada espacio, legible sin zoom; tocar una casilla lleva el mapa allí y tocar el nombre de la ruta la encuadra entera.
+- **Avisos en el borde del mapa** hacia los Zeds junto al Centro que quedan fuera de la vista; tocarlos lleva la cámara allí.
+- **Cámara guiada y zoom:** en móvil la cámara encuadra con zoom legible y se puede acercar más (hasta 1,6 veces ese zoom).
+- **Toques más fáciles:** la zona táctil de fichas y espacios tiene un tamaño mínimo en pantalla.
+- **Combate y disparo:** la tabla se reduce a la columna que se aplica (tócala para verla entera); en horizontal la ventana va en dos columnas y cabe sin desplazar. Las preguntas de «Elige una unidad» van a la derecha en horizontal.
+- Altura real de la pantalla (`dvh`) y zonas seguras (muesca y barra inferior); textos táctiles («mantén pulsado» en lugar de «pasa el ratón»).
+
+### Fixes (móvil)
+- **Elegir ruta:** el aviso «Elige una ruta» va abajo y no tapa el mapa; al tocar una ruta la cámara la encuadra por encima del panel.
+- **Pellizcar sobre el mapa:** un pellizco o arrastre en la zona del mapa, aunque empiece sobre un botón flotante, mueve el mapa y no amplía la página.
+- **Elegir destino:** el panel se pliega para ver el mapa y vuelve al cancelar o terminar la elección.
+- **Pulsar una unidad:** el panel se despliega con sus acciones; ya no entra directamente en «Mover».
+- **Botón atrás de Android:** dentro de una partida pregunta si quieres volver al menú principal (la partida se guarda al terminar cada acción).
+- **«Fin ▶»:** pide confirmación solo si quedan acciones.
+
 ## 2026-10-25 14:51
 
 ### Mejoras
