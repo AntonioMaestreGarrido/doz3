@@ -5,6 +5,7 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
 ## 2026-10-26 22:50
 
 ### Novedades: modo móvil
+- **Disposición de móvil** (automática en teléfonos; también en Opciones › Pantalla: Automática / Siempre / Nunca): el mapa ocupa toda la pantalla, con una franja de estado arriba (turno, fase, 💀 Infección, Munición, Suministros, Caos, Acciones y cartas de Evento), ↶ Deshacer y el menú ☰ con el resto de botones.
 - **Panel con pestañas** (Unidad · Rutas · Acciones · Evento · Mano · Registro): abajo en vertical, a la derecha en horizontal. Tocar la pestaña abierta pliega el panel; al elegir un destino en el mapa se pliega solo y vuelve al terminar. «Fin ▶» siempre a mano (pide confirmación si quedan acciones).
 - **◀ ▶ Unidades:** recorre tus unidades (sin Refugiados, Aldeanos ni Trenes), primero las que aún pueden actuar, del Centro hacia fuera; la cámara va a cada una con un zoom en el que las fichas se leen bien y queda seleccionada sin entrar en Mover. El ▶ parpadea cuando la unidad elegida ya no puede actuar. En escritorio, Tab y Mayús+Tab hacen lo mismo.
 - **◀ ▶ Zeds:** recorre los espacios con Zeds, del más cercano al Centro al más lejano.
