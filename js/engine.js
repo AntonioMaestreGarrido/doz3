@@ -153,17 +153,17 @@ function drawNormalToken() {
   return G.reserve.splice(rnd(G.reserve.length), 1)[0];
 }
 /* Sin Zeds normales en la reserva, se coge un Súper Zed al azar (regla general de Zeds). */
-function makeZed() {
-  const t = drawNormalToken();
+function makeZed(pre) {
+  const t = pre || drawNormalToken();
   /* Sin Zeds normales: en su lugar sale un Súper Zed al azar, si quedan. */
   if (!t) return G.supers.length ? makeSuper() : null;
   EVT('ficha', null, { fu: t[0], rd: t[1], quedan: G.reserve.length });
   return newUnit({ side: 'zed', type: 'zed', name: 'Zed', full: t[0], red: t[1], hf: 3, hr: 3, token: t });
 }
-function makeSuper() {
+function makeSuper(pre) {
   if (!G.supers.length) return makeZed();
-  let k; const q = G.turn && G.turn.peekOn && G.turn.peekQ && G.turn.peekQ.sup;
-  if (q && q.length) { const pk = q.shift(), i = G.supers.indexOf(pk); if (i >= 0) k = G.supers.splice(i, 1)[0]; }
+  let k = pre; const q = G.turn && G.turn.peekOn && G.turn.peekQ && G.turn.peekQ.sup;
+  if (!k && q && q.length) { const pk = q.shift(), i = G.supers.indexOf(pk); if (i >= 0) k = G.supers.splice(i, 1)[0]; }
   if (!k && alreadyHas('antinatural') && G.supers.length > 1) { /* roba dos Súper Zeds y elige el más débil */
     const a = G.supers.splice(rnd(G.supers.length), 1)[0], b = G.supers.splice(rnd(G.supers.length), 1)[0];
     k = SUPER_ZEDS[a].full <= SUPER_ZEDS[b].full ? a : b; G.supers.push(k === a ? b : a);
@@ -172,6 +172,22 @@ function makeSuper() {
   EVT('superSale', null, { key: k, quedan: G.supers.length });
   const d = SUPER_ZEDS[k];
   return newUnit({ side: 'zed', type: 'super', key: k, name: d.name, full: d.full, red: d.red, hf: 3, hr: 3, img: d.img, resistZ: k === 'ferreo' });
+}
+/* Selección antinatural: se roban dos fichas del mismo tipo y el jugador elige cuál se coloca; la otra vuelve a la reserva. */
+async function pickOfTwo(pool, label) {
+  const a = pool.splice(rnd(pool.length), 1)[0], b = pool.splice(rnd(pool.length), 1)[0];
+  const v = await UI.choose({ title: 'Selección antinatural Zed', text: 'Se roban dos unidades; elige cuál se coloca (la otra vuelve a la reserva):', options: [a, b].map((x, i) => ({ label: label(x), value: i })) });
+  const keep = v === 1 ? b : a; pool.push(v === 1 ? a : b); return keep;
+}
+async function makeZedA() {
+  if (!alreadyHas('antinatural') || G.reserve.length < 2) return makeZed();
+  const t = await pickOfTwo(G.reserve, x => 'Zed de Fuerza ' + x[0] + ' (reducida ' + x[1] + ')');
+  EVT('antinatural', null, { elegido: t[0] }); return makeZed(t);
+}
+async function makeSuperA() {
+  if (!alreadyHas('antinatural') || G.supers.length < 2) return makeSuper();
+  const k = await pickOfTwo(G.supers, x => SUPER_ZEDS[x].name + ' (Fuerza ' + SUPER_ZEDS[x].full + ' / reducida ' + SUPER_ZEDS[x].red + ')');
+  return makeSuper(k);
 }
 const ZED_UPGRADES = { smart: 'Inteligentes', fast: 'Rápidos', toxic: 'Tóxicos', leader: 'Líder', zresist: 'Resistentes' };
 function discardZed(u) {
@@ -187,7 +203,7 @@ function zedBack(id, n) { // recoloca un Zed retrocediendo hasta hallar sitio; d
   return i < 0 ? null : s.route + i;
 }
 async function placeZedAt(id, why, zed) {
-  zed = zed || makeZed();
+  zed = zed || await makeZedA();
   if (!zed) { LOG('No quedan fichas Zed en la reserva.'); return null; }
   if (id === 'C' || !isRouteSp(id)) { discardZed(zed); return null; }
   let target = id;
@@ -205,7 +221,7 @@ async function placeZedAt(id, why, zed) {
 function returnZed(z) { if (z.token) G.reserve.push(z.token); else if (z.type === 'super') { G.supers.push(z.key); EVT('superVuelve', z.id, { key: z.key, quedan: G.supers.length }); } removeUnit(z); delete G.units[z.id]; }
 function firstOpenInitial() { for (const r of G.routes) if (normalZedsAt(r + '0').length < zedCap(r + '0')) return r + '0'; return null; }
 async function placeZedInitial(r, zed) {
-  zed = zed || makeZed(); if (!zed) { LOG('No quedan fichas Zed.'); return null; }
+  zed = zed || await makeZedA(); if (!zed) { LOG('No quedan fichas Zed.'); return null; }
   let t = r + '0';
   if (normalZedsAt(t).length >= zedCap(t)) t = firstOpenInitial();
   if (!t) { returnZed(zed); LOG('Todos los espacios Iniciales están llenos.'); return null; }

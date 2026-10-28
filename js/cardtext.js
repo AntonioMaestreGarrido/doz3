@@ -20,7 +20,7 @@ function zoomInfo(spec) {
   }
   if (kind === 'r') {
     const r = RES[key]; if (!r) return null;
-    return { img: 'assets/cartas/i_' + key + '.jpg', title: r.name, html: '<div class="zk">Carta de Investigación' + (r.perm ? ' · efecto mientras sea la carta en curso' : '') + '</div>' + li([r.txt]) + '<div class="zrow"><b>Para avanzar:</b> tirada de ' + r.th + (r.th < 6 ? '+' : '') + (r.sup ? ' y 1 Suministro' : '') + '</div>' };
+    return { img: resImg(key), title: r.name, html: '<div class="zk">Carta de Investigación' + (r.perm ? ' · efecto mientras sea la carta en curso' : '') + '</div>' + li([r.txt]) + '<div class="zrow"><b>Para avanzar:</b> tirada de ' + r.th + (r.th < 6 ? '+' : '') + (r.sup ? ' y 1 Suministro' : '') + '</div>' };
   }
   if (kind === 'm') { /* marcadores del tablero: Bastión / Barricada y Campo de Minas (spec «m:<espacio>») */
     const s = G.spaces[key]; if (!s || !(s.bar || s.mine)) return null;
@@ -85,6 +85,9 @@ const artAltOn = () => typeof Opciones !== 'undefined' && Opciones.artAlt;
 const evImg = id => artAltOn() && ALT_EVENTS[id] ? 'assets/arte_alt/eventos/e_' + id + '.' + ALT_EVENTS[id] : 'assets/cartas/e_' + id + '.jpg';
 /* base: nombre de la imagen sin «d_» (ver DEST_IMG en game.js). */
 const destImgBase = base => artAltOn() && ALT_DEST[base] ? 'assets/arte_alt/destino/d_' + base + '.' + ALT_DEST[base] : 'assets/cartas/d_' + base + '.jpg';
+/* Cartas de Investigación con arte alternativo (assets/arte_alt/investigacion/i_<id>.webp); las cuatro «Función para la Súper Arma» siguen con la original. */
+const ALT_RES = ['cecina', 'cientificos', 'dcp', 'distraccion', 'escasean', 'esperanza', 'folletos', 'intoxicados', 'medio', 'musica', 'noticias', 'pruebas', 'sasha', 'uhm', 'ahora', 'antinatural', 'atascada', 'heroe_c', 'hormona', 'vacunas', 'antidoto'];
+const resImg = id => artAltOn() && ALT_RES.includes(id) ? 'assets/arte_alt/investigacion/i_' + id + '.webp' : 'assets/cartas/i_' + id + '.jpg';
 const superImg = (k, red) => zedAlt(k) ? 'assets/arte_alt/zeds/' + SUPER_ZEDS[k].img + (red ? '_r' : '') + '.webp' : 'assets/tokens/' + SUPER_ZEDS[k].img + '.webp';
 const heroAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_KEYS.includes(k));
 const heroCard = k => CARD_IMGS.includes(k) ? (heroAlt(k) ? 'assets/arte_alt/cartas/h_' + k + '.webp' : 'assets/cartas/h_' + k + '.jpg') : null;

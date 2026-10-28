@@ -14,7 +14,7 @@ function peekZeds(n) {
 }
 /* Asoma qué Súper Zed saldrá (clave de SUPER_ZEDS) o null. */
 function peekSuper() {
-  if (!G.supers.length) return null;
+  if (!G.supers.length || (typeof alreadyHas === 'function' && alreadyHas('antinatural'))) return null;
   const q = G.turn.peekQ = G.turn.peekQ || { zed: [], sup: [] }, k = G.supers[rnd(G.supers.length)]; q.sup.push(k); return k;
 }
 /* Ejecuta fn con los anuncios activados: lo que se asomó se coloca tal cual. */

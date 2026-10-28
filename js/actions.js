@@ -62,7 +62,14 @@ async function applyResearch(c) {
   switch (c.id) {
     case 'uhm': infDown(2); break;
     case 'noticias': { const cs = G.cemetery.filter(isFighter); if (cs.length) { const v = await UI.chooseCards({ title: 'Nos llegaron noticias de tu muerte', text: 'Elige la unidad que regresa del Cementerio.', options: cs.map(u => unitOpt(u)) }); const u = G.units[v]; G.cemetery = G.cemetery.filter(x => x.id !== u.id); putUnit(u, 'C'); u.flipped = true; u.hits = capOf(u) - 1; } break; }
-    case 'folletos': { const cs = allUnits(x => x.type === 'civ' && curable(x)).slice(0, 2); for (const u of cs) { healUnit(u); infDown(1); } break; }
+    case 'folletos': {
+      const done = [];
+      for (let n = 1; n <= 2; n++) {
+        const cs = allUnits(x => x.type === 'civ' && curable(x) && !done.includes(x.id)); if (!cs.length) break;
+        const v = await UI.pickUnit(cs, 'Distribución de folletos: elige la Civil a la que quitas 1 Impacto (' + n + ' de 2).', true); if (v == null) break;
+        const u = G.units[v]; if (healUnit(u)) { done.push(u.id); LOG('Folletos: ' + u.name + ' en ' + spaceLabel(u.space) + ' pierde 1 Impacto.', 'good'); infDown(1); }
+      }
+      if (!done.length) LOG('Distribución de folletos: no se cura a ninguna Civil.'); break; }
     case 'cecina': G.supplies = Math.min(20, G.supplies + 2); break;
     case 'musica': { const c = allUnits(x => isZedSide(x) && isRouteSp(x.space)).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, '¡Bajad la música!: elige un espacio; sus Zeds se retiran.'); await retreatZeds(zedsAt(t), zedOrigin(zedsAt(t)[0])); } break; }
     case 'cientificos': { const cs = Object.values(G.spaces).filter(s => s.chaos).map(s => s.id); if (cs.length) { const id = cs.length === 1 ? cs[0] : await UI.pickSpace(cs, 'Científicos seguros de sí mismos: elige de dónde retiras 1 ficha de Caos.'); sp(id).chaos--; G.chaosLeft++; LOG('Se retira 1 ficha de Caos de ' + spaceLabel(id) + '.', 'good'); UI.redraw(); } break; }
@@ -71,7 +78,7 @@ async function applyResearch(c) {
       const sup = allUnits(x => x.type === 'super' && x.space && isRouteSp(x.space)); if (!sup.length) break;
       const v = await UI.pickUnit(sup, 'Hormona anticrecimiento: elige el Súper Zed que se reemplaza por un Zed Normal (o cancela).', true); if (v == null) break;
       const z = G.units[v], w = z.space, hits = z.hits; G.supers.push(z.key); removeUnit(z); delete G.units[z.id];
-      const nz = makeZed(); if (nz) { putUnit(nz, w); nz.hits = Math.min(hits, (nz.hf || 2) - 1); LOG('Hormona anticrecimiento: el Súper Zed se sustituye por un Zed de Fuerza ' + nz.full + '.', 'good'); } UI.redraw(); break; }
+      const nz = await makeZedA(); if (nz) { putUnit(nz, w); nz.hits = Math.min(hits, (nz.hf || 2) - 1); LOG('Hormona anticrecimiento: el Súper Zed se sustituye por un Zed de Fuerza ' + nz.full + '.', 'good'); } UI.redraw(); break; }
     case 'heroe_c': { const ks = Object.keys(HEROES).filter(x => (HEROES[x].sci || /Cient/.test(HEROES[x].cls)) && !hero(x) && !G.cemetery.some(c => c.key === x) && heroAllowed(x)); if (!ks.length) { LOG('No hay ningún Científico disponible en este nivel.'); break; } const k = ks.length === 1 ? ks[0] : await UI.choose({ title: 'Llega un Héroe Científico', text: 'Elige el Héroe Científico que llega al Centro de la Ciudad:', options: ks.map(x => ({ label: HEROES[x].name, value: x })) }); await spawnHero(k, 'C'); break; }
     case 'antidoto': {
       if (!G.finalPlaced) { G.finalPlaced = true; LOG('Componente Final colocado en el Laboratorio.', 'good'); G.res.deck.splice(rnd(G.res.deck.length + 1), 0, 'antidoto'); }

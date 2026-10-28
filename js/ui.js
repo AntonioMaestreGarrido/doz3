@@ -46,7 +46,7 @@ const SIDE_COL = { train: '#555', civ: '#2b5c85', civh: '#5a2a7a', hero: '#1d3a2
 const ui = {
   fast: false, mode: null, rects: [], flash: null, canvas: null, ctx: null, mapH: 1545,
   async init() {
-    await loadAssets(); await loadAltArt();
+    await loadAssets(); await loadAltArt(); loadMap('A').then(() => loadMap('B'));
     this.canvas = $('map'); this.ctx = this.canvas.getContext('2d');
     this.canvas.addEventListener('click', e => this.onClick(e));
     this.canvas.addEventListener('mousemove', e => { if (!ui.recentTouch()) this.onMove(e); });
@@ -58,7 +58,7 @@ const ui = {
     document.addEventListener('error', e => {
       const t = e.target;
       /* Arte alternativo que no carga: vuelve a la imagen original. */
-      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/zeds\/zed_(full|red)_(\d)\.webp$/, 'assets/tokens/zeds/$1_$2.webp').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)_r\.webp$/, 'assets/tokens/$1_reverso.webp').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)\.webp$/, 'assets/tokens/$1.webp').replace(/^assets\/arte_alt\/unidades\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.webp').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.webp'); if (o !== t.getAttribute('src')) t.src = o; return; }
+      if (t && t.tagName === 'IMG' && /assets\/arte_alt\//.test(t.getAttribute('src') || '')) { const o = (t.getAttribute('src') || '').replace(/^assets\/arte_alt\/cartas\/(hb?_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/investigacion\/(i_.+)\.webp$/, 'assets/cartas/$1.jpg').replace(/^assets\/arte_alt\/zeds\/zed_(full|red)_(\d)\.webp$/, 'assets/tokens/zeds/$1_$2.webp').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)_r\.webp$/, 'assets/tokens/$1_reverso.webp').replace(/^assets\/arte_alt\/zeds\/(sz_.+?)\.webp$/, 'assets/tokens/$1.webp').replace(/^assets\/arte_alt\/unidades\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.webp').replace(/^assets\/arte_alt\/tokens\/(.+?)(?:_r)?\.webp$/, 'assets/tokens/$1.webp'); if (o !== t.getAttribute('src')) t.src = o; return; }
       if (!t || t.tagName !== 'IMG' || !/assets\/cartas\//.test(t.getAttribute('src') || '')) return;
       const base = t.getAttribute('src').split('?')[0], n = +(t.dataset.retry || 0); if (n >= 4) return; t.dataset.retry = n + 1;
       setTimeout(() => { t.src = base + '?r=' + Date.now(); }, 400 * (n + 1));
@@ -115,7 +115,7 @@ const ui = {
     }
     this.fit();
   },
-  setMap(board) { loadMap(board); this.board = board; this.mapH = board === 'B' ? 1541 : 1545; this.canvas.height = this.mapH; this.fit(); },
+  setMap(board) { const p = loadMap(board); this.board = board; this.mapH = board === 'B' ? 1541 : 1545; this.canvas.height = this.mapH; this.fit(); return p; },
   fit() {
     const w = $('mapwrap'); if (!w) return;
     const rb = $('routebtns'), bh = rb ? rb.offsetHeight + 6 : 0;

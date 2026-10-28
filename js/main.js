@@ -47,14 +47,14 @@ async function playGame(setup, saved) {
   ui.gameMusicOn();
   if (saved) {
     applySave(saved); resume = saved.at;
-    ui.setMap(G.lv.board); G.busy = true;
+    await ui.setMap(G.lv.board); G.busy = true;
     if (G.event) { $('evimg').src = evImg(G.event.id); $('evimg').dataset.zoom = 'e:' + G.event.id; }
     UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     UI.log('Partida recuperada — ' + G.lv.name + ' (' + G.len.name + '), turno ' + G.turnNo + '.', 'turn');
   } else {
     PENDING_SEED = setup.seed != null ? setup.seed : null; PENDING_PLAYERS = setup.players || null;
     newGame(setup.level, setup.len, setup.hero, setup.exps); G.saveId = newSaveId(); G.seedCode = setup.seedCode || null;
-    ui.setMap(G.lv.board); G.busy = true; UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
+    await ui.setMap(G.lv.board); G.busy = true; UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     if (G.setupRoll) { const [a, b] = G.setupRoll; G.setupRoll = null; await UI.waitAck('Suministros y munición iniciales', 'Tirada de 2 dados: <b>' + a + '</b> y <b>' + b + '</b>.<br>Suministros: <b>' + (a + b) + '</b> · Munición: <b>' + (6 - Math.min(a, b)) + '</b>.'); }
     if (G.seedCode) UI.log('Semilla de la partida: ' + G.seedCode, 'turn');
     UI.log('Partida preparada — ' + G.lv.name + ' (' + G.len.name + '). Héroes: ' + G.heroKeys.map(k => HEROES[k].name).join(', ') + '.', 'turn');

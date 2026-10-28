@@ -2,6 +2,18 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-28 14:26
+
+### Mejoras
+- **Cartas de Investigación con arte alternativo:** 21 cartas nuevas en webp ligero (unos 40 KB cada una) con ilustración, umbral, suministro, tipo y texto. Se usan con «Usar arte alternativo» activado; las cuatro «Función para la Súper Arma» siguen con la original.
+
+## 2026-10-28 12:00
+
+### Fixes
+- **La partida empezaba sin mapa:** al cargar el mapa solo al elegirlo, el tablero tardaba en aparecer. Ahora se precargan ambos mapas en segundo plano al abrir el juego y la partida espera a que el suyo esté listo antes de empezar.
+- **Distribución de folletos no preguntaba:** ahora eliges a cuál de las (hasta dos) Civiles heridas curas, se baja 1 de Infección por cada una y queda anotado en el registro.
+- **Selección antinatural Zed no preguntaba:** con esta Investigación en curso se roban dos unidades (Zed o Súper Zed) y ahora eliges cuál se coloca; la otra vuelve a la reserva. Antes elegía sola la más débil.
+
 ## 2026-10-25 14:51
 
 ### Mejoras
