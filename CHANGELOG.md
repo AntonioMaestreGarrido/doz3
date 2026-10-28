@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-28 14:45
+
+### Fixes
+- **Botón de la pantalla final:** «Nueva partida» pasa a llamarse «Menú principal» y lleva al menú principal, sin volver a la animación de inicio.
+
 ## 2026-10-28 14:26
 
 ### Mejoras
