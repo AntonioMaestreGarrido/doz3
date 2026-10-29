@@ -329,10 +329,10 @@ body:has(#title.bg) #modalbox.setup{background:rgba(14,11,8,.62)}
 }
 /* Ranking y nueva partida: paneles translúcidos que dejan ver el fondo, con el mismo estilo */
 body:has(#title.bgrank) #modal{background:rgba(0,0,0,.12)}
-body:has(#title.bgrank) #modalbox.toppanel,body:has(#title.bgnew) #modalbox.setup{background:rgba(14,11,8,.62);border-color:rgba(200,160,70,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+body:has(#title.bgrank) #modalbox.toppanel,body:has(#title.bgnew) #modalbox.setup,body:has(#title.bgnew) #modalbox.toppanel{background:rgba(14,11,8,.62);border-color:rgba(200,160,70,.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 /* Ranking y nueva partida: panel centrado, compacto y translúcido para que el fondo se vea lo máximo posible */
 body:has(#title.bgrank) #modal,body:has(#title.bgnew) #modal{background:none;justify-content:center;align-items:center;padding:0;pointer-events:none}
-body:has(#title.bgrank) #modalbox.toppanel,body:has(#title.bgnew) #modalbox.setup{pointer-events:auto;width:min(520px,94vw);min-width:0;max-height:94vh;background:rgba(14,11,8,.46);border-color:rgba(200,160,70,.5);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);padding:10px 12px;text-shadow:0 1px 3px #000,0 0 8px rgba(0,0,0,.8)}
+body:has(#title.bgrank) #modalbox.toppanel,body:has(#title.bgnew) #modalbox.setup,body:has(#title.bgnew) #modalbox.toppanel{pointer-events:auto;width:min(520px,94vw);min-width:0;max-height:94vh;background:rgba(14,11,8,.46);border-color:rgba(200,160,70,.5);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);padding:10px 12px;text-shadow:0 1px 3px #000,0 0 8px rgba(0,0,0,.8)}
 body:has(#title.bgrank) .toppanel .toptbl{font-size:11px}
 body:has(#title.bgrank) .toppanel .toptbl th,body:has(#title.bgrank) .toppanel .toptbl td{padding:3px 4px}
 body:has(#title.bgnew) #modalbox.setup h2{font-size:16px;margin:0 0 2px}
