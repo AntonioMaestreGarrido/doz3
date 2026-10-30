@@ -180,7 +180,8 @@ const ui = {
   },
   /* Visiones (Wilson el Ermitaño): en cualquier momento, mira la carta superior del mazo de Destino. Sin robarla ni cambiar el orden. */
   async willyVisions() {
-    if (!alive('wilson') || G.busy || !$('modal').hidden) return;
+    /* Va por ui.guard(), que ya pone G.busy: no se comprueba aquí o la acción no haría nada. */
+    if (!alive('wilson') || !$('modal').hidden) return;
     if (!G.destDeck.length && !G.destDiscard.length) { this._modal('<h2>Visiones</h2><p>No quedan cartas de Destino.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>'); $('xb').onclick = () => ui._close(); return; }
     /* Mazo vacío: se baraja el descarte igual que al robar (drawDestiny) y se mira la primera carta de ese mazo nuevo. */
     if (!G.destDeck.length) G.destDeck = shuffle(G.destDiscard.splice(0));
@@ -312,7 +313,7 @@ const ui = {
     this.canvas.style.cursor = (uid || (this.mode && this.hitSpace(p))) ? 'pointer' : 'default';
     const sid = !uid ? this.hitSpace(p) : null, ms = sid && G.spaces[sid];
     if (uid && G.units[uid]) { this._mapZoom = true; this.zoomShow('u:' + uid, e); }
-    else if (ms && (ms.bar || ms.mine)) { this._mapZoom = true; this.zoomShow('m:' + sid, e); }
+    else if (ms && (ms.bar || ms.mine || ms.trap)) { this._mapZoom = true; this.zoomShow('m:' + sid, e); }
     else if (this._mapZoom) { this._mapZoom = false; this.zoomHide(); }
   },
   onClick(e) {
@@ -370,7 +371,7 @@ const ui = {
   /* Firma de lo que se pinta en el fondo (mapa y marcadores): si no cambia, se reutiliza la capa ya pintada. */
   _bgSig() {
     let s = (this.board || '') + '|' + this.canvas.width + 'x' + this.canvas.height + '|' + ((G.turn && G.turn.block) || []).join(',');
-    for (const id in G.spaces) { const x = G.spaces[id]; if (x.chaos || x.bar || x.mine || x.rumor || x.cem || x.base || x.tall || x.registro || x.bridge) s += '|' + id + ':' + x.chaos + x.bar + x.mine + (x.rumor ? 'r' : '') + (x.cem ? 'c' : '') + (x.base ? 'b' : '') + (x.tall ? 't' : '') + (x.registro ? 'g' : '') + (x.bridge || ''); }
+    for (const id in G.spaces) { const x = G.spaces[id]; if (x.chaos || x.bar || x.mine || x.trap || x.rumor || x.cem || x.base || x.tall || x.registro || x.bridge) s += '|' + id + ':' + x.chaos + x.bar + x.mine + (x.trap ? 'T' : '') + (x.rumor ? 'r' : '') + (x.cem ? 'c' : '') + (x.base ? 'b' : '') + (x.tall ? 't' : '') + (x.registro ? 'g' : '') + (x.bridge || ''); }
     return s;
   },
   draw() {
@@ -404,6 +405,7 @@ const ui = {
       else if (s.bar) { c.save(); c.fillStyle = s.bar === 2 ? '#7a5a2a' : '#9a7b3a'; c.strokeStyle = '#000'; c.lineWidth = 3; c.fillRect(s.x + 24, s.y - 56, 40, 20); c.strokeRect(s.x + 24, s.y - 56, 40, 20); c.fillStyle = '#fff'; c.font = '700 11px Segoe UI'; c.textAlign = 'center'; c.fillText(s.bar === 2 ? 'BASTIÓN' : 'BARRIC.', s.x + 44, s.y - 42); c.restore(); }
       if (s.mine && IMG[s.mine === 1 ? 'm_mina_7' : 'm_mina_4']) c.drawImage(IMG[s.mine === 1 ? 'm_mina_7' : 'm_mina_4'], s.x + 36, s.y + 22, 40, 38);
       else if (s.mine) { c.save(); c.fillStyle = '#b03030'; c.strokeStyle = '#000'; c.lineWidth = 3; c.beginPath(); c.arc(s.x + 52, s.y + 40, 13, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#fff'; c.font = '700 12px Segoe UI'; c.textAlign = 'center'; c.fillText(s.mine === 1 ? '7' : '4', s.x + 52, s.y + 45); c.restore(); }
+      if (s.trap) { c.save(); c.fillStyle = '#d98a1c'; c.strokeStyle = '#000'; c.lineWidth = 3; c.beginPath(); c.arc(s.x + 62, s.y - 14, 13, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#000'; c.font = '900 14px Impact'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('!', s.x + 62, s.y - 13); c.restore(); }
       if (s.rumor && IMG.rum_reverso) { c.save(); c.shadowColor = '#000'; c.shadowBlur = 6; c.drawImage(IMG.rum_reverso, s.x - 70, s.y + 18, 40, 40); c.restore(); }
       else if (s.rumor) { c.save(); c.fillStyle = '#2a7a4a'; c.strokeStyle = '#000'; c.lineWidth = 3; c.beginPath(); c.arc(s.x - 50, s.y + 40, 14, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#fff'; c.font = '900 16px Impact'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('?', s.x - 50, s.y + 41); c.restore(); }
       if (s.cem || s.base || s.tall || s.registro) { c.save(); c.fillStyle = '#7a4aa8'; c.strokeStyle = '#000'; c.lineWidth = 3; c.beginPath(); c.arc(s.x - 50, s.y + 40, 14, 0, 7); c.fill(); c.stroke(); c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(s.cem ? 'CEM' : s.base ? 'AIR' : s.tall ? 'TM' : 'REG', s.x - 50, s.y + 41); c.restore(); }
@@ -752,8 +754,8 @@ const ui = {
     const h = HEROES[k]; if (!h || !heroCard(k)) return;
     this.zoomHide();
     const back = side === 'back';
-    this._modal('<h2>' + h.name + ' · ' + (back ? 'Trasera (trasfondo)' : 'Carta') + '</h2><div class="bigcard"><img src="' + (back ? heroBack(k) : heroCard(k)) + '" alt=""></div><div class="opts"><button id="flipb">' + (back ? 'Ver carta entera' : 'Ver trasera (trasfondo)') + '</button><button class="primary" id="xb">' + (fromList ? 'Volver al listado' : 'Cerrar') + '</button></div>', 'herocard');
-    $('flipb').onclick = () => ui.showHeroCard(k, back ? 'front' : 'back', fromList);
+    this._modal('<h2>' + h.name + ' · ' + (back ? 'Trasera (trasfondo)' : 'Carta') + '</h2><div class="bigcard"><img src="' + (back ? heroBack(k) : heroCard(k)) + '" alt=""></div><div class="opts">' + (heroBack(k) ? '<button id="flipb">' + (back ? 'Ver carta entera' : 'Ver trasera (trasfondo)') + '</button>' : '') + '<button class="primary" id="xb">' + (fromList ? 'Volver al listado' : 'Cerrar') + '</button></div>', 'herocard');
+    if (heroBack(k)) $('flipb').onclick = () => ui.showHeroCard(k, back ? 'front' : 'back', fromList);
     $('xb').onclick = () => fromList ? ui.showHeroCards() : ui._close();
   },
   /* Carta entera de una unidad especial (Marines, Guardia, Petra…): frente y, si existe, trasera. */

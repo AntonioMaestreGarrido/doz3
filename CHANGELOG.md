@@ -2,6 +2,19 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-30 14:21
+
+### Fixes
+- **«La necesidad agudiza el ingenio» con arte alternativo:** con la opción activada salía la carta original; ahora tiene su carta nueva con la ilustración del taller de munición.
+
+## 2026-10-30 12:52
+
+### Mejoras
+- **Nuevo héroe: Frank «El Castigador» Castle** (expansión 4, nivel 3, Militar, Fuerza 4/3, Resistente). Arsenal privado (4 de Munición y 2 Suministros al entrar), Tirador implacable (1 columna a favor al disparar y repite un disparo por turno), Sin piedad (si gana un combate Cuerpo a Cuerpo, la Infección no sube), Lobo solitario (1 columna a favor al defender si está solo) y Trampa explosiva: por 1 Suministro coloca una trampa en una ruta (también en el Túnel, una por ruta); al intentar entrar un Zed, cada unidad Zed sufre 1 Impacto y su movimiento se cancela. Aún sin ficha ni carta ilustradas.
+- **Nuevo héroe: Dr. Emmett «Doc» Brown** (expansión 4, nivel 3, Científico, Fuerza 2/1). Puede Investigar en el Laboratorio; Mr. Fusion (+1 Suministro si Buscar no encuentra nada); Salto temporal: por 3 Suministros, una vez por turno y solo desde el Centro, viaja con una unidad opcional (no Pepinillos, Horacio, Lee ni Carter) a un espacio de ruta de superficie sin Zeds; la unidad puede quedarse y Doc vuelve al Centro tras el Mantenimiento. Si está en un espacio con Caos durante el Mantenimiento, restaurar el orden allí no sube la Infección. Aún sin ficha ni carta ilustradas.
+- **Nuevo héroe: Dra. Samantha Carter** (expansión 4, nivel 3, Científica, Fuerza 3/2). Investiga en el Laboratorio con +1 y repite una Investigación fallida una vez por partida; 1 columna a favor al disparar; «En el último segundo»: una vez por partida cancela hasta 3 de una subida de Infección de 2 o más (o que llegue a 13). Aún sin ficha ni carta ilustradas.
+- **Nuevo héroe: Angus MacGyver** (expansión 4, nivel 2, Ciudadano, Fuerza 3/2). No dispara; convierte 1 Suministro en 2 Munición (1 vez por turno), construye Barricadas por 1 Suministro, puede Investigar en el Laboratorio (si falla por 1, gasta 1 Suministro para sumar +1) y, al ser atacado en una ruta, se retira gratis hacia el Centro con 4-6. Aún sin ficha ni carta ilustradas.
+
 ## 2026-10-28 14:45
 
 ### Fixes

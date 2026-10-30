@@ -68,6 +68,16 @@ async function mineAttack(dest, movers) {
 }
 /* Carta «¡Sí! Han picado…»: cancela la activación del grupo que está en `from`. Solo se llama cuando las habilidades ya no lo han detenido,
    porque la carta es el último recurso (las habilidades son gratis). */
+/* Trampa explosiva (Frank): cuando un Zed intenta entrar en su espacio, cada unidad Zed que entraba sufre 1 Impacto y su movimiento se cancela. La trampa se retira. */
+async function trapStop(dest, go) {
+  const s = sp(dest); if (!s.trap) return false;
+  s.trap = 0; const fr = alive('frank'); UI.focus(dest); UI.redraw();
+  LOG('¡Trampa explosiva en ' + spaceLabel(dest) + '! ' + (go.length > 1 ? 'Cada unidad Zed sufre' : go[0].name + ' sufre') + ' 1 Impacto y el movimiento se cancela.', 'good');
+  go.forEach(z => z.moved = true);
+  ACTOR = fr ? fr.id : null;
+  try { for (const z of go) if (z.space && G.units[z.id]) await hitZed(z); } finally { ACTOR = null; }
+  UI.redraw(); return true;
+}
 async function playPicado(from) {
   if (!G.hand.includes('picado')) return false;
   const gr = zedsAt(from).filter(z => !z.moved); if (!gr.length) return false;
@@ -108,6 +118,8 @@ async function moveGroup(movers, from, opts) {
   if (perimeterBlocks(from, dest)) { const r = await rollShown('Perímetro Defensivo de Kingman', r => r >= 5 ? '<b>' + r + '</b>: los Zeds se detienen' : '<b>' + r + '</b>: los Zeds avanzan (necesita 5-6)'); if (r >= 5) { LOG('El Perímetro Defensivo de Kingman detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
   // Ladrido de Pepinillos
   const pep = unitsAt(from).find(u => u.key === 'pepinillos'); if (pep && !isInit(from)) { const r = await rollShown('Ladrido de Pepinillos', r => r >= 4 ? '<b>' + r + '</b>: los Zeds se detienen' : '<b>' + r + '</b>: los Zeds avanzan (necesita 4-6)'); if (r >= 4) { LOG('El ladrido de Pepinillos detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
+  // Trampa explosiva de Frank
+  if (sp(dest).trap && await trapStop(dest, go)) return { moved: false };
   // La carta «Han picado» va después de las habilidades de arriba: solo se juega si el grupo de verdad iba a avanzar.
   if (opts.picado && await playPicado(from)) return { moved: false };
   // Evento de Adiós: Barricada
@@ -348,7 +360,10 @@ async function phaseFeeding() {
   if (G.supplies < cost) await offerHandCards('feed', 'Alimentación: hacen falta <b>' + cost + '</b> Suministros y solo tienes <b>' + G.supplies + '</b>; las unidades sufrirían Impactos.', true);
   const pay = Math.min(G.supplies, cost); G.supplies -= pay; LOG('Alimentación: −' + pay + ' Suministro(s).', 'bad');
   const miss = cost - pay;
-  if (miss > 0) { LOG('¡Faltan ' + miss + ' Suministros! Impactos a tus unidades.', 'bad'); for (let k = 0; k < miss; k++) { const us = allUnits(x => isFighter(x) && x.space && x.space !== 'CEM'); if (!us.length) break; const w = await UI.pickUnit(us, 'Escasez de Suministros: elige la unidad que sufre 1 Impacto.'); await hitPlayer(G.units[w], 1); } }
+  /* Abstinencia Robótica: Bender no sufre los Impactos y el siguiente turno tiene 1 columna en contra. */
+  const bd = alive('bender');
+  if (miss > 0 && bd && bd.space && bd.space !== 'CEM') { G.benderAbst = G.turnNo + 1; LOG('Abstinencia Robótica: Bender no sufre Impactos; en el siguiente turno tiene 1 columna en contra.', 'bad'); }
+  if (miss > 0) { LOG('¡Faltan ' + miss + ' Suministros! Impactos a tus unidades.', 'bad'); for (let k = 0; k < miss; k++) { const us = allUnits(x => isFighter(x) && x.space && x.space !== 'CEM' && !(bd && x === bd)); if (!us.length) break; const w = await UI.pickUnit(us, 'Escasez de Suministros: elige la unidad que sufre 1 Impacto.'); await hitPlayer(G.units[w], 1); } }
   UI.updateStats();
 }
 

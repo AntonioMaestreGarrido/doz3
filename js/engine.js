@@ -236,6 +236,11 @@ function alreadyHas(rid) { return G.res && G.res.cur && G.res.cur.id === rid; }
 /* ================= INFECCIÓN ================= */
 async function infUp(n) {
   if (!G.lv.infection || n <= 0) return;
+  const sam = alive('samcarter');
+  if (sam && !G.once.samLast && (n >= 2 || G.inf + n >= 13)) {
+    const v = await UI.choose({ title: 'En el último segundo', text: 'La Infección va a subir +' + n + '. Samantha Carter puede cancelar hasta 3 de esa subida (una vez por partida). ¿La usas?', options: [{ label: 'Cancelar ' + Math.min(3, n), value: 'y' }, { label: 'No', value: 'n' }] });
+    if (v === 'y') { G.once.samLast = true; const c = Math.min(3, n); n -= c; LOG('En el último segundo: Samantha Carter cancela ' + c + ' de Infección.', 'good'); if (n <= 0) return; }
+  }
   while (G.inf + n >= 13 && !G.inWild && await offerHandCards('inf', 'La Infección subirá +' + n + ' y llegaría a 13: <b>Brote Descontrolado</b>.', true)) { }
   const i0 = G.inf; G.inf = Math.min(13, G.inf + n); EVT('inf', null, { de: i0, to: G.inf, n }); UI.updateStats(); UI.fxInf(G.inf - i0);
   if (G.inf >= 13 && !G.inWild) { G.inWild = true; LOG('¡La Infección llega al máximo! Brote Descontrolado.', 'bad'); await outbreak(true); G.inWild = false; }
@@ -244,7 +249,7 @@ function infDown(n) { if (!G.lv.infection || n <= 0) return; const i0 = G.inf; G
 function meleeInfection(zs, h) {
   let n = 1;
   for (const z of zs) { if (z.toxic) n = Math.max(n, 3); if (z.key === 'supurador') n = Math.max(n, 3); if (z.key === 'lobo') n = Math.max(n, 2); }
-  if (h && (h.key === 'horacio' || h.key === 'antidist')) return 0;
+  if (h && (h.key === 'horacio' || h.key === 'antidist' || h.key === 'bender')) return 0;
   return n;
 }
 
@@ -287,7 +292,11 @@ async function zedDies(t) {
   if (t.type === 'super') { removeUnit(t); delete G.units[t.id]; } else discardZed(t);
 }
 function routeOfZ(z) { return z.space && sp(z.space).route; }
-const resistsPl = u => u.res === 'r' ? 4 : u.res === 'f' ? 5 : 0;
+const resistsPl = u => u.res === 'r' ? 4 : u.res === 'f' ? 5 : u.res === 'b' ? 1 : 0;
+/* Bender (Cuerpo de Titanio) ignora con 1-3; el resto de Resistentes, con su mínimo o más. */
+const resisted = (u, r) => u.res === 'b' ? r <= 3 : r >= resistsPl(u);
+/* Abstinencia Robótica (Bender): 1 columna en contra durante el turno siguiente a la Escasez de Suministros. */
+const abstinent = u => u.key === 'bender' && G.benderAbst === G.turnNo;
 /* Amuleto de la suerte (Wilson): la unidad de jugador agrupada con él, fuera del Centro, añade 1 dado a todas sus tiradas y elige el mejor. */
 const wilsonWith = u => !!(u && u.side === 'pl' && u.space && u.space !== 'C' && G.spaces[u.space] && unitsAt(u.space).some(x => x.key === 'wilson' && x !== u));
 async function hitPlayer(u, n) {
@@ -296,7 +305,7 @@ async function hitPlayer(u, n) {
     if (u.type === 'aldeano') return;
     if (u.type === 'refugee') { if (u.space && sp(u.space).kind === 'bed') await sendCemetery(u, 'recibe un Impacto en el Hospital'); else await unitDown(u); return; }
     const th = resistsPl(u);
-    if (th) { const r = await zen1(Math.max(d6(), wilsonWith(u) ? d6() : 0), 'resistir el Impacto (' + th + '+)'); if (r >= th) { LOG(u.name + ' ignora el Impacto (dado ' + r + ').', 'good'); await UI.fxResist(u, r, u.res === 'f' ? 'Reforzada' : 'Resistente'); continue; } }
+    if (th) { const r = await zen1(Math.max(d6(), wilsonWith(u) ? d6() : 0), 'resistir el Impacto (' + (u.res === 'b' ? '1-3' : th + '+') + ')'); if (resisted(u, r)) { LOG(u.name + ' ignora el Impacto (dado ' + r + ').', 'good'); await UI.fxResist(u, r, u.res === 'f' ? 'Reforzada' : 'Resistente'); continue; } }
     if ((u.chips || []).includes('traje')) { const r = d6(); if (r >= 4) { LOG(u.name + ' (DARPA) ignora el Impacto.', 'good'); await UI.fxResist(u, r, 'DARPA'); continue; } }
     if (u.space && sp(u.space).kind === 'bed' && u.ecg) { await sendCemetery(u, 'recibe un Impacto estando en coma'); return; }
     const before = { flipped: u.flipped, hits: u.hits };
@@ -434,6 +443,9 @@ function humanShifts(f, o) { // o: { attacking, space }
   if (f.key === 'schmidt') s.push({ label: 'Boy Scout (Schmidt)', v: 1 });
   if (f.key === 'porter' && !o.attacking) s.push({ label: 'Artes marciales (Porter)', v: 1 });
   if (f.key === 'alia' && !o.attacking) s.push({ label: 'Parada perfecta (Alia)', v: 1 });
+  if (abstinent(f)) s.push({ label: 'Abstinencia Robótica (Bender)', v: -1 });
+  if (f.key === 'ash') s.push({ label: 'Groovy (Ash)', v: 1 });
+  if (f.key === 'frank' && !o.attacking && !unitsAt(f.space).some(x => x !== f && isFighter(x))) s.push({ label: 'Lobo solitario (Frank)', v: 1 });
   if (f.key === 'wright') s.push({ label: 'Equipo de apoyo (Wright)', v: 1 });
   if (f.key === 'kingman' && !o.attacking) s.push({ label: 'Defensor (Kingman)', v: 1 });
   if (f.armed) s.push({ label: 'Bien Armados', v: 1 });
@@ -500,6 +512,11 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   }
   if (!attackerHuman) for (const u of unitsAt(space)) if (u.resist && (fighter.side === 'pl')) { u.resist = false; LOG(u.name + ' deja de estar Resistiendo.'); }
   const isZedAtk = !attackerHuman && fighter.side === 'pl';
+  /* ¡Traga plomo! (Ash): antes del combate, puede disparar a los Zeds que acaban de entrar en su espacio (1 Munición). */
+  if (isZedAtk && fighter.key === 'ash' && G.ammo >= 1 && zeds.some(z => z.space === space)) {
+    const v = await UI.choose({ title: '¡Traga plomo!', text: 'Ash puede disparar antes del combate Cuerpo a Cuerpo (1 Munición). Si los Zeds sobreviven, el combate sigue.', options: [{ label: 'Disparar', value: 'y' }, { label: 'Luchar sin disparar', value: 'n' }] });
+    if (v === 'y') { G.ammo--; UI.updateStats(); await doFire(fighter, space, 1); zeds = zeds.filter(z => G.units[z.id] && z.space === space); if (!zeds.length || G.over) return {}; }
+  }
   /* Si la defensora se escabulle (Cardio, Sigilo de Pepinillos, Darling, Evasión de Alia), los Zeds atacan igualmente a las demás unidades del espacio: se elige otra defensora. */
   const sigue = async () => {
     const zl = zeds.filter(z => z.space === space && G.units[z.id]), hl = hum.filter(u => u !== fighter && u.space === space);
@@ -533,6 +550,13 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
       if (bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter)) {
         const r = await rollShownFor(fighter, 'Evasión (Alia)', r => r >= 4 ? '<b>' + r + '</b>: se retira 1 espacio hacia el Centro antes del combate' : '<b>' + r + '</b>: no se retira (necesita 4-6)'); LOG('Evasión de Alia: ' + r);
         if (r >= 4) { LOG('Alia se escabulle antes del combate.', 'good'); await retreatAndFight([fighter], 'C'); return await sigue(); }
+      }
+    }
+    if (fighter.key === 'macgyver' && sp(space).route && space !== 'C') {
+      const bk = nextToward(space);
+      if (bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter)) {
+        const r = await rollShownFor(fighter, 'Siempre hay otra salida (MacGyver)', r => r >= 4 ? '<b>' + r + '</b>: se retira 1 espacio hacia el Centro antes del combate' : '<b>' + r + '</b>: no se retira (necesita 4-6)'); LOG('Siempre hay otra salida: ' + r);
+        if (r >= 4) { LOG('MacGyver se escabulle antes del combate.', 'good'); await retreatAndFight([fighter], 'C'); return await sigue(); }
       }
     }
     if (fighter.key === 'johnson') {
@@ -605,7 +629,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   h.setResult(row, finalCol, [zh, ph], zedLoses);
   await h.done();
   EVT('melee', fighter.id, { at: attackerHuman ? 'h' : 'z', sp: space, zs: zeds.length, row, col: finalCol, zh, ph, win: zedLoses ? 1 : 0 });
-  if (!o.noInf && G.lv.infection && !vsPl) await infUp(meleeInfection(zeds, fighter));
+  if (!o.noInf && G.lv.infection && !vsPl && !(fighter.key === 'frank' && zedLoses)) await infUp(meleeInfection(zeds, fighter));
   ACTOR = fighter.side === 'pl' ? fighter.id : null;
   try { await applyZedHits(zeds, zh); if (weaponFor(fighter, 'cebo') && !attackerHuman) await applyZedHits(zeds, 1); } finally { ACTOR = null; }
   if (fighter.space && fighter.space !== 'CEM') { if (fighter.side === 'raid') await hitRaider(fighter, ph); else await hitPlayer(fighter, ph); }
@@ -836,7 +860,10 @@ async function doFire(u, targetId, dist, opts) {
   if (G.turn.combineFire && !opts.str) { const mates = unitsAt(u.space).filter(x => x !== u && isFighter(x) && !x.nofire && fireRange(x) >= dist); if (mates.length) { str += mates.reduce((a, x) => a + fireStrength(x, dist), 0); LOG('Plan de guerra negro: ' + mates.map(x => x.name).join(', ') + ' suman su Fuerza (' + str + ').', 'good'); } }
   if (u.armed) shifts.push({ label: 'Bien Armados', v: 1 }); if (u.leader) shifts.push({ label: 'Líder Civil', v: 1 });
   if (u.key === 'wright') shifts.push({ label: 'Equipo de apoyo', v: 1 });
+  if (abstinent(u)) shifts.push({ label: 'Abstinencia Robótica (Bender)', v: -1 });
   if (u.key === 'may') shifts.push({ label: 'Pistolera de primera (May)', v: 1 });
+  if (u.key === 'samcarter') shifts.push({ label: 'Oficial de la USAF (Carter)', v: 1 });
+  if (u.key === 'frank' && !unitsAt(u.space).some(x => x !== u && isHero(x))) shifts.push({ label: 'Tirador implacable (Frank)', v: 1 });
   if (u.key === 'johnson') shifts.push({ label: 'Armas (Johnson)', v: 2 });
   if (u.type === 'marine' && dist > 1) shifts.push({ label: 'Largo Alcance', v: -1 });
   if (u.key === 'hunt' && dist === 2) shifts.push({ label: 'Largo Alcance (Hunt)', v: -1 });
@@ -847,7 +874,12 @@ async function doFire(u, targetId, dist, opts) {
   /* Dados extra al disparar (eliges los 2 mejores): May (Pistolera de primera) y Amuleto de la suerte de Wilson (agrupado, fuera del Centro). */
   const extraDice = (u.key === 'may' ? 1 : 0) + (wilsonWith(u) ? 1 : 0);
   const h = UI.fireOpen({ shooter: u, target, str, shifts, col, dist, extraDice });
-  let dice = await h.roll(extraDice); dice = await zenReroll(dice, 'disparo', h);
+  let dice = await h.roll(extraDice);
+  if (u.key === 'frank' && !G.turn.frankReroll) {
+    const again = await h.ask('Tirador implacable: ¿repites la tirada de disparo? (1 vez por turno)', [{ label: 'Repetir', value: 'y' }, { label: 'Aceptar', value: 'n' }]);
+    if (again === 'y') { G.turn.frankReroll = true; dice = await h.roll(extraDice); }
+  }
+  dice = await zenReroll(dice, 'disparo', h);
   const row = sumRow(dice[0] + dice[1]); const hits = FIRE[row][col];
   h.setResult(row, col, hits); await h.done();
   EVT('shot', u.id, { to: targetId, d: dist, hits });
@@ -927,6 +959,7 @@ async function doSearch(u) {
   /* Registro federal de armas: un 1 o un 2 (resultado natural) al Buscar en Ciudad o Pueblo da 1 de Munición. */
   if (sp('C').registro && (isCity(u.space) || s.kind === 'pueblo') && best[0] <= 2) { G.ammo = Math.min(20, G.ammo + 1); msgs.push('+1 Munición (Registro federal de armas)'); }
   if (u.key === 'staub' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 1); msgs.push('+1 Suministro (Experto en supervivencia)'); }
+  if (u.key === 'doc' && G.lv.supplies && best[1] < 4) { G.supplies = Math.min(20, G.supplies + 1); msgs.push('+1 Suministro (Mr. Fusion)'); }
   LOG(u.name + ' busca en ' + spaceLabel(u.space) + ' (' + rolled.join('/') + (bonus ? '+' + bonus : '') + '): ' + msgs.join(', ') + '.', 'good');
   UI.updateStats();
 }

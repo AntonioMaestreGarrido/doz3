@@ -9,7 +9,7 @@ function heroPoolFor(level) { return Object.keys(HEROES).filter(k => HEROES[k].t
 function makeHero(key, where) {
   const d = HEROES[key];
   const u = newUnit({ side: 'pl', type: d.type, key, name: d.name, full: d.full, red: d.red, mp: d.mp, img: d.img, res: d.res, rapi: d.rapi, dr: d.dr, nofire: d.nofire, bonus: d.bonus,
-    hf: d.hf || 1, hr: d.hr || 1, sci: /Cient/.test(d.cls) });
+    hf: d.hf || 1, hr: d.hr || 1, sci: /Cient/.test(d.cls) || !!d.sci });
   putUnit(u, where || 'C');
   return u;
 }
@@ -22,6 +22,7 @@ async function heroEnters(u) {
   EVT('enter', u.id, { name: u.name });
   if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (G.lv.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); LOG('Johnson aporta 3 de Munición' + (G.lv.supplies ? ' y 2 Suministros' : '') + '.', 'good'); }
   if (u.key === 'horacio' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 3); LOG('Horacio trae 3 Suministros.', 'good'); }
+  if (u.key === 'frank') { G.supplies = Math.min(20, G.supplies + (G.lv.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 4); LOG('Frank aporta 4 de Munición' + (G.lv.supplies ? ' y 2 Suministros' : '') + '.', 'good'); }
   if (u.key === 'salvacion' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 2); }
   if (u.key === 'clarin') { const k = pickCivh(); if (k) await spawnHero(k, 'C'); }
   UI.updateStats();
@@ -106,7 +107,7 @@ function newGame(levelIdx, lenIdx, personal) {
   const civhKey = L.n === 0 ? 'furias' : (() => { const p = CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[L.n]); return p[rnd(p.length)]; })();
   // recursos
   if (L.n === 0) { G.ammo = 4; G.supplies = 0; } else { const a = d6(), b = d6(); G.supplies = a + b; G.ammo = 6 - Math.min(a, b); G.setupRoll = [a, b]; }
-  for (const k of keys) { const u = makeHero(k, 'C'); if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); } if (u.key === 'horacio' && L.supplies) G.supplies += 3; }
+  for (const k of keys) { const u = makeHero(k, 'C'); if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); } if (u.key === 'horacio' && L.supplies) G.supplies += 3; if (u.key === 'frank') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 4); } }
   /* Héroe Personal de cada jugador: el que eligió; si no eligió (o es el Juego Básico) se le da uno de los iniciales aún sin dueño. */
   if (nPlayers() > 1) {
     const inits = Object.values(G.units).filter(u => u.type === 'hero' && keys.includes(u.key));

@@ -54,7 +54,7 @@ async function revealResearch() {
   const id = G.res.deck.shift(); G.res.cur = RES[id];
   EVT('carta_inv', null, { id, nombre: RES[id].name, umbral: RES[id].th, quedan: G.res.deck.length });
   LOG('Nueva carta de Investigación: «' + RES[id].name + '».', 'dest');
-  await UI.waitAck('Investigación: ' + RES[id].name, RES[id].txt + '<br><i>Siguiente investigación: tirada de ' + RES[id].th + (RES[id].th < 6 ? '+' : '') + (RES[id].sup ? ' y 1 Suministro' : '') + '.</i>', 'assets/cartas/i_' + (id === 'repetirlo' ? 'repetirlo' : id) + '.jpg', 'r:' + id);
+  await UI.waitAck('Investigación: ' + RES[id].name, RES[id].txt + '<br><i>Siguiente investigación: tirada de ' + RES[id].th + (RES[id].th < 6 ? '+' : '') + (RES[id].sup ? ' y 1 Suministro' : '') + '.</i>', resImg(id), 'r:' + id);
   await applyResearch(RES[id]);
   UI.updateStats();
 }
@@ -102,8 +102,14 @@ async function doInvestigate(u, free) {
   if (G.supplies < (usingSup ? 1 : 0) + (c.sup ? 1 : 0)) { LOG('Te faltan Suministros para investigar.', 'bad'); return false; }
   if (usingSup) { G.supplies--; } else if (!free) spendActions(u, 1);
   if (c.sup) G.supplies--;
-  const dice = await UI.rollSimple('Investigar (hace falta ' + c.th + '+)', 1, null, { mods: u.key === 'agee' ? [{ label: 'Profesora Agee', v: 1 }] : [] });
-  let r = dice[0] + (u.key === 'agee' ? 1 : 0); if (u.key === 'agee') r = Math.min(6, r);
+  const ib = u.key === 'agee' || u.key === 'samcarter' ? 1 : 0, mods = ib ? [{ label: u.key === 'agee' ? 'Profesora Agee' : 'Samantha Carter', v: 1 }] : [];
+  let dice = await UI.rollSimple('Investigar (hace falta ' + c.th + '+)', 1, null, { mods });
+  let r = Math.min(6, dice[0] + ib);
+  if (r < c.th && u.key === 'samcarter' && !G.once.samRepeat) {
+    const v = await UI.choose({ title: 'Teoría del campo unificado', text: 'La Investigación ha fallado (' + r + '). ¿Repites la tirada? Solo una vez por partida; la segunda es definitiva.', options: [{ label: 'Repetir', value: 'y' }, { label: 'No', value: 'n' }] });
+    if (v === 'y') { G.once.samRepeat = true; dice = await UI.rollSimple('Investigar otra vez (hace falta ' + c.th + '+)', 1, null, { mods }); r = Math.min(6, dice[0] + ib); }
+  }
+  if (r < c.th && r + 1 >= c.th && u.key === 'macgyver' && G.supplies >= 1 && await UI.choose({ title: 'Ingeniero', text: 'La Investigación ha fallado (' + r + '). ¿Gastas 1 Suministro para sumar +1 y conseguirla?', options: [{ label: 'Gastar 1 Suministro', value: 'y' }, { label: 'No', value: 'n' }] }) === 'y') { G.supplies--; r++; LOG('MacGyver improvisa con 1 Suministro (+1).', 'good'); }
   EVT('investigar', u.id, { carta: c.id, nombre: c.name, umbral: c.th, dado: dice[0], resultado: r, exito: r >= c.th, suministro: !!c.sup, sinAccion: !!usingSup });
   if (r >= c.th) { LOG('Investigación con éxito (' + r + ').', 'good'); G.turn.researched = true; await revealResearch(); }
   else LOG('La Investigación fracasa (' + r + ').', 'bad');
@@ -118,23 +124,37 @@ function barTargets(u) {
   const ids = u.key === 'bauer' ? [u.space].concat(adjacentIds(u.space)) : [u.space];
   return ids.filter(id => id && G.spaces[id] && isRouteSp(id) && !isInit(id) && !sp(id).chaos && canBuildBarAt(id));
 }
+/* Trampa explosiva (Frank): espacios de ruta no Iniciales, sin Zeds, en su espacio o adyacentes, en rutas que aún no tengan una trampa (el Túnel incluido). */
+function trapSpaces(u) {
+  const hasTrap = r => { for (let i = 0; i <= lastOf(r); i++) if (sp(r + i).trap) return true; return false; };
+  return [u.space].concat(adjacentIds(u.space)).filter((id, k, a) => a.indexOf(id) === k && sp(id) && isRouteSp(id) && !isInit(id) && sp(id).kind !== 'crypt' && !blocked(id) && !zedsAt(id).length && !hasTrap(sp(id).route));
+}
+/* Salto temporal (Doc Brown): solo desde el Centro, 3 Suministros, a un espacio de ruta de superficie sin Zeds que no sea Inicial. Un acompañante (Héroe o Civiles Heroicos que puedan usar vehículos) puede quedarse allí. */
+const DOC_NO_RIDE = ['pepinillos', 'horacio', 'lee', 'carter'];
+function docCompanions(u) { return unitsAt('C').filter(x => x !== u && (x.type === 'hero' || x.type === 'civh') && !DOC_NO_RIDE.includes(x.key) && !x.ecg && !x.mount && !x.rider && !x.resist && !isPetra(x)); }
+function docJumpSpaces(u, comp) {
+  const here = id => unitsAt(id).filter(x => (isFighter(x) || x.side === 'raid') && !x.mount && x.type !== 'train').length;
+  return Object.keys(G.spaces).filter(id => isRouteSp(id) && isSurface(id) && !isInit(id) && sp(id).kind !== 'crypt' && !blocked(id) && !zedsAt(id).length && !raidAt(id).length && playerRoom(id, u) && (!comp || (playerRoom(id, comp) && playerCap(id) - here(id) >= 2)));
+}
+const buildCost = u => u.key === 'bauer' || u.key === 'macgyver' ? 1 : 2;
 function canBuildBarAt(id) { const r = sp(id).route; for (let i = 0; i <= lastOf(r); i++) if (sp(r + i).bar) return false; return true; }
 async function doBuild(u, bastion, where) {
   const s = sp(where || u.space);
   if (bastion) { if (G.supplies < 3) return; G.supplies -= 3; s.bar = 2; G.once.bast = true; LOG('Kingman levanta un Bastión en ' + spaceLabel(u.space) + '.', 'good'); }
-  else { let c = u.key === 'bauer' ? 1 : 2; if (G.supplies < c) return; G.supplies -= c; s.bar = Math.max(s.bar, 1); LOG('Barricada en ' + spaceLabel(s.id) + '.', 'good'); Voz.say('barricada'); }
+  else { let c = buildCost(u); if (G.supplies < c) return; G.supplies -= c; s.bar = Math.max(s.bar, 1); LOG('Barricada en ' + spaceLabel(s.id) + '.', 'good'); Voz.say('barricada'); }
   UI.updateStats(); UI.redraw();
 }
 function canBuild(u) {
   if (!G.lv.fourR || !canAct(u) || !isFighter(u) || ['pepinillos', 'horacio', 'lee'].includes(u.key) || !barTargets(u).length) return false;
-  return G.supplies >= (u.key === 'bauer' ? 1 : 2);
+  return G.supplies >= buildCost(u);
 }
 
 /* ---------- curar ---------- */
 /* Toda Acción de Curar baja la Infección 1 (2 si Agee está en el Hospital) y solo puede hacerse 1 vez por unidad y turno. */
 function cureInf() { const agee = alive('agee'); infDown(agee && agee.space && sp(agee.space).kind === 'office' ? 2 : 1); }
 /* El camión de Carter solo se repara con su propia habilidad: ninguna otra Curación puede usarse en él (salvo quitarle el ECG en el Hospital). */
-const curable = x => injured(x) && x.curedTurn !== G.turnNo && !(x.key === 'carter' && !(x.space && G.spaces[x.space] && sp(x.space).kind === 'bed'));
+/* Bender (Reparación Alcohólica): con ECG solo se cura en el Hospital; sin ECG, solo en el Centro (acción propia, 1 Suministro). */
+const curable = x => injured(x) && x.curedTurn !== G.turnNo && !(x.key === 'carter' && !(x.space && G.spaces[x.space] && sp(x.space).kind === 'bed')) && !(x.key === 'bender' && !x.ecg && x.space !== 'C');
 async function doCure(u, free, noInf) {
   if (!free) spendActions(u, 1);
   healUnit(u); u.curedTurn = G.turnNo; if (!noInf) cureInf();
@@ -166,6 +186,7 @@ function unitActions(u) {
   if (u.space && sp(u.space).kind === 'camp' && u.type === 'refugee' && !G.turn.equipped && !u.vip) A.push({ id: 'equip', label: 'Equipar Refugiados (gratis)', ok: G.cemetery.some(x => x.type === 'civ') });
   /* Visiones de Wilson: en cualquier momento, sin gastar Acción. */
   if (u.key === 'wilson' && u.space) A.push({ id: 'visions', label: '🔮 Visiones: mirar la carta superior de Destino', ok: true });
+  if (u.key === 'bender' && u.space === 'C' && !u.ecg) A.push({ id: 'bcure', label: 'Reparar en el Centro (1 Sum., 1 vez por turno)', ok: curable(u) && G.supplies >= 1 });
   if (act && !isSoft(u)) {
     const cu = k => !G.charUsed[k];
     if (u.key === 'schmidt') A.push({ id: 'ini', label: 'Iniciativa', ok: cu('ini') });
@@ -184,6 +205,9 @@ function unitActions(u) {
     if (u.key === 'wright') A.push({ id: 'peek', label: 'Mirar carta de Evento', ok: pay(1) });
     if (u.key === 'agee') A.push({ id: 'boost', label: '+3 Infección → +1 Acción', ok: cu('boost') && G.pool.event < 4 });
     if (u.key === 'kingman') { A.push({ id: 'bastion', label: 'Bastión (1 acc., 3 Sum.)', ok: !G.once.bast && pay(1) && G.supplies >= 3 && isRouteSp(u.space) && !isInit(u.space) && canBuildBar(u) }); A.push({ id: 'mines', label: 'Campo de Minas (1 acc., 2 Sum., 1 Mun.)', ok: !G.once.mines && !u.flipped && pay(1) && G.supplies >= 2 && G.ammo >= 1 && isRouteSp(u.space) && !isInit(u.space) }); }
+    if (u.key === 'macgyver') A.push({ id: 'macgy', label: 'Con lo que hay (1 Suministro → 2 Munición)', ok: cu('macgy') && G.supplies >= 1 && G.ammo < 20 });
+    if (u.key === 'frank') A.push({ id: 'trampa', label: 'Trampa explosiva (1 Suministro)', ok: cu('trampa') && G.supplies >= 1 && trapSpaces(u).length > 0 });
+    if (u.key === 'doc' && u.space === 'C') A.push({ id: 'salto', label: 'Salto temporal (3 Suministros)', ok: cu('salto') && G.supplies >= 3 && !u.mount && !u.rider && docJumpSpaces(u).length > 0 });
     if (u.key === 'wzed') A.push({ id: 'wzed', label: 'Transmisión de Emergencia', ok: cu('wzed') });
     if (u.key === 'bomberos') { A.push({ id: 'libera', label: 'Liberar Civiles/Aldeanos', ok: cu('libera') && [u.space].concat(adjacentIds(u.space)).some(i => sp(i) && sp(i).kind === 'pueblo' && unitsAt(i).some(x => x.resist || x.type === 'aldeano')) }); A.push({ id: 'manguera', label: 'Mangueras (1 acc.)', ok: pay(1) && adjacentIds(u.space).some(i => zedsAt(i).length && !isInit(i)) }); }
     if (weaponFor(u, 'granada') && u.space) A.push({ id: 'granada', label: 'Granada de Gas (1 acc.)', ok: pay(1) && adjacentIds(u.space).some(i => zedsAt(i).length && !isInit(i)) });
@@ -219,6 +243,7 @@ async function runAction(u, id) {
     case 'equip': { const cs = G.cemetery.filter(x => x.type === 'civ'); const v = await UI.choose({ title: 'Equipar Refugiados', text: 'Elige la unidad de Civiles Normales que regresa.', options: cs.map(c => ({ label: 'Civiles ' + c.full + '/' + c.red, value: c.id })), cancel: true }); if (v == null) break; const c = G.units[v]; G.cemetery = G.cemetery.filter(x => x.id !== c.id); removeUnit(u); delete G.units[u.id]; putUnit(c, 'C'); c.flipped = true; c.hits = 0; G.turn.equipped = true; LOG('Refugiados equipados: Civiles vuelven al Centro.', 'good'); break; }
     case 'ini': G.charUsed.ini = true; u.free++; LOG('Schmidt usa Iniciativa: 1 acción gratis para él.', 'good'); break;
     case 'visions': await UI.willyVisions(); break;
+    case 'bcure': G.supplies--; healUnit(u); u.curedTurn = G.turnNo; LOG(u.name + ' se repara en el Centro (−1 Suministro).', 'good'); UI.redraw(); UI.updateStats(); break;
     case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
     case 'calle': { const c = calleTargets(u); if (!c.length) { LOG('No hay Civiles que puedan avanzar.'); break; } const v = c.length === 1 ? c[0].id : await UI.pickUnit(c, 'Elige la unidad que avanza hacia el Centro.', true); if (v == null) break; const x = G.units[v], ds = calleDests(x); const d = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Alia: elige el destino de ' + x.name + ' (hasta 2 espacios hacia el Centro).', true); if (d == null) break; G.charUsed.calle = true; if (x.resist) { x.resist = false; LOG(x.name + ' deja de estar Resistiendo.'); } LOG('Alia manda a ' + x.name + ' hacia el Centro.', 'good'); await doMove(x, d, [x.space, d]); break; }
@@ -235,6 +260,21 @@ async function runAction(u, id) {
     case 'boost': { G.charUsed.boost = true; await infUp(3); addEventActions(1); break; }
     case 'bastion': spendActions(u, 1); await doBuild(u, true); break;
     case 'mines': spendActions(u, 1); G.supplies -= 2; G.ammo--; sp(u.space).mine = 1; G.once.mines = true; LOG('Campo de Minas en ' + spaceLabel(u.space) + '.', 'good'); UI.updateStats(); UI.redraw(); break;
+    case 'macgy': G.charUsed.macgy = true; G.supplies--; G.ammo = Math.min(20, G.ammo + 2); LOG('MacGyver convierte 1 Suministro en 2 de Munición.', 'good'); UI.updateStats(); break;
+    case 'trampa': { const c = trapSpaces(u); if (!c.length) break; const t = c.length === 1 ? c[0] : await UI.pickSpace(c, 'Trampa explosiva: elige el espacio.', true); if (t == null) break; G.charUsed.trampa = true; G.supplies--; sp(t).trap = 1; LOG('Frank coloca una trampa explosiva en ' + spaceLabel(t) + '.', 'good'); UI.updateStats(); UI.redraw(); break; }
+    case 'salto': {
+      let comp = null; const cands = docCompanions(u);
+      if (cands.length) {
+        const w = await UI.choose({ title: 'Salto temporal', text: '¿Doc lleva a una unidad agrupada con él? Se queda en el destino; Doc vuelve al Centro al final del turno.', options: [{ label: 'Viajar solo', value: 'n' }, { label: 'Llevar a una unidad', value: 'y' }] });
+        if (w === 'y') { const v = await UI.pickUnit(cands, 'Salto temporal: elige a quién llevas.', true); if (v == null) break; comp = G.units[v]; }
+      }
+      const ds = docJumpSpaces(u, comp); if (!ds.length) { LOG('No hay espacio libre para el salto.'); break; }
+      const t = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Salto temporal: elige el destino.', true); if (t == null) break;
+      G.charUsed.salto = true; G.supplies -= 3; u.away = true;
+      putUnit(u, t); if (comp) putUnit(comp, t);
+      LOG('¡88 millas por hora! Doc Brown' + (comp ? ' y ' + comp.name : '') + ' saltan a ' + spaceLabel(t) + '. Doc volverá al Centro al final del turno.', 'good');
+      UI.updateStats(); UI.redraw(); UI.focus(t); break;
+    }
     case 'wzed': { const c = allUnits(x => (x.type === 'civ' || x.type === 'refugee') && x.space && isSurface(x.space)); if (!c.length) break; const v = await UI.pickUnit(c, 'Transmisión de Emergencia: 1 acción gratis a…', true); if (v == null) break; G.units[v].free++; G.charUsed.wzed = true; break; }
     case 'libera': { const near = [u.space].concat(adjacentIds(u.space)).filter(i => sp(i) && sp(i).kind === 'pueblo'); const c = allUnits(x => (x.resist || x.type === 'aldeano') && x.space && near.includes(x.space)); if (!c.length) break; const v = await UI.pickUnit(c, 'Liberar a…', true); if (v == null) break; const t = G.units[v]; if (t.type === 'aldeano') { t.type = 'refugee'; t.name = 'Refugiados'; } t.resist = false; UI.redraw(); G.charUsed.libera = true; break; }
     case 'manguera': {
@@ -304,11 +344,14 @@ async function maintenance() {
     for (const s of Object.values(G.spaces)) {
       if (!s.chaos) continue;
       const rs = unitsAt(s.id).filter(u => (isFighter(u) || u.side === 'raid' || u.type === 'train') && !['pepinillos', 'horacio'].includes(u.key) && !u.ecg && u.type !== 'refugee');
-      if (rs.length) { s.chaos--; G.chaosLeft++; LOG('Se restaura el orden en ' + spaceLabel(s.id) + ' (−1 Caos' + (rs.some(u => u.key === 'antidist') ? ', sin Infección' : ', +1 Infección') + ').', 'good'); UI.pulseSpace(s.id, '#7bd45a'); UI.toast('Orden restaurado en ' + spaceLabel(s.id) + ': −1 Caos', '#7bd45a', 1600); if (!rs.some(u => u.key === 'antidist')) { if (G.weapon && alive('agee')) infDown(2); else await infUp(1); } }
+      const sinInf = rs.some(u => u.key === 'antidist' || u.key === 'doc');
+      if (rs.length) { s.chaos--; G.chaosLeft++; LOG('Se restaura el orden en ' + spaceLabel(s.id) + ' (−1 Caos' + (sinInf ? ', sin Infección' : ', +1 Infección') + ').', 'good'); UI.pulseSpace(s.id, '#7bd45a'); UI.toast('Orden restaurado en ' + spaceLabel(s.id) + ': −1 Caos', '#7bd45a', 1600); if (!sinInf) { if (G.weapon && alive('agee')) infDown(2); else await infUp(1); } }
     }
   }
   if (G.antidote) { infDown(1); LOG('El Antídoto reduce la Infección en 1.', 'good'); }
   if (G.berra) { infDown(1); LOG('Elwood Berra reduce la Infección en 1.', 'good'); }
+  /* Salto temporal (Doc): vuelve al Centro tras el Mantenimiento, cuando ya ha restaurado el orden donde estuviera. */
+  for (const d of allUnits(x => x.key === 'doc' && x.away)) { d.away = false; if (d.space && isRouteSp(d.space) && !d.ecg) { putUnit(d, 'C'); LOG('Doc Brown vuelve al Centro de la Ciudad.', 'good'); } }
 }
 
 /* ---------- puntuación ---------- */
