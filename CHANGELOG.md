@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-30 21:16
+
+### Fixes
+- **Partidas guardadas al llegar al máximo:** al pulsar «Nueva partida» con 10 partidas guardadas, el aviso «Borra una partida» no reaccionaba (los toques pasaban a la portada). Ahora se puede borrar una y empezar otra.
+
 ## 2026-10-20 17:27
 
 ### Fixes (móvil)
