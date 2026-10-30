@@ -153,6 +153,11 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
 ### Fixes
 - **Registro de partida:** los eventos de Infección guardaban el cambio en el campo `n` y pisaban el número de secuencia del evento; ahora va en `d`. Lo mismo con el barajado del Destino (`cartas`).
 
+## 2026-10-30 21:16
+
+### Fixes
+- **Partidas guardadas al llegar al máximo:** al pulsar «Nueva partida» con 10 partidas guardadas, el aviso «Borra una partida» no reaccionaba (los toques pasaban a la portada). Ahora se puede borrar una y empezar otra.
+
 ## 2026-10-30 16:12
 
 ### Fixes
@@ -221,14 +226,6 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
 
 ### Fixes
 - **Evasiones con más unidades en el espacio:** si la unidad defensora esquiva el combate (Cardio, Sigilo de Pepinillos, Alyssa Darling con un 2, Evasión de Alia), los Zeds atacan igualmente a las demás unidades del espacio: se elige otra defensora. Antes se quedaban junto a los Zeds sin combatir.
-
-## 2026-10-20 17:27
-
-### Fixes (móvil)
-- **Elegir destino:** el panel se pliega para ver el mapa, como antes. Al cancelar o terminar la elección vuelve.
-- **Pulsar una unidad:** el panel se despliega con sus acciones (aunque estuviera plegado). Ya no entra directamente en «Mover»: pulsa «Mover» para elegir destino.
-- **Botón atrás de Android:** dentro de una partida ya no sale directamente. Pregunta si quieres volver al menú principal (la partida se guarda al terminar cada acción). Con «Seguir jugando» la partida sigue.
-- **«Fin ▶»:** vuelve a preguntar solo si quedan acciones (se revierte el cambio de la versión anterior).
 
 ## 2026-10-19 19:53
 
