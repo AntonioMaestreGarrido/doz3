@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-30 16:12
+
+### Fixes
+- **Obituario de los héroes de la expansión 4:** Bender, Ash, Frank, Doc, Sam Carter y MacGyver ya tienen su ilustración en el obituario (antes salían sin imagen).
+
 ## 2026-10-30 14:21
 
 ### Fixes
