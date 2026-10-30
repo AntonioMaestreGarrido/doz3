@@ -134,19 +134,17 @@ const ui = {
     if (L.fourR) h += '<div>Caos: <b>' + chaosOnMap() + '</b> (quedan ' + G.chaosLeft + ')</div>';
     if (L.res && G.res) h += '<div style="grid-column:1/3" data-zoom="r:' + G.res.cur.id + '">Investigación: <b>' + G.res.cur.name + '</b> (' + G.res.cur.th + '+' + (G.res.cur.sup ? ', 1 Sum.' : '') + ') · quedan ' + G.res.deck.length + (G.weapon ? '<br>Súper Arma: ' + G.weapon.parts.map(k => '<img class="wpart" src="assets/tokens/arma_' + k + (WEAPON_EXT[k] || '.png') + '" title="' + WEAPON_PARTS[k].name + '" alt="' + WEAPON_PARTS[k].name + '">').join('') : '') + '</div>';
     h += '<div style="grid-column:1/3;font-size:12px;color:var(--mut)">Cartas de Evento: ' + done + ' / ' + tot + '</div><div class="bar"><i style="width:' + (tot ? 100 * done / tot : 0) + '%"></i></div>';
-    if (alive('wilson')) h += '<button id="visBtn" style="grid-column:1/3">🔮 Visiones de Wilson: mirar la carta de Destino</button>';
     if (G.phase === 'actions' && !G.busy) h += '<button class="primary" id="endBtn" style="grid-column:1/3">Terminar fase de Acciones ▶</button>';
     $('status').innerHTML = h;
-    const vb = $('visBtn'); if (vb) vb.onclick = () => this.willyVisions();
     $('status').querySelectorAll('[data-pl]').forEach(b => b.onclick = () => { if (G.busy || !$('modal').hidden) return; const i = +b.dataset.pl; if (Net.online && !Net.mine(i)) return; Net.cmd({ c: 'act_pl', i, seat: i }); });
     const tb = $('tieBtn'); if (tb) tb.onclick = () => this.tieBreak();
-    const eb = $('endBtn'); if (eb) eb.onclick = () => { if (ui.canCmd()) Net.cmd({ c: 'end' }); };
+    const eb = $('endBtn'); if (eb) eb.onclick = () => ui.cmdAs({ c: 'end' });
     this.renderActBox();
     this.renderUnitBox();
     if (Net.online) Net.kick();
   },
   /* Desempate del cooperativo: un dado decide qué jugador manda en la discusión. */
-  tieBreak() { if (G.busy || !$('modal').hidden || !multiP() || !this.canCmd()) return; Net.cmd({ c: 'tie' }); },
+  tieBreak() { if (G.busy || !$('modal').hidden || !multiP()) return; this.cmdAs({ c: 'tie' }); },
   async _tieBreak() {
     if (!multiP()) return;
     const n = nPlayers(), who = v => G.players[(v - 1) % n].name;
@@ -162,7 +160,7 @@ const ui = {
     return ok;
   },
   /* Visiones (Wilson el Ermitaño): en cualquier momento, mira la carta superior del mazo de Destino. Sin robarla ni cambiar el orden. */
-  willyVisions() { if (!alive('wilson') || G.busy || !$('modal').hidden || !this.canCmd()) return; Net.cmd({ c: 'vis' }); },
+  willyVisions() { if (!alive('wilson') || G.busy || !$('modal').hidden) return; this.cmdAs({ c: 'vis' }); },
   async _willyVisions() {
     if (!alive('wilson')) return;
     if (!G.destDeck.length && !G.destDiscard.length) { this._modal('<h2>Visiones</h2><p>No quedan cartas de Destino.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>'); $('xb').onclick = () => ui._close(); return; }
@@ -215,10 +213,10 @@ const ui = {
     const h = $('hand'); h.innerHTML = '';
     for (const k of G.hand) {
       const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'd:' + k; d.innerHTML = '<b>' + DEST[k].name + '</b>';
-      if (handUsable(k) && !G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => { if (ui.canCmd()) Net.cmd({ c: 'hand', k }); }; d.appendChild(b); }
+      if (handUsable(k) && !G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.cmdAs({ c: 'hand', k }); d.appendChild(b); }
       h.appendChild(d);
     }
-    for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => { if (ui.canCmd()) Net.cmd({ c: 'rumor', k }); }; d.appendChild(b); } h.appendChild(d); }
+    for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.png" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.cmdAs({ c: 'rumor', k }); d.appendChild(b); } h.appendChild(d); }
   },
   _undo: [],
   _undoSnap() { return { s: JSON.stringify({ rng: rngState(), uid: UID, G: snapshotState() }) }; },
@@ -270,9 +268,19 @@ const ui = {
     box.querySelectorAll('[data-card]').forEach(b => b.onclick = () => ui.showHeroCard(u.key, b.dataset.card));
     this.bindSpecials(box);
   },
-  bindSpecials(box) { box.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { if (ui.canCmd()) Net.cmd({ c: 'sp', i: +b.dataset.sp }); }); },
+  bindSpecials(box) { box.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => ui.cmdAs({ c: 'sp', i: +b.dataset.sp })); },
   /* Online: solo el dispositivo que lleva al jugador activo (G.act) puede dar órdenes. */
   canCmd() { return !Net.online || Net.mine(G.act); },
+  /* Online: si actúa otro jugador, pulsar una unidad o un botón propio toma el turno de jugador (igual que pulsar su nombre en el panel de estado). */
+  claimActive(uid) {
+    if (this.canCmd()) return Promise.resolve(true);
+    if (!Net.online || !Net.seats || !Net.seats.length || G.phase !== 'actions' || G.busy || !$('modal').hidden) return Promise.resolve(false);
+    const u = uid && G.units[uid], seat = u && Net.seats.includes(u.owner) ? u.owner : Net.seats[0];
+    return Net.cmd({ c: 'act_pl', i: seat, seat }).then(() => this.canCmd());
+  },
+  /* Envía una orden como el jugador de este dispositivo, tomando antes el turno si hace falta. */
+  cmdAs(c, uid) { return this.claimActive(uid).then(ok => ok ? Net.cmd(c) : this.notYours()); },
+  notYours() { if (Net.seats && Net.seats.length) this.log('Ahora actúa ' + G.players[G.act].name + ' y no puedes tomar el turno ahora mismo.', 'turn'); },
   moveMode(u) {
     const extra = G.turn.vehicle && u.type === 'hero' && !['pepinillos', 'horacio'].includes(u.key) && isSurface(u.space) ? G.turn.vehicle : 0; let opts = reachable(u, extra); if (extra) { const base = reachable(u, 0); for (const k in opts) if (base[k] === undefined && !isSurface(k)) delete opts[k]; }
     if (G.turn.heli && u.type === 'hero') { opts = {}; for (const k in G.spaces) if (isSurface(k) && canStop(u, k) && k !== u.space) opts[k] = 0; }
@@ -297,7 +305,7 @@ const ui = {
     });
   },
   doAct(u, id) {
-    if (!this.canCmd()) return;
+    if (!this.canCmd()) { this.claimActive(u.id).then(ok => ok ? this.doAct(u, id) : this.notYours()); return; }
     if (needsPermission(u)) { Net.cmd({ c: 'perm', uid: u.id }).then(() => { if (G.turn && G.turn.perm && G.turn.perm[u.id + ':' + G.act]) this.doAct(u, id); }); return; }
     if (id === 'move') { ui.mode = this.moveMode(u); ui.setBanner('Elige el espacio de destino (Esc para cancelar)'); ui.redraw(); }
     else if (id === 'fire') { ui.mode = { type: 'fire', unit: u, opts: fireTargets(u) }; ui.setBanner('Elige el espacio del Zed objetivo'); ui.redraw(); }
@@ -336,7 +344,8 @@ const ui = {
   selectUnit(uid) {
     G.sel = uid || null; this.updateStats(); this.redraw();
     const u = uid && G.units[uid]; if (!u || G.phase !== 'actions' || G.busy) return;
-    if (needsPermission(u) || !this.canCmd()) return; /* solo se mira: el permiso se pide al elegir una acción */
+    if (!this.canCmd()) { if ((u.owner == null || (Net.seats || []).includes(u.owner)) && unitActions(u).length) this.claimActive(uid).then(ok => { if (ok) this.selectUnit(uid); else this.notYours(); }); return; }
+    if (needsPermission(u)) return; /* solo se mira: el permiso se pide al elegir una acción */
     const mv = unitActions(u).find(a => a.id === 'move'); if (mv && mv.ok) this.doAct(u, 'move');
   },
   redraw() { if (!this.ctx || !G.spaces) return; cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => this.draw()); },
@@ -482,27 +491,31 @@ const ui = {
   },
   confirm(text) { return this.choose({ title: 'Confirmar', text, options: [{ label: 'Sí', value: true }, { label: 'No', value: false }] }); },
   /* Súper Zed: la ficha aparece en grande en el centro con su nombre y su efecto (OK). Al pulsar OK vuela a su espacio y solo entonces se coloca.
+     Con carta (p. ej. Marines): la carta se muestra junto a la ficha y se desvanece al pulsar OK, cuando la ficha vuela.
      Con «Animaciones rápidas» no vuela: se muestra la información igual y se coloca al pulsar OK. */
-  superIntro(zed, target) {
+  superIntro(zed, target, card, txt) {
     return new Promise(res => {
-      const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: '', img: null };
+      const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: txt || '', img: zed.img || null };
       const ov = document.createElement('div'); ov.className = 'superfx';
-      ov.innerHTML = '<div class="sfx-tok"><img src="' + (zed.key && SUPER_ZEDS[zed.key] ? superImg(zed.key, false) : 'assets/tokens/' + (d.img || 'sz_lobo') + '.png') + '" alt=""></div>' +
+      ov.innerHTML = '<div class="sfx-stage">' + (card ? '<div class="sfx-card"><img src="' + card + '" alt=""></div>' : '') +
+        '<div class="sfx-tok"><img src="' + (zed.key && SUPER_ZEDS[zed.key] ? superImg(zed.key, false) : 'assets/tokens/' + (d.img || 'sz_lobo') + '.png') + '" alt=""></div></div>' +
         '<div class="sfx-info" hidden><h2>' + d.name + '</h2><p>' + d.txt + '</p><button class="primary" id="sfxOk">OK</button></div>';
       document.body.appendChild(ov);
-      const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info');
+      const tok = ov.querySelector('.sfx-tok'), info = ov.querySelector('.sfx-info'), cardEl = ov.querySelector('.sfx-card');
       setTimeout(() => { info.hidden = false; }, 900);
       const finish = () => { ov.remove(); res(); };
       $('sfxOk').onclick = () => {
         info.hidden = true;
         const dest = target && G.spaces[target];
+        if (cardEl) cardEl.classList.add('out');
         if (this.fast || !dest) { finish(); return; }
         /* Vuelo por fotogramas: la ficha va al espacio de destino donde esté en pantalla en cada fotograma. El mapa no hace zoom ni se mueve. */
         if (this.view && this.view.z > 1.001) this.panTo(target);
         const cv = this.canvas, dur = 1600, ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         const live = () => { const r = cv.getBoundingClientRect(), k = r.width / cv.width; return { x: r.left + dest.x * k, y: r.top + dest.y * k }; };
-        const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+        /* El centro de partida es donde está la ficha en pantalla (con carta, va desplazada a un lado). */
         tok.style.animation = 'none';
+        const r0 = tok.getBoundingClientRect(), cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
         const t0 = performance.now();
         const step = now => {
           const t = Math.min(1, (now - t0) / dur), e = ease(t), p = live();
@@ -637,8 +650,9 @@ const ui = {
     return out;
   },
   combatOpen(info) {
-    const zs = info.zeds.map(z => z.name + ' ' + strength(z) + (z.hits ? ' <span class="bad">(' + '♥'.repeat(z.hits) + ')</span>' : '')).join(' + ');
-    const shHtml = () => info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
+    const zs = info.zeds.map(z => { const img = typeof zedImgOf === 'function' ? zedImgOf(z) : null, sup = z.type === 'super' && SUPER_ZEDS[z.key];
+      return '<div class="zrow2" data-zoom="u:' + z.id + '">' + (img ? '<img src="' + img + '" alt="">' : '') + '<div><b>' + z.name + ' ' + strength(z) + '</b>' + (z.hits ? ' <span class="bad">' + '♥'.repeat(z.hits) + '</span>' : '') + (z.flipped ? ' · cara reducida' : '') + (z.type === 'super' ? ' <span class="pill">Súper Zed</span>' : '') + (zedBadges(z).map(b => ' <span class="pill">' + b.ico + ' ' + b.txt + '</span>').join('')) + (sup ? '<div class="zab">' + sup.txt + '</div>' : '') + '</div></div>'; }).join('');
+    const shHtml = () => info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + (s.by ? ' <span class="mut">— ' + s.by + '</span>' : '') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
     const colsInner = () => 'Columna inicial: <b>' + CAC_COLS[info.initCol] + '</b><ul style="margin:2px 0 2px 18px;padding:0">' + shHtml() + '</ul>' + (info.extraDice ? '<div>+' + info.extraDice + ' dado(s) extra: se usan los 2 mejores.</div>' : '') + 'Columna final: <b style="color:var(--gold)">' + CAC_COLS[info.finalCol] + '</b>';
     const b = this._modal('<h2>' + info.title + '</h2><div class="sides"><div class="side z"><div>' + (info.zeds.length > 1 ? 'Horda' : 'Atacantes / Zeds') + '</div><div class="big" style="color:#ff8a76">' + info.zStr + '</div><div style="font-size:12px">' + zs + '</div></div><div class="vs">VS</div><div class="side"><div>' + info.fighter.name + '</div><div class="big" style="color:#9bd68a">' + info.pStr + '</div><div style="font-size:12px">Fuerza ' + (info.fighter.flipped ? 'reducida' : 'completa') + '</div></div></div><div class="cols" id="ccols">' + colsInner() + '</div><div id="ctab">' + this._cacTable(info.initCol, info.finalCol) + '</div><div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
     const mark = best => { const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.finalCol + '"]'); b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Suma <b>' + (best[0] + best[1]) + '</b>'; };

@@ -12,7 +12,7 @@ function rngRestore(v) { RNG_S = v >>> 0; }
 function rnd(n) { RNG_S = (RNG_S + 0x6D2B79F5) >>> 0; let t = RNG_S; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return Math.floor(((t ^ (t >>> 14)) >>> 0) / 4294967296 * n); }
 /* Modo debug (se activa al empezar la partida): tras cada tirada con ventana aparece un botón Debug para cambiar los dados. */
 let DEBUG_DICE = false;
-function d6() { return 1 + rnd(6); }
+function d6() { const v = 1 + rnd(6); EVT('d6', null, { v }); return v; }
 /* Dado aleatorio solo para la animación (no consume la secuencia ni pregunta). */
 const fxD6 = () => 1 + Math.floor(Math.random() * 6);
 /* Tirada de 1 dado visible: se muestra el dado y el resultado y hay que confirmar con un clic. fn(r) devuelve el texto del resultado. */
@@ -80,11 +80,21 @@ const isFighter = u => u.side === 'pl' && !['refugee', 'aldeano', 'train'].inclu
 const isSoft = u => u.type === 'refugee' || u.type === 'aldeano';
 const isHero = u => u.type === 'hero';
 const isCiv = u => u.type === 'civ';
-function putUnit(u, id) {
+/* why (opcional): causa concreta de la colocación (p. ej. «Brote»); si no, vale la causa en curso. */
+function putUnit(u, id, why) {
+  const from = u.space;
   if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); }
   u.space = id; if (id && G.spaces[id]) sp(id).units.push(u.id);
+  if (u.side === 'zed' && id && from !== id) {
+    const d = { ty: u.type, nm: u.name, key: u.key || null, fu: u.full, rd: u.red, sp: id }; if (why) d.c = why;
+    if (from) { d.from = from; EVT('zmv', u.id, d); } else EVT('zin', u.id, d);
+  }
 }
-function removeUnit(u) { if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); } u.space = null; }
+function removeUnit(u) {
+  if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); }
+  if (u.side === 'zed' && u.space) EVT('zout', u.id, { ty: u.type, nm: u.name, sp: u.space });
+  u.space = null;
+}
 function unitsAt(id) { return sp(id).units.map(x => G.units[x]).filter(Boolean); }
 const zedsAt = id => unitsAt(id).filter(isZedSide);
 /* Nombres inequívocos para preguntas: un Zed o una Horda, con su fuerza y su espacio. */
@@ -143,6 +153,7 @@ function drawNormalToken() {
 }
 function makeZed() {
   const t = drawNormalToken(); if (!t) return null;
+  EVT('ficha', null, { fu: t[0], rd: t[1], quedan: G.reserve.length });
   return newUnit({ side: 'zed', type: 'zed', name: 'Zed', full: t[0], red: t[1], hf: 3, hr: 3, token: t });
 }
 function makeSuper() {
@@ -154,6 +165,7 @@ function makeSuper() {
     k = SUPER_ZEDS[a].full <= SUPER_ZEDS[b].full ? a : b; G.supers.push(k === a ? b : a);
   }
   if (!k) k = G.supers.splice(rnd(G.supers.length), 1)[0];
+  EVT('superSale', null, { key: k, quedan: G.supers.length });
   const d = SUPER_ZEDS[k];
   return newUnit({ side: 'zed', type: 'super', key: k, name: d.name, full: d.full, red: d.red, hf: 3, hr: 3, img: d.img, resistZ: k === 'ferreo' });
 }
@@ -180,13 +192,13 @@ async function placeZedAt(id, why, zed) {
     if (target === null) { target = firstOpenInitial(); if (!target) { returnZed(zed); LOG('No hay sitio para un Zed nuevo.'); return null; } }
   }
   if (zed.type === 'super') await UI.superIntro(zed, target);
-  if (!UI.fast) Sfx.zed(); putUnit(zed, target); UI.pulseSpace(target, '#ff4a3a'); UI.toast('Nuevo Zed en ' + spaceLabel(target), '#ff4a3a', 1100);
+  if (!UI.fast) Sfx.zed(); putUnit(zed, target, why); UI.pulseSpace(target, '#ff4a3a'); UI.toast('Nuevo Zed en ' + spaceLabel(target), '#ff4a3a', 1100);
   LOG('Nuevo ' + (zed.type === 'super' ? 'Súper Zed (' + zed.name + ')' : 'Zed (' + zed.full + ')') + ' en ' + spaceLabel(target) + (why ? ' — ' + why : '') + '.', 'zed');
   UI.redraw();
-  if (plAt(target).length || softAt(target).length) { if (!blocked(target)) await zedAttack([zed], target, prevToward(target)); }
+  if (plAt(target).length || raidAt(target).length || softAt(target).length) { if (!blocked(target)) await zedAttack([zed], target, prevToward(target)); }
   return zed;
 }
-function returnZed(z) { if (z.token) G.reserve.push(z.token); else if (z.type === 'super') G.supers.push(z.key); removeUnit(z); delete G.units[z.id]; }
+function returnZed(z) { if (z.token) G.reserve.push(z.token); else if (z.type === 'super') { G.supers.push(z.key); EVT('superVuelve', z.id, { key: z.key, quedan: G.supers.length }); } removeUnit(z); delete G.units[z.id]; }
 function firstOpenInitial() { for (const r of G.routes) if (normalZedsAt(r + '0').length < zedCap(r + '0')) return r + '0'; return null; }
 async function placeZedInitial(r, zed) {
   zed = zed || makeZed(); if (!zed) { LOG('No quedan fichas Zed.'); return null; }
@@ -194,18 +206,22 @@ async function placeZedInitial(r, zed) {
   if (normalZedsAt(t).length >= zedCap(t)) t = firstOpenInitial();
   if (!t) { returnZed(zed); LOG('Todos los espacios Iniciales están llenos.'); return null; }
   if (zed.type === 'super') await UI.superIntro(zed, t);
-  UI.focus(t, 1.7); putUnit(zed, t); UI.pulseSpace(t, '#ff4a3a'); UI.toast('Nuevo Zed en ' + spaceLabel(t), '#ff4a3a', 1100); LOG('Nuevo ' + (zed.type === 'super' ? 'Súper Zed' : 'Zed') + ' (' + zed.full + ') en ' + spaceLabel(t) + '.', 'zed'); UI.redraw(); await UI.settle(); return zed;
+  UI.focus(t, 1.7); putUnit(zed, t, 'Zed inicial'); UI.pulseSpace(t, '#ff4a3a'); UI.toast('Nuevo Zed en ' + spaceLabel(t), '#ff4a3a', 1100); LOG('Nuevo ' + (zed.type === 'super' ? 'Súper Zed' : 'Zed') + ' (' + zed.full + ') en ' + spaceLabel(t) + '.', 'zed'); UI.redraw(); await UI.settle();
+  /* Si ya hay unidades de jugador o Saqueadores en el Inicial, el Zed entra en combate. */
+  if ((plAt(t).length || raidAt(t).length) && !blocked(t)) await zedAttack([zed], t, null);
+  return zed;
 }
 function alreadyHas(rid) { return G.res && G.res.cur && G.res.cur.id === rid; }
 
 /* ================= INFECCIÓN ================= */
 async function infUp(n) {
   if (!G.lv.infection || n <= 0) return;
+  while (G.inf + n >= 13 && !G.inWild && await offerHandCards('inf', 'La Infección subirá +' + n + ' y llegaría a 13: <b>Brote Descontrolado</b>.', true)) { }
   if (G.berraAnti === 'antidoto') {/* sin cambio */}
-  const i0 = G.inf; G.inf = Math.min(13, G.inf + n); UI.updateStats(); UI.fxInf(G.inf - i0);
+  const i0 = G.inf; G.inf = Math.min(13, G.inf + n); EVT('inf', null, { de: i0, to: G.inf, n });UI.updateStats(); UI.fxInf(G.inf - i0);
   if (G.inf >= 13 && !G.inWild) { G.inWild = true; LOG('¡La Infección llega al máximo! Brote Descontrolado.', 'bad'); await outbreak(true); G.inWild = false; }
 }
-function infDown(n) { if (!G.lv.infection || n <= 0) return; const i0 = G.inf; G.inf = Math.max(0, G.inf - n); UI.updateStats(); UI.fxInf(G.inf - i0); }
+function infDown(n) { if (!G.lv.infection || n <= 0) return; const i0 = G.inf; G.inf = Math.max(0, G.inf - n); EVT('inf', null, { de: i0, to: G.inf, n: -n });UI.updateStats(); UI.fxInf(G.inf - i0); }
 function meleeInfection(zs, h) {
   let n = 1;
   for (const z of zs) { if (z.toxic) n = Math.max(n, 3); if (z.key === 'supurador') n = Math.max(n, 3); if (z.key === 'lobo') n = Math.max(n, 2); }
@@ -356,8 +372,13 @@ function retreatPlayers(units, dest, back) {
   if (units.length) Voz.say('retirada');
   for (const u of units) {
     if (!u.space || !G.spaces[u.space] || ['bed', 'office', 'lab', 'camp'].includes(sp(u.space).kind)) continue; let d = dest === 'C' ? (sp(u.space).route ? nextToward(u.space) : 'C') : dest;
-    let k = back ? back.indexOf(d) : -1; /* sin sitio: se sigue hacia atrás por el recorrido del Mover, y luego hacia el Centro */
-    while (d !== 'C' && (!playerRoom(d, u) || blocked(d) || (!isPetra(u) && unitsAt(d).some(isPetra)))) d = (k >= 0 && k + 1 < back.length) ? back[++k] : (sp(d).route ? nextToward(d) : 'C');
+    /* La retirada es a pie: el atajo de Wilson no sirve para retroceder. Si el espacio de vuelta solo se alcanza por atajo, se va hacia el Centro. */
+    if (d !== 'C' && !neighbors(u.space).includes(d)) d = sp(u.space).route ? nextToward(u.space) : 'C';
+    let k = back && neighbors(u.space).includes(d) ? back.indexOf(d) : -1; /* sin sitio: se sigue hacia atrás por el recorrido del Mover, y luego hacia el Centro */
+    while (d !== 'C' && (!playerRoom(d, u) || blocked(d) || (!isPetra(u) && unitsAt(d).some(isPetra)))) {
+      if (k >= 0 && k + 1 < back.length && neighbors(d).includes(back[k + 1])) d = back[++k];
+      else { d = sp(d).route ? nextToward(d) : 'C'; k = -1; }
+    }
     putUnit(u, d); LOG(u.name + ' se retira a ' + spaceLabel(d) + '.');
   }
   UI.redraw();
@@ -407,9 +428,10 @@ function humanShifts(f, o) { // o: { attacking, space }
 function hasPart(k) { return G.weapon && G.weapon.parts.includes(k); }
 function zedShifts(zs, o) {
   const s = [];
-  if (zs.some(z => z.smart)) s.push({ label: 'Inteligentes', v: -1 });
-  if (zs.some(z => z.leader)) s.push({ label: 'Líder Zed', v: -1 });
-  if (G.turn.flamed && zs.some(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id))) s.push({ label: 'Zeds flambeados', v: -2 });
+  const by = f => zs.filter(f).map(z => z.name + ' ' + strength(z)).join(', ');
+  if (zs.some(z => z.smart)) s.push({ label: 'Inteligentes', v: -1, by: by(z => z.smart) });
+  if (zs.some(z => z.leader)) s.push({ label: 'Líder Zed', v: -1, by: by(z => z.leader) });
+  if (G.turn.flamed && zs.some(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id))) s.push({ label: 'Zeds flambeados', v: -2, by: by(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id)) });
   if (G.turn.frenzy) s.push({ label: 'Súper Zeds enloquecidos', v: -2 });
   return s;
 }
@@ -654,23 +676,28 @@ function canStop(u, id) {
 }
 /* Wilson «Atajos»: de un espacio numerado al del mismo número en una ruta de superficie adyacente (1 Movimiento).
    Una unidad que empiece en el espacio de Wilson también puede tomar el atajo desde ahí. */
-const ROUTE_RING = ['B', 'M', 'A', 'F'];
+/* Rutas enlazadas por atajos: el anillo de superficie y el Túnel, que enlaza con la Autovía y las Afueras. */
+const SHORT_ADJ = { B: ['M', 'F'], M: ['B', 'A'], A: ['M', 'F', 'T'], F: ['A', 'B', 'T'], T: ['A', 'F'] };
 function shortcuts(u, cur) {
-  const s = sp(cur); if (!s || !SURFACE.includes(s.route) || isInit(cur)) return [];
+  const s = sp(cur); if (!s || !SHORT_ADJ[s.route] || isInit(cur)) return [];
   const w = alive('wilson'); if (!w) return [];
-  if (!(u === w || (cur === u.space && w.space === u.space))) return [];
-  const k = ROUTE_RING.indexOf(s.route), n = spaceNum(cur);
-  return [ROUTE_RING[(k + 1) % 4], ROUTE_RING[(k + 3) % 4]].filter(r => G.routes.includes(r)).map(r => r + (lastOf(r) - n)).filter(id => G.spaces[id]);
+  /* Wilson comparte el atajo con cualquier unidad agrupada con él (o que pasa por su espacio). */
+  if (!(u === w || w.space === cur)) return [];
+  const n = spaceNum(cur);
+  return SHORT_ADJ[s.route].filter(r => G.routes.includes(r)).map(r => r + (lastOf(r) - n)).filter(id => G.spaces[id]);
 }
 function reachable(u, extra) {
   const out = {}; if (!canAct(u) || u.resist || u.type === 'aldeano') return out;
   if (G.turn.noSurfaceMove && isSurface(u.space)) return out;
-  const mp = u.mp + (extra || 0), best = { [u.space]: 0 }, q = [u.space], prev = {};
+  const mp = u.mp + (extra || 0), best = { [u.space]: 0 }, q = [u.space], prev = {}, viaSc = {};
   while (q.length) {
     const cur = q.shift();
     if (cur !== u.space && (zedsAt(cur).length || raidAt(cur).length)) continue;
     if (cur !== u.space && sp(cur).chaos && u.key !== 'pepinillos' && u.key !== 'horacio' && u.key !== 'alia' && !isSoft(u)) continue;
-    for (const n of neighbors(cur).concat(shortcuts(u, cur))) {
+    /* Un solo atajo por movimiento: desde un espacio al que se llegó por atajo no se puede tomar otro. */
+    const nb = neighbors(cur);
+    for (const n of nb.concat(viaSc[cur] ? [] : shortcuts(u, cur))) {
+      const isSc = !nb.includes(n);
       const s = sp(n);
       if (isInit(n) || blocked(n) || s.kind === 'camp') continue;
       if (surfaceOnly(u) && s.route === 'T') continue;
@@ -682,7 +709,7 @@ function reachable(u, extra) {
       if (isSoft(u) && (zedsAt(n).length)) continue;
       const c = best[cur] + (G.spaces[n] ? moveCost(u, n) : 1);
       if (c > mp) continue;
-      if (best[n] === undefined || c < best[n]) { best[n] = c; prev[n] = cur; if (!(s.bridge === 'ferry' && u.type !== 'zed')) q.push(n); }
+      if (best[n] === undefined || c < best[n]) { best[n] = c; prev[n] = cur; viaSc[n] = !!(viaSc[cur] || isSc); if (!(s.bridge === 'ferry' && u.type !== 'zed')) q.push(n); }
     }
   }
   for (const id in best) if (id !== u.space && canStop(u, id)) out[id] = best[id];
@@ -731,7 +758,9 @@ function pathTo(prev, start, dest) {
 }
 /* path: recorrido de la acción de Mover. Si se pierde el combate, la unidad se retira UN espacio (al anterior del recorrido). */
 async function doMove(u, dest, path) {
-  if (u.space && G.spaces[u.space] && sp(u.space).kind === 'crypt' && !u.dr && !(await cryptRollPlayer(u))) return;
+  /* Atajo de Wilson: si está en la Cripta, sus unidades salen sin tirar. */
+  const wAtajo = alive('wilson') && u.space && alive('wilson').space === u.space;
+  if (u.space && G.spaces[u.space] && sp(u.space).kind === 'crypt' && !u.dr && !wAtajo && !(await cryptRollPlayer(u))) return;
   const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); EVT('move', u.id, { from, to: dest }); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
   if (isSoft(u)) { if (dest === 'C') await refugeeArrives(u); return; }
   if (dest === 'C' && u.space === 'C') {/* ok */ }

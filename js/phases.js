@@ -8,6 +8,8 @@ async function outbreak(wild, noReduce) {
   else if (!noReduce) { const [a, b] = await UI.rollSimple('Tirada de Brote: la Infección baja', 2, d => 'Total <b>' + (d[0] + d[1]) + '</b>: la Infección baja ' + (d[0] + d[1]) + '.'); LOG('Tirada de Brote: ' + (a + b) + '. La Infección baja.', 'good'); infDown(a + b); }
   const dr = await drawDestiny(); if (!dr) return;
   const r = dr.route; let target;
+  /* La carta de Destino solo elige la ruta del Brote: la causa de lo que aparece es el Brote. */
+  CAUSA = (wild ? 'Brote Descontrolado' : 'Brote') + ' en ' + ROUTES[r].name;
   if (r === 'T' || alreadyHas('vacunas')) target = r + '0';
   else {
     target = null;
@@ -31,6 +33,7 @@ async function wildOutbreakNow() {
 /* ---------- Caos ---------- */
 async function placeChaos(id, n) {
   if (!G.lv.fourR) return; const s = sp(id); n = n || (G.turn.chaos2 ? 2 : 1);
+  while (G.chaosLeft < n && await offerHandCards('chaos', '¡Solo quedan <b>' + G.chaosLeft + '</b> fichas de Caos y hay que colocar ' + n + '! Si no quedan, perdéis la partida.', true)) { }
   for (let k = 0; k < n; k++) { if (G.chaosLeft <= 0) { G.over = 'lose'; G.loseWhy = 'caos'; LOG('¡No quedan fichas de Caos! Has perdido.', 'bad'); return; } G.chaosLeft--; s.chaos++; }
   LOG('Caos en ' + spaceLabel(id) + '.', 'bad'); UI.pulseSpace(id, '#ff7a2a'); UI.toast('Caos en ' + spaceLabel(id), '#ff7a2a', 1200); UI.redraw();
 }
@@ -221,7 +224,8 @@ async function activateRoute(r, cer) {
 async function routeOrder(rem) {
   const out = [];
   while (rem.length > 1) {
-    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color })) });
+    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar, o activa el resto en orden aleatorio:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color })).concat([{ label: 'Aleatorio (resto)', value: 'rnd' }]) });
+    if (v === 'rnd') { const a = rem.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return out.concat(a); }
     out.push(v); rem = rem.filter(x => x !== v);
   }
   out.push(rem[0]); return out;
@@ -230,7 +234,7 @@ async function phaseZeds() {
   const ev = G.event;
   if (ev.guardia) { return; }
   let list = [];
-  if (ev.cer) { await UI.announce('¡CEREBROS! Los Zeds que ganen avanzan otra vez', '#ff3b2a', 1200, true); await infUp(ev.skulls); LOG('¡CEREBROS!: todas las rutas se activan y los Zeds que ganen avanzan otra vez.', 'bad'); const o = await routeOrder(G.routes.slice()); for (const r of o) { await activateRoute(r, true); if (G.over) return; } return; }
+  if (ev.cer) { await UI.announce('¡CEREBROS! Los Zeds que ganen avanzan otra vez', '#ff3b2a', 1200, true); await infUp(ev.skulls); LOG('¡CEREBROS!: todas las rutas se activan y los Zeds que ganen avanzan otra vez.', 'bad'); const o = await routeOrder(G.routes.slice()); for (const r of o) { await conCausa(ROUTES[r].name + ' (CEREBROS)', () => activateRoute(r, true)); if (G.over) return; } return; }
   const anyOther = ev.z.includes('ANY');
   for (const x of ev.z) {
     if (x === 'ANY' || x === 'MIN2') continue;
@@ -240,11 +244,19 @@ async function phaseZeds() {
     else if (G.routes.includes(x)) list.push(x);
   }
   if (ev.z.includes('MIN2')) { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Ruta con menos Zeds: se activa 2 veces.'); list.push(r, r); }
-  for (const r of list) { await activateRoute(r, false); if (G.over) return; }
-  if (anyOther) { const rest = G.routes.filter(r => !list.includes(r)); if (rest.length) { const r = await chooseRoute(rest, 'Cualquier otra: elige la ruta que se activa.'); await activateRoute(r, false); } }
+  for (const r of list) { await conCausa(ROUTES[r].name, () => activateRoute(r, false)); if (G.over) return; }
+  if (anyOther) { const rest = G.routes.filter(r => !list.includes(r)); if (rest.length) { const r = await chooseRoute(rest, 'Cualquier otra: elige la ruta que se activa.'); await conCausa(ROUTES[r].name, () => activateRoute(r, false)); } }
 }
 
 /* ---------- 4R ---------- */
+/* Xeno Jones (fase 4R): gasta 1 activación de Refugiados para trasladarse. Desde cualquier sitio, al Laboratorio o a una Oficina del Personal;
+   desde el Laboratorio o el Hospital, a cualquier espacio vacío (sin unidades, aunque tenga fichas) que no sea Inicial. */
+function jonesDests() {
+  const j = alive('jones'); if (!j || !j.space || !canAct(j)) return [];
+  const hosp = ['LAB', 'H1', 'H2', 'H3', 'H4', 'O1', 'O2'];
+  const ids = hosp.includes(j.space) ? Object.keys(G.spaces) : ['LAB', 'O1', 'O2'];
+  return ids.filter(id => G.spaces[id] && id !== j.space && !isInit(id) && sp(id).kind !== 'crypt' && unitsAt(id).length === 0 && playerRoom(id, j));
+}
 async function phase4R() {
   if (!G.lv.fourR) return;
   const ev = G.event;
@@ -272,11 +284,12 @@ async function phase4R() {
     const trainsOn = () => (typeof expOn === 'function' && expOn(3)) ? allUnits(t => t.type === 'train' && t.space && !t.movedR && !sp(t.space).chaos) : [];
     for (let k = 0; k < n; k++) {
       const cands = allUnits(x => x.type === 'refugee' && x.space && isRouteSp(x.space) && !zedsAt(nextToward(x.space)).length && !x.movedR);
-      const tcands = trainsOn();
-      if (!cands.length && !tcands.length) break;
-      if (tcands.length) { /* Expansión 3: una activación «R» puede usarse para activar 1 Tren en lugar de 1 unidad de Refugiados */
-        const v = await UI.choose({ title: 'Fase 4R: activación ' + (k + 1) + '/' + n, text: 'Gasta esta activación «R» en un Refugiado o en un Tren.', options: tcands.map(t => ({ label: 'Mover el ' + t.name, value: t.id })).concat(cands.length ? [{ label: 'Mover Refugiados', value: 'r' }] : []).concat([{ label: 'No usarla', value: '' }]) });
+      const tcands = trainsOn(), jt = jonesDests();
+      if (!cands.length && !tcands.length && !jt.length) break;
+      if (tcands.length || jt.length) { /* Expansión 3: una activación «R» puede usarse para activar 1 Tren en lugar de 1 unidad de Refugiados */
+        const v = await UI.choose({ title: 'Fase 4R: activación ' + (k + 1) + '/' + n, text: 'Gasta esta activación «R» en un Refugiado' + (tcands.length ? ' o en un Tren' : '') + (jt.length ? ' (o Jones se traslada)' : '') + '.', options: tcands.map(t => ({ label: 'Mover el ' + t.name, value: t.id })).concat(cands.length ? [{ label: 'Mover Refugiados', value: 'r' }] : []).concat(jt.length ? [{ label: 'Jones se traslada', value: 'j' }] : []).concat([{ label: 'No usarla', value: '' }]) });
         if (!v) continue;
+        if (v === 'j') { const d = await UI.pickSpace(jt, 'Jones: elige el espacio de destino.', true); if (d == null) continue; const j = alive('jones'); putUnit(j, d); LOG('Jones se traslada a ' + spaceLabel(d) + ' (activación de Refugiados).', 'good'); UI.focus(d, 1.7); UI.redraw(); await UI.settle(); continue; }
         if (v !== 'r') { const t = G.units[v]; t.movedR = true; const extra = await doTrainAction(t, 'tmove', { free: true }); if (extra) k++; continue; }
       }
       const w = cands.length === 1 ? cands[0].id : await UI.pickUnit(cands, 'Refugiados 4R: elige la unidad que huye ' + (k + 1) + '/' + n + '.');
@@ -297,6 +310,7 @@ async function phase4R() {
 /* ---------- Infección y Alimentación ---------- */
 async function phaseInfection() {
   if (!G.lv.infection) return;
+  if (G.inf >= 10) await offerHandCards('inf', 'La Infección está en <b>' + G.inf + '</b> / 13.');
   const sps = allUnits(x => x.type === 'spreader' && x.space && isRouteSp(x.space) && !isInit(x.space));
   if (sps.length) { LOG(sps.length + ' Propagador(es) de Enfermedad: +' + sps.length + ' Infección.', 'bad'); await infUp(sps.length); }
   if (G.event.inf === 'B') {
@@ -326,6 +340,7 @@ async function phaseFeeding() {
   } else cost = n;
   if (cost >= 2 && alive('clarin')) { cost--; LOG('El Mensajero del Clarín: el segundo Suministro es gratis.'); }
   if (!cost) return;
+  if (G.supplies < cost) await offerHandCards('feed', 'Alimentación: hacen falta <b>' + cost + '</b> Suministros y solo tienes <b>' + G.supplies + '</b>; las unidades sufrirían Impactos.', true);
   const pay = Math.min(G.supplies, cost); G.supplies -= pay; LOG('Alimentación: −' + pay + ' Suministro(s).', 'bad');
   const miss = cost - pay;
   if (miss > 0) { LOG('¡Faltan ' + miss + ' Suministros! Impactos a tus unidades.', 'bad'); for (let k = 0; k < miss; k++) { const us = allUnits(x => isFighter(x) && x.space && x.space !== 'CEM'); if (!us.length) break; const w = await UI.pickUnit(us, 'Escasez de Suministros: elige la unidad que sufre 1 Impacto.'); await hitPlayer(G.units[w], 1); } }
@@ -366,14 +381,14 @@ async function eventStart() {
     case 'propagacion': { const dr = await drawDestiny(); if (dr) { G.turn.propag = true; await placeZedInitial(dr.route); await resolveTwist(dr); } break; }
     case 'pelo': for (const r of G.routes) await placeZedInitial(r); for (const z of allUnits(isZedSide)) z.hits = 0; break;
     case 'odio': { const zs = allUnits(x => x.type === 'zed' && strength(x) <= 3 && isRouteSp(x.space)).sort((a, b) => sp(b.space).i - sp(a.space).i); let n = 0; for (const z of zs) { const w = z.space; discardZed(z); const nz = makeZed(); if (nz) { putUnit(nz, w); n++; } } LOG(n + ' Zeds débiles sustituidos por Zeds de Fuerza completa.', 'bad'); break; }
-    case 'heroe_b': case 'heroe_g': { const k = randomAvailableHero(); if (k) { const inits = ['C'].concat(G.routes.map(r => r + '0')); const w = await UI.pickSpace(inits, 'Llega un Héroe: elige el espacio (Centro o un Inicial).'); await spawnHero(k, w); } else LOG('No quedan Héroes disponibles.'); break; }
+    case 'heroe_b': case 'heroe_g': { const k = randomAvailableHero(); if (k) { const inits = ['C'].concat(G.routes.map(r => r + '0')); await spawnHero(k, null, inits); } else LOG('No quedan Héroes disponibles.'); break; }
     case 'keepcalm': { const hs = allUnits(x => x.type === 'hero' && x.space); if (hs.length) { const v = await UI.pickUnit(hs, '«Keep calm»: elige un Héroe (2 columnas a favor al atacar).'); G.units[v].keepCalm = true; } break; }
     case 'mina': { const mid = 'M3'; G.turn.block.push(mid); for (const u of plAt(mid)) { await hitPlayer(u, 1); if (u.space === mid) retreatPlayers([u], 'C'); }
       for (const z of zedsAt(mid).slice()) { if (!G.units[z.id] || z.space !== mid) continue; await hitZed(z); if (G.units[z.id] && z.space === mid) await retreatZeds([z], zedOrigin(z)); } break; }
     case 'resistentes': { await placeZedAt('M0', 'Zeds Resistentes'); const t = strongestNormalZed(); if (t) { t.zresist = true; LOG('Resistentes en un Zed de Fuerza ' + strength(t) + '.', 'bad'); } break; }
     case 'cerebros_b1': case 'cerebros_b2': break;
     case 'agua': await lossChoice(await rollShown('Agua contaminada: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' (Suministros o Impactos).'), ['s', 'p']); break;
-    case 'marines': { const dr = await drawDestiny(); if (dr) { const m = makeSpecial('marines', dr.route + '0'); G.ammo = Math.min(20, G.ammo + 4); LOG('Llegan los Marines (+4 Munición).', 'good'); await resolveTwist(dr); } break; }
+    case 'marines': { const dr = await drawDestiny(); if (dr) { const t = dr.route + '0'; const m = makeSpecial('marines', t); removeUnit(m); await UI.superIntro(m, t, 'assets/cartas/u_marines.jpg', SPECIALS.marines.txt.join(' ')); putUnit(m, t); UI.redraw(); G.ammo = Math.min(20, G.ammo + 4); LOG('Llegan los Marines (+4 Munición).', 'good'); await resolveTwist(dr); } break; }
     case 'toxicos': { await placeZedAt('A0', 'Zeds Tóxicos'); const t = strongestNormalZed(); if (t) t.toxic = true; break; }
     case 'rapidos': { await placeZedAt('B0', 'Zeds Rápidos'); const t = strongestNormalZed(); if (t) t.fast = true; break; }
     case 'turba': { const dr = await drawDestiny(); if (dr) { if (G.inf >= 8) await placeZedInitial(dr.route, makeSuper()); else { makeSpecial('vip', dr.route + '0', { name: 'Supervivientes V.I.P.', type: 'refugee' }); LOG('Aparecen los Supervivientes V.I.P.', 'good'); } await resolveTwist(dr); } break; }

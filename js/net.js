@@ -87,13 +87,13 @@ const Net = {
   cmd(c) {
     if (!this.online) return this.exec(c);
     if (c.seat === undefined) c.seat = G.act;
-    c.id = this.me + ':' + this.ses + ':' + (++this.cn);
-    const p = new Promise(res => { this.waiters[c.id] = res; });
+    c.cid = this.me + ':' + this.ses + ':' + (++this.cn);
+    const p = new Promise(res => { this.waiters[c.cid] = res; });
     if (this.role === 'host') this._seqCmd(c, this.me); else this._bcast({ t: 'cmd', cmd: c });
     return p;
   },
   _seqCmd(c, from) {
-    if (!c || (this.owners && this.owners[c.seat] !== from)) { const w = this.waiters[c && c.id]; if (w) { delete this.waiters[c.id]; w(); } return; }
+    if (!c || (this.owners && this.owners[c.seat] !== from)) { const w = this.waiters[c && c.cid]; if (w) { delete this.waiters[c.cid]; w(); } return; }
     this._hsend(null, { t: 'cmd', cmd: c }, null);
     this.q.push(c); this.kick();
   },
@@ -105,7 +105,7 @@ const Net = {
   },
   async exec(c) {
     try { await this._run(c); } catch (e) { console.error(e); }
-    const w = this.waiters[c.id]; if (w) { delete this.waiters[c.id]; w(); }
+    const w = this.waiters[c.cid]; if (w) { delete this.waiters[c.cid]; w(); }
   },
   async _run(c) {
     if (c.c !== 'act_pl' && this.online && c.seat !== G.act) return;
@@ -215,13 +215,14 @@ const Net = {
     const code = saved.net.code;
     const v = await ui.choose({ title: 'Reanudar partida online', text: 'Sala <b>' + Net._esc(code) + '</b>. ¿La reanudas tú como anfitrión o te unes a la sala si otro dispositivo ya la ha reanudado?', options: [{ label: 'Reanudar como anfitrión', value: 'host' }, { label: 'Unirme a la sala activa', value: 'join' }], cancel: true });
     if (v === 'host') return this.resumeHost(saved);
-    if (v === 'join') { this._joinCode = code; const r = await this._join(); this._joinCode = null; return r && r.resume ? r.resume : null; }
+    if (v === 'join') { try { if (saved.net.tok) sessionStorage.setItem('doz3.tok', saved.net.tok); } catch (e) { } this._joinCode = code; const r = await this._join(); this._joinCode = null; return r && r.resume ? r.resume : null; }
     return null;
   },
   /* Invitado: llega la instantánea de la partida en curso (dispositivo recién abierto o de otra sala). */
   _guestResume(m) {
     if (this._inGame) { try { sessionStorage.setItem('doz3.rejoin', this.code || ''); sessionStorage.setItem('doz3.skipIntro', '1'); } catch (e) { } location.reload(); return; }
     const saved = JSON.parse(m.save), n = saved.net || {};
+    ui._close(); /* la ventana «Conectando…» de la unión a la sala */
     this.started = true; this.epoch = m.epoch; this.hostTok = m.hostTok; this.owners = m.owners; this.names = m.names; this.setup = m.setup;
     this.restoreRuntime(Object.assign({}, n, { code: this.code, tok: this.me, hostTok: m.hostTok, owners: m.owners, names: m.names, setup: m.setup, seats: m.seats }), n.hi || 0);
     this.role = 'guest'; this.info();
@@ -267,12 +268,29 @@ const Net = {
   close() { try { if (this.peer) this.peer.destroy(); } catch (e) { } this.peer = null; this.conns = {}; this.role = null; this.online = false; this.seats = null; this.started = false; this._inGame = false; this._retrying = false; this.away = {}; this.cpDone = {}; this._bar(''); this.info(); },
   _esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); },
   /* Lista de asientos con su dueño. `me` = id de este dispositivo; con `claim` los asientos libres (del anfitrión) se pueden tomar. */
-  _seatsHtml(players, owners, names, me, claim, hostTok) {
+  _seatsHtml(players, owners, names, me, claim, hostTok, pool) {
+    const heroName = k => (HEROES[k] && HEROES[k].name) || k;
     return '<div class="plrows">' + players.map((p, i) => {
-      const o = owners[i], mine = o === me, who = o === hostTok ? (me === hostTok ? 'Tú (anfitrión)' : 'Anfitrión') : (mine ? 'Tú' : (names[o] || 'Invitado'));
-      const btn = claim ? (mine ? '<button data-rel="' + i + '">Soltar</button>' : (o === hostTok ? '<button data-claim="' + i + '">Tomar</button>' : '')) : '';
-      return '<div class="row"><span style="color:' + PL_COLORS[i % 4] + '">●</span> <b>' + Net._esc(p.name) + '</b> — ' + Net._esc(who) + ' ' + btn + '</div>';
+      const o = owners[i], mine = o === me, free = o === hostTok && me !== hostTok && i !== 0, taken = !mine && !free;
+      /* Estado del asiento: tuyo, libre (lo lleva el anfitrión mientras nadie lo tome) u ocupado por otro invitado. */
+      const who = mine ? (me === hostTok ? 'Tú (anfitrión)' : 'Tú') : free ? 'Libre' : (o === hostTok ? 'Anfitrión' : 'Ocupado por ' + (names[o] || 'Invitado'));
+      const btn = claim ? (mine ? '<button data-rel="' + i + '">Soltar</button>' : (free ? '<button data-claim="' + i + '">Tomar</button>' : '')) : '';
+      let hero = '';
+      if (pool && pool.length) {
+        if (mine) {
+          const used = players.map((x, j) => j !== i ? x.hero : '').filter(Boolean);
+          hero = ' <select data-hero="' + i + '"><option value="">Héroe personal: al azar</option>' + pool.map(k => '<option value="' + k + '"' + (p.hero === k ? ' selected' : '') + (used.includes(k) ? ' disabled' : '') + '>' + Net._esc(heroName(k)) + '</option>').join('') + '</select>';
+        } else hero = ' <span class="sub">' + (p.hero ? Net._esc(heroName(p.hero)) : 'héroe al azar') + '</span>';
+      }
+      return '<div class="row seat ' + (mine ? 'mine' : free ? 'free' : 'taken') + '"><span style="color:' + PL_COLORS[i % 4] + '">●</span> <b>' + Net._esc(p.name) + '</b> — <span class="seatst">' + (taken ? '🔒 ' : '') + Net._esc(who) + '</span>' + hero + ' ' + btn + '</div>';
     }).join('') + '</div>';
+  },
+  /* Anfitrión: cambia el héroe personal de un asiento (lo pide su dueño). Rechaza héroes que no están en la lista o que ya tiene otro asiento. */
+  _setHero(seat, hero, tok) {
+    const p = this.setup && this.setup.players[seat]; hero = hero || '';
+    if (!p || this.owners[seat] !== tok || this.started) return;
+    if (hero && (!this.lobbyPool || !this.lobbyPool.includes(hero) || this.setup.players.some((x, j) => j !== seat && x.hero === hero))) { this._lobbyBroadcast(); return; }
+    p.hero = hero; this._lobbyBroadcast();
   },
   /* Punto de entrada desde la portada: devuelve el setup con el que empezar (ya con Net.online/seats fijados) o null si se cancela. */
   async lobbyFlow() {
@@ -290,7 +308,8 @@ const Net = {
     if (!peer) { await ui.waitAck('Jugar online', 'No se pudo reservar un código de sala. Inténtalo de nuevo.'); return null; }
     this.close(); this.peer = peer; this.role = 'host'; this.setup = setup; this.conns = {}; this.names = {}; this.away = {}; this.hostTok = this.me = this._tok(); this.epoch = this.newEpoch(); this.owners = setup.players.map(() => this.hostTok);
     let render = () => { };
-    const broadcast = () => { for (const id in this.conns) this._send(this.conns[id], { t: 'lobby', players: setup.players, owners: this.owners, names: this.names, you: id, host: this.hostTok }); render(); };
+    G.expSel = setup.exps || []; this.lobbyPool = setup.level > 0 ? heroPoolFor(setup.level) : [];
+    const broadcast = () => { for (const id in this.conns) this._send(this.conns[id], { t: 'lobby', players: setup.players, owners: this.owners, names: this.names, you: id, host: this.hostTok, pool: this.lobbyPool }); render(); };
     this.code = code; this._order = 0; this._lobbyRender = () => render(); this._lobbyBroadcast = broadcast;
     this._hostWire(peer, broadcast);
     peer.on('error', e => this._onError(e)); this._keepPeer(peer);
@@ -299,9 +318,10 @@ const Net = {
       render = () => {
         const n = Object.keys(this.conns).length;
         const b = ui._modal('<h2>Sala ' + code + '</h2><p>Dile a los demás que elijan «Jugar online → Unirse a una sala» y escriban <b style="font-size:22px;letter-spacing:3px">' + code + '</b>, o que abran este enlace:<br><small>' + Net._esc(link) + '</small></p>' +
-          this._seatsHtml(setup.players, this.owners, this.names, this.hostTok, false, this.hostTok) +
+          this._seatsHtml(setup.players, this.owners, this.names, this.hostTok, false, this.hostTok, this.lobbyPool) +
           '<p>' + (n ? n + (n === 1 ? ' invitado conectado.' : ' invitados conectados.') : 'Esperando invitados…') + ' Los asientos que nadie tome los juegas tú.</p>' +
           '<div class="opts"><button class="primary" id="nbStart"' + (n ? '' : ' disabled') + '>Empezar la partida</button><button id="nbCopy">Copiar enlace</button><button id="nbCancel">Cancelar</button></div>');
+        b.querySelectorAll('[data-hero]').forEach(x => x.onchange = () => this._setHero(+x.dataset.hero, x.value, this.hostTok));
         $('nbCopy').onclick = () => { try { navigator.clipboard.writeText(link); } catch (e) { } };
         $('nbCancel').onclick = () => { ui._close(); Net.close(); res(null); };
         $('nbStart').onclick = () => {
@@ -344,7 +364,8 @@ const Net = {
           if (m.t === 'lobby') {
             this.me = m.you; this.hostTok = m.host;
             const c = this.conns.h;
-            ui._modal('<h2>Sala ' + code + '</h2><p>Toma tus asientos y espera a que el anfitrión empiece la partida.</p>' + this._seatsHtml(m.players, m.owners, m.names, m.you, true, m.host) + '<div class="opts"><button id="njLeave">Salir</button></div>');
+            ui._modal('<h2>Sala ' + code + '</h2><p>Toma tus asientos y espera a que el anfitrión empiece la partida.</p>' + this._seatsHtml(m.players, m.owners, m.names, m.you, true, m.host, m.pool) + '<div class="opts"><button id="njLeave">Salir</button></div>');
+            document.querySelectorAll('#modalbox [data-hero]').forEach(x => x.onchange = () => this._send(c, { t: 'hero', seat: +x.dataset.hero, hero: x.value }));
             document.querySelectorAll('#modalbox [data-claim]').forEach(x => x.onclick = () => this._send(c, { t: 'claim', seat: +x.dataset.claim }));
             document.querySelectorAll('#modalbox [data-rel]').forEach(x => x.onclick = () => this._send(c, { t: 'release', seat: +x.dataset.rel }));
             $('njLeave').onclick = () => { Net.close(); ui._close(); res(null); };
@@ -396,8 +417,9 @@ const Net = {
         if (m.t === 'hi') { this._hostHi(c, m); return; }
         if (!c.tok) return;
         if (this.started) { this.recv(m, c.tok); return; }
-        if (m.t === 'claim' && this.owners[m.seat] === this.hostTok) this.owners[m.seat] = c.tok;
-        else if (m.t === 'release' && this.owners[m.seat] === c.tok) this.owners[m.seat] = this.hostTok;
+        if (m.t === 'hero') { this._setHero(m.seat, m.hero, c.tok); return; }
+        if (m.t === 'claim' && m.seat !== 0 && this.owners[m.seat] === this.hostTok) this.owners[m.seat] = c.tok; /* el asiento 1 es siempre del anfitrión */
+        else if (m.t === 'release' && m.seat !== 0 && this.owners[m.seat] === c.tok) this.owners[m.seat] = this.hostTok;
         if (broadcast) broadcast();
       });
       c.on('close', () => this._hostGone(c)); c.on('error', () => this._hostGone(c));

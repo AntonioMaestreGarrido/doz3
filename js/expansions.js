@@ -113,8 +113,8 @@ playerRoom = function (id, u) {
   return here < playerCap(id);
 };
 const _putUnit = putUnit;
-putUnit = function (u, id) {
-  const from = u.space; _putUnit(u, id);
+putUnit = function (u, id, why) {
+  const from = u.space; _putUnit(u, id, why);
   if (u.key === 'lee' && u.rider && G.units[u.rider] && id && id !== 'CEM') { const r = G.units[u.rider]; if (r.space !== id) _putUnit(r, id); }
   if (u.mount && G.units[u.mount] && id !== G.units[u.mount].space && !u._sync) { /* el jinete se mueve solo con el caballo */ const l = G.units[u.mount]; l.rider = null; u.mount = null; }
 };

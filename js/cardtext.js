@@ -39,7 +39,7 @@ function zoomInfo(spec) {
     const u = G.units[key]; if (!u) return null;
     const state = ['Fuerza <b>' + strength(u) + '</b> (' + (u.flipped ? 'cara reducida' : 'cara completa') + ' · ' + u.full + '/' + u.red + ')', 'Impactos en esta cara: ' + u.hits + ' / ' + capOf(u), 'Ubicación: ' + spaceLabel(u.space)];
     const tags = []; if (u.ecg) tags.push('En coma (ficha de ECG): no puede actuar'); if (u.resist) tags.push('Resistiendo (inmóvil)'); if (u.armed) tags.push('Bien Armados: 1 columna a favor'); if (u.leader) tags.push('Líder Civil: 1 columna a favor'); if (u.trained) tags.push('Entrenados: +2 Fuerza'); if (u.keepCalm) tags.push('«Keep calm»: 2 columnas este turno'); if (freeTotal(u)) tags.push('Acciones gratis: ' + freeLabel(u));
-    if (u.zresist) tags.push('Resistentes: Impactos anulados con 1-3'); if (u.fast) tags.push('Rápidos: se mueven dos veces'); if (u.toxic) tags.push('Tóxicos: Infección +3'); if (u.smart) tags.push('Inteligentes: 1 columna en contra al atacar'); if (u.leader && isZedSide(u)) tags.push('Líder Zed: 1 columna en contra'); if (u.pest) tags.push('Pestilentes');
+    for (const b of zedBadges(u)) tags.push(b.txt);
     const cur = '<div class="zrow cur">' + state.join('<br>') + '</div>' + (tags.length ? '<div class="zrow">' + tags.map(t => '<span class="pill">' + t + '</span>').join('') + '</div>' : '');
     if (u.key && HEROES[u.key]) { const h = HEROES[u.key]; return { img: heroImg(u.key, u.flipped), title: h.name, tok: heroTok(u.key) ? 1 : 0, civ: h.type === 'civh', html: '<div class="zk">' + h.cls + ' · Movimiento ' + h.mp + '</div>' + cur + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(u.key) }; }
     if (u.type === 'super') { const d = SUPER_ZEDS[u.key]; return { img: superImg(u.key, u.flipped), title: 'Súper Zed: ' + d.name, tok: 1, html: cur + li([d.txt, 'Un Súper Zed eliminado se retira de la partida. Si entra en el Centro, pierdes.']) }; }
@@ -78,4 +78,11 @@ function heroImg(k, red) { return heroTok(k, red) || heroCard(k); }
 const HERO_HINT = k => heroCard(k) ? '<div class="zrow small">Selecciona la unidad (o abre «Cartas de Héroe») para ver la carta entera y su trasfondo.</div>' : '';
 
 /* Ficha Zed real (cara completa 2-9, reducida 1-5); si no existe, la ilustración genérica. */
+/* Fichas y estados de una unidad Zed (Tóxicos, Inteligentes…): las usan el tooltip y la ventana de combate. */
+function zedBadges(u) {
+  const b = [];
+  if (u.zresist) b.push({ ico: '🛡', txt: 'Resistentes: Impactos anulados con 1-3' }); if (u.fast) b.push({ ico: '⚡', txt: 'Rápidos: se mueven dos veces' }); if (u.toxic) b.push({ ico: '☣', txt: 'Tóxicos: Infección +3' }); if (u.smart) b.push({ ico: '🧠', txt: 'Inteligentes: 1 columna en contra al atacar' }); if (u.leader && isZedSide(u)) b.push({ ico: '👑', txt: 'Líder Zed: 1 columna en contra' }); if (u.pest) b.push({ ico: '☠', txt: 'Pestilentes' });
+  return b;
+}
+const zedImgOf = u => u.type === 'super' && u.key && SUPER_ZEDS[u.key] ? superImg(u.key, u.flipped) : u.type === 'zed' ? zedTokenImg(u) : null;
 function zedTokenImg(u) { const n = u.flipped ? u.red : u.full; return (u.flipped ? n >= 1 && n <= 5 : n >= 2 && n <= 9) ? 'assets/tokens/zeds/' + (u.flipped ? 'red_' : 'full_') + n + '.png' : 'assets/tokens/zed.png'; }

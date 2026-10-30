@@ -34,11 +34,13 @@ function heroAllowed(key) {
   if (!G.lv || G.lv.n === 0) return true;
   return CIVH_POOL.includes(key) ? civhAvail(key) && HEROES[key].lv <= MAX_CIVH_LV[G.lv.n] : heroPoolFor(G.lv.n).includes(key);
 }
-async function spawnHero(key, where) {
+/* choose: lista de espacios entre los que elige el jugador DESPUÉS de revelar la ficha (carta «Llega un Héroe»). */
+async function spawnHero(key, where, choose) {
   if (!heroAllowed(key)) { LOG('«' + HEROES[key].name + '» no puede entrar en una partida de este nivel.', 'bad'); return null; }
-  const u = makeHero(key, where);
   const isCiv = HEROES[key].type === 'civh' || CIVH_POOL.includes(key);
-  await UI.waitAck(isCiv ? '¡Llega un Civil Heroico!' : '¡Llega un Héroe!', '<b>' + HEROES[key].name + '</b> entra en juego en ' + spaceLabel(where) + '.', heroCard(key) || 'assets/cartas/' + (HEROES[key].card || 'h_' + key) + '.jpg', 'h:' + key);
+  await UI.waitAck(isCiv ? '¡Llega un Civil Heroico!' : '¡Llega un Héroe!', '<b>' + HEROES[key].name + '</b> ' + (choose ? 'llega a la partida.' : 'entra en juego en ' + spaceLabel(where) + '.'), heroCard(key) || 'assets/cartas/' + (HEROES[key].card || 'h_' + key) + '.jpg', 'h:' + key);
+  if (choose) where = await UI.pickSpace(choose, 'Llega un Héroe: elige el espacio (Centro o un Inicial).');
+  const u = makeHero(key, where);
   await heroEnters(u); LOG('Entra en juego: ' + u.name + '.', 'good'); UI.redraw(); return u; }
 function randomAvailableHero() {
   const pool = heroPoolFor(G.lv.n).filter(k => !hero(k) && !G.cemetery.some(u => u.key === k));
@@ -76,7 +78,7 @@ let PENDING_PLAYERS = null;
 function newGame(levelIdx, lenIdx, personal) {
   const plist = PENDING_PLAYERS; PENDING_PLAYERS = null;
   if (plist && plist.length > 1) personal = plist.map(p => p.hero).filter(Boolean);
-  UID = 1; rngSeed(PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]); PENDING_SEED = null;
+  UID = 1; const SEMILLA = PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]; rngSeed(SEMILLA); PENDING_SEED = null; const RNG_INI = rngState();
   const L = LEVELS[levelIdx], len = L.lengths[lenIdx];
   Object.assign(G, {
     lv: L, len, units: {}, cemetery: [], reserve: ZED_TOKENS.map(t => t.slice()), supers: L.infection ? Object.keys(SUPER_ZEDS) : [],
@@ -84,6 +86,7 @@ function newGame(levelIdx, lenIdx, personal) {
     phase: 'setup', pool: { pl: [1], event: 0 }, charUsed: {}, once: {}, sel: null, speechUsed: false, antidote: false, berra: false, finalPlaced: false,
     weapon: null, res: null, turn: newTurn(), stats: { killed: 0, civLost: 0, heroLost: 0 }, evlog: [], ust: {}, evn: 0, inWild: false, spareCiv: null, upgrades: [], dangerNext: false
   });
+  G.seedUsed = SEMILLA; G.rngStart = RNG_INI; EVT('setup', null, { seed: SEMILLA, nivel: L.name, duracion: len.name });
   initPlayers(plist); G.pool = newPool(0);
   buildBoard();
   for (const r of G.routes) { const z = makeZed(); putUnit(z, r + '0'); }
@@ -111,6 +114,8 @@ function newGame(levelIdx, lenIdx, personal) {
     plist.forEach((p, i) => { if (!inits.some(x => x.owner === i)) { const u = inits.find(x => x.owner == null); if (u) u.owner = i; } });
   }
   const ch = makeHero(civhKey, 'C'); if (civhKey === 'salvacion' && L.supplies) G.supplies += 2;
+  /* Mensajero del Clarín: «al entrar en juego trae otra Civil Heroica» (también si sale en la preparación). */
+  if (civhKey === 'clarin') { const k2 = pickCivh(); if (k2) makeHero(k2, 'C'); }
   if (L.tunnel) { makeSpecial('diamante', 'T8'); makeSpecial('diamante', 'T6'); }
   G.eventDeck = buildEventDeck(len); G.totalEvents = G.eventDeck.length;
   G.destDeck = buildDestinyDeck();
@@ -134,17 +139,18 @@ async function chooseRoute(c, text) {
   return UI.choose({ title: 'Elige una ruta', text, options: c.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color })) });
 }
 async function drawDestiny() {
-  if (!G.destDeck.length) G.destDeck = shuffle(G.destDiscard.splice(0));
+  if (!G.destDeck.length) { G.destDeck = shuffle(G.destDiscard.splice(0)); EVT('destBarajar', null, { n: G.destDeck.length }); }
   if (!G.destDeck.length) { LOG('No quedan cartas de Destino.'); return null; }
   const id = G.destDeck.shift(), d = DEST[id];
   const route = await chooseRoute(destRoutes(d.where), 'Carta de Destino «' + d.name + '»: ' + ({ choice: 'a elección del jugador', more: 'empate de rutas con más Zeds', less: 'empate de rutas con menos Zeds', moreC: 'empate de rutas con más Caos', lessC: 'empate de rutas con menos Caos' }[d.where] || 'ruta destinada') + '.');
   LOG('Carta de Destino: «' + d.name + '» → ' + ROUTES[route].name + '.', 'dest');
+  EVT('dest', null, { id, nm: d.name, ruta: route, donde: d.where, quedan: G.destDeck.length }); CAUSA = 'Destino: ' + d.name;
   return { id, route };
 }
 const DEST_IMG = { sin_nombre: 'hombre', heroe_d: 'llega_heroe', techo: 'techo_tunel', planes: 'planes_marteuse', cama: 'cama_hospital', heli_noticias: 'helicoptero_noticias', senal: 'senal_rescate', tiradles: 'tiradles_algo', llamamiento: 'llamamiento' };
 const destImg = id => 'assets/cartas/d_' + (DEST_IMG[id] || id) + '.jpg';
 async function resolveTwist(dr) {
-  if (!dr) return; const d = DEST[dr.id];
+  if (!dr) return; const d = DEST[dr.id]; CAUSA = null; /* fin de los efectos de la carta de Destino */
   if (d.keep) {
     G.hand.push(dr.id); UI.updateHand();
     await UI.waitAck('Destino: ' + d.name, 'Guardar para más tarde — se añade a tu mano.<br>' + d.txt, destImg(dr.id), 'd:' + dr.id);
@@ -153,7 +159,8 @@ async function resolveTwist(dr) {
   const saved = { q: G.turn.peekQ, on: G.turn.peekOn }; G.turn.peekQ = { zed: [], sup: [] };
   await UI.waitAck('Destino: ' + d.name, '<div class="rulebox"><b>Regla</b><br>' + d.txt + '</div>' + Preview.block(Preview.destiny(dr.id, dr.route)), destImg(dr.id), 'd:' + dr.id);
   G.turn.peekOn = true;
-  try { await DEST_FX(dr.id, dr.route); } finally { G.turn.peekQ = saved.q; G.turn.peekOn = saved.on; }
+  /* Las unidades que trae la carta de Destino (p. ej. la Banda de Bubba) vuelan desde la columna, esté donde esté la carta en el turno. */
+  try { await UI.spawnBatch(() => DEST_FX(dr.id, dr.route)); } finally { G.turn.peekQ = saved.q; G.turn.peekOn = saved.on; }
   G.destDiscard.push(dr.id);
 }
 async function lossChoice(n, opts) { // pierdes n en combinación de opciones: s (Suministros), a (Munición), i (Infección), p (Impactos)

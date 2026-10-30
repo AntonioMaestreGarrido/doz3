@@ -59,19 +59,21 @@ async function playGame(setup, saved) {
       await revealEvent(); ev = G.event;
       UI.redraw();
       await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', '<div class="rulebox"><b>Regla</b><br>' + ev.txt.join('<br>') + '</div>' + Preview.block(Preview.event(ev)), 'assets/cartas/e_' + ev.id + '.jpg', 'e:' + ev.id);
-      if (chaosLow()) { LOG('Quedan ' + G.chaosLeft + ' fichas de Caos.', 'bad'); await UI.waitAck('Fichas de Caos', chaosWarnText()); }
-      if (ev.guardia) { G.phase = 'zeds'; await withPeek(eventStart); await maintenance(); G.dangerNext = enPeligro(); await Net.checkpoint(); saveGame('turn'); continue; }
+      if (chaosLow()) { LOG('Quedan ' + G.chaosLeft + ' fichas de Caos.', 'bad'); await UI.waitAck('Fichas de Caos', chaosWarnText()); await offerHandCards('chaos', chaosWarnText()); }
+      if (ev.guardia) { G.phase = 'zeds'; await UI.spawnBatch(() => withPeek(eventStart)); await maintenance(); G.dangerNext = enPeligro(); await Net.checkpoint(); saveGame('turn'); continue; }
       G.phase = 'fourR'; UI.updateStats(); await phase4R(); if (G.over) break;
-      G.phase = 'infection'; UI.updateStats(); await phaseInfection(); if (G.over) break;
+      /* La fase de Infección puede estallar un Brote (y su carta de Destino): las unidades nuevas también vuelan desde la columna. */
+      G.phase = 'infection'; UI.updateStats(); await UI.spawnBatch(() => phaseInfection()); if (G.over) break;
       G.phase = 'feeding'; UI.updateStats(); await phaseFeeding(); if (G.over) break;
-      if (ev.fin && ev.id !== 'fin_b2') { G.over = 'win'; break; }  /* «Al inicio de esta fase: ¡habéis ganado!» */
+      if (ev.finPronto) { G.over = 'win'; break; }  /* «Al inicio de esta fase: ¡habéis ganado!» (fin_b1) */
       G.phase = 'zeds'; UI.updateStats();
       await withPeek(eventStart); if (G.over) break;
       await pressure('s'); if (G.over) break;
+      await offerHandCards('zeds', 'Hay Refugiados junto a unidades Zed y las rutas están a punto de activarse.'); if (G.over) break;
       await phaseZeds(); if (G.over) break;
       await withPeek(eventAfterZeds); UI.release(); if (G.over) break;
       await pressure('e'); if (G.over) break;
-      if (ev.fin) { G.over = 'win'; break; }  /* fin_b2: al inicio de la fase de Acciones, si seguís vivos */
+      if (ev.fin) { G.over = 'win'; break; }  /* Resto de cartas fin (y fin_b2): tras la fase de Zeds, con sus rutas activadas */
     } else ev = G.event;
     const resumed = resume === 'actions'; resume = null;
     if (!ev.cer) {
@@ -112,7 +114,7 @@ function runGame(setup, saved) {
   });
 }
 window.addEventListener('load', async () => {
-  Net.wrap(ui); bindUI(ui); window.UI = ui;
+  Net.wrap(ui); EVT_UI(ui); bindUI(ui); window.UI = ui;
   await ui.init();
   await ui.intro();
   let rj = null; try { rj = sessionStorage.getItem('doz3.rejoin'); sessionStorage.removeItem('doz3.rejoin'); } catch (e) { }

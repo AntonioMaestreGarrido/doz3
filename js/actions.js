@@ -70,7 +70,7 @@ async function applyResearch(c) {
       const v = await UI.pickUnit(sup, 'Hormona anticrecimiento: elige el Súper Zed que se reemplaza por un Zed Normal (o cancela).', true); if (v == null) break;
       const z = G.units[v], w = z.space, hits = z.hits; G.supers.push(z.key); removeUnit(z); delete G.units[z.id];
       const nz = makeZed(); if (nz) { putUnit(nz, w); nz.hits = Math.min(hits, (nz.hf || 2) - 1); LOG('Hormona anticrecimiento: el Súper Zed se sustituye por un Zed de Fuerza ' + nz.full + '.', 'good'); } UI.redraw(); break; }
-    case 'heroe_c': { const k = Object.keys(HEROES).find(x => (HEROES[x].sci || /Cient/.test(HEROES[x].cls)) && !hero(x) && !G.cemetery.some(c => c.key === x) && heroAllowed(x)); if (k) await spawnHero(k, 'C'); else LOG('No hay ningún Científico disponible en este nivel.'); break; }
+    case 'heroe_c': { const ks = Object.keys(HEROES).filter(x => (HEROES[x].sci || /Cient/.test(HEROES[x].cls)) && !hero(x) && !G.cemetery.some(c => c.key === x) && heroAllowed(x)); if (!ks.length) { LOG('No hay ningún Científico disponible en este nivel.'); break; } const k = ks.length === 1 ? ks[0] : await UI.choose({ title: 'Llega un Héroe Científico', text: 'Elige el Héroe Científico que llega al Centro de la Ciudad:', options: ks.map(x => ({ label: HEROES[x].name, value: x })) }); await spawnHero(k, 'C'); break; }
     case 'antidoto': {
       if (!G.finalPlaced) { G.finalPlaced = true; LOG('Componente Final colocado en el Laboratorio.', 'good'); G.res.deck.splice(rnd(G.res.deck.length + 1), 0, 'antidoto'); }
       else { G.antidote = true; LOG('¡Habéis descubierto el Antídoto! La Infección baja 1 cada turno.', 'good'); }
@@ -155,6 +155,8 @@ function unitActions(u) {
   if (G.lv.fourR && canBuild(u)) A.push({ id: 'build', label: 'Construir Barricada', ok: pay(1) });
   if (G.lv.res && u.sci && u.space === 'LAB' && act && !G.turn.researched) A.push({ id: 'investigate', label: 'Investigar', ok: pay(1) ? (!G.res.cur.sup || G.supplies > 0) : (alreadyHas('escasean') && G.supplies >= 1 + (G.res.cur.sup ? 1 : 0)) });
   if (u.space && sp(u.space).kind === 'camp' && u.type === 'refugee' && !G.turn.equipped && !u.vip) A.push({ id: 'equip', label: 'Equipar Refugiados (gratis)', ok: G.cemetery.some(x => x.type === 'civ') });
+  /* Visiones de Wilson: en cualquier momento, sin gastar Acción. */
+  if (u.key === 'wilson' && u.space) A.push({ id: 'visions', label: '🔮 Visiones: mirar la carta superior de Destino', ok: true });
   if (act && !isSoft(u)) {
     const cu = k => !G.charUsed[k];
     if (u.key === 'schmidt') A.push({ id: 'ini', label: 'Iniciativa', ok: cu('ini') });
@@ -207,6 +209,7 @@ async function runAction(u, id) {
     case 'investigate': await doInvestigate(u); break;
     case 'equip': { const cs = G.cemetery.filter(x => x.type === 'civ'); const v = await UI.choose({ title: 'Equipar Refugiados', text: 'Elige la unidad de Civiles Normales que regresa.', options: cs.map(c => ({ label: 'Civiles ' + c.full + '/' + c.red, value: c.id })), cancel: true }); if (v == null) break; const c = G.units[v]; G.cemetery = G.cemetery.filter(x => x !== c); removeUnit(u); delete G.units[u.id]; putUnit(c, 'C'); c.flipped = true; c.hits = 0; G.turn.equipped = true; LOG('Refugiados equipados: Civiles vuelven al Centro.', 'good'); break; }
     case 'ini': G.charUsed.ini = true; u.free++; LOG('Schmidt usa Iniciativa: 1 acción gratis para él.', 'good'); break;
+    case 'visions': await UI.willyVisions(); break;
     case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
     case 'calle': { const c = calleTargets(u); if (!c.length) { LOG('No hay Civiles que puedan avanzar.'); break; } const v = c.length === 1 ? c[0].id : await UI.pickUnit(c, 'Elige la unidad que avanza hacia el Centro.', true); if (v == null) break; const x = G.units[v], ds = calleDests(x); const d = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Alia: elige el destino de ' + x.name + ' (hasta 2 espacios hacia el Centro).', true); if (d == null) break; G.charUsed.calle = true; if (x.resist) { x.resist = false; LOG(x.name + ' deja de estar Resistiendo.'); } LOG('Alia manda a ' + x.name + ' hacia el Centro.', 'good'); await doMove(x, d, [x.space, d]); break; }
@@ -243,6 +246,25 @@ function handUsable(k) {
   if (G.phase !== 'actions' && !['hoguera', 'desesperados', 'barrelotodo', 'senal', 'exploradores', 'civiles'].includes(k)) return false;
   if (k === 'coordinador' && !coordinadorOpts()) return false;
   return ['adrenalina', 'coordinador', 'veo_alguien', 'heroe_d', 'cama', 'expediente', 'necesidad', 'canon', 'hoguera', 'desesperados', 'barrelotodo', 'senal', 'exploradores', 'civiles', 'vehiculos', 'heli_noticias'].includes(k);
+}
+/* Cartas «en cualquier momento» que se ofrecen cuando hacen falta (Caos a punto de acabarse, Brote inminente…), aunque no sea la fase de Acciones.
+   Cada disparador pregunta una vez por turno y carta, salvo `always` (derrota o Brote inminentes). Devuelve true si se jugó alguna. */
+const HAND_OFFERS = {
+  chaos: [['barrelotodo', () => chaosOnMap() > 0, 'retira 2 fichas de Caos']],
+  inf: [['desesperados', () => G.ammo >= 1, '−5 Infección, gasta 1 Munición'], ['hoguera', () => true, '−2 Infección']],
+  feed: [['senal', () => true, '+2 Suministros y +2 Munición']],
+  zeds: [['exploradores', () => allUnits(x => x.type === 'refugee' && x.space && isRouteSp(x.space) && adjacentIds(x.space).some(i => zedsAt(i).length)).length > 0, 'los Refugiados junto a Zeds avanzan 1 espacio']]
+};
+async function offerHandCards(trigger, text, always) {
+  if (G.over || !G.hand || !G.turn) return false;
+  const asked = G.turn.asked || (G.turn.asked = {}); let played = false;
+  for (const [k, ok, eff] of HAND_OFFERS[trigger]) {
+    if (!G.hand.includes(k) || !ok() || (!always && asked[trigger + k])) continue;
+    asked[trigger + k] = 1;
+    const r = await UI.choose({ title: DEST[k].name, text: text + '<br>¿Juegas la carta? (' + eff + ')', options: [{ label: 'Jugar «' + DEST[k].name + '»', value: 'y' }, { label: 'No', value: 'n' }] });
+    if (r === 'y') { await useHandCard(k); if (!G.hand.includes(k)) return true; }
+  }
+  return played;
 }
 async function useHandCard(k) {
   const rm = () => { G.hand.splice(G.hand.indexOf(k), 1); G.destDiscard.push(k); zenPlayed(); };

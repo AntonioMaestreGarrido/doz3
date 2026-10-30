@@ -2,6 +2,53 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-23 17:18
+
+### Mejoras
+- **Cartas de Destino «en cualquier momento» jugables cuando hacen falta:** el juego ahora pregunta si quieres jugarlas en el momento clave, no solo en la fase de Acciones. **Don Barrelotodo**: al avisar de poco Caos (3 o menos) y siempre antes de colocar una ficha que causaría la derrota. **Tiempos desesperados / Hoguera macabra**: al empezar la fase de Infección con Infección 10+ y antes de un Brote Descontrolado. **La señal de rescate**: en Alimentación, si faltan Suministros. **Grupos de exploradores**: antes de activar los Zeds si hay Refugiados junto a ellos. Cada aviso sale una vez por turno, salvo los de derrota o Brote inminentes.
+
+## 2026-10-23 17:02
+
+### Mejoras
+- **«Llega un Héroe Científico»:** ahora eliges qué Héroe Científico disponible llega al Centro (antes se cogía el primero de la lista).
+
+## 2026-10-23 16:54
+
+### Mejoras
+- **Ventana de combate con el detalle de cada Zed:** cada Zed muestra su ficha, fuerza, Impactos, cara reducida y sus estados (Tóxicos, Inteligentes, Rápidos, Resistentes, Pestilentes, Líder Zed); los Súper Zeds, además, su habilidad. Pasar el ratón por la fila abre el tooltip completo.
+- **Modificadores de columna con su origen:** «Inteligentes», «Líder Zed» y «Zeds flambeados» indican qué Zed los causa.
+
+## 2026-10-15 12:39
+
+### Fixes
+- **Llegada de la Banda de Bubba (y Brotes):** las unidades que aparecen en la fase de Infección (Brotes y sus cartas de Destino) ahora también vuelan desde la columna junto a la carta de evento, como el resto de apariciones. Antes aparecían de golpe.
+- **Carta «¡Llega la Guardia Nacional!»:** la Destino que roba al entrar y las unidades que aparecen con ella vuelan desde la columna junto a la carta de evento.
+- **Cartas de Destino que traen unidades (p. ej. «Banda de Bubba DeNardo»):** las unidades que aparecen al resolver una carta de Destino vuelan desde la columna, sea cual sea la fase en que se roba (también los Rumores).
+- **«Llega un Héroe» (Destino):** primero se revela la carta del Héroe que llega y después se elige el espacio donde se coloca (antes era al revés).
+- **Wilson «Atajos»:** el atajo lo puede usar cualquier unidad agrupada con él (o que pase por su espacio), no solo él mismo. Si Wilson está en una Cripta, sus unidades salen sin tirar.
+- **Wilson «Atajos» con el Túnel:** desde un espacio del Túnel se puede saltar al mismo número de la Autovía o de las Afueras, y viceversa (1 Movimiento).
+- **Atajos de Wilson encadenados:** un movimiento solo puede usar un atajo. Antes Wilson podía saltar de Montaña a Bosque y de ahí a Afueras en un mismo movimiento.
+- **Retirada tras perder un combate:** una unidad que pierde un combate no puede retroceder por el atajo de Wilson. Si el espacio de vuelta solo se alcanza por atajo, se retira hacia el Centro.
+- **Xeno Jones en la fase 4R:** cada activación de Refugiados puede gastarse en trasladarlo: desde cualquier sitio, al Laboratorio o a una Oficina del Personal; desde el Laboratorio o el Hospital, a cualquier espacio vacío que no sea Inicial. No gasta Acción de Personaje.
+- **Visiones de Wilson:** el botón pasa a la ficha de Wilson, entre sus acciones, en lugar de estar en el panel de estado.
+- **Zed que entra en un espacio con Saqueadores o unidades de jugador:** ahora empieza el combate también si el espacio es un Inicial o si hay Saqueadores (antes no combatía).
+
+## 2026-10-15 12:26
+
+### Fixes
+- **Mensajero del Clarín en la preparación:** si sale como Civil Heroico inicial, ahora trae otra Civil Heroica al empezar la partida, igual que al entrar en juego durante la partida.
+
+## 2026-10-14 09:03
+
+### Novedades
+- **Sala online: asientos y héroes.** Cada asiento se marca como **Libre** (verde), **Tuyo** (dorado) u **Ocupado por X** (🔒, en rojo). Cada jugador elige su Héroe Personal desde su propio navegador en la sala (el anfitrión también puede cambiar los suyos); un héroe elegido por un asiento no se puede repetir en otro.
+
+### Fixes
+- **Sala online:** el asiento 1 es siempre del anfitrión; los invitados ya no pueden tomarlo (aparece como «🔒 Anfitrión» y sin botón Tomar).
+- **Online: Buscar y demás acciones de unidad no hacían nada:** la orden se mezclaba con su identificador interno, así que Buscar, Curar, Construir, Investigar y el resto de acciones de la ficha (no Mover ni Disparar) no se ejecutaban en ningún dispositivo. Ahora funcionan, tanto para el anfitrión como para los invitados.
+- **Reanudar una partida online:** el invitado que se unía a la sala desde su guardado veía el tablero pero se quedaba con la ventana «Conectando…» encima y no podía jugar. Ahora la ventana se cierra al recibir la partida. Además, al unirse desde su guardado recupera su identificador de dispositivo, de modo que el anfitrión lo reconoce aunque haya cerrado el navegador.
+- **Online: el segundo jugador no podía hacer nada.** Hasta ahora solo actuaba el jugador activo (al empezar, el Jugador 1) y había que pulsar el propio nombre en el panel de estado, sin ninguna señal. Ahora, al pulsar una unidad que puedes usar (o los botones de Terminar fase, cartas de la mano, Rumores y acciones especiales) sin ser el jugador activo, tomas el turno de jugador automáticamente en todos los dispositivos.
+
 ## 2026-10-14 07:29
 
 ### Novedades
