@@ -242,10 +242,10 @@ async function infUp(n) {
     if (v === 'y') { G.once.samLast = true; const c = Math.min(3, n); n -= c; LOG('En el último segundo: Samantha Carter cancela ' + c + ' de Infección.', 'good'); if (n <= 0) return; }
   }
   while (G.inf + n >= 13 && !G.inWild && await offerHandCards('inf', 'La Infección subirá +' + n + ' y llegaría a 13: <b>Brote Descontrolado</b>.', true)) { }
-  const i0 = G.inf; G.inf = Math.min(13, G.inf + n); EVT('inf', null, { de: i0, to: G.inf, n }); UI.updateStats(); UI.fxInf(G.inf - i0);
+  const i0 = G.inf; G.inf = Math.min(13, G.inf + n); EVT('inf', null, { de: i0, to: G.inf, d: n }); UI.updateStats(); UI.fxInf(G.inf - i0);
   if (G.inf >= 13 && !G.inWild) { G.inWild = true; LOG('¡La Infección llega al máximo! Brote Descontrolado.', 'bad'); await outbreak(true); G.inWild = false; }
 }
-function infDown(n) { if (!G.lv.infection || n <= 0) return; const i0 = G.inf; G.inf = Math.max(0, G.inf - n); EVT('inf', null, { de: i0, to: G.inf, n: -n }); UI.updateStats(); UI.fxInf(G.inf - i0); }
+function infDown(n) { if (!G.lv.infection || n <= 0) return; const i0 = G.inf; G.inf = Math.max(0, G.inf - n); EVT('inf', null, { de: i0, to: G.inf, d: -n }); UI.updateStats(); UI.fxInf(G.inf - i0); }
 function meleeInfection(zs, h) {
   let n = 1;
   for (const z of zs) { if (z.toxic) n = Math.max(n, 3); if (z.key === 'supurador') n = Math.max(n, 3); if (z.key === 'lobo') n = Math.max(n, 2); }

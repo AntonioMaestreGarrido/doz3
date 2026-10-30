@@ -142,7 +142,7 @@ async function chooseRoute(c, text) {
   return UI.choose({ title: 'Elige una ruta', text, options: c.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color, focus: routeSpaces(r) })) });
 }
 async function drawDestiny() {
-  if (!G.destDeck.length) { G.destDeck = shuffle(G.destDiscard.splice(0)); EVT('destBarajar', null, { n: G.destDeck.length }); }
+  if (!G.destDeck.length) { G.destDeck = shuffle(G.destDiscard.splice(0)); EVT('destBarajar', null, { cartas: G.destDeck.length }); }
   if (!G.destDeck.length) { LOG('No quedan cartas de Destino.'); return null; }
   const id = G.destDeck.shift(), d = DEST[id];
   const route = await chooseRoute(destRoutes(d.where), 'Carta de Destino «' + d.name + '»: ' + ({ choice: 'a elección del jugador', more: 'empate de rutas con más Zeds', less: 'empate de rutas con menos Zeds', moreC: 'empate de rutas con más Caos', lessC: 'empate de rutas con menos Caos' }[d.where] || 'ruta destinada') + '.');
