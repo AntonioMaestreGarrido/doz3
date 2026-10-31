@@ -71,6 +71,8 @@ function restoreState(g) {
   /* Partidas guardadas antes del modo cooperativo: un solo jugador. */
   if (!G.players) { initPlayers(null); G.pool = { pl: [(g.pool && g.pool.player) ? 1 : 0], event: g.pool ? g.pool.event : 0 }; }
   if (!G.turn.perm) G.turn.perm = {};
+  /* Partidas guardadas antes de que los Civiles Normales mostraran sus valores en el nombre. */
+  for (const u of Object.values(G.units || {})) if (u && u.type === 'civ' && u.name === 'Civiles') u.name = civName(u.full, u.red);
 }
 
 /* Slots: hasta MAX_SLOTS partidas en curso, una ranura por partida (G.saveId). El guardado automático solo pisa la ranura de su partida.

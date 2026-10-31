@@ -151,6 +151,8 @@ const HEROES = {
     txt: ['Su primer disparo del turno no gasta Munición. Gana todo combate Cuerpo a Cuerpo contra Zeds (los Zeds se retiran, sin importar la tirada).'] }
 };
 const CIVH_POOL = ['furias', 'bomberos', 'bauer', 'antidist', 'salvacion', 'clarin', 'wzed', 'division12'];
+/* Nombre de una unidad de Civiles Normales con sus valores (Fuerza completa/reducida), para distinguirlas al elegir unidad. */
+const civName = (full, red) => 'Civiles ' + full + '/' + red;
 const CIV = { name: 'Civiles', type: 'civ', full: 4, red: 2, mp: 2, hf: 2, hr: 2 };
 const SPECIALS = {
   aldeanos:  { name: 'Aldeanos', type: 'aldeano', full: 1, red: 1, mp: 1, txt: ['Inmóviles. No cuentan para el límite de agrupamiento. Cuando los Zeds ocupan su Pueblo se convierten en Refugiados y huyen 1 espacio.'] },

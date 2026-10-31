@@ -2,6 +2,14 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 18:00
+
+### Nuevo
+- **Elegir equipo:** al crear la partida, el botón «Elegir equipo» abre una pantalla con las cartas de todos los Héroes y Civiles Heroicos disponibles (según nivel y expansiones): tocas para elegir hasta 4 Héroes y 1 Civil Heroico y ves la carta en grande (con su trasera). Lo que no elijas se completa al azar. En cooperativo, los primeros Héroes elegidos pasan a ser los Héroes personales de los jugadores. El Civil Heroico elegido también viaja en el código de semilla (los códigos antiguos siguen valiendo).
+
+### Cambios
+- **Civiles Normales con sus valores:** ahora se llaman «Civiles 3/1», «Civiles 2/1»… en las preguntas de «elige una unidad», registro y paneles, para distinguir unas unidades de otras. Las partidas guardadas se actualizan solas.
+
 ## 2026-10-31 17:10
 
 ### Cambios

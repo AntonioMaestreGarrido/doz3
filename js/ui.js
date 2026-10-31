@@ -747,6 +747,54 @@ const ui = {
     this._modal('<div class="rules"><h2>Cómo se juega</h2><p><b>Objetivo:</b> sobrevive a todas las cartas de Evento sin que un Zed entre en el <b>Centro de la Ciudad</b>' + (G.lv && G.lv.fourR ? ' y sin quedarte sin fichas de Caos' : '') + '.</p><h3>Cada turno</h3><ol><li><b>Evento:</b> se revela una carta.</li><li><b>Fases 4R, Infección y Alimentación</b> (según el nivel).</li><li><b>Fase de los Zeds:</b> las rutas de la carta se activan: nuevo Zed en el Inicial si la ruta está vacía; si no, todos avanzan 1 espacio (Hordas de hasta 2). Si chocan con tus unidades hay combate.</li><li><b>Fase de Acciones:</b> 1 Acción de Jugador + las Acciones de Evento. Cada Acción: Mover, Disparar (1 Munición), Buscar, Curar (en el Hospital), Construir, Investigar… Las habilidades de personaje son extras.</li><li><b>Mantenimiento:</b> se restaura el orden, el Antídoto baja la Infección…</li></ol><h3>Combate</h3><p>Se compara la Fuerza para la columna inicial; los ► / ◄ la desplazan; tiras 2d6 (alto es bueno para ti). Izquierda: Impactos a los Zeds; derecha: a tu unidad. El perdedor se retira. Al defender en un espacio con nombre obtienes Terreno.</p><h3>Controles</h3><ul><li>Pulsa una unidad para ver sus acciones y pasa el ratón sobre cualquier ficha o carta para ver su texto.</li></ul><div class="opts"><button class="primary" id="xb">Cerrar</button></div></div>');
     $('xb').onclick = () => this._close();
   },
+  /* Elegir equipo (pantalla de nueva partida): rejilla con las cartas de los Héroes y de los Civiles Heroicos disponibles y vista grande de la última tocada.
+     Se abre sobre el formulario sin cerrarlo. opts = { pool, civhPool, heroes, civh }; devuelve { heroes (hasta 4), civh | null } o null si se cancela. */
+  teamPicker(opts) {
+    return new Promise(res => {
+      const MAXH = 4; let heroes = opts.heroes.filter(k => opts.pool.includes(k)).slice(0, MAXH), civh = opts.civhPool.includes(opts.civh) ? opts.civh : null, cur = null, back = false;
+      const ov = document.createElement('div'); ov.id = 'teamPick';
+      ov.innerHTML = '<div class="tpbox"><h2>Elegir equipo</h2><p>Toca las cartas para elegir hasta <b>4 Héroes</b> y <b>1 Civil Heroico</b>; la última que toques se ve en grande. Lo que dejes sin elegir se completa al azar. El primer Héroe es el Héroe personal.</p>' +
+        '<div class="tpcount"></div><div class="cpwrap"><div class="tpcols"><h3>Héroes</h3><div class="cardpick" id="tpH"></div><h3>Civiles Heroicos</h3><div class="cardpick" id="tpC"></div></div><div class="cpprev"></div></div>' +
+        '<div class="opts"><button id="tpClear">Quitar todo</button><button id="tpCancel">Cancelar</button><button class="primary" id="tpOk">Aceptar</button></div></div>';
+      document.body.appendChild(ov);
+      const q = s => ov.querySelector(s);
+      const stats = k => HEROES[k].cls + ' · ' + HEROES[k].full + '/' + HEROES[k].red + ' · Mov ' + (HEROES[k].mp === '*' ? '*' : HEROES[k].mp);
+      const mk = (k, box) => {
+        const d = document.createElement('div'); d.className = 'cpc'; d.dataset.k = k; const im = heroCard(k) || heroTok(k);
+        d.innerHTML = (im ? '<img src="' + im + '" alt="" loading="lazy">' : '') + '<span class="tpbadge"></span><div class="cpn">' + HEROES[k].name + '<small>' + HEROES[k].full + '/' + HEROES[k].red + '</small></div>';
+        d.onclick = () => toggle(k); d.onmouseenter = () => { if (!ui.recentTouch()) show(k, true); };
+        box.appendChild(d);
+      };
+      const isCiv = k => opts.civhPool.includes(k);
+      const toggle = k => {
+        if (isCiv(k)) civh = civh === k ? null : k;
+        else if (heroes.includes(k)) heroes = heroes.filter(x => x !== k);
+        else if (heroes.length < MAXH) heroes.push(k);
+        else { q('.tpcount').classList.add('warn'); setTimeout(() => q('.tpcount').classList.remove('warn'), 700); }
+        show(k); paint();
+      };
+      const show = (k, hover) => {
+        if (hover && cur === k) return; if (cur !== k) back = false; cur = k;
+        const h = HEROES[k], f = heroCard(k), bk = heroBack(k), on = isCiv(k) ? civh === k : heroes.includes(k);
+        q('.cpprev').innerHTML = (f ? '<img src="' + (back && bk ? bk : f) + '" alt="">' : (heroTok(k) ? '<img class="tk" src="' + heroTok(k) + '" alt="">' : '') + '<div class="tptxt">' + (h.txt || []).map(t => '<p>' + t + '</p>').join('') + '</div>') +
+          '<div class="cpn">' + h.name + '<small>' + stats(k) + '</small></div><div class="opts">' + (bk ? '<button id="tpFlip">' + (back ? 'Ver carta' : 'Ver trasera') + '</button>' : '') + '<button id="tpSel" class="' + (on ? '' : 'primary') + '">' + (on ? 'Quitar del equipo' : 'Elegir') + '</button></div>';
+        if (bk) q('#tpFlip').onclick = () => { back = !back; show(k); };
+        q('#tpSel').onclick = () => toggle(k);
+      };
+      const paint = () => {
+        ov.querySelectorAll('.cpc').forEach(d => { const k = d.dataset.k, i = heroes.indexOf(k), on = i >= 0 || civh === k; d.classList.toggle('on', on); d.querySelector('.tpbadge').textContent = civh === k ? '★' : (i >= 0 ? i + 1 : ''); });
+        q('.tpcount').innerHTML = 'Héroes: <b>' + heroes.length + '/' + MAXH + '</b>' + (heroes.length ? ' — ' + heroes.map(k => HEROES[k].name).join(', ') : '') + '<br>Civil Heroico: <b>' + (civh ? HEROES[civh].name : 'al azar') + '</b>';
+      };
+      opts.pool.forEach(k => mk(k, q('#tpH'))); opts.civhPool.forEach(k => mk(k, q('#tpC')));
+      q('.cpprev').innerHTML = '<div class="cpph">Toca una carta para verla aquí</div>'; paint();
+      const done = v => { document.removeEventListener('keydown', esc, true); ov.remove(); res(v); };
+      const esc = e => { if (e.key === 'Escape') { e.stopPropagation(); done(null); } };
+      document.addEventListener('keydown', esc, true);
+      q('#tpClear').onclick = () => { heroes = []; civh = null; paint(); if (cur) show(cur); };
+      q('#tpCancel').onclick = () => done(null);
+      q('#tpOk').onclick = () => done({ heroes, civh });
+    });
+  },
   showHeroCards() {
     this._modal('<h2>Héroes y unidades</h2><div class="herogrid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">' + Object.keys(HEROES).map(k => { const tk = heroTok(k); return '<div class="hc2" data-zoom="h:' + k + '">' + (tk ? '<img class="htok" src="' + tk + '" alt="">' : '') + '<b>' + HEROES[k].name + '</b><br><span style="color:var(--mut);font-size:12px">' + HEROES[k].cls + ' · ' + HEROES[k].full + '/' + HEROES[k].red + ' · Mov ' + HEROES[k].mp + '</span>' + (heroCard(k) ? '<div class="acts cardbtns"><button data-hc="' + k + '" data-card="front">Carta entera</button><button data-hc="' + k + '" data-card="back">Trasera</button></div>' : '') + '</div>'; }).join('') + '</div><div class="opts"><button class="primary" id="xb">Cerrar</button></div>');
     document.querySelectorAll('#modalbox [data-hc]').forEach(b => b.onclick = () => ui.showHeroCard(b.dataset.hc, b.dataset.card, true));
@@ -773,15 +821,19 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label> <button id="teamBtn" title="Mira las cartas de los Héroes y Civiles Heroicos y elige tu equipo">Elegir equipo</button> <span id="teamInfo" class="sub"></span></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       let seed = null; /* { code, seed } cuando hay un código de partida activo */
+      let civhSel = null, teamExtra = [];  /* Civil Heroico elegido a mano; Héroes elegidos de más en cooperativo (los primeros van a los jugadores) */
+      const civhPool = n => CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[n]);
+      const teamTxt = () => { $('teamInfo').textContent = civhSel ? 'Civil Heroico: ' + HEROES[civhSel].name : ''; };
       const sels = () => ['heroSel', 'heroSel2', 'heroSel3', 'heroSel4'].map($);
       const upd = () => {
         const n = +b.querySelector('input[name=lv]:checked').value, L = LEVELS[n], keep = sels().map(e => e.value), lenKeep = $('lenSel').value;
         $('lenSel').innerHTML = L.lengths.map((x, i) => '<option value="' + i + '">' + x.name + '</option>').join(''); if (L.lengths[lenKeep]) $('lenSel').value = lenKeep;
         G.expSel = [1, 2, 3, 4].filter(k => $('x' + k) && $('x' + k).checked); const pool = n === 0 ? [] : heroPoolFor(n);
         sels().forEach((e, i) => { e.innerHTML = n === 0 ? '<option value="">(los 4 Héroes básicos)</option>' : '<option value="">' + (i ? 'Héroe ' + (i + 1) + ': al azar' : 'Al azar') + '</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join(''); if (pool.includes(keep[i])) e.value = keep[i]; });
+        teamExtra = teamExtra.filter(k => pool.includes(k)); if (n === 0 || (civhSel && !civhPool(n).includes(civhSel))) civhSel = null; $('teamBtn').disabled = n === 0; teamTxt();
         $('heroAll').disabled = n === 0; $('heroMore').hidden = n === 0 || !$('heroAll').checked; $('heroLbl').firstChild.textContent = $('heroAll').checked ? 'Héroe 1: ' : 'Héroe personal: ';
         /* Cooperativo: cada jugador pone su nombre y elige su Héroe Personal (los selectores de un solo jugador se ocultan). */
         const np = +$('nPl').value, prev = [...document.querySelectorAll('#plRows .plname')].map(e => e.value), prevH = [...document.querySelectorAll('#plRows .plhero')].map(e => e.value);
@@ -791,11 +843,21 @@ const ui = {
         document.querySelectorAll('#plRows .plhero').forEach((e, i) => { if (prevH[i] && pool.includes(prevH[i])) e.value = prevH[i]; });
       };
       const players = () => { const np = +$('nPl').value; if (np < 2) return null; const nm = [...document.querySelectorAll('#plRows .plname')], hs = [...document.querySelectorAll('#plRows .plhero')]; return Array.from({ length: np }, (_, i) => ({ name: (nm[i] && nm[i].value.trim()) || 'Jugador ' + (i + 1), hero: (hs[i] && hs[i].value) || '' })); };
-      const picked = () => { const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0 || +$('nPl').value > 1) return []; const v = sels().slice(0, $('heroAll').checked ? 4 : 1).map(e => e.value).filter(Boolean); return v; };
-      const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4].filter(k => $('x' + k).checked), heroes: picked() });
-      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
+      const picked = () => { const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0) return []; if (+$('nPl').value > 1) return teamExtra.slice(); const v = sels().slice(0, $('heroAll').checked ? 4 : 1).map(e => e.value).filter(Boolean); return v; };
+      const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4].filter(k => $('x' + k).checked), heroes: picked(), civh: civhSel });
+      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4, #teamBtn').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
       const msg = (t, bad) => { $('seedMsg').hidden = !t; $('seedMsg').textContent = t || ''; $('seedMsg').style.color = bad ? '#ff8a7a' : ''; };
       b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #heroAll, #nPl').forEach(i => i.onchange = upd); upd();
+      $('teamBtn').onclick = async () => {
+        const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0) return;
+        const np = +$('nPl').value, ph = [...document.querySelectorAll('#plRows .plhero')].map(e => e.value).filter(Boolean);
+        const r = await ui.teamPicker({ pool: heroPoolFor(n), civhPool: civhPool(n), heroes: np > 1 ? ph.concat(teamExtra) : picked(), civh: civhSel });
+        if (!r) return;
+        civhSel = r.civh; teamExtra = [];
+        if (np > 1) { upd(); document.querySelectorAll('#plRows .plhero').forEach((e, i) => { e.value = r.heroes[i] || ''; }); teamExtra = r.heroes.slice(np); }
+        else { $('heroAll').checked = r.heroes.length > 1; upd(); sels().forEach((e, i) => { e.value = r.heroes[i] || ''; }); }
+        teamTxt();
+      };
       $('seedMake').onclick = () => {
         const f = form(); if (f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length) { msg('Hay héroes repetidos.', true); return; }
         /* Crear una semilla la activa de inmediato: si no, «Empezar» ignoraría el código y la partida saldría al azar. */
@@ -815,7 +877,7 @@ const ui = {
       $('seedUse').onclick = () => {
         let o; try { o = SeedCode.decode($('seedTxt').value); } catch (e) { msg(e.message, true); return; }
         b.querySelector('input[name=lv][value="' + o.level + '"]').checked = true; [1, 2, 3, 4].forEach(k => $('x' + k).checked = o.exps.includes(k));
-        $('heroAll').checked = o.heroes.length > 1; upd(); $('lenSel').value = o.len; o.heroes.forEach((k, i) => { sels()[i].value = k; });
+        $('heroAll').checked = o.heroes.length > 1; upd(); $('lenSel').value = o.len; o.heroes.forEach((k, i) => { sels()[i].value = k; }); civhSel = o.civh || null; teamTxt();
         seed = { code: SeedCode.encode(o), seed: o.seed }; $('seedTxt').value = seed.code; lock(true);
         msg('Semilla ' + seed.code + ' cargada: la configuración queda fijada. Con «Quitar semilla» vuelves a la partida libre.');
       };
@@ -823,7 +885,7 @@ const ui = {
       $('goBtn').onclick = () => {
         const f = form(), pls = players(), ph = pls ? pls.map(p => p.hero).filter(Boolean) : [], dup = (f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length) || new Set(ph).size !== ph.length; if (dup) { msg('Hay héroes repetidos.', true); return; }
         DEBUG_DICE = !!ui.dbgDice; ui._close();
-        res({ level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), players: pls, exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null });
+        res({ level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), players: pls, exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null, civh: civhSel || null });
       };
     });
   },

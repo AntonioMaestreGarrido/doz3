@@ -441,3 +441,23 @@ body.booting #app{visibility:hidden}
 
 /* Capa de vuelo de las apariciones (anim.js drawSpawnFx): encima de la página, sin bloquear clics. */
 #spawnfx{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;z-index:45}
+
+/* Elegir equipo (nueva partida) */
+#teamPick{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:10px}
+#teamPick .tpbox{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:14px 16px;width:min(1280px,97vw);max-height:96vh;overflow:auto;box-shadow:0 10px 40px #000}
+#teamPick h2{margin:0 0 4px;font-size:18px;color:var(--gold)}
+#teamPick h3{margin:8px 0 4px;font-size:13px;color:var(--gold);text-transform:uppercase;letter-spacing:1px}
+#teamPick p{margin:2px 0 6px;font-size:13px;line-height:1.4}
+#teamPick .tpcount{font-size:13px;margin:4px 0 8px;padding:5px 9px;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+#teamPick .tpcount.warn{border-color:#e8452f;color:#ff8a7a}
+#teamPick .tpcols{flex:1 1 56%;max-height:calc(96vh - 250px);overflow:auto;padding-right:4px}
+#teamPick .cpwrap .cardpick{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
+#teamPick .cpc{position:relative}
+#teamPick .tpbadge{position:absolute;top:3px;right:3px;min-width:22px;height:22px;border-radius:11px;background:var(--gold);color:#000;font-weight:900;font-size:13px;line-height:22px;text-align:center;display:none}
+#teamPick .cpc.on .tpbadge{display:block}
+#teamPick .cpprev{flex:1 1 44%;max-height:calc(96vh - 250px);overflow:auto}
+#teamPick .cpprev img.tk{width:110px;height:110px;object-fit:contain;border-radius:50%;background:#000}
+#teamPick .cpprev .tptxt{text-align:left;font-size:12px;margin-top:6px}
+#teamPick .cpprev .opts{justify-content:center;margin-top:8px}
+#teamPick > .tpbox > .opts{position:sticky;bottom:-1px;background:var(--panel);padding:8px 0 2px;margin:6px 0 0;border-top:1px solid var(--line)}
+@media (max-width:900px){#teamPick .tpcols,#teamPick .cpprev{max-height:none}#teamPick .cpwrap{flex-direction:column}}

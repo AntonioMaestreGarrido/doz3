@@ -76,10 +76,13 @@ function buildResearch(len) {
 let PENDING_SEED = null;
 /* Jugadores del hot seat para la próxima partida: [{name, hero}] (hero = clave del Héroe Personal elegido o ''). Se consume al empezar. */
 let PENDING_PLAYERS = null;
+/* Civil Heroico elegido a mano en la pantalla de «Elegir equipo» (clave) para la próxima partida; null = al azar. Se consume al empezar. */
+let PENDING_CIVH = null;
 /* personal: clave de héroe o lista de claves elegidas a mano (el resto se completa al azar). */
 function newGame(levelIdx, lenIdx, personal) {
-  const plist = PENDING_PLAYERS; PENDING_PLAYERS = null;
-  if (plist && plist.length > 1) personal = plist.map(p => p.hero).filter(Boolean);
+  const plist = PENDING_PLAYERS; PENDING_PLAYERS = null; const civhPick = PENDING_CIVH; PENDING_CIVH = null;
+  /* Cooperativo: los Héroes Personales de los jugadores y, tras ellos, el resto del equipo elegido a mano (setup.hero). */
+  if (plist && plist.length > 1) personal = plist.map(p => p.hero).filter(Boolean).concat([].concat(personal || []));
   UID = 1; const SEMILLA = PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]; rngSeed(SEMILLA); PENDING_SEED = null; const RNG_INI = rngState();
   const L = LEVELS[levelIdx], len = L.lengths[lenIdx];
   Object.assign(G, {
@@ -94,7 +97,7 @@ function newGame(levelIdx, lenIdx, personal) {
   for (const r of G.routes) { const z = makeZed(); putUnit(z, r + '0'); }
   // Civiles
   const civs = shuffle(CIV_TOKENS.map(t => t.slice()));
-  const mkciv = (t, where, resist) => { const u = newUnit({ side: 'pl', type: 'civ', name: 'Civiles', full: t[0], red: t[1], mp: 2, hf: 2, hr: 2, resist }); putUnit(u, where); return u; };
+  const mkciv = (t, where, resist) => { const u = newUnit({ side: 'pl', type: 'civ', name: civName(t[0], t[1]), full: t[0], red: t[1], mp: 2, hf: 2, hr: 2, resist }); putUnit(u, where); return u; };
   ['B3', 'M2', 'A2', 'F2', 'F4'].forEach((id, i) => { mkciv(civs[i], id, true); if (L.fourR) makeSpecial('aldeanos', id); });
   mkciv(civs[5], 'C', false); G.spareCiv = civs[6];
   // Héroes
@@ -105,7 +108,7 @@ function newGame(levelIdx, lenIdx, personal) {
     return sel;
   })();
   G.heroKeys = keys;
-  const civhKey = L.n === 0 ? 'furias' : (() => { const p = CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[L.n]); return p[rnd(p.length)]; })();
+  const civhKey = L.n === 0 ? 'furias' : (() => { const p = CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[L.n]); return civhPick && p.includes(civhPick) ? civhPick : p[rnd(p.length)]; })();
   // recursos
   if (L.n === 0) { G.ammo = 4; G.supplies = 0; } else { const a = d6(), b = d6(); G.supplies = a + b; G.ammo = 6 - Math.min(a, b); G.setupRoll = [a, b]; }
   for (const k of keys) { const u = makeHero(k, 'C'); if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); } if (u.key === 'horacio' && L.supplies) G.supplies += 3; if (u.key === 'heli' && L.supplies) G.supplies = Math.min(20, G.supplies + 3); if (u.key === 'frank') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 4); } }
