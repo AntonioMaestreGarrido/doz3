@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 17:10
+
+### Cambios
+- **Helicóptero Medevac:** al despegar (con el Vuelo o con el Despegue de emergencia) se elige qué ruta patrulla lo que queda de turno; al inicio del siguiente turno, si sigue en el aire, se vuelve a preguntar al pagar el combustible (1 Suministro) o aterriza gratis.
+
 ## 2026-10-31 16:40
 
 ### Fixes

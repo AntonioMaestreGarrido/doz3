@@ -107,14 +107,21 @@ function heliLandSpaces(u, comp) {
 async function heliVuelo(u) {
   await heliTakeoff(u, null, 'Vuelo');
 }
-/* Despega (de emergencia o no): queda en el aire con su Héroe y patrulla la ruta indicada lo que queda de turno. */
-async function heliTakeoff(h, route, why) {
+/* Al despegar se elige qué ruta patrulla lo que queda de turno (la ruta del despegue sale la primera). */
+async function heliElegirRuta(why, hint) {
+  const rs = G.routes.slice().sort((a, b) => (b === hint) - (a === hint));
+  const opts = rs.map(r => ({ label: 'Patrullar: ' + ROUTES[r].name + (r === hint ? ' (donde estaba)' : ''), value: r, color: ROUTES[r].color, focus: routeSpaces(r) }));
+  return await UI.choose({ title: 'Helicóptero Medevac', text: why + ': ¿qué ruta patrulla el resto del turno? Al inicio del siguiente turno, si sigue en el aire, pagará 1 Suministro y volverá a elegir (o aterrizará gratis).', options: opts });
+}
+/* Despega (de emergencia o no): queda en el aire con su Héroe y patrulla la ruta elegida lo que queda de turno. */
+async function heliTakeoff(h, hint, why) {
   let pas = null; const cands = heliCands(h);
   if (cands.length) { const v = await UI.pickUnit(cands, why + ': ¿qué Héroe se lleva el helicóptero? (cancelar = ninguno)', true); if (v != null) pas = G.units[v]; }
   G.supplies = Math.max(0, G.supplies - 1); G.charUsed.vuelo = true;
   putUnit(h, 'AIR'); h.pasajero = pas ? pas.id : null; if (pas) putUnit(pas, 'AIR');
-  if (route) G.turn.patrol = route;
-  LOG(why + ': ' + h.name + (pas ? ' y ' + pas.name : '') + ' despegan y quedan en el aire' + (route ? ' patrullando ' + ROUTES[route].name : '') + ' (−1 Suministro).', 'good');
+  UI.updateStats(); UI.redraw();
+  const ruta = await heliElegirRuta(why, hint); if (ruta) G.turn.patrol = ruta;
+  LOG(why + ': ' + h.name + (pas ? ' y ' + pas.name : '') + ' despegan y quedan en el aire' + (ruta ? ' patrullando ' + ROUTES[ruta].name : '') + ' (−1 Suministro).', 'good');
   UI.updateStats(); UI.redraw();
 }
 /* Tirada de Despegue de emergencia: 'now' (despega sin combate), 'after' (combate y luego despega si sobrevive) o null. */
