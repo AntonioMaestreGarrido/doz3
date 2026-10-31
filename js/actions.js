@@ -219,8 +219,8 @@ function unitActions(u) {
 function canBuildBar(u) { const r = sp(u.space).route; for (let i = 0; i <= lastOf(r); i++) if (sp(r + i).bar) return false; return true; }
 
 /* Civiles (normales o heroicos) en el espacio de Porter o adyacente: a quienes puede dar 1 acción gratis (Jefe de equipo). */
-/* SAR: hay Caos en su espacio, ninguna unidad Zed y no está en coma. */
-const despejarOk = u => !!(u.space && G.spaces[u.space] && G.lv.fourR && sp(u.space).chaos > 0 && !zedsAt(u.space).length && !u.ecg);
+/* SAR: hay Caos en su espacio y no está en coma. */
+const despejarOk = u => !!(u.space && G.spaces[u.space] && G.lv.fourR && sp(u.space).chaos > 0 && !u.ecg);
 const jefeTargets =u => allUnits(x => (x.type === 'civ' || x.type === 'civh') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)));
 /* Alia, «Ya no es hora de estar en la calle»: Civiles (normales o heroicos) o Refugiados en su espacio o adyacente que puedan avanzar hacia el Centro. */
 const calleDests = x => {
