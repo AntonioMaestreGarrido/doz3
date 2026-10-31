@@ -2,10 +2,10 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
-## 2026-10-31 14:00
+## 2026-10-31 14:20
 
 ### Cambios
-- **Doc Brown, Salto temporal:** además de llevar a una unidad al destino, cuando Doc vuelve al Centro (tras el Mantenimiento) puede traer de vuelta a otra unidad que esté en su espacio, distinta de la que llevó.
+- **Doc Brown, Salto temporal:** además de llevar a una unidad al destino, cuando Doc vuelve al Centro (tras el Mantenimiento) puede volver solo, con la unidad que llevó o con otra que esté en su espacio.
 - **Alia, Evasión:** ahora es opcional. Cuando un Zed entra en su espacio eliges si intentas evadirlo (tirada de 1 dado, 4-6) o combates.
 
 ## 2026-10-31 13:10
