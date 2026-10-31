@@ -48,9 +48,9 @@ const trasera = () => `<style>${CSS}
 const ficha = red => `<style>*{box-sizing:border-box;margin:0}body{background:transparent;font-family:${SANS}}
 .t{position:relative;width:400px;height:230px;border-radius:22px;overflow:hidden;border:5px solid ${red ? '#b3261e' : '#d9b94f'};background:url(${ART}) 36% 0/auto 230px no-repeat,#120b07}
 .tag{position:absolute;left:12px;top:10px;padding:5px 16px;border-radius:14px;font:700 21px ${SANS};color:#fff;background:${red ? 'rgba(179,38,30,.92)' : 'rgba(130,100,20,.92)'};border:3px solid ${red ? '#e8e0d0' : '#f2e3a8'}}
-.mv{position:absolute;left:8px;bottom:8px;width:130px;height:62px;background:rgba(40,90,160,.55);border-radius:10px;font:700 40px/62px ${SANS};color:#fff;padding-left:30px;text-shadow:0 2px 3px #000}
-.fz{position:absolute;right:12px;bottom:12px;width:76px;height:76px;border-radius:14px;background:rgba(20,12,8,.9);border:4px solid ${red ? '#b3261e' : '#d9b94f'};color:#fff;font:700 52px/70px ${SANS};padding-left:12px}
-.fz small{font-size:19px;color:#ddd;position:absolute;right:8px;bottom:4px;line-height:1}</style>
+.mv{position:absolute;left:8px;bottom:12px;width:136px;height:50px;background:linear-gradient(90deg,rgba(38,86,168,.7),rgba(38,86,168,.5));clip-path:polygon(0 0,calc(100% - 28px) 0,100% 50%,calc(100% - 28px) 100%,0 100%);font:700 34px/50px ${SANS};color:#fff;padding-left:38px;text-shadow:0 2px 3px #000}
+.fz{position:absolute;right:12px;bottom:12px;width:74px;height:62px;border-radius:14px;background:rgba(20,12,8,.92);border:4px solid ${red ? '#b3261e' : '#d9b94f'};color:#f4ecdc;font:700 50px/54px ${SANS};padding-left:12px}
+.fz small{font-size:18px;color:#b9b2a4;position:absolute;right:8px;bottom:5px;line-height:1}</style>
 <div class="t"><div class="tag">${red ? 'REDUCIDO' : 'COMPLETO'}</div><div class="mv">3</div><div class="fz">${red ? '2' : '3'}<small>/${red ? '3' : '2'}</small></div></div>`;
 
 const salida = async (browser, html, w, h, destino, omitir = true) => {

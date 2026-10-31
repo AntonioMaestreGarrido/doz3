@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 11:50
+
+### Fixes
+- **Fichas del SAR y del Club de Caza:** el indicador de Movimiento ahora es una flecha con punta y el cuadro de Fuerza tiene las proporciones y los colores de las fichas originales (número grande en crema y Fuerza de la otra cara pequeña, en gris).
+
 ## 2026-10-31 11:30
 
 ### Nuevo
