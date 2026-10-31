@@ -445,6 +445,7 @@ function humanShifts(f, o) { // o: { attacking, space }
   if (f.key === 'schmidt') s.push({ label: 'Boy Scout (Schmidt)', v: 1 });
   if (f.key === 'porter' && !o.attacking) s.push({ label: 'Artes marciales (Porter)', v: 1 });
   if (escudoHumano(f)) s.push({ label: 'Escudo humano (SAR)', v: 1 });
+  if (f.key === 'caza') s.push({ label: 'A campo abierto (Club de Caza)', v: -1 });
   if (f.key === 'alia' && !o.attacking) s.push({ label: 'Parada perfecta (Alia)', v: 1 });
   if (abstinent(f)) s.push({ label: 'Abstinencia Robótica (Bender)', v: -1 });
   if (f.key === 'ash') s.push({ label: 'Groovy (Ash)', v: 1 });
@@ -837,7 +838,7 @@ async function doMove(u, dest, path, undoable) {
 }
 
 /* ================= DISPARO ================= */
-function fireRange(u) { if (u.nofire || u.key === 'furias' || u.type === 'refugee' || u.type === 'aldeano') return 0; if (u.space && sp(u.space).route === 'T') return 1; return u.key === 'piazza' ? 3 : (u.key === 'hunt' || u.type === 'marine') ? 2 : 1; }
+function fireRange(u) { if (u.nofire || u.key === 'furias' || u.type === 'refugee' || u.type === 'aldeano') return 0; if (u.space && sp(u.space).route === 'T') return 1; return u.key === 'piazza' ? 3 : (u.key === 'hunt' || u.key === 'caza' || u.type === 'marine') ? 2 : 1; }
 function fireTargets(u) {
   const out = {}; const r = fireRange(u); if (!r || !u.space || isInit(u.space)) return out;
   const s = sp(u.space);
@@ -863,6 +864,7 @@ async function doFire(u, targetId, dist, opts) {
   if (G.turn.combineFire && !opts.str) { const mates = unitsAt(u.space).filter(x => x !== u && isFighter(x) && !x.nofire && fireRange(x) >= dist); if (mates.length) { str += mates.reduce((a, x) => a + fireStrength(x, dist), 0); LOG('Plan de guerra negro: ' + mates.map(x => x.name).join(', ') + ' suman su Fuerza (' + str + ').', 'good'); } }
   if (u.armed) shifts.push({ label: 'Bien Armados', v: 1 }); if (u.leader) shifts.push({ label: 'Líder Civil', v: 1 });
   if (u.key === 'wright') shifts.push({ label: 'Equipo de apoyo', v: 1 });
+  if (target && target.marcada === G.turnNo) shifts.push({ label: 'Presa marcada (Club de Caza)', v: 1 });
   if (escudoHumano(u)) shifts.push({ label: 'Escudo humano (SAR)', v: 1 });
   if (abstinent(u)) shifts.push({ label: 'Abstinencia Robótica (Bender)', v: -1 });
   if (u.key === 'may') shifts.push({ label: 'Pistolera de primera (May)', v: 1 });
@@ -887,7 +889,7 @@ async function doFire(u, targetId, dist, opts) {
   const row = sumRow(dice[0] + dice[1]); const hits = FIRE[row][col];
   h.setResult(row, col, hits); await h.done();
   EVT('shot', u.id, { to: targetId, d: dist, hits });
-  if (hits) { ACTOR = u.id; try { await applyZedHits([target], hits); } finally { ACTOR = null; } if (hits >= 2 && weaponFor(u, 'balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
+  if (hits) { ACTOR = u.id; try { await applyZedHits([target], hits); } finally { ACTOR = null; } if (u.key === 'caza' && target && (!G.units[target.id] || !target.space)) { G.ammo = Math.min(20, G.ammo + 1); LOG('Trofeo: el Club de Caza recupera 1 Munición.', 'good'); UI.updateStats(); } if (hits >= 2 && weaponFor(u, 'balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
   else LOG('El disparo no impacta.');
   if (u.key === 'piazza' && u.space && u.space !== 'C' && !opts.noVig) {
     // Retroceder = alejarse del objetivo, es decir, hacia el Centro (índice mayor en la ruta).

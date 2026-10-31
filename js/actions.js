@@ -196,6 +196,7 @@ function unitActions(u) {
     if (u.key === 'jones' && G.res && u.space && sp(u.space).kind === 'office') A.push({ id: 'jhosp', label: 'Sus Propios Planes: paciente al Cementerio + Investigación', ok: cu('planes') && G.res.deck.length > 0 && hospitalUnits(u).length > 0 });
     if (u.key === 'hunt') A.push({ id: 'lid', label: 'Liderazgo', ok: cu('lid') });
     if (u.key === 'alia') A.push({ id: 'calle', label: 'Ya no es hora de estar en la calle', ok: cu('calle') && calleTargets(u).length > 0 });
+    if (u.key === 'caza') A.push({ id: 'marcar', label: 'Presa marcada (1 acc.)', ok: cu('marcar') && pay(1) && Object.keys(fireTargets(u)).length > 0 });
     if (u.key === 'porter') A.push({ id: 'jefe', label: 'Jefe de equipo', ok: cu('jefe') && jefeTargets(u).length > 0 });
     if (u.key === 'hernandez') { A.push({ id: 'cit', label: 'Ciudadela', ok: cu('cit') && G.ammo >= 1 }); A.push({ id: 'spe', label: 'Discurso Motivador', ok: !G.speechUsed }); }
     if (u.key === 'hauser') { A.push({ id: 'train', label: 'Entrenar Civiles (1 acc.)', ok: pay(1) && allUnits(x => x.type === 'civ' && !x.trained && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))).length > 0 }); A.push({ id: 'recruit', label: 'Reclutar (1 Munición)', ok: u.space === 'C' && G.ammo >= 1 && pay(1) }); }
@@ -255,6 +256,15 @@ async function runAction(u, id) {
       if (!despejarOk(u)) { LOG('No se puede Despejar aquí.'); break; }
       spendActions(u, 1); G.charUsed.despejar = true; u.despeja = { t: G.turnNo, sp: u.space };
       LOG('Despejar: ' + u.name + ' prepara el despeje de ' + spaceLabel(u.space) + ' (−2 Caos en el Mantenimiento, sin Infección).', 'good'); UI.pulseSpace(u.space, '#7bd45a'); UI.redraw(); break;
+    }
+    case 'marcar': {
+      const ts = Object.keys(fireTargets(u)); if (!ts.length) { LOG('No hay presas a su alcance.'); break; }
+      const w = ts.length === 1 ? ts[0] : await UI.pickSpace(ts, 'Presa marcada: elige el espacio de la unidad Zed.', true); if (w == null) break;
+      const zs = zedsAt(w); let z = zs[0];
+      if (zs.length > 1) { const v = await UI.askZeds({ title: 'Presa marcada', text: 'Elige la unidad Zed que marcas.', spaces: zs.map(x => x.space), options: zs.map(x => ({ label: zedLabel(x), value: x.id })) }); z = G.units[v]; }
+      if (!z) break;
+      spendActions(u, 1); G.charUsed.marcar = true; z.marcada = G.turnNo;
+      LOG('Presa marcada: ' + zedLabel(z) + ' (+1 columna a los disparos contra ella este turno).', 'good'); UI.pulseSpace(z.space, '#ffb347'); UI.redraw(); break;
     }
     case 'jefe': { const c = jefeTargets(u); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Jefe de equipo: elige la unidad de Civiles que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.jefe = true; G.units[v].free++; LOG('Jefe de equipo: ' + G.units[v].name + ' recibe 1 acción gratis.', 'good'); break; }
     case 'lid': { const c = allUnits(x => (x.type === 'civ' || x.type === 'civh' || x.type === 'marine') && x.key !== 'horacio' && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Liderazgo: elige la unidad que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.lid = true; G.units[v].free++; break; }

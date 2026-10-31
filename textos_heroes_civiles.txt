@@ -163,3 +163,9 @@ Jaque Mates™ (Civiles Heroicos)
 Búsqueda y Rescate (SAR) (Civiles Heroicos)
   1. Despejar: Acción de Personaje (1 Acción), una vez por turno, aunque haya Caos en su espacio: en el Mantenimiento quita 2 fichas de Caos de ese espacio sin subir la Infección.
   2. Escudo humano: 1 columna a favor en combates Cuerpo a Cuerpo y al disparar mientras haya Refugiados o Aldeanos en su espacio.
+
+Club de Caza de Farmingdale (Civiles Heroicos)
+  1. Puesto de caza: disparan a 2 espacios sin penalización de columna.
+  2. Trofeo: cuando su disparo elimina a una unidad Zed, recuperan 1 Munición.
+  3. Presa marcada: Acción de Personaje (1 Acción), una vez por turno: marcan una unidad Zed a su alcance. Los disparos de cualquier unidad de jugador contra ella tienen 1 columna a favor hasta que sea eliminada o termine el turno.
+  4. A campo abierto: tienen 1 columna en contra en combates Cuerpo a Cuerpo.

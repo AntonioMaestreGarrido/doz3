@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 11:30
+
+### Nuevo
+- **Nuevo Civiles Heroicos: Club de Caza de Farmingdale** (expansión 4, nivel 2, Fuerza 3/2, Movimiento 3). **Puesto de caza:** disparan a 2 espacios sin penalización. **Trofeo:** si su disparo elimina a una unidad Zed, recuperan 1 Munición. **Presa marcada:** Acción de Personaje (1 Acción, una vez por turno): marcan una unidad Zed a su alcance y los disparos de cualquier unidad contra ella tienen 1 columna a favor ese turno. **A campo abierto:** 1 columna en contra en combates Cuerpo a Cuerpo. Con carta (frente y trasera) y fichas ilustradas; `tools/generar_caza.mjs` las regenera.
+
 ## 2026-10-31 10:40
 
 ### Nuevo
