@@ -64,7 +64,8 @@ const EXTRA_SPACES = {
   O1: { kind: 'office', x: 552, y: 340, name: 'Oficina del Personal 1' },
   O2: { kind: 'office', x: 660, y: 322, name: 'Oficina del Personal 2' },
   LAB: { kind: 'lab', x: 1169, y: 335, name: 'Laboratorio' },
-  CAMP: { kind: 'camp', x: 1336, y: 70, name: 'Campo de Refugiados' }
+  CAMP: { kind: 'camp', x: 1336, y: 70, name: 'Campo de Refugiados' },
+  AIR: { kind: 'air', x: 1130, y: 100, name: 'En el aire' }
 };
 const BEDS = ['H1', 'H2', 'H3', 'H4'];
 

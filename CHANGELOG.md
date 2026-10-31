@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 13:10
+
+### Nuevo
+- **Nuevo Civiles Heroicos: Helicóptero Medevac** (expansión 4, nivel 2, Fuerza 2/1, Movimiento 3, no dispara). **Combustible de reserva:** al entrar en juego, 3 Suministros. **Vuelo:** Acción de Personaje (1 Suministro, una vez por turno): vuela con un Héroe a un espacio de superficie sin Zeds que no sea Inicial. **Patrulla:** al inicio del turno, tras revelar el Evento, si sigue en el aire paga 1 Suministro y elige una ruta (o aterriza gratis) y mira la siguiente carta de Evento; en esa ruta puede hacer una **Maniobra de distracción** por turno (con 3-6 un grupo Zed no se mueve) y los Zeds tienen 1 columna en contra en todos los combates. **Despegue de emergencia:** si un Zed entra en su espacio, 1 dado: 1 combate; 2 combate y despega si sobrevive; 3-6 despega sin combate. **Aterrizaje** gratis en Acciones: puede dejar al Héroe en el Hospital (sin ECG ni Infección) o darle 1 Acción gratis. Nueva zona «En el aire» en el mapa (exp. 4). Con carta (frente y trasera) y fichas ilustradas; `tools/generar_heli.mjs` las regenera.
+
 ## 2026-10-31 11:50
 
 ### Fixes

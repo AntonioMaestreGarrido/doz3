@@ -36,6 +36,7 @@ function buildBoard() {
   if (G.lv.infection) ex.push('H1', 'H2', 'H3', 'H4');
   if (G.lv.res) ex.push('O1', 'O2', 'LAB');
   if (G.lv.fourR) ex.push('CAMP');
+  if ((G.expSel || []).includes(4)) ex.push('AIR');   /* zona «En el aire» del Helicóptero Medevac (exp. 4) */
   for (const id of ex) { const e = EXTRA_SPACES[id]; G.spaces[id] = { id, route: null, i: -1, kind: e.kind, name: e.name, x: e.x, y: e.y, units: [], chaos: 0, bar: 0, mine: 0 }; }
 }
 const sp = id => G.spaces[id];
@@ -64,7 +65,7 @@ function spaceLabel(id) {
   return rn + ' n.º ' + spaceNum(id);
 }
 const isInit = id => isRouteSp(id) && sp(id).i === 0;
-const isNamed = id => { const s = sp(id); return !!s.name && s.kind !== 'bed' && s.kind !== 'office' && s.kind !== 'lab' && s.kind !== 'camp' || s.kind === 'centro'; };
+const isNamed = id => { const s = sp(id); return !!s.name && s.kind !== 'bed' && s.kind !== 'office' && s.kind !== 'lab' && s.kind !== 'camp' && s.kind !== 'air' || s.kind === 'centro'; };
 const isCity = id => sp(id).kind === 'city' || sp(id).kind === 'centro';
 const isSurface = id => !isRouteSp(id) ? (id === 'C' || sp(id).kind === 'bed' || sp(id).kind === 'office' || sp(id).kind === 'lab') : sp(id).route !== 'T';
 const isCrypt = id => sp(id).kind === 'crypt';
@@ -116,7 +117,7 @@ const controlled = id => !!(zedsAt(id).length || sp(id).chaos);
 function zedCap(id) { const s = sp(id); if (s.kind === 'crypt') return 99; if (s.route === 'T') return (s.i === 0 || s.i === lastOf('T')) ? 2 : 1; return 2; }
 function playerCap(id) {
   const s = sp(id);
-  if (id === 'C' || s.kind === 'camp' || s.kind === 'crypt') return 99;
+  if (id === 'C' || s.kind === 'camp' || s.kind === 'air' || s.kind === 'crypt') return 99;
   if (s.kind === 'bed' || s.kind === 'office' || s.kind === 'lab') return 1;
   if (s.route === 'T') return (s.i === lastOf('T')) ? 2 : 1;
   return 2;
@@ -471,6 +472,9 @@ function zedShifts(zs, o) {
   if (zs.some(z => z.leader)) s.push({ label: 'Líder Zed', v: -1, by: by(z => z.leader) });
   if (G.turn.flamed && zs.some(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id))) s.push({ label: 'Zeds flambeados', v: -2, by: by(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id)) });
   if (G.turn.frenzy) s.push({ label: 'Súper Zeds enloquecidos', v: -2 });
+  /* Helicóptero Medevac: en la ruta que patrulla, los Zeds tienen 1 columna en contra. */
+  const hl = G.turn.patrol && hero('heli');
+  if (hl && hl.space === 'AIR') { const sa = (o && o.space) || (zs[0] && zs[0].space); if (sa && sp(sa) && sp(sa).route === G.turn.patrol) s.push({ label: 'Patrulla del helicóptero (Zeds 1 columna en contra)', v: 1 }); }
   return s;
 }
 /* Cartas de la mano que se pueden jugar antes de tirar en un combate. No se preguntan: salen como botones en la ventana de resolución (ver combatOpen en ui.js). */
@@ -688,9 +692,13 @@ async function hitRaider(u, n) { for (let k = 0; k < n && u.space; k++) { const 
 
 async function zedAttack(zeds, space, from) {
   /* Un Zed (o una Banda que se retira) no lucha contra sí mismo: solo cuentan las demás unidades del espacio. */
+  /* Helicóptero Medevac: despegue de emergencia antes del combate (exp. 4). */
+  const heli = hero('heli'), heliHere = heli && heli.space === space ? heli : null, route0 = sp(space).route;
+  const heliAfter = heliHere ? (await heliEmergency(heliHere, space)) === 'after' : false;
   const pl = plAt(space).concat(raidAt(space)).filter(x => !zeds.includes(x)); const soft = softAt(space);
   if (!pl.length) { await devourSoft(zeds, space); return {}; }
   const r = await melee({ zeds, hum: pl, space, attacker: 'z', from });
+  if (heliAfter && heliHere.space && heliHere.space !== 'CEM' && heliHere.space !== 'AIR' && G.units[heliHere.id] && G.supplies >= 1) await heliTakeoff(heliHere, route0, 'Despegue de emergencia');
   if (r.fighter && r.fighter.key === 'betty' && r.humanWon && r.fighter.space) await bettyChain(r.fighter);
   if (zedsAt(space).length && !plAt(space).length && softAt(space).some(u => u.type === 'refugee')) await devourSoft(zedsAt(space), space);
   return r;
@@ -721,7 +729,7 @@ async function vipBenefit(u) {
 
 /* ================= MOVIMIENTO ================= */
 function surfaceOnly(u) { return u.type === 'guard' || isPetra(u) || u.key === 'carter'; }
-function canAct(u) { return u && !u.locked && u.space && u.space !== 'CEM' && G.spaces[u.space] && !u.ecg && (!sp(u.space).chaos || u.key === 'pepinillos' || u.key === 'horacio') && u.space !== 'CEM'; }
+function canAct(u) { return u && !u.locked && u.space && u.space !== 'CEM' && u.space !== 'AIR' && G.spaces[u.space] && !u.ecg && (!sp(u.space).chaos || u.key === 'pepinillos' || u.key === 'horacio') && u.space !== 'CEM'; }
 function moveCost(u, to) { return (to === 'C' && alive('hernandez') && isFighter(u)) ? 0 : 1; }
 function officeOk(u, s) { return u.sci || (s.kind !== 'office' && s.kind !== 'lab') || (s.kind === 'office' && u.key === 'may'); }
 function canStop(u, id) {

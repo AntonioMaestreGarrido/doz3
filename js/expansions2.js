@@ -33,7 +33,7 @@ const _DEST_FX = DEST_FX;
 DEST_FX = async function (id, route) {
   if (id === 'hija') { G.turn.cLock = true; LOG('Las unidades del Centro no pueden mover este turno.', 'bad'); return; }
   if (id === 'discutiendo') {
-    const spaces = Object.values(G.spaces).filter(s => unitsAt(s.id).filter(isFighter).length >= 2).map(s => s.id);
+    const spaces = Object.values(G.spaces).filter(s => s.id !== 'AIR' && unitsAt(s.id).filter(isFighter).length >= 2).map(s => s.id);
     if (!spaces.length) { LOG('No hay dos unidades juntas.'); return; }
     const t = await UI.pickSpace(spaces, 'Discusión: elige el espacio con dos unidades.');
     let us = unitsAt(t).filter(isFighter);
@@ -93,3 +93,72 @@ async function zenReroll(vals, label, h) {
   return out;
 }
 async function zen1(r, label) { return (await zenReroll([r], label))[0]; }
+
+/* ---------- Helicóptero Medevac (exp. 4) ---------- */
+/* Pasajeros posibles: Héroes de su espacio, salvo los que tampoco puede llevar Doc. */
+const heliCands = u => unitsAt(u.space).filter(x => x !== u && x.type === 'hero' && !DOC_NO_RIDE.includes(x.key) && !x.ecg && !x.mount && !x.rider && !x.resist && !isPetra(x));
+/* Espacios donde puede aterrizar: superficie sin Zeds que no sea Inicial, o el Centro. */
+function heliLandSpaces(u, comp) {
+  const ids = docJumpSpaces(u, comp);
+  if (G.spaces.C && !blocked('C') && !zedsAt('C').length && !ids.includes('C')) ids.push('C');
+  return ids;
+}
+async function heliVuelo(u) {
+  let comp = null; const cands = heliCands(u);
+  if (cands.length) {
+    const w = await UI.choose({ title: 'Vuelo', text: '¿El helicóptero lleva a un Héroe de su espacio?', options: [{ label: 'Volar solo', value: 'n' }, { label: 'Llevar a un Héroe', value: 'y' }] });
+    if (w === 'y') { const v = await UI.pickUnit(cands, 'Vuelo: elige al Héroe que llevas.', true); if (v == null) return; comp = G.units[v]; }
+  }
+  const ds = heliLandSpaces(u, comp).filter(id => id !== u.space); if (!ds.length) { LOG('No hay espacio libre para aterrizar.'); return; }
+  const t = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Vuelo: elige dónde aterrizas.', true); if (t == null) return;
+  G.charUsed.vuelo = true; G.supplies -= 1;
+  putUnit(u, t); if (comp) putUnit(comp, t);
+  LOG('Vuelo: ' + u.name + (comp ? ' y ' + comp.name : '') + ' aterrizan en ' + spaceLabel(t) + ' (−1 Suministro).', 'good');
+  UI.updateStats(); UI.redraw(); UI.focus(t);
+}
+/* Despega (de emergencia o no): queda en el aire con su Héroe y patrulla la ruta indicada lo que queda de turno. */
+async function heliTakeoff(h, route, why) {
+  let pas = null; const cands = heliCands(h);
+  if (cands.length) { const v = await UI.pickUnit(cands, why + ': ¿qué Héroe se lleva el helicóptero? (cancelar = ninguno)', true); if (v != null) pas = G.units[v]; }
+  G.supplies = Math.max(0, G.supplies - 1); G.charUsed.vuelo = true;
+  putUnit(h, 'AIR'); h.pasajero = pas ? pas.id : null; if (pas) putUnit(pas, 'AIR');
+  if (route) G.turn.patrol = route;
+  LOG(why + ': ' + h.name + (pas ? ' y ' + pas.name : '') + ' despegan y quedan en el aire' + (route ? ' patrullando ' + ROUTES[route].name : '') + ' (−1 Suministro).', 'good');
+  UI.updateStats(); UI.redraw();
+}
+/* Tirada de Despegue de emergencia: 'now' (despega sin combate), 'after' (combate y luego despega si sobrevive) o null. */
+async function heliEmergency(h, space) {
+  if (!h || h.ecg || h.resist || G.supplies < 1 || !sp(space).route || G.turn.vueloEmerg === G.turnNo + ':' + space) return null;
+  const r = await rollShown('Despegue de emergencia: ' + h.name, v => v === 1 ? '<b>1</b>: combate normal y no despega' : v === 2 ? '<b>2</b>: combate normal y, si sigue vivo, despega' : '<b>' + v + '</b>: despega sin combate');
+  if (r === 1) return null; if (r === 2) return 'after';
+  await heliTakeoff(h, sp(space).route, 'Despegue de emergencia'); return 'now';
+}
+/* Aterrizaje (gratis): elige el espacio, puede dejar al Héroe en el Hospital; si no, el Héroe recibe 1 Acción gratis. */
+async function heliAterrizar(u, forced) {
+  const pas = u.pasajero && G.units[u.pasajero] && G.units[u.pasajero].space === 'AIR' ? G.units[u.pasajero] : null;
+  let hospital = false;
+  if (pas && freeBed()) {
+    const w = await UI.choose({ title: 'Aterrizaje', text: '¿Qué haces con ' + pas.name + '?', options: [{ label: 'Aterriza con el helicóptero', value: 'n' }, { label: 'Dejarlo en el Hospital (Cama libre, sin ECG ni Infección)', value: 'h' }] });
+    hospital = w === 'h';
+  }
+  const comp = hospital ? null : pas;
+  const ds = heliLandSpaces(u, comp); if (!ds.length) { LOG('No hay espacio libre para aterrizar: sigue en el aire.'); return false; }
+  const t = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Aterrizaje: elige el espacio.', !forced); if (t == null) return false;
+  putUnit(u, t); u.pasajero = null;
+  if (pas) {
+    if (hospital) { const bed = freeBed(); if (bed) { putUnit(pas, bed); pas.ecg = false; LOG(pas.name + ' queda ingresado en el Hospital (' + spaceLabel(bed) + ').', 'good'); } else putUnit(pas, t); }
+    else { putUnit(pas, t); pas.free = (pas.free || 0) + 1; LOG('Aterrizaje de combate: ' + pas.name + ' recibe 1 Acción gratis.', 'good'); }
+  }
+  LOG(u.name + ' aterriza en ' + spaceLabel(t) + '.', 'good'); UI.updateStats(); UI.redraw(); UI.focus(t); return true;
+}
+/* Inicio de turno, tras revelar el Evento: si sigue en el aire, paga 1 Suministro para patrullar una ruta o aterriza gratis. */
+async function heliTurnStart() {
+  const h = hero('heli'); if (!h || h.space !== 'AIR') return;
+  if (G.supplies < 1) { LOG('Sin Suministros: el helicóptero tiene que aterrizar.', 'bad'); await heliAterrizar(h, true); return; }
+  const opts = G.routes.map(r => ({ label: 'Patrullar: ' + ROUTES[r].name + ' (1 Suministro)', value: r, color: ROUTES[r].color, focus: routeSpaces(r) })).concat([{ label: 'Aterrizar gratis', value: 'land' }]);
+  const v = await UI.choose({ title: 'Helicóptero Medevac', text: 'Sigue en el aire. Paga 1 Suministro y elige la ruta que patrulla este turno, o aterriza gratis.', options: opts });
+  if (v === 'land') { await heliAterrizar(h, true); return; }
+  G.supplies -= 1; G.turn.patrol = v; UI.updateStats();
+  LOG('Patrulla: el helicóptero sobrevuela ' + ROUTES[v].name + ' (−1 Suministro).', 'good'); UI.toast('Patrulla: ' + ROUTES[v].name, '#7fb6ff', 1800);
+  const id2 = G.eventDeck[0]; if (id2) await UI.waitAck('Helicóptero: siguiente carta de Evento', 'Desde el aire ves la próxima carta: «' + EV[id2].name + '».', evImg(id2), 'e:' + id2);
+}

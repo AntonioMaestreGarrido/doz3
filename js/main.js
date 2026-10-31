@@ -72,6 +72,7 @@ async function playGame(setup, saved) {
       await UI.waitAck('Turno ' + G.turnNo + ' — «' + ev.name + '»', '<div class="rulebox"><b>Regla</b><br>' + ev.txt.join('<br>') + '</div>' + Preview.block(Preview.event(ev)), evImg(ev.id), 'e:' + ev.id);
       if (!G.reserve.length) { LOG('No quedan fichas Zed en la reserva.', 'bad'); await UI.waitAck('Sin fichas Zed', 'No quedan fichas Zed en la reserva. Cada nuevo Zed que haya que colocar será un Súper Zed al azar, mientras queden.'); }
       if (chaosLow()) { LOG('Quedan ' + G.chaosLeft + ' fichas de Caos.', 'bad'); await UI.waitAck('Fichas de Caos', chaosWarnText()); await offerHandCards('chaos', chaosWarnText()); }
+      await heliTurnStart(); if (G.over) break;
       if (ev.guardia) { G.phase = 'zeds'; await UI.spawnBatch(() => withPeek(eventStart)); await maintenance(); G.dangerNext = enPeligro(); saveGame('turn'); continue; }
       G.phase = 'fourR'; UI.updateStats(); await UI.spawnBatch(() => withPeek(() => eventAtPhase('4'))); if (G.over) break; await phase4R(); if (G.over) break;
       await UI.spawnBatch(() => pressure('e', '4')); if (G.over) break;

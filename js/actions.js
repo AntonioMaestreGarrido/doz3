@@ -187,6 +187,8 @@ function unitActions(u) {
   /* Visiones de Wilson: en cualquier momento, sin gastar Acción. */
   if (u.key === 'wilson' && u.space) A.push({ id: 'visions', label: '🔮 Visiones: mirar la carta superior de Destino', ok: true });
   if (u.key === 'bender' && u.space === 'C' && !u.ecg) A.push({ id: 'bcure', label: 'Reparar en el Centro (1 Sum., 1 vez por turno)', ok: curable(u) && G.supplies >= 1 });
+  /* Helicóptero Medevac (exp. 4): en el aire solo puede aterrizar; en tierra, volar. */
+  if (u.key === 'heli' && u.space === 'AIR') A.push({ id: 'aterrizar', label: 'Aterrizar (gratis)', ok: true });
   /* El SAR es la excepción a «con Caos no se actúa»: su Acción de Personaje es justo para quitarlo. */
   if (u.key === 'sar' && !u.locked && !u.ecg) A.push({ id: 'despejar', label: 'Despejar (−2 Caos en el Mantenimiento)', ok: !G.charUsed.despejar && pay(1) && despejarOk(u) });
   if (act && !isSoft(u)) {
@@ -196,6 +198,7 @@ function unitActions(u) {
     if (u.key === 'jones' && G.res && u.space && sp(u.space).kind === 'office') A.push({ id: 'jhosp', label: 'Sus Propios Planes: paciente al Cementerio + Investigación', ok: cu('planes') && G.res.deck.length > 0 && hospitalUnits(u).length > 0 });
     if (u.key === 'hunt') A.push({ id: 'lid', label: 'Liderazgo', ok: cu('lid') });
     if (u.key === 'alia') A.push({ id: 'calle', label: 'Ya no es hora de estar en la calle', ok: cu('calle') && calleTargets(u).length > 0 });
+    if (u.key === 'heli') A.push({ id: 'vuelo', label: 'Vuelo (1 Suministro, con un Héroe)', ok: cu('vuelo') && G.supplies >= 1 && heliLandSpaces(u, null).some(id => id !== u.space) });
     if (u.key === 'caza') A.push({ id: 'marcar', label: 'Presa marcada (1 acc.)', ok: cu('marcar') && pay(1) && Object.keys(fireTargets(u)).length > 0 });
     if (u.key === 'porter') A.push({ id: 'jefe', label: 'Jefe de equipo', ok: cu('jefe') && jefeTargets(u).length > 0 });
     if (u.key === 'hernandez') { A.push({ id: 'cit', label: 'Ciudadela', ok: cu('cit') && G.ammo >= 1 }); A.push({ id: 'spe', label: 'Discurso Motivador', ok: !G.speechUsed }); }
@@ -257,6 +260,8 @@ async function runAction(u, id) {
       spendActions(u, 1); G.charUsed.despejar = true; u.despeja = { t: G.turnNo, sp: u.space };
       LOG('Despejar: ' + u.name + ' prepara el despeje de ' + spaceLabel(u.space) + ' (−2 Caos en el Mantenimiento, sin Infección).', 'good'); UI.pulseSpace(u.space, '#7bd45a'); UI.redraw(); break;
     }
+    case 'vuelo': await heliVuelo(u); break;
+    case 'aterrizar': await heliAterrizar(u, false); break;
     case 'marcar': {
       const ts = Object.keys(fireTargets(u)); if (!ts.length) { LOG('No hay presas a su alcance.'); break; }
       const w = ts.length === 1 ? ts[0] : await UI.pickSpace(ts, 'Presa marcada: elige el espacio de la unidad Zed.', true); if (w == null) break;

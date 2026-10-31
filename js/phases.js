@@ -107,6 +107,17 @@ async function moveGroup(movers, from, opts) {
     const r = await rollShown('En zapatillas no se puede pasar: ' + porter.name, v => v >= 4 ? '<b>' + v + '</b>: se cancela el movimiento' : '<b>' + v + '</b>: no cuenta (necesita 4-6)');
     if (r >= 4) { G.turn.zapStop = true; LOG('En zapatillas no se puede pasar: ' + porter.name + ' cancela el movimiento hacia ' + spaceLabel(dest) + '.', 'good'); return { moved: false }; }
   }
+  /* Helicóptero Medevac: Maniobra de distracción en la ruta que patrulla (reacción, una vez por turno; con 3-6 el movimiento se cancela). */
+  const heli = hero('heli');
+  if (heli && heli.space === 'AIR' && G.turn.patrol && sp(from).route === G.turn.patrol && !G.turn.distUsed) {
+    const dv = await UI.askZeds({ title: 'Maniobra de distracción', text: '¿Intentas que ' + zedGroupName(movers, from) + ' no se mueva? Solo puedes intentarlo una vez por turno.', spaces: [from], options: [{ label: 'Distraer', value: 'y' }, { label: 'No', value: 'n' }] });
+    if (dv === 'y') {
+      G.turn.distUsed = true;
+      const dr = await rollShown('Maniobra de distracción: Helicóptero Medevac', v => v >= 3 ? '<b>' + v + '</b>: el movimiento se cancela' : '<b>' + v + '</b>: se mueve con normalidad (necesita 3-6)');
+      if (dr >= 3) { LOG('Maniobra de distracción: los Zeds de ' + spaceLabel(from) + ' no se mueven.', 'good'); return { moved: false }; }
+      LOG('La maniobra de distracción falla.', 'bad');
+    }
+  }
   // capacidad
   const spreaders = movers.filter(z => z.type === 'spreader'), norm = movers.filter(z => z.type !== 'spreader').sort((a, b) => strength(b) - strength(a));
   const room = zedCap(dest) - normalZedsAt(dest).length;
@@ -265,7 +276,7 @@ function jonesDests() {
   const j = alive('jones'); if (!j || !j.space || !canAct(j)) return [];
   const hosp = ['LAB', 'H1', 'H2', 'H3', 'H4', 'O1', 'O2'];
   const ids = hosp.includes(j.space) ? Object.keys(G.spaces) : ['LAB', 'O1', 'O2'];
-  return ids.filter(id => G.spaces[id] && id !== j.space && !isInit(id) && sp(id).kind !== 'crypt' && unitsAt(id).length === 0 && playerRoom(id, j));
+  return ids.filter(id => G.spaces[id] && id !== 'AIR' && id !== j.space && !isInit(id) && sp(id).kind !== 'crypt' && unitsAt(id).length === 0 && playerRoom(id, j));
 }
 async function phase4R() {
   if (!G.lv.fourR) return;

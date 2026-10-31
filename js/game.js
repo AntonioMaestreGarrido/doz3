@@ -24,6 +24,7 @@ async function heroEnters(u) {
   if (u.key === 'horacio' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 3); LOG('Horacio trae 3 Suministros.', 'good'); }
   if (u.key === 'frank') { G.supplies = Math.min(20, G.supplies + (G.lv.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 4); LOG('Frank aporta 4 de Munición' + (G.lv.supplies ? ' y 2 Suministros' : '') + '.', 'good'); }
   if (u.key === 'salvacion' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 2); }
+  if (u.key === 'heli' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 3); LOG('El Helicóptero Medevac trae 3 Suministros de combustible.', 'good'); }
   if (u.key === 'clarin') { const k = pickCivh(); if (k) await spawnHero(k, 'C'); }
   UI.updateStats();
 }
@@ -114,7 +115,7 @@ function newGame(levelIdx, lenIdx, personal) {
     plist.forEach((p, i) => { const u = inits.find(x => x.key === p.hero && x.owner == null); if (u) u.owner = i; });
     plist.forEach((p, i) => { if (!inits.some(x => x.owner === i)) { const u = inits.find(x => x.owner == null); if (u) u.owner = i; } });
   }
-  const ch = makeHero(civhKey, 'C'); if (civhKey === 'salvacion' && L.supplies) G.supplies += 2;
+  const ch = makeHero(civhKey, 'C'); if (civhKey === 'salvacion' && L.supplies) G.supplies += 2; if (civhKey === 'heli' && L.supplies) G.supplies += 3;
   /* Mensajero del Clarín: «al entrar en juego trae otra Civil Heroica» (también si sale en la preparación). */
   if (civhKey === 'clarin') { const k2 = pickCivh(); if (k2) makeHero(k2, 'C'); }
   if (L.tunnel) { makeSpecial('diamante', 'T8'); makeSpecial('diamante', 'T6'); }
