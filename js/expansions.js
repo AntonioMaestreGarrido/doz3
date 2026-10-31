@@ -27,9 +27,11 @@ Object.assign(HEROES, {
   samcarter: { name: 'Dra. Samantha Carter', type: 'hero', cls: 'Científica', full: 3, red: 2, mp: 4, img: 'samcarter', lv: 3, exp: 4,
     txt: ['<b>Científica:</b> puede entrar en el Laboratorio, donde puede Investigar.', '<b>Teoría del campo unificado:</b> +1 a la tirada de Investigar (máx. 6). Una vez por partida, repite una tirada de Investigación fallida (la segunda es definitiva).', '<b>Oficial de la USAF:</b> 1 columna a favor al disparar.', '<b>En el último segundo:</b> una vez por partida, cuando la Infección vaya a subir 2 o más (o a llegar a 13), cancela hasta 3 de esa subida.'] },
   macgyver: { name: 'Angus MacGyver', type: 'hero', cls: 'Ciudadano', full: 3, red: 2, mp: 4, img: 'macgyver', lv: 2, exp: 4, nofire: 1, sci: 1,
-    txt: ['<b>Pacifista:</b> no dispara con armas de fuego.', '<b>Ingeniero:</b> puede entrar en el Laboratorio, donde puede Investigar. Si la tirada falla por 1, puede gastar 1 Suministro para sumarle +1.', '<b>Con lo que hay:</b> Acción de Personaje (1 vez por turno): convierte 1 Suministro en 2 Munición.', '<b>Cinta americana:</b> construye Barricadas por 1 Suministro.', '<b>Siempre hay otra salida:</b> al ser atacado por Zeds en una ruta, tira 1 dado: con 4-6 se retira gratis 1 espacio hacia el Centro antes del combate.'] }
+    txt: ['<b>Pacifista:</b> no dispara con armas de fuego.', '<b>Ingeniero:</b> puede entrar en el Laboratorio, donde puede Investigar. Si la tirada falla por 1, puede gastar 1 Suministro para sumarle +1.', '<b>Con lo que hay:</b> Acción de Personaje (1 vez por turno): convierte 1 Suministro en 2 Munición.', '<b>Cinta americana:</b> construye Barricadas por 1 Suministro.', '<b>Siempre hay otra salida:</b> al ser atacado por Zeds en una ruta, tira 1 dado: con 4-6 se retira gratis 1 espacio hacia el Centro antes del combate.'] },
+  sar: { name: 'Búsqueda y Rescate (SAR)', type: 'civh', cls: 'Civiles Heroicos', full: 3, red: 2, mp: 3, img: 'sar', card: 'h_sar', lv: 2, exp: 4, hf: 2, hr: 2,
+    txt: ['<b>Despejar:</b> Acción de Personaje (1 Acción), una vez por turno: quita 2 fichas de Caos de su espacio sin subir la Infección. Solo si no hay Zeds en el espacio.', '<b>Escudo humano:</b> 1 columna a favor en combates Cuerpo a Cuerpo y al disparar mientras haya Refugiados o Aldeanos en su espacio.'] }
 });
-CIVH_POOL.push('jaque');
+CIVH_POOL.push('jaque', 'sar');
 const EXP_HEROES = { 1: ['carter', 'lee', 'may'], 2: ['betty'], 4: ['porter', 'alia', 'bender', 'ash', 'frank', 'doc', 'samcarter', 'macgyver'] };
 /* Cartas nuevas de Evento y Destino */
 function evx(id, name, act, r4, inf, al, z, acc, txt, o) { EV[id] = Object.assign({ id, name, lvl: 'b', act, r4, inf, al, z, acc, txt, sp: 0, exp: 1 }, o || {}); }

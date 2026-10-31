@@ -103,6 +103,8 @@ function zedLabel(z) { return z.name + ' (fuerza ' + strength(z) + ')' + (z.hits
 const normalZedsAt = id => zedsAt(id).filter(u => u.type !== 'spreader');
 const plAt = id => unitsAt(id).filter(isFighter);
 const softAt = id => unitsAt(id).filter(isSoft);
+/* SAR: Refugiados o Aldeanos en su espacio. */
+const escudoHumano = u => !!u && u.key === 'sar' && !!u.space && unitsAt(u.space).some(x => x.type === 'refugee' || x.type === 'aldeano');
 const raidAt = id => unitsAt(id).filter(u => u.side === 'raid');
 function routeUnits(r, pred) { let a = []; for (let i = 0; i <= lastOf(r); i++) a = a.concat(unitsAt(r + i).filter(pred || (() => true))); return a; }
 const routeZeds = r => routeUnits(r, isZedSide);
@@ -442,6 +444,7 @@ function humanShifts(f, o) { // o: { attacking, space }
   const s = [];
   if (f.key === 'schmidt') s.push({ label: 'Boy Scout (Schmidt)', v: 1 });
   if (f.key === 'porter' && !o.attacking) s.push({ label: 'Artes marciales (Porter)', v: 1 });
+  if (escudoHumano(f)) s.push({ label: 'Escudo humano (SAR)', v: 1 });
   if (f.key === 'alia' && !o.attacking) s.push({ label: 'Parada perfecta (Alia)', v: 1 });
   if (abstinent(f)) s.push({ label: 'Abstinencia Robótica (Bender)', v: -1 });
   if (f.key === 'ash') s.push({ label: 'Groovy (Ash)', v: 1 });
@@ -860,6 +863,7 @@ async function doFire(u, targetId, dist, opts) {
   if (G.turn.combineFire && !opts.str) { const mates = unitsAt(u.space).filter(x => x !== u && isFighter(x) && !x.nofire && fireRange(x) >= dist); if (mates.length) { str += mates.reduce((a, x) => a + fireStrength(x, dist), 0); LOG('Plan de guerra negro: ' + mates.map(x => x.name).join(', ') + ' suman su Fuerza (' + str + ').', 'good'); } }
   if (u.armed) shifts.push({ label: 'Bien Armados', v: 1 }); if (u.leader) shifts.push({ label: 'Líder Civil', v: 1 });
   if (u.key === 'wright') shifts.push({ label: 'Equipo de apoyo', v: 1 });
+  if (escudoHumano(u)) shifts.push({ label: 'Escudo humano (SAR)', v: 1 });
   if (abstinent(u)) shifts.push({ label: 'Abstinencia Robótica (Bender)', v: -1 });
   if (u.key === 'may') shifts.push({ label: 'Pistolera de primera (May)', v: 1 });
   if (u.key === 'samcarter') shifts.push({ label: 'Oficial de la USAF (Carter)', v: 1 });

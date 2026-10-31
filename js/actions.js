@@ -187,6 +187,8 @@ function unitActions(u) {
   /* Visiones de Wilson: en cualquier momento, sin gastar Acción. */
   if (u.key === 'wilson' && u.space) A.push({ id: 'visions', label: '🔮 Visiones: mirar la carta superior de Destino', ok: true });
   if (u.key === 'bender' && u.space === 'C' && !u.ecg) A.push({ id: 'bcure', label: 'Reparar en el Centro (1 Sum., 1 vez por turno)', ok: curable(u) && G.supplies >= 1 });
+  /* El SAR es la excepción a «con Caos no se actúa»: su Acción de Personaje es justo para quitarlo. */
+  if (u.key === 'sar' && !u.locked && !u.ecg) A.push({ id: 'despejar', label: 'Despejar (−2 Caos, sin Infección)', ok: !G.charUsed.despejar && pay(1) && despejarOk(u) });
   if (act && !isSoft(u)) {
     const cu = k => !G.charUsed[k];
     if (u.key === 'schmidt') A.push({ id: 'ini', label: 'Iniciativa', ok: cu('ini') });
@@ -217,7 +219,9 @@ function unitActions(u) {
 function canBuildBar(u) { const r = sp(u.space).route; for (let i = 0; i <= lastOf(r); i++) if (sp(r + i).bar) return false; return true; }
 
 /* Civiles (normales o heroicos) en el espacio de Porter o adyacente: a quienes puede dar 1 acción gratis (Jefe de equipo). */
-const jefeTargets = u => allUnits(x => (x.type === 'civ' || x.type === 'civh') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)));
+/* SAR: hay Caos en su espacio, ninguna unidad Zed y no está en coma. */
+const despejarOk = u => !!(u.space && G.spaces[u.space] && G.lv.fourR && sp(u.space).chaos > 0 && !zedsAt(u.space).length && !u.ecg);
+const jefeTargets =u => allUnits(x => (x.type === 'civ' || x.type === 'civh') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)));
 /* Alia, «Ya no es hora de estar en la calle»: Civiles (normales o heroicos) o Refugiados en su espacio o adyacente que puedan avanzar hacia el Centro. */
 const calleDests = x => {
   if (!x.space || x.ecg || !sp(x.space).route || x.space === 'C') return [];
@@ -247,6 +251,12 @@ async function runAction(u, id) {
     case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
     case 'calle': { const c = calleTargets(u); if (!c.length) { LOG('No hay Civiles que puedan avanzar.'); break; } const v = c.length === 1 ? c[0].id : await UI.pickUnit(c, 'Elige la unidad que avanza hacia el Centro.', true); if (v == null) break; const x = G.units[v], ds = calleDests(x); const d = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Alia: elige el destino de ' + x.name + ' (hasta 2 espacios hacia el Centro).', true); if (d == null) break; G.charUsed.calle = true; if (x.resist) { x.resist = false; LOG(x.name + ' deja de estar Resistiendo.'); } LOG('Alia manda a ' + x.name + ' hacia el Centro.', 'good'); await doMove(x, d, [x.space, d]); break; }
+    case 'despejar': {
+      const s = sp(u.space), n = Math.min(2, s.chaos);
+      if (!despejarOk(u)) { LOG('No se puede Despejar aquí.'); break; }
+      spendActions(u, 1); G.charUsed.despejar = true; s.chaos -= n; G.chaosLeft += n;
+      LOG('Despejar: ' + u.name + ' quita ' + n + ' de Caos en ' + spaceLabel(s.id) + ' (sin Infección).', 'good'); UI.pulseSpace(s.id, '#7bd45a'); UI.toast('Despejado: −' + n + ' Caos en ' + spaceLabel(s.id), '#7bd45a', 1600); UI.redraw(); break;
+    }
     case 'jefe': { const c = jefeTargets(u); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Jefe de equipo: elige la unidad de Civiles que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.jefe = true; G.units[v].free++; LOG('Jefe de equipo: ' + G.units[v].name + ' recibe 1 acción gratis.', 'good'); break; }
     case 'lid': { const c = allUnits(x => (x.type === 'civ' || x.type === 'civh' || x.type === 'marine') && x.key !== 'horacio' && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Liderazgo: elige la unidad que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.lid = true; G.units[v].free++; break; }
     case 'cit': { const sh = unitsAt('C').filter(x => isFighter(x) && x.side === 'pl' && x.id !== u.id && Object.keys(fireTargets(x)).length && !x.nofire); if (!sh.length) { LOG('Ciudadela: ningún tirador del Centro tiene objetivos.'); break; } let s = sh[0]; if (sh.length > 1) { const sv = await UI.pickUnit(sh, 'Ciudadela: elige quién dispara.', true); if (sv == null) break; s = G.units[sv]; } UI.mode = { type: 'fire', unit: s, opts: fireTargets(s), free: true }; UI.setBanner('Ciudadela: elige el objetivo'); UI.redraw(); break; }

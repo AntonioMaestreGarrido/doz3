@@ -1,7 +1,7 @@
 /* Service worker: permite instalar la web como app y jugar sin conexión.
    Código (html/js/css): red primero, con copia local de reserva. Imágenes y audio: caché primero. */
 'use strict';
-const CACHE = 'doz3-v39';
+const CACHE = 'doz3-v40';
 const SHELL = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'assets/portada.jpg', 'assets/fondo_nueva.webp', 'assets/fondo_ranking.webp',
   'js/version.js', 'js/data.js', 'js/events.js', 'js/dest.js', 'js/evlog.js', 'js/preview.js', 'js/obituario.js', 'js/engine.js', 'js/game.js', 'js/phases.js', 'js/actions.js', 'js/cardtext.js', 'js/ui.js', 'js/anim.js',
   'js/expansions.js', 'js/expansions2.js', 'js/sfx.js', 'js/sound.js', 'js/opciones.js', 'js/voz.js', 'js/ost.js', 'assets/sonidos/letras/letras.js', 'assets/sonidos/efectos/sfx_disparo.mp3', 'assets/sonidos/efectos/sfx_disparo_largo.mp3', 'js/mapzoom.js', 'js/seedcode.js', 'js/save.js', 'js/main.js', 'js/bot.js'];
@@ -19,7 +19,7 @@ const PRECACHE = [
   'assets/tokens/marcadores/bastion.webp', 'assets/tokens/marcadores/caos.webp', 'assets/tokens/marcadores/ecg.webp', 'assets/tokens/marcadores/mina_4.webp',
   'assets/tokens/marcadores/mina_7.webp', 'assets/tokens/marcadores/puente.webp', 'assets/tokens/marines.webp', 'assets/tokens/may.webp',
   'assets/tokens/noelle.webp', 'assets/tokens/pepinillos.webp', 'assets/tokens/petra.webp', 'assets/tokens/petra_full.webp',
-  'assets/tokens/petra_red.webp', 'assets/tokens/piazza.webp', 'assets/tokens/porter.webp', 'assets/tokens/porter_r.webp',
+  'assets/tokens/petra_red.webp', 'assets/tokens/piazza.webp', 'assets/tokens/porter.webp', 'assets/tokens/porter_r.webp', 'assets/tokens/sar.webp', 'assets/tokens/sar_r.webp',
   'assets/tokens/refugiados.webp', 'assets/tokens/rumores/ayuda.webp', 'assets/tokens/rumores/base.webp', 'assets/tokens/rumores/cementerio.webp',
   'assets/tokens/rumores/cristal.webp', 'assets/tokens/rumores/deposito.webp', 'assets/tokens/rumores/diario.webp', 'assets/tokens/rumores/ferreteria.webp',
   'assets/tokens/rumores/medallon.webp', 'assets/tokens/rumores/muerte.webp', 'assets/tokens/rumores/plan.webp', 'assets/tokens/rumores/registro.webp',
