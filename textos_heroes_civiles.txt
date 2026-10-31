@@ -117,6 +117,16 @@ General Lee (Equino)
   4. Instinto equino: no puede entrar voluntariamente en un espacio con Caos ni en el Túnel con jinete. Puede llevar a un herido al Hospital («Galope al Hospital»).
   5. Un caballo es un caballo: no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.
 
+Helicóptero Medevac (Aeronave)
+  1. Combustible de reserva: al entrar en juego obtienes 3 Suministros.
+  2. Vuelo: Acción de Personaje (1 Suministro), una vez por turno: el helicóptero y un Héroe de su espacio vuelan a cualquier espacio de superficie sin Zeds que no sea Inicial. No pueden llevar a Pepinillos, Horacio, el General Lee ni Carter.
+  3. Patrulla: al inicio de cada turno, tras revelar el Evento, si está en el aire paga 1 Suministro y elige una ruta para patrullar, o aterriza gratis. Mira la siguiente carta de Evento. En esa ruta, todo el turno: Maniobra de distracción (reacción, una vez por turno: antes de que una unidad o Horda Zed se mueva, tira 1 dado; con 3-6 no se mueve, y si falla no puede reintentarlo) y los Zeds tienen 1 columna en contra en todos los combates.
+  4. Despegue de emergencia: cuando una unidad Zed entra en su espacio, tira 1 dado antes del combate: 1 combate normal y no despega; 2 combate normal y, si sigue vivo, despega; 3-6 despega sin combate. Al despegar paga 1 Suministro, puede llevarse al Héroe de su espacio y patrulla esa ruta el resto del turno.
+  5. En el aire: ni el helicóptero ni su Héroe pueden ser atacados ni realizar Acciones.
+  6. Aterrizaje: gratis en cualquier momento de la fase de Acciones, en un espacio de superficie sin Zeds que no sea Inicial. Puede dejar al Héroe en una Cama libre del Hospital (sin ECG ni Infección); si aterriza en un espacio, el Héroe recibe 1 Acción gratis.
+  7. Mantenimiento: recibe 2 Impactos por cara. Las unidades médicas no pueden repararlo de forma habitual: si cae al Hospital, una Curación le retira el ECG; después solo se repara en el Centro, pagando 1 Suministro, una vez por turno.
+  8. No dispara.
+
 ==== CIVILES HEROICOS ====
 
 Horacio (chimpancé) (Primate)
@@ -169,13 +179,3 @@ Club de Caza de Farmingdale (Civiles Heroicos)
   2. Trofeo: cuando su disparo elimina a una unidad Zed, recuperan 1 Munición.
   3. Presa marcada: Acción de Personaje (1 Acción), una vez por turno: marcan una unidad Zed a su alcance. Los disparos de cualquier unidad de jugador contra ella tienen 1 columna a favor hasta que sea eliminada o termine el turno.
   4. A campo abierto: tienen 1 columna en contra en combates Cuerpo a Cuerpo.
-
-Helicóptero Medevac (Civiles Heroicos)
-  1. Combustible de reserva: al entrar en juego obtienes 3 Suministros.
-  2. Vuelo: Acción de Personaje (1 Suministro), una vez por turno: el helicóptero y un Héroe de su espacio vuelan a cualquier espacio de superficie sin Zeds que no sea Inicial. No pueden llevar a Pepinillos, Horacio, el General Lee ni Carter.
-  3. Patrulla: al inicio de cada turno, tras revelar el Evento, si está en el aire paga 1 Suministro y elige una ruta para patrullar, o aterriza gratis. Mira la siguiente carta de Evento. En esa ruta, todo el turno: Maniobra de distracción (reacción, una vez por turno: antes de que una unidad o Horda Zed se mueva, tira 1 dado; con 3-6 no se mueve, y si falla no puede reintentarlo) y los Zeds tienen 1 columna en contra en todos los combates.
-  4. Despegue de emergencia: cuando una unidad Zed entra en su espacio, tira 1 dado antes del combate: 1 combate normal y no despega; 2 combate normal y, si sigue vivo, despega; 3-6 despega sin combate. Al despegar paga 1 Suministro, puede llevarse al Héroe de su espacio y patrulla esa ruta el resto del turno.
-  5. En el aire: ni el helicóptero ni su Héroe pueden ser atacados ni realizar Acciones.
-  6. Aterrizaje: gratis en cualquier momento de la fase de Acciones, en un espacio de superficie sin Zeds que no sea Inicial. Puede dejar al Héroe en una Cama libre del Hospital (sin ECG ni Infección); si aterriza en un espacio, el Héroe recibe 1 Acción gratis.
-  7. Mantenimiento: recibe 2 Impactos por cara. Las unidades médicas no pueden repararlo de forma habitual: si cae al Hospital, una Curación le retira el ECG; después solo se repara en el Centro, pagando 1 Suministro, una vez por turno.
-  8. No dispara.

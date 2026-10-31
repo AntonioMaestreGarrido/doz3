@@ -11,12 +11,12 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const ART = 'data:image/jpeg;base64,' + readFileSync(ROOT + '/tools/heli/heli_arte.jpg').toString('base64');
 const NARANJA = ['#2f5d9a', '#1f3f6e'];
 const SERIF = "'Liberation Serif','DejaVu Serif',Georgia,serif", SANS = "'Liberation Sans','DejaVu Sans',Arial,sans-serif";
-const ICONO = '<svg viewBox="0 0 106 66" width="106" height="66"><g fill="#141414"><circle cx="20" cy="18" r="12"/><path d="M0 62c0-18 8-28 20-28s20 10 20 28z"/><circle cx="86" cy="18" r="12"/><path d="M66 62c0-18 8-28 20-28s20 10 20 28z"/><circle cx="53" cy="22" r="15"/><path d="M28 66c0-22 11-34 25-34s25 12 25 34z"/></g></svg>';
+const ICONO = '<svg viewBox="0 0 106 66" width="106" height="66"><g fill="#141414"><rect x="10" y="6" width="86" height="5" rx="2.5"/><rect x="50" y="10" width="5" height="9"/><ellipse cx="50" cy="34" rx="30" ry="15"/><rect x="74" y="30" width="30" height="5" rx="2"/><rect x="96" y="20" width="5" height="18" rx="2"/><rect x="22" y="53" width="56" height="4" rx="2"/><rect x="34" y="46" width="4" height="9"/><rect x="62" y="46" width="4" height="9"/></g></svg>';
 
 const CSS = `*{box-sizing:border-box;margin:0}body{background:transparent}
 .card{position:relative;width:620px;overflow:hidden;border-radius:26px;border:5px solid #cdb26a;background:#120b07;font-family:${SANS};color:#fff}
 .card::after{content:"";position:absolute;inset:6px;border:2px solid rgba(205,178,106,.55);border-radius:20px;pointer-events:none}
-.head{position:absolute;left:0;right:0;top:0;height:100px;background:linear-gradient(180deg,${NARANJA[0]},${NARANJA[1]} 85%,rgba(168,68,12,.0));display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 50px;z-index:3}
+.head{position:absolute;left:0;right:0;top:0;height:100px;background:rgba(62,98,140,.9);display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 50px;z-index:3}
 .head h1{font:700 33px/1.1 ${SERIF};text-shadow:0 2px 3px #000;text-align:right;max-width:370px}
 .pan{position:absolute;left:18px;right:18px;bottom:18px;border:2px solid #cdb26a;border-radius:20px;background:rgba(14,9,6,.86);padding:18px 22px;z-index:3}
 .pan.front .hab{padding:6px 2px}.pan.front .hab p{font-size:18px;line-height:1.36}.pan.front .hab b{font-size:19px;margin-bottom:2px}.pan h2{font:700 31px ${SERIF};color:#f0d58f;border-bottom:1px solid #d9c9a0;padding-bottom:6px;margin-bottom:6px;text-shadow:0 1px 2px #000}
@@ -31,7 +31,7 @@ const frente = () => `<style>${CSS}
 .pan.front{padding:12px 20px}.pan.front .hab{padding:5px 2px}.pan.front h2{font-size:26px;margin-bottom:2px;padding-bottom:3px}.pan.front .hab{padding:5px 2px}.pan.front .hab b{font-size:17.5px;margin-bottom:1px}.pan.front .hab p{font-size:15.8px;line-height:1.27}</style>
 <div class="card"><div class="art"></div><div class="shade"></div>
 <div class="head"><div>${ICONO}</div><h1>Helicóptero Medevac</h1></div>
-<div class="cls">Civiles Heroicos</div><div class="fz">2/1</div><div class="mv">3</div>
+<div class="cls">Aeronave</div><div class="fz">2/1</div><div class="mv">3</div>
 <div class="pan front" style="top:372px"><h2>Habilidades</h2>
 <div class="hab"><b>Combustible de reserva</b><p>Al entrar en juego, 3 Suministros. No dispara.</p></div>
 <div class="hab"><b>Vuelo</b><p>Acción de Personaje (1 Suministro), una vez por turno: vuela con un Héroe a un espacio de superficie sin Zeds que no sea Inicial.</p></div>
@@ -51,10 +51,10 @@ const trasera = () => `<style>${CSS}
 <p class="cita">«Si oyes las aspas, aguanta un minuto más.»</p></div></div>`;
 
 const ficha = red => `<style>*{box-sizing:border-box;margin:0}body{background:transparent;font-family:${SANS}}
-.t{position:relative;width:400px;height:230px;border-radius:22px;overflow:hidden;border:5px solid ${red ? '#b3261e' : '#d9b94f'};background:url(${ART}) 36% 0/auto 230px no-repeat,#120b07}
-.tag{position:absolute;left:12px;top:10px;padding:5px 16px;border-radius:14px;font:700 21px ${SANS};color:#fff;background:${red ? 'rgba(179,38,30,.92)' : 'rgba(130,100,20,.92)'};border:3px solid ${red ? '#e8e0d0' : '#f2e3a8'}}
-.mv{position:absolute;left:8px;bottom:12px;width:136px;height:50px;background:linear-gradient(90deg,rgba(38,86,168,.7),rgba(38,86,168,.5));clip-path:polygon(0 0,calc(100% - 28px) 0,100% 50%,calc(100% - 28px) 100%,0 100%);font:700 34px/50px ${SANS};color:#fff;padding-left:38px;text-shadow:0 2px 3px #000}
-.fz{position:absolute;right:12px;bottom:12px;width:74px;height:62px;border-radius:14px;background:rgba(20,12,8,.92);border:4px solid ${red ? '#b3261e' : '#d9b94f'};color:#f4ecdc;font:700 50px/54px ${SANS};padding-left:12px}
+.t{position:relative;width:220px;height:400px;border-radius:22px;overflow:hidden;border:5px solid ${red ? '#b3261e' : '#d9b94f'};background:url(${ART}) 37% 0/auto 400px no-repeat,#120b07}
+.tag{position:absolute;left:12px;top:12px;padding:5px 14px;border-radius:12px;font:700 19px ${SANS};color:#fff;background:${red ? 'rgba(179,38,30,.92)' : 'rgba(130,100,20,.92)'};border:3px solid ${red ? '#e8e0d0' : '#f2e3a8'}}
+.mv{position:absolute;left:8px;bottom:14px;width:112px;height:46px;background:linear-gradient(90deg,rgba(38,86,168,.7),rgba(38,86,168,.5));clip-path:polygon(0 0,calc(100% - 22px) 0,100% 50%,calc(100% - 22px) 100%,0 100%);font:700 32px/46px ${SANS};color:#fff;padding-left:30px;text-shadow:0 2px 3px #000}
+.fz{position:absolute;right:10px;bottom:12px;width:74px;height:62px;border-radius:14px;background:rgba(20,12,8,.92);border:4px solid ${red ? '#b3261e' : '#d9b94f'};color:#f4ecdc;font:700 50px/54px ${SANS};padding-left:12px}
 .fz small{font-size:18px;color:#b9b2a4;position:absolute;right:8px;bottom:5px;line-height:1}</style>
 <div class="t"><div class="tag">${red ? 'REDUCIDO' : 'COMPLETO'}</div><div class="mv">3</div><div class="fz">${red ? '1' : '2'}<small>/${red ? '2' : '1'}</small></div></div>`;
 
@@ -72,7 +72,7 @@ const b = await chromium.launch();
 mkdirSync(ROOT + '/assets/arte_alt/cartas', { recursive: true });
 const tareas = [
   [frente(), 620, 968, 'assets/arte_alt/cartas/h_heli.webp'], [trasera(), 620, 939, 'assets/arte_alt/cartas/hb_heli.webp'],
-  [ficha(false), 400, 230, 'assets/arte_alt/tokens/heli.webp'], [ficha(true), 400, 230, 'assets/arte_alt/tokens/heli_r.webp'],
+  [ficha(false), 220, 400, 'assets/arte_alt/tokens/heli.webp'], [ficha(true), 220, 400, 'assets/arte_alt/tokens/heli_r.webp'],
 ];
 for (const [html, w, h, dest] of tareas) {
   const png = await salida(b, html, w, h, ROOT + '/' + dest);

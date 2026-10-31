@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 15:30
+
+### Cambios
+- **Helicóptero Medevac es un Héroe** (clase «Aeronave», nivel 2, expansión 4), no un Civil Heroico: entra en el sorteo de Héroes y no en el de Civiles Heroicos. Doc y el General Lee no pueden llevarlo, ni puede subir a un tren. Su ficha pasa a ser vertical y la carta usa el estilo de los Héroes-vehículo, con icono de helicóptero.
+
 ## 2026-10-31 15:00
 
 ### Cambios

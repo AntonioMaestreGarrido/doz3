@@ -130,7 +130,7 @@ function trapSpaces(u) {
   return [u.space].concat(adjacentIds(u.space)).filter((id, k, a) => a.indexOf(id) === k && sp(id) && isRouteSp(id) && !isInit(id) && sp(id).kind !== 'crypt' && !blocked(id) && !zedsAt(id).length && !hasTrap(sp(id).route));
 }
 /* Salto temporal (Doc Brown): solo desde el Centro, 3 Suministros, a un espacio de ruta de superficie sin Zeds que no sea Inicial. Un acompañante (Héroe o Civiles Heroicos que puedan usar vehículos) puede quedarse allí. */
-const DOC_NO_RIDE = ['pepinillos', 'horacio', 'lee', 'carter'];
+const DOC_NO_RIDE = ['pepinillos', 'horacio', 'lee', 'carter', 'heli'];
 function docCompanions(u) { return unitsAt('C').filter(x => x !== u && (x.type === 'hero' || x.type === 'civh') && !DOC_NO_RIDE.includes(x.key) && !x.ecg && !x.mount && !x.rider && !x.resist && !isPetra(x)); }
 function docJumpSpaces(u, comp) {
   const here = id => unitsAt(id).filter(x => (isFighter(x) || x.side === 'raid') && !x.mount && x.type !== 'train').length;

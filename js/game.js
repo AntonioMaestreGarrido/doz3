@@ -108,14 +108,14 @@ function newGame(levelIdx, lenIdx, personal) {
   const civhKey = L.n === 0 ? 'furias' : (() => { const p = CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[L.n]); return p[rnd(p.length)]; })();
   // recursos
   if (L.n === 0) { G.ammo = 4; G.supplies = 0; } else { const a = d6(), b = d6(); G.supplies = a + b; G.ammo = 6 - Math.min(a, b); G.setupRoll = [a, b]; }
-  for (const k of keys) { const u = makeHero(k, 'C'); if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); } if (u.key === 'horacio' && L.supplies) G.supplies += 3; if (u.key === 'frank') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 4); } }
+  for (const k of keys) { const u = makeHero(k, 'C'); if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); } if (u.key === 'horacio' && L.supplies) G.supplies += 3; if (u.key === 'heli' && L.supplies) G.supplies = Math.min(20, G.supplies + 3); if (u.key === 'frank') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 4); } }
   /* Héroe Personal de cada jugador: el que eligió; si no eligió (o es el Juego Básico) se le da uno de los iniciales aún sin dueño. */
   if (nPlayers() > 1) {
     const inits = Object.values(G.units).filter(u => u.type === 'hero' && keys.includes(u.key));
     plist.forEach((p, i) => { const u = inits.find(x => x.key === p.hero && x.owner == null); if (u) u.owner = i; });
     plist.forEach((p, i) => { if (!inits.some(x => x.owner === i)) { const u = inits.find(x => x.owner == null); if (u) u.owner = i; } });
   }
-  const ch = makeHero(civhKey, 'C'); if (civhKey === 'salvacion' && L.supplies) G.supplies += 2; if (civhKey === 'heli' && L.supplies) G.supplies += 3;
+  const ch = makeHero(civhKey, 'C'); if (civhKey === 'salvacion' && L.supplies) G.supplies += 2;
   /* Mensajero del Clarín: «al entrar en juego trae otra Civil Heroica» (también si sale en la preparación). */
   if (civhKey === 'clarin') { const k2 = pickCivh(); if (k2) makeHero(k2, 'C'); }
   if (L.tunnel) { makeSpecial('diamante', 'T8'); makeSpecial('diamante', 'T6'); }
