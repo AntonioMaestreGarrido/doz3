@@ -188,7 +188,7 @@ function unitActions(u) {
   if (u.key === 'wilson' && u.space) A.push({ id: 'visions', label: '🔮 Visiones: mirar la carta superior de Destino', ok: true });
   if (u.key === 'bender' && u.space === 'C' && !u.ecg) A.push({ id: 'bcure', label: 'Reparar en el Centro (1 Sum., 1 vez por turno)', ok: curable(u) && G.supplies >= 1 });
   /* El SAR es la excepción a «con Caos no se actúa»: su Acción de Personaje es justo para quitarlo. */
-  if (u.key === 'sar' && !u.locked && !u.ecg) A.push({ id: 'despejar', label: 'Despejar (−2 Caos, sin Infección)', ok: !G.charUsed.despejar && pay(1) && despejarOk(u) });
+  if (u.key === 'sar' && !u.locked && !u.ecg) A.push({ id: 'despejar', label: 'Despejar (−2 Caos en el Mantenimiento)', ok: !G.charUsed.despejar && pay(1) && despejarOk(u) });
   if (act && !isSoft(u)) {
     const cu = k => !G.charUsed[k];
     if (u.key === 'schmidt') A.push({ id: 'ini', label: 'Iniciativa', ok: cu('ini') });
@@ -252,10 +252,9 @@ async function runAction(u, id) {
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
     case 'calle': { const c = calleTargets(u); if (!c.length) { LOG('No hay Civiles que puedan avanzar.'); break; } const v = c.length === 1 ? c[0].id : await UI.pickUnit(c, 'Elige la unidad que avanza hacia el Centro.', true); if (v == null) break; const x = G.units[v], ds = calleDests(x); const d = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Alia: elige el destino de ' + x.name + ' (hasta 2 espacios hacia el Centro).', true); if (d == null) break; G.charUsed.calle = true; if (x.resist) { x.resist = false; LOG(x.name + ' deja de estar Resistiendo.'); } LOG('Alia manda a ' + x.name + ' hacia el Centro.', 'good'); await doMove(x, d, [x.space, d]); break; }
     case 'despejar': {
-      const s = sp(u.space), n = Math.min(2, s.chaos);
       if (!despejarOk(u)) { LOG('No se puede Despejar aquí.'); break; }
-      spendActions(u, 1); G.charUsed.despejar = true; s.chaos -= n; G.chaosLeft += n;
-      LOG('Despejar: ' + u.name + ' quita ' + n + ' de Caos en ' + spaceLabel(s.id) + ' (sin Infección).', 'good'); UI.pulseSpace(s.id, '#7bd45a'); UI.toast('Despejado: −' + n + ' Caos en ' + spaceLabel(s.id), '#7bd45a', 1600); UI.redraw(); break;
+      spendActions(u, 1); G.charUsed.despejar = true; u.despeja = { t: G.turnNo, sp: u.space };
+      LOG('Despejar: ' + u.name + ' prepara el despeje de ' + spaceLabel(u.space) + ' (−2 Caos en el Mantenimiento, sin Infección).', 'good'); UI.pulseSpace(u.space, '#7bd45a'); UI.redraw(); break;
     }
     case 'jefe': { const c = jefeTargets(u); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Jefe de equipo: elige la unidad de Civiles que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.jefe = true; G.units[v].free++; LOG('Jefe de equipo: ' + G.units[v].name + ' recibe 1 acción gratis.', 'good'); break; }
     case 'lid': { const c = allUnits(x => (x.type === 'civ' || x.type === 'civh' || x.type === 'marine') && x.key !== 'horacio' && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space))); if (!c.length) { LOG('No hay Civiles cerca.'); break; } const v = await UI.pickUnit(c, 'Liderazgo: elige la unidad que recibe 1 acción gratis.', true); if (v == null) break; G.charUsed.lid = true; G.units[v].free++; break; }
@@ -352,9 +351,12 @@ async function maintenance() {
   G.charUsed = {}; G.firstFreeUsed = {};
   if (G.lv.fourR) {
     for (const s of Object.values(G.spaces)) {
+      /* SAR: lo que preparó con Despejar este turno (2 fichas, sin Infección); después sigue la restauración normal del espacio, también sin Infección. */
+      const sar = unitsAt(s.id).some(x => x.key === 'sar' && !x.ecg && x.despeja && x.despeja.t === G.turnNo && x.despeja.sp === s.id);
+      if (sar && s.chaos) { const n = Math.min(2, s.chaos); s.chaos -= n; G.chaosLeft += n; LOG('Despejar: el SAR quita ' + n + ' de Caos en ' + spaceLabel(s.id) + ' (sin Infección).', 'good'); UI.pulseSpace(s.id, '#7bd45a'); UI.toast('Despejado: −' + n + ' Caos en ' + spaceLabel(s.id), '#7bd45a', 1600); }
       if (!s.chaos) continue;
       const rs = unitsAt(s.id).filter(u => (isFighter(u) || u.side === 'raid' || u.type === 'train') && !['pepinillos', 'horacio'].includes(u.key) && !u.ecg && u.type !== 'refugee');
-      const sinInf = rs.some(u => u.key === 'antidist' || u.key === 'doc');
+      const sinInf = sar || rs.some(u => u.key === 'antidist' || u.key === 'doc');
       if (rs.length) { s.chaos--; G.chaosLeft++; LOG('Se restaura el orden en ' + spaceLabel(s.id) + ' (−1 Caos' + (sinInf ? ', sin Infección' : ', +1 Infección') + ').', 'good'); UI.pulseSpace(s.id, '#7bd45a'); UI.toast('Orden restaurado en ' + spaceLabel(s.id) + ': −1 Caos', '#7bd45a', 1600); if (!sinInf) { if (G.weapon && alive('agee')) infDown(2); else await infUp(1); } }
     }
   }

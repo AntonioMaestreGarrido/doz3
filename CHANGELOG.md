@@ -2,10 +2,10 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
-## 2026-10-31 09:45
+## 2026-10-31 10:20
 
 ### Nuevo
-- **Nuevo Civiles Heroicos: Búsqueda y Rescate (SAR)** (expansión 4, nivel 2, Fuerza 3/2, Movimiento 3). **Despejar:** Acción de Personaje (1 Acción, una vez por turno) que quita 2 fichas de Caos de su espacio sin subir la Infección, siempre que no haya Zeds. **Escudo humano:** 1 columna a favor en combates Cuerpo a Cuerpo y al disparar mientras haya Refugiados o Aldeanos en su espacio. Con carta (frente y trasera) y fichas ilustradas; `tools/generar_sar.mjs` las regenera.
+- **Nuevo Civiles Heroicos: Búsqueda y Rescate (SAR)** (expansión 4, nivel 2, Fuerza 3/2, Movimiento 3). **Despejar:** Acción de Personaje (1 Acción, una vez por turno, aunque haya Caos en su espacio): en el Mantenimiento quita 2 fichas de Caos de ese espacio sin subir la Infección, siempre que no haya Zeds. La restauración normal de ese espacio tampoco sube la Infección. **Escudo humano:** 1 columna a favor en combates Cuerpo a Cuerpo y al disparar mientras haya Refugiados o Aldeanos en su espacio. Con carta (frente y trasera) y fichas ilustradas; `tools/generar_sar.mjs` las regenera.
 
 ### Fixes
 - **Registro de partida:** los eventos de Infección guardaban el cambio en el campo `n` y pisaban el número de secuencia del evento; ahora va en `d`. Lo mismo con el barajado del Destino (`cartas`).

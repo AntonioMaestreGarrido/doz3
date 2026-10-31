@@ -32,7 +32,7 @@ const frente = () => `<style>${CSS}
 <div class="head"><div>${ICONO}</div><h1>Búsqueda y Rescate (SAR)</h1></div>
 <div class="cls">Civiles Heroicos</div><div class="fz">3/2</div><div class="mv">3</div>
 <div class="pan" style="top:586px"><h2>Habilidades</h2>
-<div class="hab"><b>Despejar</b><p>Acción de Personaje (1 Acción), una vez por turno: quita 2 fichas de Caos de su espacio sin subir la Infección. Solo si no hay Zeds en el espacio.</p></div>
+<div class="hab"><b>Despejar</b><p>Acción de Personaje (1 Acción), una vez por turno, aunque haya Caos en su espacio: en el Mantenimiento quita 2 fichas de Caos de ese espacio sin subir la Infección. Solo si no hay Zeds.</p></div>
 <div class="hab"><b>Escudo humano</b><p>1 columna a favor en Cuerpo a Cuerpo y al disparar mientras haya Refugiados o Aldeanos en su espacio.</p></div></div></div>`;
 
 const trasera = () => `<style>${CSS}
