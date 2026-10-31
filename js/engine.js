@@ -555,7 +555,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     }
     if (fighter.key === 'alia' && sp(space).route && space !== 'C') {
       const bk = nextToward(space);
-      if (bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter)) {
+      if (bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter) && await UI.choose({ title: 'Evasión (Alia)', text: 'Un Zed entra en el espacio de Alia. ¿Intenta evadirlo? (tira 1 dado: con 4-6 se retira gratis 1 espacio hacia el Centro antes del combate).', options: [{ label: 'Intentar evadirlo', value: 'y' }, { label: 'Combatir', value: 'n' }] }) === 'y') {
         const r = await rollShownFor(fighter, 'Evasión (Alia)', r => r >= 4 ? '<b>' + r + '</b>: se retira 1 espacio hacia el Centro antes del combate' : '<b>' + r + '</b>: no se retira (necesita 4-6)'); LOG('Evasión de Alia: ' + r);
         if (r >= 4) { LOG('Alia se escabulle antes del combate.', 'good'); await retreatAndFight([fighter], 'C'); return await sigue(); }
       }

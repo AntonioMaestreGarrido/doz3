@@ -294,7 +294,7 @@ async function runAction(u, id) {
       }
       const ds = docJumpSpaces(u, comp); if (!ds.length) { LOG('No hay espacio libre para el salto.'); break; }
       const t = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Salto temporal: elige el destino.', true); if (t == null) break;
-      G.charUsed.salto = true; G.supplies -= 3; u.away = true;
+      G.charUsed.salto = true; G.supplies -= 3; u.away = true; u.compId = comp ? comp.id : null;
       putUnit(u, t); if (comp) putUnit(comp, t);
       LOG('¡88 millas por hora! Doc Brown' + (comp ? ' y ' + comp.name : '') + ' saltan a ' + spaceLabel(t) + '. Doc volverá al Centro al final del turno.', 'good');
       UI.updateStats(); UI.redraw(); UI.focus(t); break;
@@ -378,7 +378,17 @@ async function maintenance() {
   if (G.antidote) { infDown(1); LOG('El Antídoto reduce la Infección en 1.', 'good'); }
   if (G.berra) { infDown(1); LOG('Elwood Berra reduce la Infección en 1.', 'good'); }
   /* Salto temporal (Doc): vuelve al Centro tras el Mantenimiento, cuando ya ha restaurado el orden donde estuviera. */
-  for (const d of allUnits(x => x.key === 'doc' && x.away)) { d.away = false; if (d.space && isRouteSp(d.space) && !d.ecg) { putUnit(d, 'C'); LOG('Doc Brown vuelve al Centro de la Ciudad.', 'good'); } }
+  for (const d of allUnits(x => x.key === 'doc' && x.away)) {
+    d.away = false;
+    if (d.space && isRouteSp(d.space) && !d.ecg) {
+      /* Puede traer de vuelta a otra unidad de su espacio (no la que llevó, que se quedó allí a propósito). */
+      const cands = unitsAt(d.space).filter(x => x !== d && x.id !== d.compId && (x.type === 'hero' || x.type === 'civh') && !DOC_NO_RIDE.includes(x.key) && !x.ecg && !x.mount && !x.rider && !x.resist && !isPetra(x));
+      let pas = null; if (cands.length) { const v = await UI.pickUnit(cands, 'Salto temporal: ¿a qué unidad trae Doc de vuelta al Centro? (cancelar = a ninguna)', true); if (v != null) pas = G.units[v]; }
+      putUnit(d, 'C'); if (pas) putUnit(pas, 'C');
+      LOG('Doc Brown vuelve al Centro de la Ciudad' + (pas ? ' con ' + pas.name : '') + '.', 'good');
+    }
+    d.compId = null;
+  }
 }
 
 /* ---------- puntuación ---------- */
