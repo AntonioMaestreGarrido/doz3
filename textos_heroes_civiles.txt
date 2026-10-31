@@ -119,7 +119,7 @@ General Lee (Equino)
 
 Helicóptero Medevac (Aeronave)
   1. Combustible de reserva: al entrar en juego obtienes 3 Suministros.
-  2. Vuelo: Acción de Personaje (1 Suministro), una vez por turno: el helicóptero y un Héroe de su espacio vuelan a cualquier espacio de superficie sin Zeds que no sea Inicial. No pueden llevar a Pepinillos, Horacio, el General Lee ni Carter.
+  2. Vuelo: su Movimiento es *: no usa la Acción de Mover, solo se mueve volando. Acción de Personaje (1 Suministro), una vez por turno: el helicóptero y un Héroe de su espacio vuelan y aterrizan donde quieran: cualquier espacio de superficie sin Zeds que no sea Inicial. No pueden llevar a Pepinillos, Horacio, el General Lee ni Carter.
   3. Patrulla: al inicio de cada turno, tras revelar el Evento, si está en el aire paga 1 Suministro y elige una ruta para patrullar, o aterriza gratis. Mira la siguiente carta de Evento. En esa ruta, todo el turno: Maniobra de distracción (reacción, una vez por turno: antes de que una unidad o Horda Zed se mueva, tira 1 dado; con 3-6 no se mueve, y si falla no puede reintentarlo) y los Zeds tienen 1 columna en contra en todos los combates.
   4. Despegue de emergencia: cuando una unidad Zed entra en su espacio, tira 1 dado antes del combate: 1 combate normal y no despega; 2 combate normal y, si sigue vivo, despega; 3-6 despega sin combate. Al despegar paga 1 Suministro, puede llevarse al Héroe de su espacio y patrulla esa ruta el resto del turno.
   5. En el aire: ni el helicóptero ni su Héroe pueden ser atacados ni realizar Acciones.

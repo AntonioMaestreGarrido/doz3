@@ -34,7 +34,7 @@ function zoomInfo(spec) {
   if (kind === 'k') { const k = RUMORS[key]; if (!k) return null; return { img: 'assets/tokens/rumores/' + key + '.webp', title: k.name, html: '<div class="zk">Ficha de Rumor · ' + ({ C: 'Colocar', G: 'Guardar', U: 'Unir' }[k.t]) + '</div>' + li([k.txt]) }; }
   if (kind === 'h') {
     const h = HEROES[key]; if (!h) return null;
-    return { img: heroImg(key), title: h.name, tok: heroTok(key) ? 1 : 0, civ: h.type === 'civh', html: '<div class="zk">' + h.cls + '</div><div class="zrow">Fuerza <b>' + h.full + '</b> (reducida <b>' + h.red + '</b>) · Movimiento <b>' + h.mp + '</b></div>' + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(key) };
+    return { img: heroImg(key), title: h.name, tok: heroTok(key) ? 1 : 0, civ: h.type === 'civh', html: '<div class="zk">' + h.cls + '</div><div class="zrow">Fuerza <b>' + h.full + '</b> (reducida <b>' + h.red + '</b>) · Movimiento <b>' + (h.mpTxt || h.mp) + '</b></div>' + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(key) };
   }
   if (kind === 'u') {
     const u = G.units[key]; if (!u) return null;
@@ -42,7 +42,7 @@ function zoomInfo(spec) {
     const tags = []; if (u.ecg) tags.push('En coma (ficha de ECG): no puede actuar'); if (u.resist) tags.push('Resistiendo (inmóvil)'); if (u.armed) tags.push('Bien Armados: 1 columna a favor'); if (u.leader) tags.push('Líder Civil: 1 columna a favor'); if (u.trained) tags.push('Entrenados: +2 Fuerza'); if (u.keepCalm) tags.push('«Keep calm»: 2 columnas este turno'); if (freeTotal(u)) tags.push('Acciones gratis: ' + freeLabel(u));
     for (const b of zedBadges(u)) tags.push(b.txt);
     const cur = '<div class="zrow cur">' + state.join('<br>') + '</div>' + (tags.length ? '<div class="zrow">' + tags.map(t => '<span class="pill">' + t + '</span>').join('') + '</div>' : '');
-    if (u.key && HEROES[u.key]) { const h = HEROES[u.key]; return { img: heroImg(u.key, u.flipped), title: h.name, tok: heroTok(u.key) ? 1 : 0, civ: h.type === 'civh', html: '<div class="zk">' + h.cls + ' · Movimiento ' + h.mp + '</div>' + cur + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(u.key) }; }
+    if (u.key && HEROES[u.key]) { const h = HEROES[u.key]; return { img: heroImg(u.key, u.flipped), title: h.name, tok: heroTok(u.key) ? 1 : 0, civ: h.type === 'civh', html: '<div class="zk">' + h.cls + ' · Movimiento ' + (h.mpTxt || h.mp) + '</div>' + cur + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(u.key) }; }
     if (u.type === 'super') { const d = SUPER_ZEDS[u.key]; return { img: superImg(u.key, u.flipped), title: 'Súper Zed: ' + d.name, tok: 1, html: cur + li([d.txt, 'Un Súper Zed eliminado se retira de la partida. Si entra en el Centro, pierdes.']) }; }
     if (u.type === 'spreader') return { img: spreaderAlt(u) ? spreaderImg(u) : 'assets/tokens/zed.webp', title: u.name, tok: 1, html: cur + li(['Propagador de Enfermedad: +1 Infección en cada fase de Infección mientras no esté en un espacio Inicial. No cuenta para el límite de agrupamiento. Al ser eliminado: tirada 1-3 vuelve al Inicial, 4-6 sale de la partida.']) };
     if (u.type === 'zed') return { img: zedTokenImg(u), title: 'Unidad Zed (Fuerza ' + strength(u) + ')', tok: 1, html: cur + li(['Unidad Zed Normal. Con 3 Impactos pasa a su cara reducida; con otros 3 es eliminada.', 'Dos Zeds en el mismo espacio forman una Horda y luchan sumando su Fuerza (máximo 2 por espacio).']) };

@@ -31,10 +31,10 @@ const frente = () => `<style>${CSS}
 .pan.front{padding:12px 20px}.pan.front .hab{padding:5px 2px}.pan.front h2{font-size:26px;margin-bottom:2px;padding-bottom:3px}.pan.front .hab{padding:5px 2px}.pan.front .hab b{font-size:17.5px;margin-bottom:1px}.pan.front .hab p{font-size:15.8px;line-height:1.27}</style>
 <div class="card"><div class="art"></div><div class="shade"></div>
 <div class="head"><div>${ICONO}</div><h1>Helicóptero Medevac</h1></div>
-<div class="cls">Aeronave</div><div class="fz">2/1</div><div class="mv">3</div>
+<div class="cls">Aeronave</div><div class="fz">2/1</div><div class="mv">*</div>
 <div class="pan front" style="top:372px"><h2>Habilidades</h2>
 <div class="hab"><b>Combustible de reserva</b><p>Al entrar en juego, 3 Suministros. No dispara.</p></div>
-<div class="hab"><b>Vuelo</b><p>Acción de Personaje (1 Suministro), una vez por turno: vuela con un Héroe a un espacio de superficie sin Zeds que no sea Inicial.</p></div>
+<div class="hab"><b>Vuelo</b><p>Movimiento *: solo se mueve volando. Acción de Personaje (1 Suministro), una vez por turno: vuela con un Héroe y aterriza donde quiera (superficie sin Zeds que no sea Inicial).</p></div>
 <div class="hab"><b>Patrulla</b><p>Al inicio del turno, si está en el aire, paga 1 Suministro y elige una ruta (o aterriza gratis); mira el siguiente Evento. En esa ruta, todo el turno: <i>Maniobra de distracción</i> (una vez por turno, 3-6 impide un movimiento Zed) y los Zeds tienen 1 columna en contra.</p></div>
 <div class="hab"><b>Despegue de emergencia</b><p>Si un Zed entra en su espacio, 1 dado antes del combate: 1 combate; 2 combate y despega si sobrevive; 3-6 despega sin combate (1 Suministro) y patrulla esa ruta.</p></div>
 <div class="hab"><b>Mantenimiento</b><p>2 Impactos por cara. Una Curación le quita el ECG en el Hospital; después solo se repara en el Centro (1 Suministro, 1 vez por turno).</p></div>
@@ -56,7 +56,7 @@ const ficha = red => `<style>*{box-sizing:border-box;margin:0}body{background:tr
 .mv{position:absolute;left:8px;bottom:14px;width:112px;height:46px;background:linear-gradient(90deg,rgba(38,86,168,.7),rgba(38,86,168,.5));clip-path:polygon(0 0,calc(100% - 22px) 0,100% 50%,calc(100% - 22px) 100%,0 100%);font:700 32px/46px ${SANS};color:#fff;padding-left:30px;text-shadow:0 2px 3px #000}
 .fz{position:absolute;right:10px;bottom:12px;width:74px;height:62px;border-radius:14px;background:rgba(20,12,8,.92);border:4px solid ${red ? '#b3261e' : '#d9b94f'};color:#f4ecdc;font:700 50px/54px ${SANS};padding-left:12px}
 .fz small{font-size:18px;color:#b9b2a4;position:absolute;right:8px;bottom:5px;line-height:1}</style>
-<div class="t"><div class="tag">${red ? 'REDUCIDO' : 'COMPLETO'}</div><div class="mv">3</div><div class="fz">${red ? '1' : '2'}<small>/${red ? '2' : '1'}</small></div></div>`;
+<div class="t"><div class="tag">${red ? 'REDUCIDO' : 'COMPLETO'}</div><div class="mv">*</div><div class="fz">${red ? '1' : '2'}<small>/${red ? '2' : '1'}</small></div></div>`;
 
 const salida = async (browser, html, w, h, destino, omitir = true) => {
   const page = await browser.newPage({ viewport: { width: w + 20, height: h + 20 }, deviceScaleFactor: 1 });

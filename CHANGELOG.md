@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 16:00
+
+### Cambios
+- **Helicóptero Medevac:** su Movimiento es «*» en la carta, las fichas y los paneles: no usa la Acción de Mover y solo se mueve volando (Vuelo), aterrizando donde quiera.
+
 ## 2026-10-31 15:30
 
 ### Cambios

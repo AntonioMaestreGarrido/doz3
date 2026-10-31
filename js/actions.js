@@ -169,7 +169,7 @@ function mayDischargeBonus(u) { const m = alive('may'); if (G.phase === 'actions
 function unitActions(u) {
   const A = []; if (!u || u.side !== 'pl' || G.phase !== 'actions' || G.busy) return A;
   const act = canAct(u), pay = n => canPay(u, n);
-  A.push({ id: 'move', label: 'Mover', ok: act && (canPay(u, 1, 'move') || canMoveFree(u)) && !u.resist && u.type !== 'aldeano' && sp(u.space).kind !== 'camp' });
+  A.push({ id: 'move', label: 'Mover', ok: act && u.key !== 'heli' && (canPay(u, 1, 'move') || canMoveFree(u)) && !u.resist && u.type !== 'aldeano' && sp(u.space).kind !== 'camp' });
   if (!isSoft(u)) {
     const ammoNeed = u.type === 'guard' ? 2 : 1;
     const supCost = u.key === 'jones' || isPetra(u);
