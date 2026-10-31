@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 15:00
+
+### Cambios
+- **Helicóptero Medevac, mantenimiento:** recibe 2 Impactos por cara y se repara como Bender: las unidades médicas no pueden curarlo de forma habitual; si cae al Hospital, una Curación le retira el ECG, y después solo se repara en el Centro, pagando 1 Suministro, una vez por turno. La carta se ha regenerado con esta habilidad.
+
 ## 2026-10-31 14:20
 
 ### Cambios

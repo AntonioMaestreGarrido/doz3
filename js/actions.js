@@ -153,8 +153,8 @@ function canBuild(u) {
 /* Toda Acción de Curar baja la Infección 1 (2 si Agee está en el Hospital) y solo puede hacerse 1 vez por unidad y turno. */
 function cureInf() { const agee = alive('agee'); infDown(agee && agee.space && sp(agee.space).kind === 'office' ? 2 : 1); }
 /* El camión de Carter solo se repara con su propia habilidad: ninguna otra Curación puede usarse en él (salvo quitarle el ECG en el Hospital). */
-/* Bender (Reparación Alcohólica): con ECG solo se cura en el Hospital; sin ECG, solo en el Centro (acción propia, 1 Suministro). */
-const curable = x => injured(x) && x.curedTurn !== G.turnNo && !(x.key === 'carter' && !(x.space && G.spaces[x.space] && sp(x.space).kind === 'bed')) && !(x.key === 'bender' && !x.ecg && x.space !== 'C');
+/* Bender (Reparación Alcohólica) y el Helicóptero Medevac: con ECG solo se curan en el Hospital; sin ECG, solo en el Centro (acción propia, 1 Suministro). */
+const curable = x => injured(x) && x.curedTurn !== G.turnNo && !(x.key === 'carter' && !(x.space && G.spaces[x.space] && sp(x.space).kind === 'bed')) && !(x.key === 'bender' && !x.ecg && x.space !== 'C') && !(x.key === 'heli' && !x.ecg && x.space !== 'C');
 async function doCure(u, free, noInf) {
   if (!free) spendActions(u, 1);
   healUnit(u); u.curedTurn = G.turnNo; if (!noInf) cureInf();
@@ -187,6 +187,7 @@ function unitActions(u) {
   /* Visiones de Wilson: en cualquier momento, sin gastar Acción. */
   if (u.key === 'wilson' && u.space) A.push({ id: 'visions', label: '🔮 Visiones: mirar la carta superior de Destino', ok: true });
   if (u.key === 'bender' && u.space === 'C' && !u.ecg) A.push({ id: 'bcure', label: 'Reparar en el Centro (1 Sum., 1 vez por turno)', ok: curable(u) && G.supplies >= 1 });
+  if (u.key === 'heli' && u.space === 'C' && !u.ecg) A.push({ id: 'bcure', label: 'Reparar en el Centro (1 Sum., 1 vez por turno)', ok: curable(u) && G.supplies >= 1 });
   /* Helicóptero Medevac (exp. 4): en el aire solo puede aterrizar; en tierra, volar. */
   if (u.key === 'heli' && u.space === 'AIR') A.push({ id: 'aterrizar', label: 'Aterrizar (gratis)', ok: true });
   /* El SAR es la excepción a «con Caos no se actúa»: su Acción de Personaje es justo para quitarlo. */

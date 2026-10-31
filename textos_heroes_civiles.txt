@@ -177,4 +177,5 @@ Helicóptero Medevac (Civiles Heroicos)
   4. Despegue de emergencia: cuando una unidad Zed entra en su espacio, tira 1 dado antes del combate: 1 combate normal y no despega; 2 combate normal y, si sigue vivo, despega; 3-6 despega sin combate. Al despegar paga 1 Suministro, puede llevarse al Héroe de su espacio y patrulla esa ruta el resto del turno.
   5. En el aire: ni el helicóptero ni su Héroe pueden ser atacados ni realizar Acciones.
   6. Aterrizaje: gratis en cualquier momento de la fase de Acciones, en un espacio de superficie sin Zeds que no sea Inicial. Puede dejar al Héroe en una Cama libre del Hospital (sin ECG ni Infección); si aterriza en un espacio, el Héroe recibe 1 Acción gratis.
-  7. No dispara.
+  7. Mantenimiento: recibe 2 Impactos por cara. Las unidades médicas no pueden repararlo de forma habitual: si cae al Hospital, una Curación le retira el ECG; después solo se repara en el Centro, pagando 1 Suministro, una vez por turno.
+  8. No dispara.

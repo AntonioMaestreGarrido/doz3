@@ -28,7 +28,7 @@ const frente = () => `<style>${CSS}
 .cls{position:absolute;left:56px;top:112px;font-size:21px;background:rgba(20,14,10,.62);padding:7px 14px;border-radius:0 12px 12px 0;z-index:3}
 .fz{position:absolute;left:26px;top:168px;width:150px;height:84px;background:rgba(190,40,30,.75);font:700 54px/84px ${SANS};text-align:center;text-shadow:0 3px 5px #000;z-index:3}
 .mv{position:absolute;left:26px;top:272px;width:215px;height:66px;background:rgba(150,100,55,.82);clip-path:polygon(0 0,70% 0,70% -30%,100% 50%,70% 130%,70% 100%,0 100%);font:700 52px/66px ${SANS};padding-left:92px;text-shadow:0 3px 5px #000;z-index:3}
-.pan.front{padding:12px 20px}.pan.front .hab{padding:7px 2px}.pan.front h2{font-size:26px;margin-bottom:2px;padding-bottom:3px}.pan.front .hab{padding:5px 2px}.pan.front .hab b{font-size:19px;margin-bottom:2px}.pan.front .hab p{font-size:17.5px;line-height:1.33}</style>
+.pan.front{padding:12px 20px}.pan.front .hab{padding:5px 2px}.pan.front h2{font-size:26px;margin-bottom:2px;padding-bottom:3px}.pan.front .hab{padding:5px 2px}.pan.front .hab b{font-size:17.5px;margin-bottom:1px}.pan.front .hab p{font-size:15.8px;line-height:1.27}</style>
 <div class="card"><div class="art"></div><div class="shade"></div>
 <div class="head"><div>${ICONO}</div><h1>Helicóptero Medevac</h1></div>
 <div class="cls">Civiles Heroicos</div><div class="fz">2/1</div><div class="mv">3</div>
@@ -37,6 +37,7 @@ const frente = () => `<style>${CSS}
 <div class="hab"><b>Vuelo</b><p>Acción de Personaje (1 Suministro), una vez por turno: vuela con un Héroe a un espacio de superficie sin Zeds que no sea Inicial.</p></div>
 <div class="hab"><b>Patrulla</b><p>Al inicio del turno, si está en el aire, paga 1 Suministro y elige una ruta (o aterriza gratis); mira el siguiente Evento. En esa ruta, todo el turno: <i>Maniobra de distracción</i> (una vez por turno, 3-6 impide un movimiento Zed) y los Zeds tienen 1 columna en contra.</p></div>
 <div class="hab"><b>Despegue de emergencia</b><p>Si un Zed entra en su espacio, 1 dado antes del combate: 1 combate; 2 combate y despega si sobrevive; 3-6 despega sin combate (1 Suministro) y patrulla esa ruta.</p></div>
+<div class="hab"><b>Mantenimiento</b><p>2 Impactos por cara. Una Curación le quita el ECG en el Hospital; después solo se repara en el Centro (1 Suministro, 1 vez por turno).</p></div>
 <div class="hab"><b>En el aire y Aterrizaje</b><p>No puede ser atacado ni actuar. Aterriza gratis en Acciones; puede dejar al Héroe en el Hospital o darle 1 Acción gratis.</p></div></div></div>`;
 
 const trasera = () => `<style>${CSS}
