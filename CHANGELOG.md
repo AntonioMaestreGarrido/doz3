@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 16:40
+
+### Fixes
+- **Helicóptero Medevac, Vuelo:** ahora despega y se queda en el aire (con el Héroe que elijas, o solo) en vez de preguntar el destino y aterrizar de inmediato. Aterriza gratis cuando quieras en la fase de Acciones, o sigue arriba y patrulla pagando 1 Suministro al inicio del siguiente turno.
+
 ## 2026-10-31 16:00
 
 ### Cambios

@@ -199,7 +199,7 @@ function unitActions(u) {
     if (u.key === 'jones' && G.res && u.space && sp(u.space).kind === 'office') A.push({ id: 'jhosp', label: 'Sus Propios Planes: paciente al Cementerio + Investigación', ok: cu('planes') && G.res.deck.length > 0 && hospitalUnits(u).length > 0 });
     if (u.key === 'hunt') A.push({ id: 'lid', label: 'Liderazgo', ok: cu('lid') });
     if (u.key === 'alia') A.push({ id: 'calle', label: 'Ya no es hora de estar en la calle', ok: cu('calle') && calleTargets(u).length > 0 });
-    if (u.key === 'heli') A.push({ id: 'vuelo', label: 'Vuelo (1 Suministro, con un Héroe)', ok: cu('vuelo') && G.supplies >= 1 && heliLandSpaces(u, null).some(id => id !== u.space) });
+    if (u.key === 'heli') A.push({ id: 'vuelo', label: 'Vuelo: despegar (1 Suministro)', ok: cu('vuelo') && G.supplies >= 1 && heliLandSpaces(u, null).some(id => id !== u.space) });
     if (u.key === 'caza') A.push({ id: 'marcar', label: 'Presa marcada (1 acc.)', ok: cu('marcar') && pay(1) && Object.keys(fireTargets(u)).length > 0 });
     if (u.key === 'porter') A.push({ id: 'jefe', label: 'Jefe de equipo', ok: cu('jefe') && jefeTargets(u).length > 0 });
     if (u.key === 'hernandez') { A.push({ id: 'cit', label: 'Ciudadela', ok: cu('cit') && G.ammo >= 1 }); A.push({ id: 'spe', label: 'Discurso Motivador', ok: !G.speechUsed }); }

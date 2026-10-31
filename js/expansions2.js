@@ -103,18 +103,9 @@ function heliLandSpaces(u, comp) {
   if (G.spaces.C && !blocked('C') && !zedsAt('C').length && !ids.includes('C')) ids.push('C');
   return ids;
 }
+/* Vuelo: despega con un Héroe de su espacio (opcional) y queda en el aire. Aterriza gratis más tarde (Aterrizar) o sigue arriba y patrulla al inicio del siguiente turno. */
 async function heliVuelo(u) {
-  let comp = null; const cands = heliCands(u);
-  if (cands.length) {
-    const w = await UI.choose({ title: 'Vuelo', text: '¿El helicóptero lleva a un Héroe de su espacio?', options: [{ label: 'Volar solo', value: 'n' }, { label: 'Llevar a un Héroe', value: 'y' }] });
-    if (w === 'y') { const v = await UI.pickUnit(cands, 'Vuelo: elige al Héroe que llevas.', true); if (v == null) return; comp = G.units[v]; }
-  }
-  const ds = heliLandSpaces(u, comp).filter(id => id !== u.space); if (!ds.length) { LOG('No hay espacio libre para aterrizar.'); return; }
-  const t = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Vuelo: elige dónde aterrizas.', true); if (t == null) return;
-  G.charUsed.vuelo = true; G.supplies -= 1;
-  putUnit(u, t); if (comp) putUnit(comp, t);
-  LOG('Vuelo: ' + u.name + (comp ? ' y ' + comp.name : '') + ' aterrizan en ' + spaceLabel(t) + ' (−1 Suministro).', 'good');
-  UI.updateStats(); UI.redraw(); UI.focus(t);
+  await heliTakeoff(u, null, 'Vuelo');
 }
 /* Despega (de emergencia o no): queda en el aire con su Héroe y patrulla la ruta indicada lo que queda de turno. */
 async function heliTakeoff(h, route, why) {

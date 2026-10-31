@@ -34,7 +34,7 @@ const frente = () => `<style>${CSS}
 <div class="cls">Aeronave</div><div class="fz">2/1</div><div class="mv">*</div>
 <div class="pan front" style="top:372px"><h2>Habilidades</h2>
 <div class="hab"><b>Combustible de reserva</b><p>Al entrar en juego, 3 Suministros. No dispara.</p></div>
-<div class="hab"><b>Vuelo</b><p>Movimiento *: solo se mueve volando. Acción de Personaje (1 Suministro), una vez por turno: vuela con un Héroe y aterriza donde quiera (superficie sin Zeds que no sea Inicial).</p></div>
+<div class="hab"><b>Vuelo</b><p>Movimiento *: solo se mueve volando. Acción de Personaje (1 Suministro), una vez por turno: despega con un Héroe y queda en el aire; aterriza gratis donde quiera (superficie sin Zeds que no sea Inicial).</p></div>
 <div class="hab"><b>Patrulla</b><p>Al inicio del turno, si está en el aire, paga 1 Suministro y elige una ruta (o aterriza gratis); mira el siguiente Evento. En esa ruta, todo el turno: <i>Maniobra de distracción</i> (una vez por turno, 3-6 impide un movimiento Zed) y los Zeds tienen 1 columna en contra.</p></div>
 <div class="hab"><b>Despegue de emergencia</b><p>Si un Zed entra en su espacio, 1 dado antes del combate: 1 combate; 2 combate y despega si sobrevive; 3-6 despega sin combate (1 Suministro) y patrulla esa ruta.</p></div>
 <div class="hab"><b>Mantenimiento</b><p>2 Impactos por cara. Una Curación le quita el ECG en el Hospital; después solo se repara en el Centro (1 Suministro, 1 vez por turno).</p></div>
