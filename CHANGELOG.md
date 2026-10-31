@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-10-31 18:40
+
+### Fixes
+- **Helicóptero Medevac, aterrizaje:** ya no se puede aterrizar en un espacio que el Evento en curso va a hacer estallar al inicio de la fase de Zeds (la Mina con «¡Explosión en la Mina!», la Central con «Catástrofe nuclear»). Antes aterrizaba allí, recibía el Impacto y salía retirado.
+
 ## 2026-10-31 18:00
 
 ### Nuevo

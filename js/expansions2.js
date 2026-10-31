@@ -98,8 +98,10 @@ async function zen1(r, label) { return (await zenReroll([r], label))[0]; }
 /* Pasajeros posibles: Héroes de su espacio, salvo los que tampoco puede llevar Doc. */
 const heliCands = u => unitsAt(u.space).filter(x => x !== u && x.type === 'hero' && !DOC_NO_RIDE.includes(x.key) && !x.ecg && !x.mount && !x.rider && !x.resist && !isPetra(x));
 /* Espacios donde puede aterrizar: superficie sin Zeds que no sea Inicial, o el Centro. */
+/* Espacios que el Evento en curso va a hacer estallar al inicio de la fase de Zeds (Impacto y retirada): no se aterriza en ellos, o el helicóptero saldría despedido. */
+const heliEventDanger = () => ({ mina: ['M3'], catastrofe: ['A4'] }[G.event && G.event.id] || []);
 function heliLandSpaces(u, comp) {
-  const ids = docJumpSpaces(u, comp);
+  const peligro = heliEventDanger(), ids = docJumpSpaces(u, comp).filter(id => !peligro.includes(id));
   if (G.spaces.C && !blocked('C') && !zedsAt('C').length && !ids.includes('C')) ids.push('C');
   return ids;
 }
