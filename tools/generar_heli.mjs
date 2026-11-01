@@ -23,7 +23,7 @@ const CSS = `*{box-sizing:border-box;margin:0}body{background:transparent}
 .hab{padding:9px 2px;border-bottom:1px solid #d9c9a0}.hab:last-child{border:0}.hab b{display:block;color:#f0d58f;font-size:20px;margin-bottom:4px}.hab p{font-size:19.5px;line-height:1.42}`;
 
 const frente = () => `<style>${CSS}
-.card{height:968px}.art{position:absolute;inset:0;background:url(${ART}) 48% 0/auto 760px no-repeat,#120b07}
+.card{height:968px}.art{position:absolute;inset:0;background:url(${ART}) 41% 0/auto 760px no-repeat,#120b07}
 .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 62%,rgba(14,9,6,.7) 74%,#120b07 82%)}
 .cls{position:absolute;left:56px;top:112px;font-size:21px;background:rgba(20,14,10,.62);padding:7px 14px;border-radius:0 12px 12px 0;z-index:3}
 .fz{position:absolute;left:26px;top:168px;width:150px;height:84px;background:rgba(190,40,30,.75);font:700 54px/84px ${SANS};text-align:center;text-shadow:0 3px 5px #000;z-index:3}
