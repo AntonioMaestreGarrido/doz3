@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 07:45
+
+### Cambios
+- **Carta de Alia (arte alternativo):** la Evasión indica que es opcional («puede intentar evadirlo (opcional)»), como funciona en el juego.
+
 ## 2026-11-01 07:30
 
 ### Cambios
