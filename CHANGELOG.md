@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 04:00
+
+### Cambios
+- **Carta de la Dra. Samantha Carter:** regenerado el panel de habilidades con las nuevas (Contramedidas y «hasta 5» de Infección). La ilustración, la cabecera y las fichas de Fuerza y Movimiento se mantienen exactamente como estaban (`tools/generar_samcarter.mjs`).
+
 ## 2026-11-01 03:30
 
 ### Cambios
