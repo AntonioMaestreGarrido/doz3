@@ -109,7 +109,7 @@ async function moveGroup(movers, from, opts) {
   }
   /* Helicóptero Medevac: Maniobra de distracción en la ruta que patrulla (reacción, una vez por turno; con 3-6 el movimiento se cancela). */
   const heli = hero('heli');
-  if (heli && heli.space === 'AIR' && G.turn.patrol && sp(from).route === G.turn.patrol && !G.turn.distUsed) {
+  if (heli && heli.space === 'AIR' && G.turn.patrol && G.turn.patrol !== 'T' && sp(from).route === G.turn.patrol && !G.turn.distUsed) {
     const dv = await UI.askZeds({ title: 'Maniobra de distracción', text: '¿Intentas que ' + zedGroupName(movers, from) + ' no se mueva? Solo puedes intentarlo una vez por turno.', spaces: [from], options: [{ label: 'Distraer', value: 'y' }, { label: 'No', value: 'n' }] });
     if (dv === 'y') {
       G.turn.distUsed = true;

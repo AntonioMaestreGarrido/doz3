@@ -111,7 +111,7 @@ async function heliVuelo(u) {
 }
 /* Al despegar se elige qué ruta patrulla lo que queda de turno (la ruta del despegue sale la primera). */
 async function heliElegirRuta(why, hint) {
-  const rs = G.routes.slice().sort((a, b) => (b === hint) - (a === hint));
+  const rs = G.routes.filter(r => r !== 'T').sort((a, b) => (b === hint) - (a === hint));  /* el Túnel no se puede patrullar: es subterráneo y el helicóptero no puede aterrizar allí */
   const opts = rs.map(r => ({ label: 'Patrullar: ' + ROUTES[r].name + (r === hint ? ' (donde estaba)' : ''), value: r, color: ROUTES[r].color, focus: routeSpaces(r) }));
   return await UI.choose({ title: 'Helicóptero Medevac', text: why + ': ¿qué ruta patrulla el resto del turno? Al inicio del siguiente turno, si sigue en el aire, pagará 1 Suministro y volverá a elegir (o aterrizará gratis).', options: opts });
 }
@@ -155,7 +155,7 @@ async function heliAterrizar(u, forced) {
 async function heliTurnStart() {
   const h = hero('heli'); if (!h || h.space !== 'AIR') return;
   if (G.supplies < 1) { LOG('Sin Suministros: el helicóptero tiene que aterrizar.', 'bad'); await heliAterrizar(h, true); return; }
-  const opts = G.routes.map(r => ({ label: 'Patrullar: ' + ROUTES[r].name + ' (1 Suministro)', value: r, color: ROUTES[r].color, focus: routeSpaces(r) })).concat([{ label: 'Aterrizar gratis', value: 'land' }]);
+  const opts = G.routes.filter(r => r !== 'T').map(r => ({ label: 'Patrullar: ' + ROUTES[r].name + ' (1 Suministro)', value: r, color: ROUTES[r].color, focus: routeSpaces(r) })).concat([{ label: 'Aterrizar gratis', value: 'land' }]);
   const v = await UI.choose({ title: 'Helicóptero Medevac', text: 'Sigue en el aire. Paga 1 Suministro y elige la ruta que patrulla este turno, o aterriza gratis.', options: opts });
   if (v === 'land') { await heliAterrizar(h, true); return; }
   G.supplies -= 1; G.turn.patrol = v; UI.updateStats();

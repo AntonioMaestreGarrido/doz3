@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 06:10
+
+### Fixes
+- **Helicóptero Medevac, Patrulla:** el Túnel ya no se puede elegir como ruta de patrulla (ni al despegar ni al inicio de turno): es subterráneo y el helicóptero no puede aterrizar allí, así que sus bonos (Maniobra de distracción y 1 columna en contra para los Zeds) nunca se aplican en esa ruta. Se actualiza el texto de las reglas en el juego; la carta ilustrada no se ha regenerado.
+
 ## 2026-11-01 05:50
 
 ### Fixes

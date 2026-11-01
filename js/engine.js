@@ -486,7 +486,7 @@ function zedShifts(zs, o) {
   if (G.turn.flamed && zs.some(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id))) s.push({ label: 'Zeds flambeados', v: -2, by: by(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id)) });
   if (G.turn.frenzy) s.push({ label: 'Súper Zeds enloquecidos', v: -2 });
   /* Helicóptero Medevac: en la ruta que patrulla, los Zeds tienen 1 columna en contra. */
-  const hl = G.turn.patrol && hero('heli');
+  const hl = G.turn.patrol && G.turn.patrol !== 'T' && hero('heli');
   if (hl && hl.space === 'AIR') { const sa = (o && o.space) || (zs[0] && zs[0].space); if (sa && sp(sa) && sp(sa).route === G.turn.patrol) s.push({ label: 'Patrulla del helicóptero (Zeds 1 columna en contra)', v: 1 }); }
   return s;
 }
