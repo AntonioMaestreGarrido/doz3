@@ -105,17 +105,13 @@ async function doInvestigate(u, free) {
   const ib = u.key === 'agee' || u.key === 'samcarter' ? 1 : 0, mods = ib ? [{ label: u.key === 'agee' ? 'Profesora Agee' : 'Samantha Carter', v: 1 }] : [];
   let dice = await UI.rollSimple('Investigar (hace falta ' + c.th + '+)', 1, null, { mods });
   let r = Math.min(6, dice[0] + ib);
-  if (r < c.th && u.key === 'samcarter' && !G.charUsed.samRepeat) {
-    const v = await UI.choose({ title: 'Teoría del campo unificado', text: 'La Investigación ha fallado (' + r + '). ¿Repites la tirada? Solo una vez por turno; la segunda es definitiva.', options: [{ label: 'Repetir', value: 'y' }, { label: 'No', value: 'n' }] });
-    if (v === 'y') { G.charUsed.samRepeat = true; dice = await UI.rollSimple('Investigar otra vez (hace falta ' + c.th + '+)', 1, null, { mods }); r = Math.min(6, dice[0] + ib); }
+  if (r < c.th && u.key === 'samcarter' && !G.once.samRepeat) {
+    const v = await UI.choose({ title: 'Teoría del campo unificado', text: 'La Investigación ha fallado (' + r + '). ¿Repites la tirada? Solo una vez por partida; la segunda es definitiva.', options: [{ label: 'Repetir', value: 'y' }, { label: 'No', value: 'n' }] });
+    if (v === 'y') { G.once.samRepeat = true; dice = await UI.rollSimple('Investigar otra vez (hace falta ' + c.th + '+)', 1, null, { mods }); r = Math.min(6, dice[0] + ib); }
   }
   if (r < c.th && r + 1 >= c.th && u.key === 'macgyver' && G.supplies >= 1 && await UI.choose({ title: 'Ingeniero', text: 'La Investigación ha fallado (' + r + '). ¿Gastas 1 Suministro para sumar +1 y conseguirla?', options: [{ label: 'Gastar 1 Suministro', value: 'y' }, { label: 'No', value: 'n' }] }) === 'y') { G.supplies--; r++; LOG('MacGyver improvisa con 1 Suministro (+1).', 'good'); }
   EVT('investigar', u.id, { carta: c.id, nombre: c.name, umbral: c.th, dado: dice[0], resultado: r, exito: r >= c.th, suministro: !!c.sup, sinAccion: !!usingSup });
-  if (r >= c.th) {
-    LOG('Investigación con éxito (' + r + ').', 'good'); G.turn.researched = true;
-    if (u.key === 'samcarter' && G.lv.infection && G.inf > 0) { infDown(1); LOG('Contramedidas: Samantha Carter reduce la Infección en 1.', 'good'); }
-    await revealResearch();
-  }
+  if (r >= c.th) { LOG('Investigación con éxito (' + r + ').', 'good'); G.turn.researched = true; await revealResearch(); }
   else LOG('La Investigación fracasa (' + r + ').', 'bad');
   UI.updateStats(); return true;
 }

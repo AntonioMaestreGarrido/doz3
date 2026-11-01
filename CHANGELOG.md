@@ -2,19 +2,10 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
-## 2026-11-01 02:40
+## 2026-11-01 03:00
 
 ### Cambios
-- **Dra. Samantha Carter, rediseño:** sus habilidades «una vez por partida» pasan a ser por turno y gana una propia que la distingue de las demás científicas: la que combate la Infección con la investigación.
-  - **Teoría del campo unificado:** repite una Investigación fallida **una vez por turno** (antes, una vez por partida).
-  - **Contramedidas (nueva):** cada vez que supera una Investigación, la Infección baja 1.
-  - **En el último segundo:** **una vez por turno**, cuando la Infección vaya a subir 2 o más (o a llegar a 13), cancela hasta **2** de esa subida (antes, hasta 3 una vez por partida).
-  - Carta regenerada con las nuevas habilidades.
-
-## 2026-11-01 02:00
-
-### Fixes
-- **Carta de la Dra. Samantha Carter:** la ilustración no llegaba al borde izquierdo de la carta (quedaba una franja oscura y la imagen «corta»). Se ha regenerado el frente con la ilustración a todo el ancho (`tools/generar_samcarter.mjs`); las reglas no cambian.
+- **Dra. Samantha Carter:** se deshacen los cambios de carta y de habilidades de las últimas horas; vuelve exactamente a como estaba (carta e habilidades originales).
 
 ## 2026-11-01 01:35
 
