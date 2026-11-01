@@ -2,10 +2,15 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 05:50
+
+### Fixes
+- **SAR, «Cada vida cuenta»:** el bonus es **+1 de Fuerza por cada Refugiados en el Campamento con cualquiera de las dos caras**; se quita el medio bono de la cara reducida, que se había copiado de Jaque Mates sin haberse pedido. Carta regenerada.
+
 ## 2026-11-01 05:30
 
 ### Cambios
-- **Búsqueda y Rescate (SAR):** empieza más débil, con Fuerza **2/1** (antes 3/2), pero **gana +1 de Fuerza por cada Refugiados en el Campamento** (con la cara reducida, +1 por cada 2, redondeando abajo). «Despejar» y «Escudo humano» no cambian. Carta y fichas regeneradas.
+- **Búsqueda y Rescate (SAR):** empieza más débil, con Fuerza **2/1** (antes 3/2), pero **gana +1 de Fuerza por cada Refugiados en el Campamento** (con cualquiera de las dos caras). «Despejar» y «Escudo humano» no cambian. Carta y fichas regeneradas.
 
 ## 2026-11-01 05:00
 

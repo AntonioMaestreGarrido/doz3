@@ -34,7 +34,7 @@ const frente = () => `<style>${CSS}
 <div class="pan" style="top:532px"><h2>Habilidades</h2>
 <div class="hab"><b>Despejar</b><p>Acción de Personaje (1 Acción), una vez por turno, aunque haya Caos en su espacio: en el Mantenimiento quita 2 fichas de Caos de ese espacio sin subir la Infección.</p></div>
 <div class="hab"><b>Escudo humano</b><p>1 columna a favor en Cuerpo a Cuerpo y al disparar mientras haya Refugiados o Aldeanos en su espacio.</p></div>
-<div class="hab"><b>Cada vida cuenta</b><p>Fuerza 2/1, pero +1 de Fuerza por cada Refugiados en el Campamento (cara reducida: +1 por cada 2).</p></div></div></div>`;
+<div class="hab"><b>Cada vida cuenta</b><p>Empieza débil (Fuerza 2/1), pero gana +1 de Fuerza por cada Refugiados en el Campamento.</p></div></div></div>`;
 
 const trasera = () => `<style>${CSS}
 .card{height:939px}.card .head{position:relative;height:100px}.card{background:#241a12}
