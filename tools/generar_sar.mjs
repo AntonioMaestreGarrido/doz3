@@ -30,10 +30,11 @@ const frente = () => `<style>${CSS}
 .mv{position:absolute;left:26px;top:446px;width:215px;height:72px;background:rgba(150,100,55,.82);clip-path:polygon(0 0,70% 0,70% -30%,100% 50%,70% 130%,70% 100%,0 100%);font:700 56px/72px ${SANS};padding-left:92px;text-shadow:0 3px 5px #000;z-index:3}</style>
 <div class="card"><div class="art"></div><div class="shade"></div>
 <div class="head"><div>${ICONO}</div><h1>Búsqueda y Rescate (SAR)</h1></div>
-<div class="cls">Civiles Heroicos</div><div class="fz">3/2</div><div class="mv">3</div>
-<div class="pan" style="top:586px"><h2>Habilidades</h2>
+<div class="cls">Civiles Heroicos</div><div class="fz">2/1</div><div class="mv">3</div>
+<div class="pan" style="top:532px"><h2>Habilidades</h2>
 <div class="hab"><b>Despejar</b><p>Acción de Personaje (1 Acción), una vez por turno, aunque haya Caos en su espacio: en el Mantenimiento quita 2 fichas de Caos de ese espacio sin subir la Infección.</p></div>
-<div class="hab"><b>Escudo humano</b><p>1 columna a favor en Cuerpo a Cuerpo y al disparar mientras haya Refugiados o Aldeanos en su espacio.</p></div></div></div>`;
+<div class="hab"><b>Escudo humano</b><p>1 columna a favor en Cuerpo a Cuerpo y al disparar mientras haya Refugiados o Aldeanos en su espacio.</p></div>
+<div class="hab"><b>Cada vida cuenta</b><p>Fuerza 2/1, pero +1 de Fuerza por cada Refugiados en el Campamento (cara reducida: +1 por cada 2).</p></div></div></div>`;
 
 const trasera = () => `<style>${CSS}
 .card{height:939px}.card .head{position:relative;height:100px}.card{background:#241a12}
@@ -51,7 +52,7 @@ const ficha = red => `<style>*{box-sizing:border-box;margin:0}body{background:tr
 .mv{position:absolute;left:8px;bottom:12px;width:136px;height:50px;background:linear-gradient(90deg,rgba(38,86,168,.7),rgba(38,86,168,.5));clip-path:polygon(0 0,calc(100% - 28px) 0,100% 50%,calc(100% - 28px) 100%,0 100%);font:700 34px/50px ${SANS};color:#fff;padding-left:38px;text-shadow:0 2px 3px #000}
 .fz{position:absolute;right:12px;bottom:12px;width:74px;height:62px;border-radius:14px;background:rgba(20,12,8,.92);border:4px solid ${red ? '#b3261e' : '#d9b94f'};color:#f4ecdc;font:700 50px/54px ${SANS};padding-left:12px}
 .fz small{font-size:18px;color:#b9b2a4;position:absolute;right:8px;bottom:5px;line-height:1}</style>
-<div class="t"><div class="tag">${red ? 'REDUCIDO' : 'COMPLETO'}</div><div class="mv">3</div><div class="fz">${red ? '2' : '3'}<small>/${red ? '3' : '2'}</small></div></div>`;
+<div class="t"><div class="tag">${red ? 'REDUCIDO' : 'COMPLETO'}</div><div class="mv">3</div><div class="fz">${red ? '1' : '2'}<small>/${red ? '2' : '1'}</small></div></div>`;
 
 const salida = async (browser, html, w, h, destino, omitir = true) => {
   const page = await browser.newPage({ viewport: { width: w + 20, height: h + 20 }, deviceScaleFactor: 1 });
