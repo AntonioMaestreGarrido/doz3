@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 00:10
+
+### Fixes
+- **Obituario:** el Club de Caza, Búsqueda y Rescate (SAR) y el Helicóptero Medevac tienen ya su ilustración (la misma del arte de su carta) y su foco de luz. Antes, si caían, su baja salía sin imagen.
+
 ## 2026-10-31 18:40
 
 ### Fixes
