@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 07:00
+
+### Cambios
+- **Alia, Sigilo:** atravesar un espacio con Zeds ya no cuesta Movimiento extra (antes cada uno costaba 2). Sigue sin poder acabar en un espacio con Zeds e ignorando el Caos. Su Movimiento es 5. Texto de las reglas actualizado; la carta ilustrada todavía muestra el texto antiguo.
+
 ## 2026-11-01 06:25
 
 ### Cambios

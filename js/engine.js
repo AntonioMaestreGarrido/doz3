@@ -803,7 +803,7 @@ function reachable(u, extra) {
   }
   return out;
 }
-/* Alia, Sigilo: atraviesa espacios con Zeds sin combatir (cada uno cuesta 2 de Movimiento, ignora el Caos) y debe acabar en un espacio libre de Zeds.
+/* Alia, Sigilo: atraviesa espacios con Zeds sin combatir (sin coste extra de Movimiento, ignora el Caos) y debe acabar en un espacio libre de Zeds.
    Devuelve solo los destinos que obligan a atravesar Zeds, con su coste y recorrido. */
 function stealthReach(u, mp) {
   const key = (id, f) => id + ':' + f, best = { [key(u.space, 0)]: 0 }, prev = {}, q = [[u.space, 0]], res = {};
@@ -818,7 +818,7 @@ function stealthReach(u, mp) {
       if (s.bridge === 'down') continue;
       if (!officeOk(u, s)) continue;
       if (s.kind === 'bed' && cur !== 'C' && sp(cur).kind !== 'office') continue;
-      const c = cb + (G.spaces[n] ? moveCost(u, n) : 1) + (hasZ ? 1 : 0), nf = (f || hasZ) ? 1 : 0, k = key(n, nf);
+      const c = cb + (G.spaces[n] ? moveCost(u, n) : 1), nf = (f || hasZ) ? 1 : 0, k = key(n, nf);  /* atravesar un espacio con Zeds ya no cuesta Movimiento extra */
       if (c > mp) continue;
       if (best[k] === undefined || c < best[k]) { best[k] = c; prev[k] = key(cur, f); if (s.bridge !== 'ferry') q.push([n, nf]); }
     }
