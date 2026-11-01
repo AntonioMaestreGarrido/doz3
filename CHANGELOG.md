@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 05:00
+
+### Nuevo
+- **Nuevo Civiles Heroicos: Brigada de Contención Sanitaria** (expansión 4, nivel 1, Fuerza 2/1, Movimiento 3, no dispara). **Desinfección:** Acción de Personaje (1 Acción), sin límite por turno: la Infección baja 2. **Cordón sanitario:** en los combates Cuerpo a Cuerpo de su espacio, si la Infección fuese a subir 1 no sube; si fuese a subir 2 o más sube 1 menos, y pagando 1 Suministro no sube nada. **Frágil:** 1 columna en contra en Cuerpo a Cuerpo. Con carta (frente y trasera), fichas ilustradas, obituario y entrada en «Habilidades de personaje»; `tools/generar_brigada.mjs` regenera las imágenes.
+
 ## 2026-11-01 04:00
 
 ### Cambios

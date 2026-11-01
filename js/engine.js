@@ -249,6 +249,18 @@ async function infUp(n) {
   if (G.inf >= 13 && !G.inWild) { G.inWild = true; LOG('¡La Infección llega al máximo! Brote Descontrolado.', 'bad'); await outbreak(true); G.inWild = false; }
 }
 function infDown(n) { if (!G.lv.infection || n <= 0) return; const i0 = G.inf; G.inf = Math.max(0, G.inf - n); EVT('inf', null, { de: i0, to: G.inf, d: -n }); UI.updateStats(); UI.fxInf(G.inf - i0); }
+/* Brigada de Contención Sanitaria (exp. 4): la unidad viva (sin ECG) que está en ese espacio, si la hay. */
+const brigadaEn = id => !!id && unitsAt(id).find(x => x.key === 'brigada' && !x.ecg) || null;
+/* Cordón sanitario: n es la Infección que subiría el combate. Si 1, no sube; si 2 o más, sube 1 menos y se puede pagar 1 Suministro para que no suba nada. */
+async function cordonSanitario(n, space) {
+  const b = n > 0 ? brigadaEn(space) : null; if (!b) return n;
+  const r = n - 1;
+  if (r <= 0) { LOG('Cordón sanitario: ' + b.name + ' evita la subida de Infección.', 'good'); return 0; }
+  if (G.supplies >= 1 && await UI.choose({ title: 'Cordón sanitario', text: 'El combate subiría la Infección +' + n + '; el Cordón ya evita 1 (quedaría +' + r + '). ¿Gastas 1 Suministro (tienes ' + G.supplies + ') para que no suba nada?', options: [{ label: 'Gastar 1 Suministro: no sube nada', value: 'y' }, { label: 'No: sube +' + r, value: 'n' }] }) === 'y') {
+    G.supplies--; UI.updateStats(); LOG('Cordón sanitario: ' + b.name + ' evita +' + n + ' de Infección (−1 Suministro).', 'good'); return 0;
+  }
+  LOG('Cordón sanitario: ' + b.name + ' reduce la subida de Infección de +' + n + ' a +' + r + '.', 'good'); return r;
+}
 function meleeInfection(zs, h) {
   let n = 1;
   for (const z of zs) { if (z.toxic) n = Math.max(n, 3); if (z.key === 'supurador') n = Math.max(n, 3); if (z.key === 'lobo') n = Math.max(n, 2); }
@@ -447,6 +459,7 @@ function humanShifts(f, o) { // o: { attacking, space }
   if (f.key === 'porter' && !o.attacking) s.push({ label: 'Artes marciales (Porter)', v: 1 });
   if (escudoHumano(f)) s.push({ label: 'Escudo humano (SAR)', v: 1 });
   if (f.key === 'caza') s.push({ label: 'A campo abierto (Club de Caza)', v: -1 });
+  if (f.key === 'brigada') s.push({ label: 'Frágil (Brigada de Contención)', v: -1 });
   if (f.key === 'alia' && !o.attacking) s.push({ label: 'Parada perfecta (Alia)', v: 1 });
   if (abstinent(f)) s.push({ label: 'Abstinencia Robótica (Bender)', v: -1 });
   if (f.key === 'ash') s.push({ label: 'Groovy (Ash)', v: 1 });
@@ -599,7 +612,9 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   const wzed = !attackerHuman && fighter.side === 'pl' && alive('wzed') && isCity(space);
   let extraDice = (wilsonBuddy ? 1 : 0) + (wzed ? 1 : 0);
   /* Lo mismo que se sumará a la Infección al final (ver más abajo), para anunciarlo antes de tirar. */
-  const infGain = !G.lv.infection ? null : o.noInf || vsPl ? 0 : meleeInfection(zeds, fighter);
+  /* Cordón sanitario (Brigada de Contención Sanitaria): la subida de Infección de un combate en su espacio baja 1 gratis (el pago opcional se ofrece al final del combate). */
+  const infBase = !G.lv.infection ? null : o.noInf || vsPl ? 0 : meleeInfection(zeds, fighter);
+  const infGain = infBase > 0 && brigadaEn(space) ? infBase - 1 : infBase;
   const cinfo = { canUndo: !!o.undoable && attackerHuman, title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, infGain, cards: combatCards(fighter, attackerHuman) };
   cinfo.useCard = async c => { if (c.cancel) { cinfo.cancelled = true; return; } if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
   const h = UI.combatOpen(cinfo);
@@ -637,7 +652,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   h.setResult(row, finalCol, [zh, ph], zedLoses);
   await h.done();
   EVT('melee', fighter.id, { at: attackerHuman ? 'h' : 'z', sp: space, zs: zeds.length, row, col: finalCol, zh, ph, win: zedLoses ? 1 : 0 });
-  if (!o.noInf && G.lv.infection && !vsPl && !(fighter.key === 'frank' && zedLoses)) await infUp(meleeInfection(zeds, fighter));
+  if (!o.noInf && G.lv.infection && !vsPl && !(fighter.key === 'frank' && zedLoses)) await infUp(await cordonSanitario(meleeInfection(zeds, fighter), space));
   ACTOR = fighter.side === 'pl' ? fighter.id : null;
   try { await applyZedHits(zeds, zh); if (weaponFor(fighter, 'cebo') && !attackerHuman) await applyZedHits(zeds, 1); } finally { ACTOR = null; }
   if (fighter.space && fighter.space !== 'CEM') { if (fighter.side === 'raid') await hitRaider(fighter, ph); else await hitPlayer(fighter, ph); }
