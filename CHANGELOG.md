@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 01:00
+
+### Cambios
+- **Carta del Helicóptero Medevac:** textos de habilidades resumidos para que la ilustración ocupe más espacio (la imagen pasa de ~370 a ~430 px de alto visibles). El contenido de las reglas no cambia.
+
 ## 2026-11-01 00:40
 
 ### Cambios

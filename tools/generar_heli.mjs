@@ -23,8 +23,8 @@ const CSS = `*{box-sizing:border-box;margin:0}body{background:transparent}
 .hab{padding:9px 2px;border-bottom:1px solid #d9c9a0}.hab:last-child{border:0}.hab b{display:block;color:#f0d58f;font-size:20px;margin-bottom:4px}.hab p{font-size:19.5px;line-height:1.42}`;
 
 const frente = () => `<style>${CSS}
-.card{height:968px}.art{position:absolute;inset:0;background:url(${ART}) 42% 0/auto 560px no-repeat,#120b07}
-.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(14,9,6,.7) 50%,#120b07 62%)}
+.card{height:968px}.art{position:absolute;inset:0;background:url(${ART}) 46% 0/auto 700px no-repeat,#120b07}
+.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 52%,rgba(14,9,6,.7) 66%,#120b07 75%)}
 .cls{position:absolute;left:56px;top:112px;font-size:21px;background:rgba(20,14,10,.62);padding:7px 14px;border-radius:0 12px 12px 0;z-index:3}
 .fz{position:absolute;left:26px;top:168px;width:150px;height:84px;background:rgba(190,40,30,.75);font:700 54px/84px ${SANS};text-align:center;text-shadow:0 3px 5px #000;z-index:3}
 .mv{position:absolute;left:26px;top:272px;width:215px;height:66px;background:rgba(150,100,55,.82);clip-path:polygon(0 0,70% 0,70% -30%,100% 50%,70% 130%,70% 100%,0 100%);font:700 52px/66px ${SANS};padding-left:92px;text-shadow:0 3px 5px #000;z-index:3}
@@ -32,13 +32,13 @@ const frente = () => `<style>${CSS}
 <div class="card"><div class="art"></div><div class="shade"></div>
 <div class="head"><div>${ICONO}</div><h1>Sgto. Lena «Rotor» Kowalski</h1></div>
 <div class="cls">Aeronave · Helicóptero Medevac</div><div class="fz">2/1</div><div class="mv">*</div>
-<div class="pan front" style="top:372px"><h2>Habilidades</h2>
+<div class="pan front"><h2>Habilidades</h2>
 <div class="hab"><b>Combustible de reserva</b><p>Al entrar en juego, 3 Suministros. No dispara.</p></div>
-<div class="hab"><b>Vuelo</b><p>Movimiento *: solo se mueve volando. Acción de Personaje (1 Suministro), una vez por turno: despega con un Héroe, queda en el aire y eliges la ruta que patrulla; aterriza gratis donde quiera.</p></div>
-<div class="hab"><b>Patrulla</b><p>Al despegar eliges la ruta que patrulla. Al inicio de cada turno en el aire, paga 1 Suministro y elige ruta (o aterriza gratis); mira el siguiente Evento. En esa ruta, todo el turno: <i>Maniobra de distracción</i> (una vez por turno, 3-6 impide un movimiento Zed) y los Zeds tienen 1 columna en contra.</p></div>
-<div class="hab"><b>Despegue de emergencia</b><p>Si un Zed entra en su espacio, 1 dado antes del combate: 1 combate; 2 combate y despega si sobrevive; 3-6 despega sin combate (1 Suministro) y eliges qué ruta patrulla.</p></div>
-<div class="hab"><b>Mantenimiento</b><p>2 Impactos por cara. Una Curación le quita el ECG en el Hospital; después solo se repara en el Centro (1 Suministro, 1 vez por turno).</p></div>
-<div class="hab"><b>En el aire y Aterrizaje</b><p>No puede ser atacado ni actuar. Aterriza gratis en Acciones; puede dejar al Héroe en el Hospital o darle 1 Acción gratis.</p></div></div></div>`;
+<div class="hab"><b>Vuelo</b><p>Movimiento *: solo vuela. Acción de Personaje (1 Suministro, 1 vez por turno): despega con un Héroe y eliges la ruta que patrulla; aterriza gratis donde quiera.</p></div>
+<div class="hab"><b>Patrulla</b><p>Cada turno en el aire: 1 Suministro, eliges ruta (o aterrizas gratis) y miras el siguiente Evento. En esa ruta: <i>Maniobra de distracción</i> (1 vez por turno, 3-6 anula un movimiento Zed) y los Zeds tienen 1 columna en contra.</p></div>
+<div class="hab"><b>Despegue de emergencia</b><p>Si un Zed entra en su espacio, 1 dado: 1 combate; 2 combate y despega si sobrevive; 3-6 despega sin combate (1 Suministro).</p></div>
+<div class="hab"><b>Mantenimiento</b><p>2 Impactos por cara. Tras una Curación solo se repara en el Centro (1 Suministro, 1 vez por turno).</p></div>
+<div class="hab"><b>En el aire</b><p>No puede ser atacado ni actuar. Aterriza gratis en Acciones; puede dejar al Héroe en el Hospital o darle 1 Acción gratis.</p></div></div></div>`;
 
 const trasera = () => `<style>${CSS}
 .card{height:939px}.card .head{position:relative;height:100px}.card{background:#241a12}
