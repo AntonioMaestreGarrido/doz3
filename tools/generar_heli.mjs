@@ -35,7 +35,7 @@ const frente = () => `<style>${CSS}
 <div class="pan front">
 <div class="hab"><b>Combustible de reserva</b><p>Al entrar en juego: 3 Suministros. No dispara.</p></div>
 <div class="hab"><b>Vuelo</b><p>Mov. *: solo vuela. Acción de Personaje (1 Suministro, 1 vez por turno): despega con un Héroe y patrulla una ruta; aterriza gratis donde quiera.</p></div>
-<div class="hab"><b>Patrulla</b><p>Cada turno en el aire: 1 Suministro y ruta nueva (o aterriza gratis); mira el siguiente Evento. En su ruta, Zeds con 1 columna en contra y <i>Maniobra de distracción</i> (3-6 anula un movimiento Zed).</p></div>
+<div class="hab"><b>Patrulla</b><p>Cada turno en el aire: 1 Suministro y ruta nueva, nunca el Túnel (o aterriza gratis); mira el siguiente Evento. En su ruta, Zeds con 1 columna en contra y <i>Maniobra de distracción</i> (3-6 anula un movimiento Zed).</p></div>
 <div class="hab"><b>Despegue de emergencia</b><p>Si un Zed entra: 1 dado. 1 combate; 2 combate y despega; 3-6 despega sin combate.</p></div>
 <div class="hab"><b>Mantenimiento</b><p>2 Impactos por cara; se repara en el Centro (1 Suministro).</p></div></div></div>`;
 

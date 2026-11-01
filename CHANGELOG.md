@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 06:25
+
+### Cambios
+- **Carta del Helicóptero Medevac:** la Patrulla indica ahora «nunca el Túnel», igual que las reglas del juego.
+
 ## 2026-11-01 06:10
 
 ### Fixes
