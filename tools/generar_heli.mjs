@@ -30,8 +30,8 @@ const frente = () => `<style>${CSS}
 .mv{position:absolute;left:26px;top:272px;width:215px;height:66px;background:rgba(150,100,55,.82);clip-path:polygon(0 0,70% 0,70% -30%,100% 50%,70% 130%,70% 100%,0 100%);font:700 52px/66px ${SANS};padding-left:92px;text-shadow:0 3px 5px #000;z-index:3}
 .pan.front{padding:12px 20px}.pan.front .hab{padding:5px 2px}.pan.front h2{font-size:26px;margin-bottom:2px;padding-bottom:3px}.pan.front .hab{padding:5px 2px}.pan.front .hab b{font-size:17.5px;margin-bottom:1px}.pan.front .hab p{font-size:15.8px;line-height:1.27}</style>
 <div class="card"><div class="art"></div><div class="shade"></div>
-<div class="head"><div>${ICONO}</div><h1>Helicóptero Medevac</h1></div>
-<div class="cls">Aeronave</div><div class="fz">2/1</div><div class="mv">*</div>
+<div class="head"><div>${ICONO}</div><h1>Sgto. Lena «Rotor» Kowalski</h1></div>
+<div class="cls">Aeronave · Helicóptero Medevac</div><div class="fz">2/1</div><div class="mv">*</div>
 <div class="pan front" style="top:372px"><h2>Habilidades</h2>
 <div class="hab"><b>Combustible de reserva</b><p>Al entrar en juego, 3 Suministros. No dispara.</p></div>
 <div class="hab"><b>Vuelo</b><p>Movimiento *: solo se mueve volando. Acción de Personaje (1 Suministro), una vez por turno: despega con un Héroe, queda en el aire y eliges la ruta que patrulla; aterriza gratis donde quiera.</p></div>
@@ -43,10 +43,10 @@ const frente = () => `<style>${CSS}
 const trasera = () => `<style>${CSS}
 .card{height:939px}.card .head{position:relative;height:100px}.card{background:#241a12}
 .pan{top:118px;bottom:18px}.pan p{font-size:24px;line-height:1.55;margin-bottom:20px}.pan h2{font-size:34px}.pan p.cita{font-style:italic;color:#f0d58f}</style>
-<div class="card"><div class="head" style="justify-content:center;padding:0"><h1 style="text-align:center;max-width:none;font-size:34px">Helicóptero Medevac</h1></div>
+<div class="card"><div class="head" style="justify-content:center;padding:0"><h1 style="text-align:center;max-width:none;font-size:34px">Sgto. Lena «Rotor» Kowalski</h1></div>
 <div class="pan"><h2>Trasfondo</h2>
 <p>El Black Hawk apareció una noche sobre Farmingdale con el rótulo MEDEVAC medio borrado y una tripulación que no dormía desde que cayeron las líneas. Nadie les había ordenado quedarse; no hacía falta.</p>
-<p>Los pilotos conocen cada tejado y cada claro del condado, y vuelan con un ojo en el combustible y otro en los muertos que se agolpan debajo. Pueden recoger a un Héroe del suelo en segundos y dejarlo en el Hospital, o donde aún haga falta.</p>
+<p>Al mando va la sargento Lena «Rotor» Kowalski, que conoce cada tejado y cada claro del condado, y vuela con un ojo en el combustible y otro en los muertos que se agolpan debajo. Puede recoger a un Héroe del suelo en segundos y dejarlo en el Hospital, o donde aún haga falta.</p>
 <p>Desde el aire ven lo que los de abajo no ven: qué ruta se llenará mañana y dónde conviene que los muertos se detengan un instante. Cada vuelo cuesta combustible, y el combustible es lo único que escasea más que la esperanza.</p>
 <p class="cita">«Si oyes las aspas, aguanta un minuto más.»</p></div></div>`;
 

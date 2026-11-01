@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 00:40
+
+### Cambios
+- **Helicóptero Medevac:** su piloto tiene nombre: **Sgto. Lena «Rotor» Kowalski**. Aparece en el nombre de la unidad (en el juego), en el título de la carta (frente y trasera, que se han regenerado) y en el trasfondo.
+
 ## 2026-11-01 00:10
 
 ### Fixes
