@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 07:30
+
+### Cambios
+- **Carta de Alia (arte alternativo):** el Sigilo ya dice «sin coste extra de Movimiento». La ilustración, la cabecera y las fichas de Fuerza y Movimiento se mantienen como estaban (`tools/generar_alia.mjs`). La carta del arte por defecto todavía muestra el texto antiguo.
+
 ## 2026-11-01 07:00
 
 ### Cambios
