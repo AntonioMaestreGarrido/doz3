@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 02:00
+
+### Fixes
+- **Carta de la Dra. Samantha Carter:** la ilustración no llegaba al borde izquierdo de la carta (quedaba una franja oscura y la imagen «corta»). Se ha regenerado el frente con la ilustración a todo el ancho (`tools/generar_samcarter.mjs`); las reglas no cambian.
+
 ## 2026-11-01 01:35
 
 ### Cambios
