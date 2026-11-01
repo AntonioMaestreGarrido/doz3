@@ -240,9 +240,9 @@ function alreadyHas(rid) { return G.res && G.res.cur && G.res.cur.id === rid; }
 async function infUp(n) {
   if (!G.lv.infection || n <= 0) return;
   const sam = alive('samcarter');
-  if (sam && !G.once.samLast && (n >= 2 || G.inf + n >= 13)) {
-    const v = await UI.choose({ title: 'En el último segundo', text: 'La Infección va a subir +' + n + '. Samantha Carter puede cancelar hasta 3 de esa subida (una vez por partida). ¿La usas?', options: [{ label: 'Cancelar ' + Math.min(3, n), value: 'y' }, { label: 'No', value: 'n' }] });
-    if (v === 'y') { G.once.samLast = true; const c = Math.min(3, n); n -= c; LOG('En el último segundo: Samantha Carter cancela ' + c + ' de Infección.', 'good'); if (n <= 0) return; }
+  if (sam && !G.charUsed.samLast && (n >= 2 || G.inf + n >= 13)) {
+    const v = await UI.choose({ title: 'En el último segundo', text: 'La Infección va a subir +' + n + '. Samantha Carter puede cancelar hasta 2 de esa subida (una vez por turno). ¿La usas?', options: [{ label: 'Cancelar ' + Math.min(2, n), value: 'y' }, { label: 'No', value: 'n' }] });
+    if (v === 'y') { G.charUsed.samLast = true; const c = Math.min(2, n); n -= c; LOG('En el último segundo: Samantha Carter cancela ' + c + ' de Infección.', 'good'); if (n <= 0) return; }
   }
   while (G.inf + n >= 13 && !G.inWild && await offerHandCards('inf', 'La Infección subirá +' + n + ' y llegaría a 13: <b>Brote Descontrolado</b>.', true)) { }
   const i0 = G.inf; G.inf = Math.min(13, G.inf + n); EVT('inf', null, { de: i0, to: G.inf, d: n }); UI.updateStats(); UI.fxInf(G.inf - i0);

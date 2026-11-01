@@ -15,24 +15,25 @@ const ICONO = '<svg viewBox="0 0 70 80" width="70" height="80"><g fill="#141414"
 const html = `<style>*{box-sizing:border-box;margin:0}body{background:transparent}
 .card{position:relative;width:620px;height:1103px;overflow:hidden;border-radius:26px;border:5px solid #cdb26a;background:#120b07;font-family:${SANS};color:#fff}
 .card::after{content:"";position:absolute;inset:6px;border:2px solid rgba(205,178,106,.55);border-radius:20px;pointer-events:none}
-.art{position:absolute;inset:0;background:url(${ART}) 18% 0/auto 690px no-repeat,#120b07}
-.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 54%,rgba(14,9,6,.7) 60%,#120b07 66%)}
+.art{position:absolute;inset:0;background:url(${ART}) 17% 0/auto 650px no-repeat,#120b07}
+.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(14,9,6,.7) 56%,#120b07 62%)}
 .head{position:absolute;left:0;right:0;top:0;height:100px;background:rgba(112,101,55,.92);display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 50px;z-index:3}
 .head h1{font:700 36px/1.1 ${SERIF};text-shadow:0 2px 3px #000;text-align:right}
 .cls{position:absolute;left:56px;top:112px;font-size:21px;background:rgba(20,14,10,.62);padding:7px 14px;border-radius:0 12px 12px 0;z-index:3}
 .fz{position:absolute;left:26px;top:168px;width:150px;height:84px;background:rgba(190,40,30,.75);font:700 54px/84px ${SERIF};text-align:center;text-shadow:0 3px 5px #000;z-index:3}
 .mv{position:absolute;left:26px;top:272px;width:215px;height:66px;background:rgba(150,100,55,.82);clip-path:polygon(0 0,70% 0,70% -30%,100% 50%,70% 130%,70% 100%,0 100%);font:700 52px/66px ${SERIF};padding-left:92px;text-shadow:0 3px 5px #000;z-index:3}
-.pan{position:absolute;left:18px;right:18px;bottom:18px;top:640px;border:2px solid #cdb26a;border-radius:20px;background:rgba(14,9,6,.88);padding:14px 22px;z-index:3}
+.pan{position:absolute;left:18px;right:18px;bottom:18px;top:596px;border:2px solid #cdb26a;border-radius:20px;background:rgba(14,9,6,.88);padding:14px 22px;z-index:3}
 .pan h2{font:700 31px ${SERIF};color:#f0d58f;border-bottom:1px solid #d9c9a0;padding-bottom:6px;margin-bottom:4px;text-shadow:0 1px 2px #000}
-.hab{padding:8px 2px;border-bottom:1px solid #d9c9a0}.hab:last-child{border:0}.hab b{display:block;color:#f0d58f;font-size:19.5px;margin-bottom:3px}.hab p{font-size:19px;line-height:1.38}</style>
+.hab{padding:6px 2px;border-bottom:1px solid #d9c9a0}.hab:last-child{border:0}.hab b{display:block;color:#f0d58f;font-size:19.5px;margin-bottom:3px}.hab p{font-size:19px;line-height:1.38}</style>
 <div class="card"><div class="art"></div><div class="shade"></div>
 <div class="head"><div>${ICONO}</div><h1>Dra. Samantha Carter</h1></div>
 <div class="cls">Científica</div><div class="fz">3/2</div><div class="mv">4</div>
 <div class="pan"><h2>Habilidades</h2>
 <div class="hab"><b>Científica</b><p>Puede entrar en el Laboratorio, donde puede Investigar.</p></div>
-<div class="hab"><b>Teoría del campo unificado</b><p>+1 a la tirada de Investigar (máx. 6). Una vez por partida, repite una tirada de Investigación fallida (la segunda es definitiva).</p></div>
+<div class="hab"><b>Teoría del campo unificado</b><p>+1 a la tirada de Investigar (máx. 6). Una vez por turno, repite una Investigación fallida (la segunda es definitiva).</p></div>
+<div class="hab"><b>Contramedidas</b><p>Cada vez que supera una Investigación, la Infección baja 1.</p></div>
 <div class="hab"><b>Oficial de la USAF</b><p>1 columna a favor al disparar.</p></div>
-<div class="hab"><b>En el último segundo</b><p>Una vez por partida, cuando la Infección vaya a subir 2 o más (o a llegar a 13), cancela hasta 3 de esa subida.</p></div></div></div>`;
+<div class="hab"><b>En el último segundo</b><p>Una vez por turno, cuando la Infección vaya a subir 2 o más (o a llegar a 13), cancela hasta 2 de esa subida.</p></div></div></div>`;
 
 const b = await chromium.launch();
 const page = await b.newPage({ viewport: { width: 660, height: 1140 }, deviceScaleFactor: 1 });
