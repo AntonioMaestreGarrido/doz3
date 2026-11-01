@@ -2,6 +2,15 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-01 03:30
+
+### Cambios
+- **Dra. Samantha Carter, habilidades de juego:**
+  - **Contramedidas (nueva):** el primer intento de Investigar de cada turno, con éxito o no, reduce la Infección en 2.
+  - **Teoría del campo unificado:** se mantiene el +1 a Investigar; desaparece la repetición de la tirada.
+  - **En el último segundo:** ahora cancela hasta **5** de la subida de Infección (antes 3), una vez por partida.
+  - La imagen de la carta no se ha tocado (todavía muestra el texto antiguo).
+
 ## 2026-11-01 03:00
 
 ### Cambios
