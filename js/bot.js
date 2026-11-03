@@ -43,7 +43,10 @@
   const mineQ = (u, id) => { const r = 'M', pi = sp(id).i; let from = null; for (let i = pi - 1; i >= 1; i--) if (zedsAt(r + i).length) { from = r + i; break; } return from ? 1 - meleeEvalDef(u, id, from) : 0.8; };
 
   /* ---------- Despliegue inicial: un héroe por ruta, en un espacio con nombre donde levantar barricada ---------- */
-  const EARLY = 5;
+  /* Parámetros de la política (se pueden cambiar con ?bp={"def":0.8} o con localStorage doz3.botparams: así se ajustan sin tocar el código). */
+  const PR = Object.assign({ rich: 8, def: 0.5, post: 15, early: 5, meleeWin: 0.5, build: 15, chaos: 6, thr: 0.6, search: 1, mineW: 20 }, (() => { try { return JSON.parse(new URLSearchParams(location.search).get('bp') || localStorage.getItem('doz3.botparams') || '{}'); } catch (e) { return {}; } })());
+  window.__PR = PR;
+  const EARLY = PR.early;
   const postOf = r => { const L = lastOf(r); if (r === 'M' && minePost()) return minePost(); let best = null, bd = 99; for (let i = 2; i <= L - 2; i++) { const id = r + i, x = G.spaces[id]; if (x && x.name && (x.kind === 'pueblo' || x.kind === 'named') && Math.abs(i - 3.5) < bd) { bd = Math.abs(i - 3.5); best = id; } } return best || (r + Math.min(3, L - 1)); };
   const spDist = (a, b) => { if (a === b) return 0; const x = G.spaces[a], y = G.spaces[b]; if (!x.route && a !== 'C') return 9; const da = a === 'C' ? 0 : lastOf(x.route) + 1 - x.i; if (x.route && x.route === y.route) return Math.abs(x.i - y.i); return da + (lastOf(y.route) + 1 - y.i); };
   /* Dos rutas de despliegue, elegidas una vez: la Montaña (mina) y la de mayor Fuerza Zed al empezar. */
@@ -71,22 +74,22 @@
     if (s.bar) v += 2;
     if (s.chaos) { /* Caos: con Zeds es un espacio peligroso; sin Zeds, un combatiente que se quede restaura el orden en el Mantenimiento (−1 Caos por turno). Cuantas menos fichas queden, más urgente */
       if (zedsAt(id).length) v -= 6;
-      else { const urg = G.chaosLeft <= 3 ? 3 : G.chaosLeft <= 6 ? 1.8 : 1, otros = plAt(id).filter(x => x !== u).length; v += otros && s.chaos <= 1 ? 0 : 6 * urg * Math.min(s.chaos, 2); }
+      else { const urg = G.chaosLeft <= 3 ? 3 : G.chaosLeft <= 6 ? 1.8 : 1, otros = plAt(id).filter(x => x !== u).length; v += otros && s.chaos <= 1 ? 0 : PR.chaos * urg * Math.min(s.chaos, 2); }
     }
     if (G.lv.fourR && s.route && id !== 'C' && !isInit(id) && canBuildBarAt(id) && terrainOf(id) < 2 && G.supplies >= 2 && routeWeight(s.route) < 35) v += 4; /* sitio para la barricada de la ruta */
     if (s.route && id !== 'C' && s.i === lastOf(s.route)) { /* último espacio de la ruta: lo que lo defiende evita la derrota */
       const w = routeWeight(s.route), others = plAt(id).filter(x => x !== u).map(x => qDef(x, id)), best = others.length ? Math.max(...others) : 0;
-      v += w * Math.max(0, qDef(u, id) - best) * 0.5;
+      v += w * Math.max(0, qDef(u, id) - best) * PR.def;
     }
     const asg = assignment()[u.id];
     if (asg && s.route === asg) { /* puesto de despliegue de este héroe */
       const P = postOf(asg), pi = sp(P).i, w = G.turnNo <= EARLY ? 1 : 0.35;
-      v += w * (id === P ? 15 + (s.bar ? 6 : 0) : Math.max(0, 8 - Math.abs(s.i - pi)) * 0.8);
+      v += w * (id === P ? PR.post + (s.bar ? 6 : 0) : Math.max(0, 8 - Math.abs(s.i - pi)) * 0.8);
     }
     const mp = minePost();
     if (mp && u === mineGuard() && s.route === 'M') { /* el guardián de la mina: puesto fijo en la Mina y gradiente para llegar hasta allí */
       const pi = sp(mp).i, here = plAt(mp).filter(x => x !== u);
-      v += id === mp ? 20 * Math.max(0, mineQ(u, id) - (here.length ? Math.max(...here.map(x => mineQ(x, id))) : 0)) + 4 : Math.max(0, 6 - Math.abs(s.i - pi)) * 0.8;
+      v += id === mp ? PR.mineW * Math.max(0, mineQ(u, id) - (here.length ? Math.max(...here.map(x => mineQ(x, id))) : 0)) + 4 : Math.max(0, 6 - Math.abs(s.i - pi)) * 0.8;
     }
     return v;
   }
@@ -116,21 +119,21 @@
       const A = unitActions(u).filter(a => a.ok);
       for (const a of A) {
         if (a.id === 'fire') {
-          const t = fireTargets(u); for (const k in t) { const far = dist(k) >= 4 && G.ammo < 7, rich = G.ammo >= 8; /* con Munición de sobra, disparar siempre compensa: la Munición que no se gasta no puntúa */
+          const t = fireTargets(u); for (const k in t) { const far = dist(k) >= 4 && G.ammo < 7, rich = G.ammo >= PR.rich; /* con Munición de sobra, disparar siempre compensa: la Munición que no se gasta no puntúa */
           const tv = Math.max(threat(k), rich ? 6 : 0) * (G.lv.fourR && sp(k).chaos ? 1.6 : 1); const sc = tv * expFire(u, t[k]) - (far ? 9 : G.ammo <= 2 ? 3 : rich ? 0.3 : 1); cands.push({ sc, u, a: 'fire', k, d: t[k] }); }
         } else if (a.id === 'move') {
           for (const k of Object.keys(reachable(u))) {
             if (!(canPay(u, 1, 'move') || moveIsFree(u, k))) continue;
-            if (zedsAt(k).length) { const m = meleeEval(u, k); if (!m || !isNamed(k) || m.win <= 0.5) continue; /* solo con ventaja (gana más de la mitad de las veces) y en un espacio con nombre */ const tv = threat(k); const sc = tv * (m.zh * 1.1 + m.win * 2.0) - m.ph * unitValue(u) * 0.35 * (1 - m.win * 0.4) - 2; cands.push({ sc, u, a: 'move', k }); }
+            if (zedsAt(k).length) { const m = meleeEval(u, k); if (!m || !isNamed(k) || m.win <= PR.meleeWin) continue; /* solo con ventaja (gana más de la mitad de las veces) y en un espacio con nombre */ const tv = threat(k); const sc = tv * (m.zh * 1.1 + m.win * 2.0) - m.ph * unitValue(u) * 0.35 * (1 - m.win * 0.4) - 2; cands.push({ sc, u, a: 'move', k }); }
             else { const sc = (stationValue(u, k) - stationValue(u, u.space)) * 0.6 - 0.4 - (sp(k).kind === 'bed' ? 2 : 0); cands.push({ sc, u, a: 'move', k }); }
           }
         } else if (a.id === 'fab') {
           const t = fireTargets(u); for (const k in t) { const far = dist(k) >= 4; cands.push({ sc: threat(k) * expFire(u, t[k]) - (far ? 9 : 0.8), u, a: 'fab', k, d: t[k] }); }
         } else if (a.id === 'search') {
           const need = Math.max(0, 5 - G.ammo) * 2.2 + (G.lv.supplies ? Math.max(0, 4 - G.supplies) * 1.2 : 0); const calm = Object.keys(fireTargets(u)).length ? 0.35 : 1;
-          const mine = sp(u.space).name === 'Mina Lucky Strike' ? 3 : 1; cands.push({ sc: need * calm * mine * (u.rapi ? 0.9 : 0.5) - 0.5, u, a: 'run', id: 'search' });
+          const mine = sp(u.space).name === 'Mina Lucky Strike' ? 3 : 1; cands.push({ sc: need * calm * mine * (u.rapi ? 0.9 : 0.5) * PR.search - 0.5, u, a: 'run', id: 'search' });
         } else if (a.id === 'cure') cands.push({ sc: 12 + hurt(u) * 2, u, a: 'run', id: 'cure' });
-        else if (a.id === 'build') { const ts = barTargets(u); const gain = Math.max(0, ...ts.map(id => 2 - terrainOf(id))); cands.push({ sc: gain > 0 ? 15 : -1, u, a: 'run', id: 'build' }); }
+        else if (a.id === 'build') { const ts = barTargets(u); const gain = Math.max(0, ...ts.map(id => 2 - terrainOf(id))); cands.push({ sc: gain > 0 ? PR.build : -1, u, a: 'run', id: 'build' }); }
         else if (a.id === 'despejar') cands.push({ sc: 18, u, a: 'run', id: 'despejar' });
         else if (a.id === 'investigate') cands.push({ sc: 9, u, a: 'run', id: 'investigate' });
         else if (a.id === 'ini') cands.push({ sc: 20, u, a: 'run', id: 'ini' });
@@ -141,8 +144,8 @@
     }
     const tk = (window.__tried = window.__tried || {}); const kk = c => G.turnNo + ':' + c.u.id + ':' + (c.id || c.a);
     for (const c of cands) if (c.a === 'run' && c.id !== 'search' && (tk[kk(c)] || 0) >= 2) c.sc = -9;
-    cands.sort((x, y) => y.sc - x.sc); const b = cands[0]; if (!b || b.sc <= 0.6) return false;
-    const u = b.u; if (b.a === 'run') tk[kk(b)] = (tk[kk(b)] || 0) + 1; (window.__tr = window.__tr || []).push('T' + G.turnNo + ' ' + u.name + ' ' + b.a + (b.k || b.id || '') + ' sc=' + b.sc.toFixed(1) + ' ammo=' + G.ammo + ' sup=' + G.supplies + ' pool=' + (G.pool.pl || []).join('') + '/' + G.pool.event);
+    cands.sort((x, y) => y.sc - x.sc); const b = cands[0]; if (!b || b.sc <= PR.thr) return false;
+    const u = b.u; const cn = (window.__cnt = window.__cnt || {}), ck = b.a + (b.id ? ':' + b.id : ''); cn[ck] = (cn[ck] || 0) + 1; if (b.a === 'run') tk[kk(b)] = (tk[kk(b)] || 0) + 1; (window.__tr = window.__tr || []).push('T' + G.turnNo + ' ' + u.name + ' ' + b.a + (b.k || b.id || '') + ' sc=' + b.sc.toFixed(1) + ' ammo=' + G.ammo + ' sup=' + G.supplies + ' pool=' + (G.pool.pl || []).join('') + '/' + G.pool.event);
     if (b.a === 'fire') ui.guard(async () => { spendActions(u, 1, 'fire'); await payFire(u); await doFire(u, b.k, b.d); });
     else if (b.a === 'fab') ui.guard(async () => { spendActions(u, 2, 'fire'); await doFire(u, b.k, b.d); });
     else if (b.a === 'move') ui.guard(async () => { if (!moveIsFree(u, b.k)) spendActions(u, 1, 'move'); await doMove(u, b.k); });
