@@ -46,12 +46,20 @@
   const EARLY = 5;
   const postOf = r => { const L = lastOf(r); if (r === 'M' && minePost()) return minePost(); let best = null, bd = 99; for (let i = 2; i <= L - 2; i++) { const id = r + i, x = G.spaces[id]; if (x && x.name && (x.kind === 'pueblo' || x.kind === 'named') && Math.abs(i - 3.5) < bd) { bd = Math.abs(i - 3.5); best = id; } } return best || (r + Math.min(3, L - 1)); };
   const spDist = (a, b) => { if (a === b) return 0; const x = G.spaces[a], y = G.spaces[b]; if (!x.route && a !== 'C') return 9; const da = a === 'C' ? 0 : lastOf(x.route) + 1 - x.i; if (x.route && x.route === y.route) return Math.abs(x.i - y.i); return da + (lastOf(y.route) + 1 - y.i); };
+  /* Dos rutas de despliegue, elegidas una vez: la Montaña (mina) y la de mayor Fuerza Zed al empezar. */
+  function deployRoutes() {
+    if (window.__r2) return window.__r2; const sr = G.routes.filter(r => r !== 'T'), zsum = r => { let t = 0; for (let i = 0; i <= lastOf(r); i++) t += zedsAt(r + i).reduce((a, z) => a + strength(z), 0); return t; };
+    const first = sr.includes('M') && minePost() ? 'M' : sr.slice().sort((a, b) => zsum(b) - zsum(a))[0];
+    const second = sr.filter(r => r !== first).sort((a, b) => zsum(b) - zsum(a))[0];
+    return (window.__r2 = [first, second].filter(Boolean));
+  }
   function assignment() {
     const A = (window.__asg = window.__asg || {}); const hs = Object.values(G.units).filter(x => x.side === 'pl' && (x.type === 'hero' || x.type === 'civh') && strength(x) > 2 && x.space && x.space !== 'CEM' && isFighter(x) && !x.nofire && !isInit(x.space));
-    const routes = G.routes.filter(r => r !== 'T'), taken = {}; for (const h of hs) if (A[h.id] && routes.includes(A[h.id])) taken[A[h.id]] = h.id;
-    for (const k in A) if (!G.units[k] || !G.units[k].space || G.units[k].space === 'CEM') { delete taken[A[k]]; delete A[k]; }
+    const routes = deployRoutes(), cnt = {};
+    for (const k in A) if (!G.units[k] || !G.units[k].space || G.units[k].space === 'CEM') delete A[k];
+    for (const h of hs) if (A[h.id]) cnt[A[h.id]] = (cnt[A[h.id]] || 0) + 1;
     const free = hs.filter(h => !A[h.id]).sort((a, b) => strength(b) - strength(a));
-    for (const h of free) { const open = routes.filter(r => !taken[r]); if (!open.length) break; let r = open[0]; if (h === mineGuard() && open.includes('M')) r = 'M'; else r = open.slice().sort((a, b) => spDist(h.space, postOf(a)) - spDist(h.space, postOf(b)))[0]; A[h.id] = r; taken[r] = h.id; }
+    for (const h of free) { const open = routes.filter(r => (cnt[r] || 0) < 2); if (!open.length) break; const r = h === mineGuard() && open.includes('M') ? 'M' : open.slice().sort((a, b) => spDist(h.space, postOf(a)) - spDist(h.space, postOf(b)))[0]; A[h.id] = r; cnt[r] = (cnt[r] || 0) + 1; }
     return A;
   }
   /* Valor de estar en un espacio: puntería sobre los Zeds en alcance (con la Munición disponible) + defensa del último espacio de cada ruta. */
