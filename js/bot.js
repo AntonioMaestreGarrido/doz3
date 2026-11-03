@@ -116,7 +116,8 @@
       const A = unitActions(u).filter(a => a.ok);
       for (const a of A) {
         if (a.id === 'fire') {
-          const t = fireTargets(u); for (const k in t) { const far = dist(k) >= 4 && G.ammo < 7; const sc = threat(k) * expFire(u, t[k]) - (far ? 9 : G.ammo <= 2 ? 3 : 1); cands.push({ sc, u, a: 'fire', k, d: t[k] }); }
+          const t = fireTargets(u); for (const k in t) { const far = dist(k) >= 4 && G.ammo < 7, rich = G.ammo >= 8; /* con Munición de sobra, disparar siempre compensa: la Munición que no se gasta no puntúa */
+          const tv = Math.max(threat(k), rich ? 6 : 0) * (G.lv.fourR && sp(k).chaos ? 1.6 : 1); const sc = tv * expFire(u, t[k]) - (far ? 9 : G.ammo <= 2 ? 3 : rich ? 0.3 : 1); cands.push({ sc, u, a: 'fire', k, d: t[k] }); }
         } else if (a.id === 'move') {
           for (const k of Object.keys(reachable(u))) {
             if (!(canPay(u, 1, 'move') || moveIsFree(u, k))) continue;
