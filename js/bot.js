@@ -41,6 +41,19 @@
   const minePost = () => { if (!G.routes.includes('M')) return null; for (let i = 1; i <= lastOf('M'); i++) if (G.spaces['M' + i] && sp('M' + i).name === 'Mina Lucky Strike') return 'M' + i; return null; };
   const mineGuard = () => { const hs = Object.values(G.units).filter(x => x.side === 'pl' && x.type === 'hero' && x.space && x.space !== 'CEM' && isFighter(x) && !x.nofire); hs.sort((a, b) => (strength(b) + (b.res ? 1 : 0)) - (strength(a) + (a.res ? 1 : 0)) || a.id - b.id); return hs[0] || null; };
   const mineQ = (u, id) => { const r = 'M', pi = sp(id).i; let from = null; for (let i = pi - 1; i >= 1; i--) if (zedsAt(r + i).length) { from = r + i; break; } return from ? 1 - meleeEvalDef(u, id, from) : 0.8; };
+
+  /* ---------- Despliegue inicial: un héroe por ruta, en un espacio con nombre donde levantar barricada ---------- */
+  const EARLY = 5;
+  const postOf = r => { const L = lastOf(r); if (r === 'M' && minePost()) return minePost(); let best = null, bd = 99; for (let i = 2; i <= L - 2; i++) { const id = r + i, x = G.spaces[id]; if (x && x.name && (x.kind === 'pueblo' || x.kind === 'named') && Math.abs(i - 3.5) < bd) { bd = Math.abs(i - 3.5); best = id; } } return best || (r + Math.min(3, L - 1)); };
+  const spDist = (a, b) => { if (a === b) return 0; const x = G.spaces[a], y = G.spaces[b]; if (!x.route && a !== 'C') return 9; const da = a === 'C' ? 0 : lastOf(x.route) + 1 - x.i; if (x.route && x.route === y.route) return Math.abs(x.i - y.i); return da + (lastOf(y.route) + 1 - y.i); };
+  function assignment() {
+    const A = (window.__asg = window.__asg || {}); const hs = Object.values(G.units).filter(x => x.side === 'pl' && (x.type === 'hero' || x.type === 'civh') && strength(x) > 2 && x.space && x.space !== 'CEM' && isFighter(x) && !x.nofire && !isInit(x.space));
+    const routes = G.routes.filter(r => r !== 'T'), taken = {}; for (const h of hs) if (A[h.id] && routes.includes(A[h.id])) taken[A[h.id]] = h.id;
+    for (const k in A) if (!G.units[k] || !G.units[k].space || G.units[k].space === 'CEM') { delete taken[A[k]]; delete A[k]; }
+    const free = hs.filter(h => !A[h.id]).sort((a, b) => strength(b) - strength(a));
+    for (const h of free) { const open = routes.filter(r => !taken[r]); if (!open.length) break; let r = open[0]; if (h === mineGuard() && open.includes('M')) r = 'M'; else r = open.slice().sort((a, b) => spDist(h.space, postOf(a)) - spDist(h.space, postOf(b)))[0]; A[h.id] = r; taken[r] = h.id; }
+    return A;
+  }
   /* Valor de estar en un espacio: puntería sobre los Zeds en alcance (con la Munición disponible) + defensa del último espacio de cada ruta. */
   function stationValue(u, id) {
     let v = 0; const s = G.spaces[id]; if (!s) return 0;
@@ -56,6 +69,11 @@
     if (s.route && id !== 'C' && s.i === lastOf(s.route)) { /* último espacio de la ruta: lo que lo defiende evita la derrota */
       const w = routeWeight(s.route), others = plAt(id).filter(x => x !== u).map(x => qDef(x, id)), best = others.length ? Math.max(...others) : 0;
       v += w * Math.max(0, qDef(u, id) - best) * 0.5;
+    }
+    const asg = assignment()[u.id];
+    if (asg && s.route === asg) { /* puesto de despliegue de este héroe */
+      const P = postOf(asg), pi = sp(P).i, w = G.turnNo <= EARLY ? 1 : 0.35;
+      v += w * (id === P ? 15 + (s.bar ? 6 : 0) : Math.max(0, 8 - Math.abs(s.i - pi)) * 0.8);
     }
     const mp = minePost();
     if (mp && u === mineGuard() && s.route === 'M') { /* el guardián de la mina: puesto fijo en la Mina y gradiente para llegar hasta allí */
@@ -85,7 +103,7 @@
   const panic = () => G.routes.some(r => { const f = routeFront(r); return f && f.d <= 1; });
   function smartPick() {
     snap();
-    const pl = Object.values(G.units).filter(u => u.side === 'pl' && u.space && u.space !== 'CEM' && isFighter(u)), cands = [];
+    const pl = Object.values(G.units).filter(u => u.side === 'pl' && u.space && u.space !== 'CEM' && isFighter(u) && !(u.type === 'civ' && strength(u) <= 2)), cands = [];
     for (const u of pl) {
       const A = unitActions(u).filter(a => a.ok);
       for (const a of A) {
