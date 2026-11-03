@@ -36,6 +36,11 @@
   function routeFront(r) { const L = lastOf(r); for (let i = L; i >= 1; i--) { const z = zedsAt(r + i); if (z.length) return { i, d: L + 1 - i, from: r + i, zs: z }; } return null; }
   function routeWeight(r) { const f = routeFront(r); if (!f) return 0; const st = f.zs.reduce((a, z) => a + strength(z), 0); return (f.d <= 4 ? [0, 100, 70, 35, 12][f.d] : 3) * (1 + st / 14); }
   const qDef = (u, id) => { const r = G.spaces[id].route, f = r && routeFront(r); if (!f) return 0.8; const from = f.d === 1 ? f.from : r + (lastOf(r)); return 1 - meleeEvalDef(u, id, f.d === 1 ? f.from : r + (lastOf(r) - 0)); };
+
+  /* Puesto de la ruta de la Montaña: la Mina Lucky Strike (se defiende allí y se busca Munición). Lo guarda el héroe más fuerte. */
+  const minePost = () => { if (!G.routes.includes('M')) return null; for (let i = 1; i <= lastOf('M'); i++) if (G.spaces['M' + i] && sp('M' + i).name === 'Mina Lucky Strike') return 'M' + i; return null; };
+  const mineGuard = () => { const hs = Object.values(G.units).filter(x => x.side === 'pl' && x.type === 'hero' && x.space && x.space !== 'CEM' && isFighter(x) && !x.nofire); hs.sort((a, b) => (strength(b) + (b.res ? 1 : 0)) - (strength(a) + (a.res ? 1 : 0)) || a.id - b.id); return hs[0] || null; };
+  const mineQ = (u, id) => { const r = 'M', pi = sp(id).i; let from = null; for (let i = pi - 1; i >= 1; i--) if (zedsAt(r + i).length) { from = r + i; break; } return from ? 1 - meleeEvalDef(u, id, from) : 0.8; };
   /* Valor de estar en un espacio: puntería sobre los Zeds en alcance (con la Munición disponible) + defensa del último espacio de cada ruta. */
   function stationValue(u, id) {
     let v = 0; const s = G.spaces[id]; if (!s) return 0;
@@ -47,6 +52,11 @@
     if (s.route && id !== 'C' && s.i === lastOf(s.route)) { /* último espacio de la ruta: lo que lo defiende evita la derrota */
       const w = routeWeight(s.route), others = plAt(id).filter(x => x !== u).map(x => qDef(x, id)), best = others.length ? Math.max(...others) : 0;
       v += w * Math.max(0, qDef(u, id) - best) * 0.5;
+    }
+    const mp = minePost();
+    if (mp && u === mineGuard() && s.route === 'M') { /* el guardián de la mina: puesto fijo en la Mina y gradiente para llegar hasta allí */
+      const pi = sp(mp).i, here = plAt(mp).filter(x => x !== u);
+      v += id === mp ? 20 * Math.max(0, mineQ(u, id) - (here.length ? Math.max(...here.map(x => mineQ(x, id))) : 0)) + 4 : Math.max(0, 6 - Math.abs(s.i - pi)) * 0.8;
     }
     return v;
   }
@@ -87,7 +97,7 @@
           const t = fireTargets(u); for (const k in t) { const far = dist(k) >= 4; cands.push({ sc: threat(k) * expFire(u, t[k]) - (far ? 9 : 0.8), u, a: 'fab', k, d: t[k] }); }
         } else if (a.id === 'search') {
           const need = Math.max(0, 5 - G.ammo) * 2.2 + (G.lv.supplies ? Math.max(0, 4 - G.supplies) * 1.2 : 0); const calm = Object.keys(fireTargets(u)).length ? 0.35 : 1;
-          cands.push({ sc: need * calm * (u.rapi ? 0.9 : 0.5) - 0.5, u, a: 'run', id: 'search' });
+          const mine = sp(u.space).name === 'Mina Lucky Strike' ? 3 : 1; cands.push({ sc: need * calm * mine * (u.rapi ? 0.9 : 0.5) - 0.5, u, a: 'run', id: 'search' });
         } else if (a.id === 'cure') cands.push({ sc: 12 + hurt(u) * 2, u, a: 'run', id: 'cure' });
         else if (a.id === 'build') { const ts = barTargets(u); const gain = Math.max(0, ...ts.map(id => 2 - terrainOf(id))); cands.push({ sc: gain > 0 ? 15 : -1, u, a: 'run', id: 'build' }); }
         else if (a.id === 'investigate') cands.push({ sc: 9, u, a: 'run', id: 'investigate' });
