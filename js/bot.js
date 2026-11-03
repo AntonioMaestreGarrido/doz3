@@ -47,7 +47,11 @@
     const saved = u.space; u.space = id; let t; try { t = fireTargets(u); } finally { u.space = saved; }
     for (const k in t) v += threat(k) * expFire(u, t[k]) * (G.ammo >= 2 ? 0.25 : 0.06);
     v += id === 'C' ? 0.5 : s.kind === 'city' ? 2 : s.kind === 'pueblo' || s.kind === 'named' ? 1.2 : 0.3;
-    if (s.bar) v += 2; if (s.chaos) v -= 6;
+    if (s.bar) v += 2;
+    if (s.chaos) { /* Caos: con Zeds es un espacio peligroso; sin Zeds, un combatiente que se quede restaura el orden en el Mantenimiento (−1 Caos por turno). Cuantas menos fichas queden, más urgente */
+      if (zedsAt(id).length) v -= 6;
+      else { const urg = G.chaosLeft <= 3 ? 3 : G.chaosLeft <= 6 ? 1.8 : 1, otros = plAt(id).filter(x => x !== u).length; v += otros && s.chaos <= 1 ? 0 : 6 * urg * Math.min(s.chaos, 2); }
+    }
     if (G.lv.fourR && s.route && id !== 'C' && !isInit(id) && canBuildBarAt(id) && terrainOf(id) < 2 && G.supplies >= 2 && routeWeight(s.route) < 35) v += 4; /* sitio para la barricada de la ruta */
     if (s.route && id !== 'C' && s.i === lastOf(s.route)) { /* último espacio de la ruta: lo que lo defiende evita la derrota */
       const w = routeWeight(s.route), others = plAt(id).filter(x => x !== u).map(x => qDef(x, id)), best = others.length ? Math.max(...others) : 0;
@@ -100,6 +104,7 @@
           const mine = sp(u.space).name === 'Mina Lucky Strike' ? 3 : 1; cands.push({ sc: need * calm * mine * (u.rapi ? 0.9 : 0.5) - 0.5, u, a: 'run', id: 'search' });
         } else if (a.id === 'cure') cands.push({ sc: 12 + hurt(u) * 2, u, a: 'run', id: 'cure' });
         else if (a.id === 'build') { const ts = barTargets(u); const gain = Math.max(0, ...ts.map(id => 2 - terrainOf(id))); cands.push({ sc: gain > 0 ? 15 : -1, u, a: 'run', id: 'build' }); }
+        else if (a.id === 'despejar') cands.push({ sc: 18, u, a: 'run', id: 'despejar' });
         else if (a.id === 'investigate') cands.push({ sc: 9, u, a: 'run', id: 'investigate' });
         else if (a.id === 'ini') cands.push({ sc: 20, u, a: 'run', id: 'ini' });
         else if (a.id === 'spe') { const inC = pl.filter(x => x.space === 'C' || (G.spaces[x.space] && sp(x.space).kind === 'city')).length; cands.push({ sc: panic() && inC >= 2 ? 50 : -1, u, a: 'run', id: 'spe' }); }
