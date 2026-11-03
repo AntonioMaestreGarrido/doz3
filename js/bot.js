@@ -43,6 +43,7 @@
     for (const k in t) v += threat(k) * expFire(u, t[k]) * (G.ammo >= 2 ? 0.25 : 0.06);
     v += id === 'C' ? 0.5 : s.kind === 'city' ? 2 : s.kind === 'pueblo' || s.kind === 'named' ? 1.2 : 0.3;
     if (s.bar) v += 2; if (s.chaos) v -= 6;
+    if (G.lv.fourR && s.route && id !== 'C' && !isInit(id) && canBuildBarAt(id) && terrainOf(id) < 2 && G.supplies >= 2 && routeWeight(s.route) < 35) v += 4; /* sitio para la barricada de la ruta */
     if (s.route && id !== 'C' && s.i === lastOf(s.route)) { /* último espacio de la ruta: lo que lo defiende evita la derrota */
       const w = routeWeight(s.route), others = plAt(id).filter(x => x !== u).map(x => qDef(x, id)), best = others.length ? Math.max(...others) : 0;
       v += w * Math.max(0, qDef(u, id) - best) * 0.5;
@@ -53,7 +54,21 @@
     const zs = zedsAt(from); if (!zs.length) return 0; const zStr = zs.reduce((a, z) => a + strength(z), 0), pStr = strength(u);
     let col = ratioCol(zStr, pStr) + terrainOf(id) + (u.key === 'schmidt' ? 1 : 0); col = clamp(col, 0, 6); let lose = 0; for (let t = 2; t <= 12; t++) { if (col < CAC_HUMAN_LOSES[sumRow(t)]) lose += P2[t]; } return lose;
   }
+
+  /* Fuerza que le quedaría a un Zed tras recibir n Impactos (0 = eliminado), con la misma regla que hitUnitOnce. */
+  function strAfter(z, n) { let h = z.hits || 0, f = !!z.flipped; for (let k = 0; k < n; k++) { h++; if (h >= (f ? z.hr : z.hf)) { if (!f) { f = true; h = 0; } else return 0; } } return f ? z.red : z.full; }
+  const dropOf = (z, n) => strength(z) - (strAfter(z, n) === 0 ? 0 : strAfter(z, n) + (z.trained ? 2 : 0));
+  if (SMART) window.addEventListener('load', () => setTimeout(() => {
+    const orig = UI.askZeds; if (!orig) return;
+    UI.askZeds = function (o) {
+      const zs = (o.options || []).map(x => G.units[x.value]).filter(z => z && (z.side === 'zed' || z.side === 'raid'));
+      if (zs.length > 1 && zs.length === o.options.length && /Objetivo|Impacto/.test(o.title || '')) { let best = zs[0]; for (const z of zs) if (dropOf(z, 3) > dropOf(best, 3)) best = z; return Promise.resolve(best.id); }
+      return orig.call(this, o);
+    };
+  }, 1000));
   function snap() { if (window.__lastSnap === G.turnNo) return; window.__lastSnap = G.turnNo; const rs = G.routes.map(r => { const o = []; for (let i = 0; i <= lastOf(r); i++) { const z = zedsAt(r + i), p = plAt(r + i); if (z.length || p.length) o.push(i + ':' + (z.length ? 'Z' + z.map(strength).join('+') : '') + (p.length ? 'P' + p.map(x => x.name.split(' ')[0] + strength(x)).join(',') : '') + (sp(r + i).bar ? 'B' : '') + (sp(r + i).chaos ? 'X' : '')); } return r + '[' + o.join(' ') + ']'; }); (window.__tr = window.__tr || []).push('== T' + G.turnNo + ' ammo=' + G.ammo + ' C:' + plAt('C').map(x => x.name.split(' ')[0] + strength(x)).join(',') + ' | ' + rs.join(' ')); }
+  /* «A punto de ganar»: algún Zed está en el último espacio de una ruta y entrará en el Centro en la próxima activación. */
+  const panic = () => G.routes.some(r => { const f = routeFront(r); return f && f.d <= 1; });
   function smartPick() {
     snap();
     const pl = Object.values(G.units).filter(u => u.side === 'pl' && u.space && u.space !== 'CEM' && isFighter(u)), cands = [];
@@ -74,9 +89,12 @@
           const need = Math.max(0, 5 - G.ammo) * 2.2 + (G.lv.supplies ? Math.max(0, 4 - G.supplies) * 1.2 : 0); const calm = Object.keys(fireTargets(u)).length ? 0.35 : 1;
           cands.push({ sc: need * calm * (u.rapi ? 0.9 : 0.5) - 0.5, u, a: 'run', id: 'search' });
         } else if (a.id === 'cure') cands.push({ sc: 12 + hurt(u) * 2, u, a: 'run', id: 'cure' });
-        else if (a.id === 'build') { const ts = barTargets(u); const tv = Math.max(0, ...ts.map(id => { let b = 0; for (let n = 1; n <= 3; n++) { const r = sp(id).route, j = sp(id).i - n; if (j >= 1 && zedsAt(r + j).length) b = Math.max(b, W_D[Math.min(9, dist(r + j))] || 1); } return b; })); cands.push({ sc: Math.min(12, tv * 0.25) + (G.supplies > 3 ? 1 : -2), u, a: 'run', id: 'build' }); }
+        else if (a.id === 'build') { const ts = barTargets(u); const gain = Math.max(0, ...ts.map(id => 2 - terrainOf(id))); cands.push({ sc: gain > 0 ? 15 : -1, u, a: 'run', id: 'build' }); }
         else if (a.id === 'investigate') cands.push({ sc: 9, u, a: 'run', id: 'investigate' });
         else if (a.id === 'ini') cands.push({ sc: 20, u, a: 'run', id: 'ini' });
+        else if (a.id === 'spe') { const inC = pl.filter(x => x.space === 'C' || (G.spaces[x.space] && sp(x.space).kind === 'city')).length; cands.push({ sc: panic() && inC >= 2 ? 50 : -1, u, a: 'run', id: 'spe' }); }
+        else if (a.id === 'cit') { const canShoot = pl.some(x => x.space === 'C' && !x.nofire && Object.keys(fireTargets(x)).some(k => dist(k) <= 1)); cands.push({ sc: panic() && canShoot && G.ammo >= 1 ? 60 : -1, u, a: 'run', id: 'cit' }); }
+        else if (a.id === 'lid') { const near = pl.some(x => (x.type === 'civ' || x.type === 'civh') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)) && canAct(x)); cands.push({ sc: near ? 5 : -1, u, a: 'run', id: 'lid' }); }
       }
     }
     const tk = (window.__tried = window.__tried || {}); const kk = c => G.turnNo + ':' + c.u.id + ':' + (c.id || c.a);
