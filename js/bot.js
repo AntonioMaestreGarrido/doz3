@@ -80,7 +80,7 @@
       return orig.call(this, o);
     };
   }, 1000));
-  function snap() { if (window.__lastSnap === G.turnNo) return; window.__lastSnap = G.turnNo; const rs = G.routes.map(r => { const o = []; for (let i = 0; i <= lastOf(r); i++) { const z = zedsAt(r + i), p = plAt(r + i); if (z.length || p.length) o.push(i + ':' + (z.length ? 'Z' + z.map(strength).join('+') : '') + (p.length ? 'P' + p.map(x => x.name.split(' ')[0] + strength(x)).join(',') : '') + (sp(r + i).bar ? 'B' : '') + (sp(r + i).chaos ? 'X' : '')); } return r + '[' + o.join(' ') + ']'; }); (window.__tr = window.__tr || []).push('== T' + G.turnNo + ' ammo=' + G.ammo + ' C:' + plAt('C').map(x => x.name.split(' ')[0] + strength(x)).join(',') + ' | ' + rs.join(' ')); }
+  function snap() { if (window.__lastSnap === G.turnNo) return; window.__lastSnap = G.turnNo; const rs = G.routes.map(r => { const o = []; for (let i = 0; i <= lastOf(r); i++) { const z = zedsAt(r + i), p = plAt(r + i); if (z.length || p.length) o.push(i + ':' + (z.length ? 'Z' + z.map(strength).join('+') : '') + (p.length ? 'P' + p.map(x => x.name.split(' ')[0] + strength(x)).join(',') : '') + (sp(r + i).bar ? 'B' : '') + (sp(r + i).chaos ? 'X' : '')); } return r + '[' + o.join(' ') + ']'; }); (window.__tr = window.__tr || []).push('== T' + G.turnNo + ' ammo=' + G.ammo + ' chaosLeft=' + G.chaosLeft + ' C:' + plAt('C').map(x => x.name.split(' ')[0] + strength(x)).join(',') + ' | ' + rs.join(' ')); }
   /* «A punto de ganar»: algún Zed está en el último espacio de una ruta y entrará en el Centro en la próxima activación. */
   const panic = () => G.routes.some(r => { const f = routeFront(r); return f && f.d <= 1; });
   function smartPick() {
