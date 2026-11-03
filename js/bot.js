@@ -77,9 +77,6 @@
         else if (a.id === 'build') { const ts = barTargets(u); const tv = Math.max(0, ...ts.map(id => { let b = 0; for (let n = 1; n <= 3; n++) { const r = sp(id).route, j = sp(id).i - n; if (j >= 1 && zedsAt(r + j).length) b = Math.max(b, W_D[Math.min(9, dist(r + j))] || 1); } return b; })); cands.push({ sc: Math.min(12, tv * 0.25) + (G.supplies > 3 ? 1 : -2), u, a: 'run', id: 'build' }); }
         else if (a.id === 'investigate') cands.push({ sc: 9, u, a: 'run', id: 'investigate' });
         else if (a.id === 'ini') cands.push({ sc: 20, u, a: 'run', id: 'ini' });
-        else if (a.id === 'spe') { const inC = pl.filter(x => x.space === 'C' || (G.spaces[x.space] && sp(x.space).kind === 'city')).length; const hot = G.routes.some(r => routeWeight(r) >= 35); cands.push({ sc: inC >= 2 && hot ? 14 : -1, u, a: 'run', id: 'spe' }); }
-        else if (a.id === 'lid') cands.push({ sc: 6, u, a: 'run', id: 'lid' });
-        else if (a.id === 'cit') { const tg = G.routes.map(r => routeFront(r)).filter(f => f && f.d === 1); cands.push({ sc: tg.length ? 40 : -1, u, a: 'run', id: 'cit' }); }
       }
     }
     const tk = (window.__tried = window.__tried || {}); const kk = c => G.turnNo + ':' + c.u.id + ':' + (c.id || c.a);
