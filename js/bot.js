@@ -90,7 +90,7 @@
         } else if (a.id === 'move') {
           for (const k of Object.keys(reachable(u))) {
             if (!(canPay(u, 1, 'move') || moveIsFree(u, k))) continue;
-            if (zedsAt(k).length) { const m = meleeEval(u, k); if (!m) continue; const tv = threat(k); const sc = tv * (m.zh * 1.1 + m.win * 2.0) - m.ph * unitValue(u) * 0.35 * (1 - m.win * 0.4) - 2; cands.push({ sc, u, a: 'move', k }); }
+            if (zedsAt(k).length) { const m = meleeEval(u, k); if (!m || !isNamed(k) || m.win <= 0.5) continue; /* solo con ventaja (gana más de la mitad de las veces) y en un espacio con nombre */ const tv = threat(k); const sc = tv * (m.zh * 1.1 + m.win * 2.0) - m.ph * unitValue(u) * 0.35 * (1 - m.win * 0.4) - 2; cands.push({ sc, u, a: 'move', k }); }
             else { const sc = (stationValue(u, k) - stationValue(u, u.space)) * 0.6 - 0.4 - (sp(k).kind === 'bed' ? 2 : 0); cands.push({ sc, u, a: 'move', k }); }
           }
         } else if (a.id === 'fab') {
