@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-03 10:40
+
+### Recuperado
+- **Modo móvil (cambios de octubre que no estaban en `main`):** se han integrado en `main` las publicaciones de móvil que estaban en la rama `ccr-151a4ec8-kxl3ro` (v35 a v40). Incluye el mapa a pantalla completa con franja de estado y menú ☰, el panel con pestañas, ◀ ▶ para recorrer unidades y Zeds, el pellizco que mueve el mapa, el panel que se pliega al elegir destino y el botón atrás de Android. Los cambios de carta del nivel V y del obituario de esa rama no se han traído porque ya están rehechos en `main`.
+
 ## 2026-11-01 07:45
 
 ### Cambios
