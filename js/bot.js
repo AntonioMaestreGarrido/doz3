@@ -105,9 +105,14 @@
     const orig = UI.askZeds; if (!orig) return;
     UI.askZeds = function (o) {
       const zs = (o.options || []).map(x => G.units[x.value]).filter(z => z && (z.side === 'zed' || z.side === 'raid'));
+      const cnt = k => { const c = (window.__cnt = window.__cnt || {}); c[k] = (c[k] || 0) + 1; };
+      /* Cartas de reacción: se cancela la activación solo cuando un grupo está a punto de llegar al Centro */
+      if (/hipnotizados/.test(o.title || '')) { const near = (o.spaces || []).some(id => dist(id) <= 2); if (near) cnt('carta:hipnotizados'); return Promise.resolve(near ? 'y' : 'n'); }
+      if (/Han picado/.test(o.title || '')) { const near = (o.spaces || []).some(id => dist(id) <= 2); if (near) cnt('carta:picado'); return Promise.resolve(near ? 'y' : 'n'); }
       if (zs.length > 1 && zs.length === o.options.length && /Objetivo|Impacto/.test(o.title || '')) { let best = zs[0]; for (const z of zs) if (dropOf(z, 3) > dropOf(best, 3)) best = z; return Promise.resolve(best.id); }
       return orig.call(this, o);
     };
+    const oc = UI.combatOpen; if (oc) UI.combatOpen = function (info) { window.__cs = info.zeds && info.zeds[0] && info.zeds[0].space; return oc.call(this, info); };
   }, 1000));
   function snap() { if (window.__lastSnap === G.turnNo) return; window.__lastSnap = G.turnNo; const rs = G.routes.map(r => { const o = []; for (let i = 0; i <= lastOf(r); i++) { const z = zedsAt(r + i), p = plAt(r + i); if (z.length || p.length) o.push(i + ':' + (z.length ? 'Z' + z.map(strength).join('+') : '') + (p.length ? 'P' + p.map(x => x.name.split(' ')[0] + strength(x)).join(',') : '') + (sp(r + i).bar ? 'B' : '') + (sp(r + i).chaos ? 'X' : '')); } return r + '[' + o.join(' ') + ']'; }); (window.__tr = window.__tr || []).push('== T' + G.turnNo + ' ammo=' + G.ammo + ' chaosLeft=' + G.chaosLeft + ' C:' + plAt('C').map(x => x.name.split(' ')[0] + strength(x)).join(',') + ' | ' + rs.join(' ')); }
   /* «A punto de ganar»: algún Zed está en el último espacio de una ruta y entrará en el Centro en la próxima activación. */
@@ -143,10 +148,19 @@
       }
     }
     const tk = (window.__tried = window.__tried || {}); const kk = c => G.turnNo + ':' + c.u.id + ':' + (c.id || c.a);
-    for (const c of cands) if (c.a === 'run' && c.id !== 'search' && (tk[kk(c)] || 0) >= 2) c.sc = -9;
+    for (const c of cands) if ((c.a === 'run' || c.a === 'card') && c.id !== 'search' && (tk[kk(c)] || 0) >= 2) c.sc = -9;
+    for (const k of G.hand) {
+      if (!handUsable(k) || G.busy) continue; let sc = -1;
+      if (k === 'senal') sc = 30; else if (k === 'adrenalina') sc = 25; else if (k === 'heroe_d' || k === 'veo_alguien') sc = 22;
+      else if (k === 'coordinador') sc = 14; else if (k === 'necesidad') sc = G.supplies >= 2 && G.ammo < 8 ? 6 : -1;
+      else if (k === 'hoguera') sc = G.lv.infection && G.inf >= 5 ? 8 : -1; else if (k === 'desesperados') sc = G.lv.infection && G.inf >= 8 && G.ammo >= 2 ? 12 : -1;
+      else if (k === 'barrelotodo') sc = chaosOnMap() > 0 ? 12 + (G.chaosLeft <= 4 ? 20 : 0) : -1; else if (k === 'civiles') sc = 5;
+      if (sc > 0) cands.push({ sc, u: pl[0] || Object.values(G.units)[0], a: 'card', id: k });
+    }
     cands.sort((x, y) => y.sc - x.sc); const b = cands[0]; if (!b || b.sc <= PR.thr) return false;
-    const u = b.u; const cn = (window.__cnt = window.__cnt || {}), ck = b.a + (b.id ? ':' + b.id : ''); cn[ck] = (cn[ck] || 0) + 1; if (b.a === 'run') tk[kk(b)] = (tk[kk(b)] || 0) + 1; (window.__tr = window.__tr || []).push('T' + G.turnNo + ' ' + u.name + ' ' + b.a + (b.k || b.id || '') + ' sc=' + b.sc.toFixed(1) + ' ammo=' + G.ammo + ' sup=' + G.supplies + ' pool=' + (G.pool.pl || []).join('') + '/' + G.pool.event);
-    if (b.a === 'fire') ui.guard(async () => { spendActions(u, 1, 'fire'); await payFire(u); await doFire(u, b.k, b.d); });
+    const u = b.u; const cn = (window.__cnt = window.__cnt || {}), ck = b.a + (b.id ? ':' + b.id : ''); cn[ck] = (cn[ck] || 0) + 1; if (b.a === 'run' || b.a === 'card') tk[kk(b)] = (tk[kk(b)] || 0) + 1; (window.__tr = window.__tr || []).push('T' + G.turnNo + ' ' + u.name + ' ' + b.a + (b.k || b.id || '') + ' sc=' + b.sc.toFixed(1) + ' ammo=' + G.ammo + ' sup=' + G.supplies + ' pool=' + (G.pool.pl || []).join('') + '/' + G.pool.event);
+    if (b.a === 'card') ui.guard(() => useHandCard(b.id));
+    else if (b.a === 'fire') ui.guard(async () => { spendActions(u, 1, 'fire'); await payFire(u); await doFire(u, b.k, b.d); });
     else if (b.a === 'fab') ui.guard(async () => { spendActions(u, 2, 'fire'); await doFire(u, b.k, b.d); });
     else if (b.a === 'move') ui.guard(async () => { if (!moveIsFree(u, b.k)) spendActions(u, 1, 'move'); await doMove(u, b.k); });
     else ui.guard(() => runAction(u, b.id));
@@ -165,6 +179,16 @@
       const sfx = document.getElementById('sfxOk'); if (sfx && !sfx.closest('[hidden]')) { sfx.click(); return; }
       const rv = document.getElementById('revbar'); if (rv) return;
       const m = document.getElementById('modal');
+      if (SMART && !m.hidden) {
+        const txt = m.textContent || '', bl = [...m.querySelectorAll('button')].filter(b => !b.disabled && !b.hidden), by = re => bl.find(b => re.test(b.textContent));
+        const cnt = k => { const c = (window.__cnt = window.__cnt || {}); c[k] = (c[k] || 0) + 1; };
+        let pick = null;
+        if (/Férrea determinación/.test(txt)) pick = by(/^Jugar/);
+        else if (/urbanistas contraatacan/i.test(txt)) pick = by(/^Jugarla/);
+        else if (/¿Juegas la carta\?/.test(txt)) pick = by(/^Jugar/);
+        else { const cb = m.querySelector('.cardbtn:not([disabled])'); if (cb && dist(window.__cs || 'C') <= 3) pick = cb; }
+        if (pick) { cnt('carta:' + (pick.textContent.match(/«([^»]+)»/) || [0, pick.textContent.slice(0, 14)])[1]); pick.click(); return; }
+      }
       if (!m.hidden) { const opt = [...m.querySelectorAll('.pickopts button, .cardpick .cpc')]; if (opt.length && !m.querySelector('.pickopts button.on, .cardpick .cpc.on')) { opt[Math.floor(Math.random() * opt.length)].click(); return; } const bs = [...m.querySelectorAll('button')].filter(b => !b.disabled && !b.hidden); if (document.getElementById('nb')) { clearInterval(__auto); window.__done = true; if (LOOP) { try { const l = JSON.parse(localStorage.getItem('doz3.botlog') || '[]'); l.push({ q, t: G.turnNo, over: G.over, lost: window.__lost || 0, why: G.loseWhy || null, evs: G.eventsRevealed, errs: __errs.slice(0, 5) }); localStorage.setItem('doz3.botlog', JSON.stringify(l.slice(-200))); } catch (e) { } location.reload(); } return; } const pr = bs.find(b => b.id === 'rollb' || b.id === 'ackb') || bs.find(b => b.classList.contains('primary')); const b = pr || bs[Math.floor(Math.random() * bs.length)]; if (b) b.click(); }
       else if (ui.mode && ui.mode.type === 'pick') { const r = ui.mode.resolve, id = ui.mode.ids[Math.floor(Math.random() * ui.mode.ids.length)]; ui.mode = null; r(id); }
       else if (G.phase === 'actions' && !G.busy) {
