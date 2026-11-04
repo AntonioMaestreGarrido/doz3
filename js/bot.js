@@ -44,7 +44,7 @@
 
   /* ---------- Despliegue inicial: un héroe por ruta, en un espacio con nombre donde levantar barricada ---------- */
   /* Parámetros de la política (se pueden cambiar con ?bp={"def":0.8} o con localStorage doz3.botparams: así se ajustan sin tocar el código). */
-  const PR = Object.assign({ rich: 8, def: 0.5, post: 15, early: 5, meleeWin: 0.5, build: 15, chaos: 6, thr: 0.6, search: 1, mineW: 20 }, (() => { try { return JSON.parse(new URLSearchParams(location.search).get('bp') || localStorage.getItem('doz3.botparams') || '{}'); } catch (e) { return {}; } })());
+  const PR = Object.assign({ reserve: 5, mineStay: 12, rich: 8, def: 0.5, post: 15, early: 5, meleeWin: 0.5, build: 15, chaos: 6, thr: 0.6, search: 1, mineW: 20 }, (() => { try { return JSON.parse(new URLSearchParams(location.search).get('bp') || localStorage.getItem('doz3.botparams') || '{}'); } catch (e) { return {}; } })());
   window.__PR = PR;
   const EARLY = PR.early;
   const postOf = r => { const L = lastOf(r); if (r === 'M' && minePost()) return minePost(); let best = null, bd = 99; for (let i = 2; i <= L - 2; i++) { const id = r + i, x = G.spaces[id]; if (x && x.name && (x.kind === 'pueblo' || x.kind === 'named') && Math.abs(i - 3.5) < bd) { bd = Math.abs(i - 3.5); best = id; } } return best || (r + Math.min(3, L - 1)); };
@@ -124,18 +124,19 @@
       const A = unitActions(u).filter(a => a.ok);
       for (const a of A) {
         if (a.id === 'fire') {
-          const t = fireTargets(u); for (const k in t) { const far = dist(k) >= 4 && G.ammo < 7, rich = G.ammo >= PR.rich; /* con Munición de sobra, disparar siempre compensa: la Munición que no se gasta no puntúa */
+          const t = fireTargets(u); for (const k in t) { const crit = dist(k) <= 2 || (G.lv.fourR && isNamed(k) && dist(k) <= 4); /* crítico: a punto de llegar, o parado en un espacio con nombre (Caos) */
+          const far = !crit && G.ammo <= PR.reserve, rich = G.ammo >= PR.rich; /* presupuesto: lo no crítico solo se dispara con Munición por encima de la reserva */ /* con Munición de sobra, disparar siempre compensa: la Munición que no se gasta no puntúa */
           const tv = Math.max(threat(k), rich ? 6 : 0) * (G.lv.fourR && sp(k).chaos ? 1.6 : 1); const sc = tv * expFire(u, t[k]) - (far ? 9 : G.ammo <= 2 ? 3 : rich ? 0.3 : 1); cands.push({ sc, u, a: 'fire', k, d: t[k] }); }
         } else if (a.id === 'move') {
           for (const k of Object.keys(reachable(u))) {
             if (!(canPay(u, 1, 'move') || moveIsFree(u, k))) continue;
-            if (zedsAt(k).length) { const m = meleeEval(u, k); if (!m || !isNamed(k) || m.win <= PR.meleeWin) continue; /* solo con ventaja (gana más de la mitad de las veces) y en un espacio con nombre */ const tv = threat(k); const sc = tv * (m.zh * 1.1 + m.win * 2.0) - m.ph * unitValue(u) * 0.35 * (1 - m.win * 0.4) - 2; cands.push({ sc, u, a: 'move', k }); }
-            else { const sc = (stationValue(u, k) - stationValue(u, u.space)) * 0.6 - 0.4 - (sp(k).kind === 'bed' ? 2 : 0); cands.push({ sc, u, a: 'move', k }); }
+            if (zedsAt(k).length) { const m = meleeEval(u, k); if (!m || !isNamed(k) || m.win <= PR.meleeWin) continue; const stay = minePost() && u === mineGuard() && u.space === minePost() ? PR.mineStay : 0; /* solo con ventaja (gana más de la mitad de las veces) y en un espacio con nombre */ const tv = threat(k); const sc = tv * (m.zh * 1.1 + m.win * 2.0) - m.ph * unitValue(u) * 0.35 * (1 - m.win * 0.4) - 2; cands.push({ sc, u, a: 'move', k }); }
+            else { const sc = (stationValue(u, k) - stationValue(u, u.space)) * 0.6 - 0.4 - (sp(k).kind === 'bed' ? 2 : 0) - (minePost() && u === mineGuard() && u.space === minePost() ? PR.mineStay : 0); cands.push({ sc, u, a: 'move', k }); }
           }
         } else if (a.id === 'fab') {
           const t = fireTargets(u); for (const k in t) { const far = dist(k) >= 4; cands.push({ sc: threat(k) * expFire(u, t[k]) - (far ? 9 : 0.8), u, a: 'fab', k, d: t[k] }); }
         } else if (a.id === 'search') {
-          const need = Math.max(0, 5 - G.ammo) * 2.2 + (G.lv.supplies ? Math.max(0, 4 - G.supplies) * 1.2 : 0); const calm = Object.keys(fireTargets(u)).length ? 0.35 : 1;
+          const need = Math.max(0, PR.reserve + 3 - G.ammo) * 2.2 + (G.lv.supplies ? Math.max(0, 4 - G.supplies) * 1.2 : 0); const calm = Object.keys(fireTargets(u)).length ? 0.35 : 1;
           const mine = sp(u.space).name === 'Mina Lucky Strike' ? 3 : 1; cands.push({ sc: need * calm * mine * (u.rapi ? 0.9 : 0.5) * PR.search - 0.5, u, a: 'run', id: 'search' });
         } else if (a.id === 'cure') cands.push({ sc: 12 + hurt(u) * 2, u, a: 'run', id: 'cure' });
         else if (a.id === 'build') { const ts = barTargets(u); const gain = Math.max(0, ...ts.map(id => 2 - terrainOf(id))); cands.push({ sc: gain > 0 ? PR.build : -1, u, a: 'run', id: 'build' }); }
