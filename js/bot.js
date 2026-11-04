@@ -39,12 +39,12 @@
 
   /* Puesto de la ruta de la Montaña: la Mina Lucky Strike (se defiende allí y se busca Munición). Lo guarda el héroe más fuerte. */
   const minePost = () => { if (!G.routes.includes('M')) return null; for (let i = 1; i <= lastOf('M'); i++) if (G.spaces['M' + i] && sp('M' + i).name === 'Mina Lucky Strike') return 'M' + i; return null; };
-  const mineGuard = () => { const hs = Object.values(G.units).filter(x => x.side === 'pl' && x.type === 'hero' && x.space && x.space !== 'CEM' && isFighter(x) && !x.nofire); hs.sort((a, b) => (strength(b) + (b.res ? 1 : 0)) - (strength(a) + (a.res ? 1 : 0)) || a.id - b.id); return hs[0] || null; };
+  const mineGuard = () => { const hs = Object.values(G.units).filter(x => x.side === 'pl' && x.type === 'hero' && x.space && x.space !== 'CEM' && isFighter(x) && !x.nofire); hs.sort((a, b) => (b.rapi ? 1 : 0) - (a.rapi ? 1 : 0) || (strength(b) + (b.res ? 1 : 0)) - (strength(a) + (a.res ? 1 : 0)) || a.id - b.id); return hs[0] || null; };
   const mineQ = (u, id) => { const r = 'M', pi = sp(id).i; let from = null; for (let i = pi - 1; i >= 1; i--) if (zedsAt(r + i).length) { from = r + i; break; } return from ? 1 - meleeEvalDef(u, id, from) : 0.8; };
 
   /* ---------- Despliegue inicial: un héroe por ruta, en un espacio con nombre donde levantar barricada ---------- */
   /* Parámetros de la política (se pueden cambiar con ?bp={"def":0.8} o con localStorage doz3.botparams: así se ajustan sin tocar el código). */
-  const PR = Object.assign({ reserve: 5, mineStay: 12, rich: 8, def: 0.5, post: 15, early: 5, meleeWin: 0.5, build: 15, chaos: 6, thr: 0.6, search: 1, mineW: 20 }, (() => { try { return JSON.parse(new URLSearchParams(location.search).get('bp') || localStorage.getItem('doz3.botparams') || '{}'); } catch (e) { return {}; } })());
+  const PR = Object.assign({ cap: 1, huntT: 8, lid: 40, reserve: 5, mineStay: 12, rich: 8, def: 0.5, post: 15, early: 5, meleeWin: 0.5, build: 15, chaos: 6, thr: 0.6, search: 1, mineW: 20 }, (() => { try { return JSON.parse(new URLSearchParams(location.search).get('bp') || localStorage.getItem('doz3.botparams') || '{}'); } catch (e) { return {}; } })());
   window.__PR = PR;
   const EARLY = PR.early;
   const postOf = r => { const L = lastOf(r); if (r === 'M' && minePost()) return minePost(); let best = null, bd = 99; for (let i = 2; i <= L - 2; i++) { const id = r + i, x = G.spaces[id]; if (x && x.name && (x.kind === 'pueblo' || x.kind === 'named') && Math.abs(i - 3.5) < bd) { bd = Math.abs(i - 3.5); best = id; } } return best || (r + Math.min(3, L - 1)); };
@@ -54,15 +54,15 @@
     if (window.__r2) return window.__r2; const sr = G.routes.filter(r => r !== 'T'), zsum = r => { let t = 0; for (let i = 0; i <= lastOf(r); i++) t += zedsAt(r + i).reduce((a, z) => a + strength(z), 0); return t; };
     const first = sr.includes('M') && minePost() ? 'M' : sr.slice().sort((a, b) => zsum(b) - zsum(a))[0];
     const second = sr.filter(r => r !== first).sort((a, b) => zsum(b) - zsum(a))[0];
-    return (window.__r2 = [first, second].filter(Boolean));
+    return (window.__r2 = sr);
   }
   function assignment() {
-    const A = (window.__asg = window.__asg || {}); const hs = Object.values(G.units).filter(x => x.side === 'pl' && (x.type === 'hero' || x.type === 'civh') && strength(x) > 2 && x.space && x.space !== 'CEM' && isFighter(x) && !x.nofire && !isInit(x.space));
+    const A = (window.__asg = window.__asg || {}); const hs = Object.values(G.units).filter(x => x.side === 'pl' && (x.type === 'hero' || x.type === 'civh' || x.type === 'marine' || x.type === 'guard' || (x.type === 'civ' && strength(x) >= 3 && !x.resist)) && strength(x) > 2 && x.space && x.space !== 'CEM' && isFighter(x) && !x.nofire && !isInit(x.space) && !(x.key === 'hunt' && G.turnNo < PR.huntT));
     const routes = deployRoutes(), cnt = {};
     for (const k in A) if (!G.units[k] || !G.units[k].space || G.units[k].space === 'CEM') delete A[k];
     for (const h of hs) if (A[h.id]) cnt[A[h.id]] = (cnt[A[h.id]] || 0) + 1;
     const free = hs.filter(h => !A[h.id]).sort((a, b) => strength(b) - strength(a));
-    for (const h of free) { const open = routes.filter(r => (cnt[r] || 0) < 2); if (!open.length) break; const r = h === mineGuard() && open.includes('M') ? 'M' : open.slice().sort((a, b) => spDist(h.space, postOf(a)) - spDist(h.space, postOf(b)))[0]; A[h.id] = r; cnt[r] = (cnt[r] || 0) + 1; }
+    for (const h of free) { const open = routes.filter(r => (cnt[r] || 0) < PR.cap); if (!open.length) break; const r = h === mineGuard() && open.includes('M') ? 'M' : open.slice().sort((a, b) => spDist(h.space, postOf(a)) - spDist(h.space, postOf(b)))[0]; A[h.id] = r; cnt[r] = (cnt[r] || 0) + 1; }
     return A;
   }
   /* Valor de estar en un espacio: puntería sobre los Zeds en alcance (con la Munición disponible) + defensa del último espacio de cada ruta. */
@@ -81,6 +81,7 @@
       const w = routeWeight(s.route), others = plAt(id).filter(x => x !== u).map(x => qDef(x, id)), best = others.length ? Math.max(...others) : 0;
       v += w * Math.max(0, qDef(u, id) - best) * PR.def;
     }
+    if (u.key === 'hunt' && G.turnNo < PR.huntT && id === 'C') v += 10; /* Liderazgo cada turno desde el Centro */
     const asg = assignment()[u.id];
     if (asg && s.route === asg) { /* puesto de despliegue de este héroe */
       const P = postOf(asg), pi = sp(P).i, w = G.turnNo <= EARLY ? 1 : 0.35;
@@ -145,7 +146,7 @@
         else if (a.id === 'ini') cands.push({ sc: 20, u, a: 'run', id: 'ini' });
         else if (a.id === 'spe') { const inC = pl.filter(x => x.space === 'C' || (G.spaces[x.space] && sp(x.space).kind === 'city')).length; cands.push({ sc: panic() && inC >= 2 ? 50 : -1, u, a: 'run', id: 'spe' }); }
         else if (a.id === 'cit') { const canShoot = pl.some(x => x.space === 'C' && !x.nofire && Object.keys(fireTargets(x)).some(k => dist(k) <= 1)); cands.push({ sc: panic() && canShoot && G.ammo >= 1 ? 60 : -1, u, a: 'run', id: 'cit' }); }
-        else if (a.id === 'lid') { const near = pl.some(x => (x.type === 'civ' || x.type === 'civh') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)) && canAct(x)); cands.push({ sc: near ? 5 : -1, u, a: 'run', id: 'lid' }); }
+        else if (a.id === 'lid') { const near = pl.some(x => (x.type === 'civ' || x.type === 'civh') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)) && canAct(x)); cands.push({ sc: near ? PR.lid : -1, u, a: 'run', id: 'lid' }); }
       }
     }
     const tk = (window.__tried = window.__tried || {}); const kk = c => G.turnNo + ':' + c.u.id + ':' + (c.id || c.a);
