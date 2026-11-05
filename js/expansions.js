@@ -163,13 +163,16 @@ refugeeArrives = async function (u) {
   await _refugeeArrives(u);
   if (!expOn(3) || !G.rumorPool.length) return;
   const dr = await drawDestiny(); if (!dr) return;
-  if (Object.values(G.spaces).some(s => s.route === dr.route && s.rumor)) { LOG('Rumor perdido: esa ruta ya tiene un Rumor sin revelar.'); await resolveTwist(dr); return; }
+  /* Aviso explicativo: la carta de Destino robada por la llegada de Refugiados decide la ruta del Rumor. */
+  const info = (title, html, img) => UI.waitAck(title, '<div class="rulebox"><b>Llegada de Refugiados · Rumor</b><br>Al llegar los Refugiados se roba una carta de Destino: su ruta (<b>' + ROUTES[dr.route].name + '</b>) decide dónde se coloca un Rumor.</div>' + html, img);
+  if (Object.values(G.spaces).some(s => s.route === dr.route && s.rumor)) { LOG('Rumor perdido: esa ruta ya tiene un Rumor sin revelar.'); await info('Rumor perdido', 'La ruta ya tiene un Rumor sin revelar (solo puede haber uno por ruta), así que este se pierde.'); await resolveTwist(dr); return; }
   const zs = routeZeds(dr.route).filter(z => !isInit(z.space) && !sp(z.space).rumor);
-  if (!zs.length) { LOG('Rumor perdido: no hay dónde colocarlo.'); await resolveTwist(dr); return; }
+  if (!zs.length) { LOG('Rumor perdido: no hay dónde colocarlo.'); await info('Rumor perdido', 'No hay Zeds en esa ruta (fuera del espacio Inicial) donde colocarlo, así que se pierde.'); await resolveTwist(dr); return; }
   const by = {}; for (const z of zs) by[z.space] = (by[z.space] || 0) + strength(z);
   const best = Object.keys(by).sort((a, b) => by[b] - by[a] || sp(b).i - sp(a).i)[0];
   const k = G.rumorPool.shift(); sp(best).rumor = k;
   LOG('Un Rumor se coloca boca abajo en ' + spaceLabel(best) + '.', 'dest'); UI.redraw();
+  await info('Rumor colocado', 'Se coloca un Rumor boca abajo en <b>' + spaceLabel(best) + '</b>, el espacio de la ruta con más Fuerza de Zeds (a igual Fuerza, el más cercano al Centro).<br><br>Una unidad tuya (Héroe, Civil Heroico, Marine o Petra) que esté allí puede gastar <b>1 acción</b> en «Revelar Rumor» (no se puede si el espacio tiene Caos). Según el Rumor, su efecto se queda en el mapa, se guarda en tu mano o se une a la unidad.', 'assets/tokens/rumores/reverso.webp');
   await resolveTwist(dr);
 };
 async function revealRumor(u, free) {
