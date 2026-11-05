@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 18:00
+
+### Cambios
+- **Trenes en la fase 4R:** la opción «Mover el Tren…» indica entre paréntesis hacia qué espacios va la línea en la que circula el tren (por ejemplo, «hacia Afueras n.º 6»).
+
 ## 2026-11-05 17:30
 
 ### Fixes
