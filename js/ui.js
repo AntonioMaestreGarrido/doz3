@@ -423,7 +423,11 @@ const ui = {
     const c = this.ctx, sel = G.sel === u.id || this.hl === u.id;
     c.save(); c.translate(r.x, r.y); if (r.scale && r.scale !== 1) c.scale(r.scale, r.scale); const hw = r.w / 2, hh = r.h / 2;
     if (sel) { c.shadowColor = '#ffd54a'; c.shadowBlur = 26; } else if (r.glow) { c.shadowColor = r.glow; c.shadowBlur = 34; }
-    if (u.type === 'train') { c.fillStyle = u.state === 'leaving' ? '#d9822b' : '#3c7fc4'; rr(c, -hw - 8, -hh / 2, r.w + 16, hh, 6); c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.fillText(u.tkey === 'local' ? 'TREN L' : 'TREN M', 0, 4); }
+    if (u.type === 'train') { c.fillStyle = u.state === 'leaving' ? '#d9822b' : '#3c7fc4'; rr(c, -hw - 8, -hh / 2, r.w + 16, hh, 6); c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center';
+      /* Sentido: saliendo = izquierda en Afueras y Bosque, derecha en Autovía y Montaña; volviendo, al revés. En el Centro (sale por cualquiera de sus dos rutas) flechas a ambos lados. */
+      const rt = u.space && G.spaces[u.space] ? sp(u.space).route : null, d0 = { B: -1, F: -1, A: 1, M: 1 }[rt], dirs = d0 ? [u.state === 'leaving' ? d0 : -d0] : [-1, 1];
+      const ax = hw - 2; c.fillText(u.tkey === 'local' ? 'TREN L' : 'TREN M', dirs.length === 1 ? -dirs[0] * 5 : 0, 4);
+      for (const dd of dirs) { c.beginPath(); c.moveTo(dd * (ax + 5), 0); c.lineTo(dd * (ax - 5), -6); c.lineTo(dd * (ax - 5), 6); c.closePath(); c.fill(); } }
     else if (isZedSide(u)) {
       const altz = Opciones.artAlt && (u.type === 'super' ? IMG['altz_' + u.key + (u.flipped ? '_r' : '')] : u.type === 'spreader' ? IMG['altz_' + u.skey + (u.flipped ? '_r' : '')] : (u.type === 'zed' && IMG['altzn_' + zedAltN(u)]));
       if (altz) {
