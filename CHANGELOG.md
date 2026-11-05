@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 17:00
+
+### Cambios
+- **Elegir tren, pasajeros y Refugiados en la fase 4R:** al elegir un tren o un pasajero, tocarlo mueve la cámara y resalta su espacio; «Aceptar» confirma. Igual que elegir espacio o unidad.
+
 ## 2026-11-05 16:30
 
 ### Cambios
