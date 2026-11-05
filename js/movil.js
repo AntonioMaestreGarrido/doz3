@@ -334,7 +334,15 @@ Object.assign(ui, {
   const _choose = ui.choose;
   ui.choose = function (o) {
     const p = _choose.call(this, o);
-    if (this.mob && o.options && o.options.some(opt => opt.focus)) { $('modal').classList.add('pick'); $('modalbox').classList.add('pickpanel'); }
+    const ruta = /Pasajeros|activación|Orden de las rutas|tren|Tren|ruta/.test(o.title || '');
+    if (this.mob && o.options && (o.options.some(opt => opt.focus) || ruta)) { $('modal').classList.add('pick'); $('modalbox').classList.add('pickpanel'); }
+    return p;
+  };
+  /* Las ventanas de trenes (paradas especiales) también van abajo, para no tapar el mapa. */
+  const _ack = ui.waitAck;
+  ui.waitAck = function (title, text, img, spec) {
+    const p = _ack.call(this, title, text, img, spec);
+    if (this.mob && /tren|Tren|Parada especial/.test(title || '')) { $('modal').classList.add('pick'); $('modalbox').classList.add('pickpanel'); }
     return p;
   };
 })();
