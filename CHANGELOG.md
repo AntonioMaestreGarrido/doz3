@@ -5,7 +5,7 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
 ## 2026-11-05 14:00
 
 ### Cambios
-- **Doc Brown:** +1 a las tiradas de Investigar (máx. 6), como Profesora Agee y la Dra. Carter. La carta ilustrada todavía no lo menciona.
+- **Doc Brown:** +1 a las tiradas de Investigar (máx. 6), como Profesora Agee y la Dra. Carter. Carta de arte alternativo regenerada con el nuevo texto (`tools/generar_doc.mjs`); la carta de arte por defecto todavía no lo menciona.
 
 ## 2026-11-05 13:00
 
