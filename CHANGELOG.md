@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 11:00
+
+### Fixes
+- **Llega un Héroe (carta de Destino, fase de Acciones):** primero se revela qué Héroe llega y después se elige el espacio de entrada. Antes se elegía el espacio sin saber quién era.
+
 ## 2026-11-03 10:40
 
 ### Recuperado
