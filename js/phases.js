@@ -568,6 +568,12 @@ async function eventEnd() {
     case 'granero': if (pl('B4')) { const n = await rollShown('Granero: Suministros', v => '<b>' + v + '</b>: +' + v + ' Suministros'); G.supplies = Math.min(20, G.supplies + n); LOG('Granero: +' + n + ' Suministros.', 'good'); } break;
     case 'descubrimiento': if (pl('F3')) await revealResearch(); break;
     case 'materiales': if (pl('A4')) await revealResearch(); break;
+    case 'suero': { const hs = allUnits(x => x.type === 'hero' && x.space && x.space !== 'CEM'); if (hs.length) { const v = hs.length === 1 ? hs[0].id : await UI.pickUnit(hs, 'Suero experimental: elige un Héroe.'); const h = G.units[v]; h.hits = 0; h.flipped = false; h.ecg = false; LOG('Suero experimental: ' + h.name + ' se recupera por completo.', 'good'); UI.redraw(); await infUp(1); } break; }
+    case 'muestra': { await revealResearch(); infDown(1); break; }
+    case 'cargamento': break; /* la bandera mercs se activa en eventStart */
+    case 'campanario': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && !isInit(x.space) && sp(x.space).route !== 'T').map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, 'Francotirador: elige un espacio con Zeds.'); const zs = zedsAt(t); const z = zs.length === 1 ? zs[0] : G.units[await UI.pickUnit(zs, 'Francotirador: elige la unidad Zed.')]; await applyZedHits([z], 2); } else LOG('Francotirador: no hay objetivo.'); break; }
+    case 'cortocircuito': { if (G.routes.includes('T')) { G.turn.hypno = (G.turn.hypno || []).concat('T'); LOG('Cortocircuito: la ruta del Túnel no se activa esta fase.', 'good'); } break; }
+    case 'ultima': { for (const u of allUnits(x => ['hero', 'civh'].includes(x.type) && x.space && x.space !== 'CEM')) { if (u.hits > 0) u.hits--; else if (u.flipped) u.flipped = false; } LOG('Última resistencia: los Héroes y Civiles Heroicos se reponen.', 'good'); UI.redraw(); break; }
     case 'soldados': { await lossChoice(await rollShown('Soldados de fortuna: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' (Suministros o Impactos).'), ['s', 'p']); break; }
     case 'bomberos': { for (const s of Object.values(G.spaces)) if (s.kind === 'pueblo' && s.chaos) {
       /* +1 de Infección por cada ficha retirada; con varias fichas en el Pueblo se elige cuántas. */

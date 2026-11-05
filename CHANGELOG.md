@@ -2,6 +2,18 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 01:29
+
+### Nuevo
+- **6 eventos de compensación en el mazo rojo (Nivel V),** para equilibrar el jefe final que se está diseñando. Todos ayudan a los jugadores y funcionan por sí solos, con o sin jefe:
+  - **Suero experimental:** un Héroe recupera todos sus Impactos y su cara completa; +1 de Infección.
+  - **Muestra de sangre:** revela sin coste la siguiente carta de Investigación y −1 de Infección.
+  - **Cargamento militar:** esta fase los disparos tienen 1 columna a favor y no gastan Munición.
+  - **Francotirador en el campanario:** 2 Impactos a una unidad Zed de la superficie (no Inicial).
+  - **Cortocircuito en el Túnel:** esta fase la ruta del Túnel no se activa.
+  - **Última resistencia:** Héroes y Civiles Heroicos retiran 1 Impacto.
+  - Las imágenes de carta son provisionales (`assets/cartas/e_*.jpg`). Caché v72.
+
 ## 2026-11-03 10:40
 
 ### Recuperado

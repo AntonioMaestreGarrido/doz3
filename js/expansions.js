@@ -436,6 +436,12 @@ const EV_FASE = {
   saqueadores: '4',      // ¡Aparecen Saqueadores!
   shhh: 'a',             // ¡Shhh! Sé que están ahí fuera…
   soldados: 'a',         // Soldados de fortuna
+  suero: 'a',            // Suero experimental
+  muestra: 'a',          // Muestra de sangre
+  cargamento: 'a',       // Cargamento militar
+  campanario: 'a',       // Francotirador en el campanario
+  cortocircuito: 'z',    // Cortocircuito en el Túnel
+  ultima: 'a',           // Última resistencia
   super_enloq: 'a',      // Los Súper Zeds enloquecen
   toxicos: 'a',          // Zeds Tóxicos
   tsunami: 'z',          // Tsunami zombi
