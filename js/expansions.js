@@ -224,6 +224,8 @@ async function moveTrain(t, dest) {
   if (dest === 'C') { for (const p of allUnits(x => x.ride === t.id)) p.ride = null; t.state = 'leaving'; }
   else if (t.state === 'leaving' && TRAIN_STOPS[dest]) {
     const [k, txt] = TRAIN_STOPS[dest]; LOG('Parada especial: ' + txt, 'good');
+    /* El beneficio se muestra en una ventana antes de aplicarse. */
+    await UI.waitAck('Parada especial: ' + t.name, '<b>' + txt + '</b>.');
     if (k === 'inf') infDown(4); else if (k === 'sup') G.supplies = Math.min(20, G.supplies + 3); else if (k === 'ammo') G.ammo = Math.min(20, G.ammo + 2); else if (k === 'evt') addEventActions(2);
   }
   for (const p of pass) { if (p.type === 'refugee' && dest === 'C') await refugeeArrives(p); p.ride = null; }

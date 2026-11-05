@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 15:00
+
+### Cambios
+- **Paradas especiales de los trenes:** al llegar a una parada (Universidad, Granja, Mina o Central Nuclear) se muestra una ventana con el beneficio antes de aplicarlo.
+
 ## 2026-11-05 14:00
 
 ### Cambios
