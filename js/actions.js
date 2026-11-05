@@ -107,7 +107,7 @@ async function doInvestigate(u, free) {
     G.charUsed.samContra = true;
     if (G.inf > 0) { const bajada = Math.min(2, G.inf); infDown(2); LOG('Contramedidas: Samantha Carter reduce la Infección en ' + bajada + '.', 'good'); }
   }
-  const ib = u.key === 'agee' || u.key === 'samcarter' ? 1 : 0, mods = ib ? [{ label: u.key === 'agee' ? 'Profesora Agee' : 'Samantha Carter', v: 1 }] : [];
+  const ib = u.key === 'agee' || u.key === 'samcarter' || u.key === 'doc' ? 1 : 0, mods = ib ? [{ label: u.key === 'agee' ? 'Profesora Agee' : u.key === 'doc' ? 'Doc Brown' : 'Samantha Carter', v: 1 }] : [];
   let dice = await UI.rollSimple('Investigar (hace falta ' + c.th + '+)', 1, null, { mods });
   let r = Math.min(6, dice[0] + ib);
   if (r < c.th && r + 1 >= c.th && u.key === 'macgyver' && G.supplies >= 1 && await UI.choose({ title: 'Ingeniero', text: 'La Investigación ha fallado (' + r + '). ¿Gastas 1 Suministro para sumar +1 y conseguirla?', options: [{ label: 'Gastar 1 Suministro', value: 'y' }, { label: 'No', value: 'n' }] }) === 'y') { G.supplies--; r++; LOG('MacGyver improvisa con 1 Suministro (+1).', 'good'); }

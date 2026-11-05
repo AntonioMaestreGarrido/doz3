@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 14:00
+
+### Cambios
+- **Doc Brown:** +1 a las tiradas de Investigar (máx. 6), como Profesora Agee y la Dra. Carter. La carta ilustrada todavía no lo menciona.
+
 ## 2026-11-05 13:00
 
 ### Fixes
