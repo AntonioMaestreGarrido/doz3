@@ -621,16 +621,11 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   /* Cordón sanitario (Brigada de Contención Sanitaria): la subida de Infección de un combate en su espacio baja 1 gratis (el pago opcional se ofrece al final del combate). */
   const infBase = !G.lv.infection ? null : o.noInf || vsPl ? 0 : meleeInfection(zeds, fighter);
   const infGain = infBase > 0 && brigadaEn(space) ? infBase - 1 : infBase;
-  /* Retroceder (Zeds atacan): mientras no se tire ningún dado, la unidad defensora puede retirarse 1 espacio hacia el Centro, si está libre de Zeds. */
-  const bkRet = !attackerHuman && fighter.side === 'pl' && space !== 'C' && sp(space).route ? nextToward(space) : null;
-  const canRetreat = !!bkRet && !blocked(bkRet) && !zedsAt(bkRet).length && !raidAt(bkRet).length && playerRoom(bkRet, fighter);
 const cinfo = { canUndo: !!o.undoable && attackerHuman, title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, infGain, cards: combatCards(fighter, attackerHuman) };
-  cinfo.canRetreat = canRetreat; cinfo.retreatTo = bkRet;
   cinfo.useCard = async c => { if (c.cancel) { cinfo.cancelled = true; return; } if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
   const h = UI.combatOpen(cinfo);
   let dice = await h.roll(extraDice);
   if (dice === null && cinfo.undone) { UI._close(); return { undone: true }; }
-  if (dice === null && cinfo.retreated) { UI._close(); LOG(fighter.name + ' se retira a ' + spaceLabel(cinfo.retreatTo) + ' antes de tirar los dados.', 'good'); await retreatAndFight([fighter], cinfo.retreatTo); return await sigue(); }
   if (dice === null) { /* ¡Tiradles algo!: se cancela este combate. Ataque de Fuerza 2 contra los atacantes; si quedan Zeds y la unidad sigue en el espacio, combate Cuerpo a Cuerpo. */
     UI._close();
     await tiradlesAttack(zeds);
