@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 17:30
+
+### Fixes
+- **Trenes en la fase 4R:** la activación «R» también puede usarse para dar la vuelta a un tren (salir o volver), sin coste de Acción. Antes solo se podía mover. No se puede dar la vuelta en el Centro ni en un espacio con Zeds o Caos.
+
 ## 2026-11-05 17:00
 
 ### Cambios
