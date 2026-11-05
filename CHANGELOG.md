@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 12:30
+
+### Nuevo
+- **Cambiar defensora:** cuando hay varias unidades que pueden defender en un espacio atacado por Zeds, Alia puede cambiar la unidad defensora junto a su evasión opcional («Cambiar defensora»). Solo aparece si hay más de una defensora posible; los Refugiados, Aldeanos y Trenes no cuentan.
+
 ## 2026-11-05 12:00
 
 ### Nuevo

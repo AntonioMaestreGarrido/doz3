@@ -526,9 +526,11 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if (!zeds.length || !hum.length) return {};
   const attackerHuman = o.attacker === 'h';
   const space = o.space;
-  let fighter = hum[0];
-  if (!attackerHuman && hum.length > 1) {
-    const v = await UI.choose({ title: 'Elige la unidad defensora', text: 'Varias unidades en ' + spaceLabel(space) + '. La elegida recibe todos los Impactos.', options: hum.map(u => ({ label: u.name + ' (Fuerza ' + strength(u) + ')', value: u.id })) });
+  /* Defensoras posibles: las que pueden combatir (no Refugiados, Aldeanos ni Trenes), salvo que no quede ninguna. */
+  const defs = hum.filter(isFighter).length ? hum.filter(isFighter) : hum;
+  let fighter = defs[0];
+  if (!attackerHuman && defs.length > 1) {
+    const v = await UI.choose({ title: 'Elige la unidad defensora', text: 'Varias unidades en ' + spaceLabel(space) + '. La elegida recibe todos los Impactos.', options: defs.map(u => ({ label: u.name + ' (Fuerza ' + strength(u) + ')', value: u.id })) });
     fighter = G.units[v];
   }
   if (!attackerHuman) for (const u of unitsAt(space)) if (u.resist && (fighter.side === 'pl')) { u.resist = false; LOG(u.name + ' deja de estar Resistiendo.'); }
@@ -569,7 +571,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     if (fighter.key === 'alia' && sp(space).route && space !== 'C') {
       const bk = nextToward(space);
       /* Evasión opcional (tirada): junto a ella se puede cambiar la unidad defensora si hay varias en el espacio (la tirada es voluntaria; las automáticas no). */
-      const evOpts = [{ label: 'Intentar evadirlo', value: 'y' }, { label: 'Combatir', value: 'n' }].concat(hum.length > 1 ? [{ label: 'Cambiar defensora', value: 'c' }] : []);
+      const evOpts = [{ label: 'Intentar evadirlo', value: 'y' }, { label: 'Combatir', value: 'n' }].concat(defs.length > 1 ? [{ label: 'Cambiar defensora', value: 'c' }] : []);
       const evV = bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter) ? await UI.choose({ title: 'Evasión (Alia)', text: 'Un Zed entra en el espacio de Alia. ¿Intenta evadirlo? (tira 1 dado: con 4-6 se retira gratis 1 espacio hacia el Centro antes del combate).', options: evOpts }) : 'n';
       if (evV === 'c') return await melee(Object.assign({}, o));
       if (evV === 'y') {
