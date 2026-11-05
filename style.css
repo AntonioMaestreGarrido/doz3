@@ -584,3 +584,7 @@ body.mob #modal.pick .opts button:last-child:not(:nth-child(2n+1)){flex:1 1 100%
 body.mob #mapwrap,body.mob #mapwrap *{touch-action:none}
 /* Los avisos sobre la portada (p. ej. «máximo de partidas guardadas» al pulsar Nueva partida) reciben los toques; el fondo transparente no. */
 body:has(#title.bgrank) #modalbox,body:has(#title.bgnew) #modalbox{pointer-events:auto}
+
+/* Elegir espacio: el botón Aceptar dentro del aviso debe recibir toques. */
+#banner button{pointer-events:auto;margin-left:8px;padding:4px 12px;font-size:13px;border-radius:12px}
+#banner button:disabled{opacity:.45}

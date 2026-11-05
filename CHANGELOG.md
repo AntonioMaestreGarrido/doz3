@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 16:00
+
+### Cambios
+- **Elegir espacio:** al pedir un espacio, tocarlo lo selecciona y mueve la cámara; el botón «Aceptar» (en el aviso superior) confirma. Antes se confirmaba al tocar. Igual que al elegir unidad.
+
 ## 2026-11-05 15:30
 
 ### Fixes

@@ -319,7 +319,7 @@ const ui = {
   onClick(e) {
     if (!G.units) return; const p = this.toMap(e), uid = this.hitUnit(p), sid = this.hitSpace(p), m = this.mode;
     if (this._pick) { if (uid && this._pick.ids.includes(uid)) this._pick.select(uid); return; }
-    if (m && m.type === 'pick') { if (sid && m.ids.includes(sid)) { this.mode = null; this.setBanner(null); this.redraw(); m.resolve(sid); } return; }
+    if (m && m.type === 'pick') { if (sid && m.ids.includes(sid)) { m.sel = sid; this.marks = [sid]; this.focus(sid); this._pickBanner(m); this.redraw(); } return; }
     if (G.busy) return;
     if (m && (m.type === 'move' || m.type === 'fire')) {
       if (sid && m.opts[sid] !== undefined) {
@@ -605,7 +605,14 @@ const ui = {
       this._pick = { ids: units.map(u => u.id), select };
     });
   },
-  pickSpace(ids, text, cancel) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res, cancel: !!cancel }; this.setBanner(text); this.redraw(); }); },
+  /* Elegir espacio: tocar un espacio válido lo selecciona y mueve la cámara; «Aceptar» confirma (igual que elegir unidad). */
+  pickSpace(ids, text, cancel) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res, cancel: !!cancel, text, sel: null }; this.setBanner(text); this.redraw(); }); },
+  _pickBanner(m) {
+    this.setBanner(m.text + (m.sel ? ' — ' + spaceLabel(m.sel) : ''));
+    const b = $('banner'); const ok = document.createElement('button'); ok.id = 'pkOk'; ok.className = 'primary'; ok.textContent = 'Aceptar'; ok.disabled = !m.sel;
+    ok.onclick = () => { if (!m.sel || this.mode !== m) return; const id = m.sel; this.mode = null; this.marks = null; this.setBanner(null); this.redraw(); m.resolve(id); };
+    b.appendChild(ok);
+  },
   /* opts.mods: modificadores de la tirada ([{label, v}]). Se muestran antes de tirar; tras la tirada el dado se anima para sumarlos.
      El valor devuelto es el dado sin modificar: quien llama suma el modificador como antes. opts.modDie: índice del dado que suma (por defecto el mejor). */
   async rollSimple(label, n, resultFn, opts) {
