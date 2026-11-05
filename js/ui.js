@@ -673,9 +673,9 @@ const ui = {
     FIRE.forEach((row, r) => { h += '<tr data-r="' + r + '"><td class="rowh">' + CAC_ROWS[r] + '</td>' + row.map((c, i) => '<td data-c="' + i + '" class="' + (i === col ? 'c-final' : '') + '">' + c + '</td>').join('') + '</tr>'; });
     return h + '</table>';
   },
-  async _rollDice(b, extra, onChange, cardApi, undoApi) {
+  async _rollDice(b, extra, onChange, cardApi, undoApi, retreatApi) {
     const got = await new Promise(r => { ui._rollGo = r;
-      $('rb').innerHTML = '<div id="cbcards"></div><button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>' + (undoApi ? ' <button id="undob">↶ Deshacer el movimiento</button>' : '');
+      $('rb').innerHTML = '<div id="cbcards"></div><button class="primary" id="rollb">🎲 Tirar ' + (2 + (extra || 0)) + ' dados</button>' + (undoApi ? ' <button id="undob">↶ Deshacer el movimiento</button>' : '') + (retreatApi ? ' <button id="retb">↶ Retroceder</button>' : '');
       const hasCards = !!(cardApi && cardApi.cards.length);
       if (hasCards) cardApi.cards.forEach(c => {
         const bt = document.createElement('button'); bt.className = 'cardbtn'; bt.textContent = '🃏 Jugar «' + DEST[c.key].name + '» (' + c.tag + ')';
@@ -684,6 +684,7 @@ const ui = {
       });
       $('rollb').onclick = () => r('roll'); $('rollb').focus();
       if (undoApi) $('undob').onclick = () => undoApi();
+      if (retreatApi) $('retb').onclick = () => retreatApi();
       if (ui.fast && !hasCards && !undoApi) r('roll'); /* con cartas disponibles no se tira solo: hay que poder jugarlas */
     });
     ui._rollGo = null;
@@ -722,7 +723,8 @@ const ui = {
         /* Cartas jugables antes de tirar: botones en esta ventana. Al jugar una, se recalcula la columna final. */
         const cardApi = info.cards && info.cards.length ? { cards: info.cards, use: async c => { await info.useCard(c); if (info.cancelled) { if (ui._rollGo) ui._rollGo('cancel'); return; } $('ccols').innerHTML = colsInner(); $('ctab').innerHTML = ui._cacTable(info.initCol, info.finalCol); } } : null;
         const undoApi = info.canUndo ? () => { info.undone = true; if (ui._rollGo) ui._rollGo('cancel'); } : null;
-        const best = await ui._rollDice(b, extra, mark, cardApi, undoApi); if (best) mark(best); EVT('dado', null, { que: 'Combate', extra: extra || 0, mejores: best }); return best;
+        const retreatApi = info.canRetreat ? () => { info.retreated = true; if (ui._rollGo) ui._rollGo('cancel'); } : null;
+        const best = await ui._rollDice(b, extra, mark, cardApi, undoApi, retreatApi); if (best) mark(best); EVT('dado', null, { que: 'Combate', extra: extra || 0, mejores: best }); return best;
       },
       ask: (t, o) => ui._ask('rb', t, o),
       reroll: (v, idx) => ui._rerollIn(b, info, v, idx),
