@@ -568,7 +568,11 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     }
     if (fighter.key === 'alia' && sp(space).route && space !== 'C') {
       const bk = nextToward(space);
-      if (bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter) && await UI.choose({ title: 'Evasión (Alia)', text: 'Un Zed entra en el espacio de Alia. ¿Intenta evadirlo? (tira 1 dado: con 4-6 se retira gratis 1 espacio hacia el Centro antes del combate).', options: [{ label: 'Intentar evadirlo', value: 'y' }, { label: 'Combatir', value: 'n' }] }) === 'y') {
+      /* Evasión opcional (tirada): junto a ella se puede cambiar la unidad defensora si hay varias en el espacio (la tirada es voluntaria; las automáticas no). */
+      const evOpts = [{ label: 'Intentar evadirlo', value: 'y' }, { label: 'Combatir', value: 'n' }].concat(hum.length > 1 ? [{ label: 'Cambiar defensora', value: 'c' }] : []);
+      const evV = bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter) ? await UI.choose({ title: 'Evasión (Alia)', text: 'Un Zed entra en el espacio de Alia. ¿Intenta evadirlo? (tira 1 dado: con 4-6 se retira gratis 1 espacio hacia el Centro antes del combate).', options: evOpts }) : 'n';
+      if (evV === 'c') return await melee(Object.assign({}, o));
+      if (evV === 'y') {
         const r = await rollShownFor(fighter, 'Evasión (Alia)', r => r >= 4 ? '<b>' + r + '</b>: se retira 1 espacio hacia el Centro antes del combate' : '<b>' + r + '</b>: no se retira (necesita 4-6)'); LOG('Evasión de Alia: ' + r);
         if (r >= 4) { LOG('Alia se escabulle antes del combate.', 'good'); await retreatAndFight([fighter], 'C'); return await sigue(); }
       }
