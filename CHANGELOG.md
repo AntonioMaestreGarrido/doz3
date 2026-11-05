@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 11:20
+
+### Fixes
+- **¡Llegó la ayuda! (rumor):** igual que con «Llega un Héroe», primero se revela la unidad elegida (Héroe o Civil Heroico) y después se elige el espacio de entrada.
+
 ## 2026-11-05 11:00
 
 ### Fixes
