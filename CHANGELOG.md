@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 18:40
+
+### Cambios
+- **Bono de los trenes en combate:** en la ventana de combate, el bono de cada tren aparece como una línea aparte («Tren (espacio) +1») y el Terreno del espacio como otra («Terreno (espacio) +1»). La suma no cambia.
+
 ## 2026-11-05 18:20
 
 ### Cambios

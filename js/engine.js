@@ -604,8 +604,12 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   const zs = betty ? [] : zedShifts(zeds, o); for (const s of zs) shifts.push(s);
   if (!attackerHuman && !betty) {
     const sal = zeds.some(z => z.key === 'saltarin');
-    const t = (G.lv.n >= 0 && !sal) ? terrainOf(space) : 0;
+    /* El Terreno del espacio y el bono de los trenes (exp. 3, +1 cada uno) se muestran por separado. */
+    const tAll = (G.lv.n >= 0 && !sal) ? terrainOf(space) : 0;
+    const tTren = tAll && !G.turn.noTerrain ? trainsAt(space).length : 0;
+    const t = tAll - tTren;
     if (t) shifts.push({ label: 'Terreno (' + spaceLabel(space) + ')', v: t });
+    if (tTren) shifts.push({ label: 'Tren (' + spaceLabel(space) + ')', v: tTren });
   }
   if (o.assassin && !betty) shifts.push({ label: 'Ataque asesino (Darling)', v: 2 });
   if (attackerHuman && fighter.key === 'alia' && o.from && sp(o.from) && sp(space).route && sp(o.from).route === sp(space).route && sp(space).i > sp(o.from).i) shifts.push({ label: 'Emboscada (Alia)', v: 2 });
