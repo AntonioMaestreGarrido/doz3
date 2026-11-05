@@ -140,16 +140,16 @@ async function moveGroup(movers, from, opts) {
   if (sp(dest).bar === 1 && G.turn.smash) { sp(dest).bar = 0; LOG('Los Zeds destruyen la Barricada de ' + spaceLabel(dest) + '.', 'bad'); }
   /* ¡Los urbanistas contraatacan!: se puede jugar al avanzar un Zed hacia un espacio de Ciudad, antes del combate. */
   if (isCity(dest) && G.hand.includes('urbanistas') && go.length) {
-    const r = await UI.choose({ title: DEST.urbanistas.name, text: (go.length > 1 ? 'Una Horda Zed' : go[0].name + ' (Fuerza ' + strength(go[0]) + ')') + ' en ' + spaceLabel(from) + ' intenta entrar en ' + spaceLabel(dest) + '. ¿Juegas la carta para eliminar una unidad Zed?', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
+    const r = await UI.choose({ title: DEST.urbanistas.name, text: (go.length > 1 ? 'Una Horda Zed' : go[0].name + ' (Fuerza ' + zF(go[0]) + ')') + ' en ' + spaceLabel(from) + ' intenta entrar en ' + spaceLabel(dest) + '. ¿Juegas la carta para eliminar una unidad Zed?', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
     if (r === 'y') {
       const t = go.length === 1 ? go[0] : G.units[await UI.pickUnit(go, 'Urbanistas: elige la unidad Zed que se elimina.')];
       G.hand.splice(G.hand.indexOf('urbanistas'), 1); G.destDiscard.push('urbanistas'); zenPlayed(); UI.updateHand();
-      LOG('¡Los urbanistas contraatacan! Se elimina ' + t.name + ' (Fuerza ' + strength(t) + ').', 'good'); await zedDies(t);
+      LOG('¡Los urbanistas contraatacan! Se elimina ' + t.name + ' (Fuerza ' + zF(t) + ').', 'good'); await zedDies(t);
       go = go.filter(z => z.space && G.units[z.id]); if (!go.length) { UI.redraw(); return { moved: true }; }
     }
   }
   UI.focus(dest); for (const z of go) { putUnit(z, dest); z.moved = true; }
-  LOG((go.length > 1 ? 'Horda Zed (' + go.map(strength).join('+') + ')' : go[0].name + ' (' + strength(go[0]) + ')') + ' avanza a ' + spaceLabel(dest) + '.', 'zed');
+  LOG((go.length > 1 ? 'Horda Zed (' + go.map(zF).join('+') + ')' : go[0].name + ' (' + zF(go[0]) + ')') + ' avanza a ' + spaceLabel(dest) + '.', 'zed');
   UI.redraw(); await UI.settle();
   if (G.turn.flamed) G.turn.flamedUnits = (G.turn.flamedUnits || []).concat(go.filter(z => leavingChaos || sp(dest).chaos).map(z => z.id));
   await mineAttack(dest, go);
@@ -450,7 +450,7 @@ async function eventEffect(ev) {
     case 'keepcalm': { const hs = allUnits(x => x.type === 'hero' && x.space); if (hs.length) { const v = await UI.pickUnit(hs, '«Keep calm»: elige un Héroe (2 columnas a favor al atacar).'); G.units[v].keepCalm = true; } break; }
     case 'mina': { const mid = 'M3'; G.turn.block.push(mid); for (const u of plAt(mid)) { await hitPlayer(u, 1); if (u.space === mid) retreatPlayers([u], 'C'); }
       for (const z of zedsAt(mid).slice()) { if (!G.units[z.id] || z.space !== mid) continue; await hitZed(z); if (G.units[z.id] && z.space === mid) await retreatZeds([z], zedOrigin(z)); } break; }
-    case 'resistentes': { await placeZedAt('M0', 'Zeds Resistentes'); const t = strongestNormalZed(); if (t) { t.zresist = true; LOG('Resistentes en un Zed de Fuerza ' + strength(t) + '.', 'bad'); } break; }
+    case 'resistentes': { await placeZedAt('M0', 'Zeds Resistentes'); const t = strongestNormalZed(); if (t) { t.zresist = true; LOG('Resistentes en un Zed de Fuerza ' + zF(t) + '.', 'bad'); } break; }
     case 'cerebros_b1': case 'cerebros_b2': break;
     case 'agua': await lossChoice(await rollShown('Agua contaminada: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' (Suministros o Impactos).'), ['s', 'p']); break;
     case 'marines': { const dr = await drawDestiny(); if (dr) { const t = dr.route + '0'; const m = makeSpecial('marines', t); removeUnit(m); await UI.superIntro(m, t, 'assets/cartas/u_marines.jpg', SPECIALS.marines.txt.join(' ')); putUnit(m, t); UI.redraw(); G.ammo = Math.min(20, G.ammo + 4); LOG('Llegan los Marines (+4 Munición).', 'good'); await resolveTwist(dr); } break; }
@@ -488,7 +488,7 @@ async function eventEffect(ev) {
       const zs = allUnits(x => x.type === 'zed' && isRouteSp(x.space)); if (!zs.length) break; const m = Math.max(...zs.map(strength)), top = zs.filter(z => strength(z) === m);
       const t = top.length === 1 ? top[0] : G.units[await UI.pickUnit(top, '¡Oh, no! ¡Otra vez no!: elige el Zed Normal más fuerte que recibe la ficha.')];
       const kinds = [...new Set(pool)]; const k = kinds.length === 1 ? kinds[0] : await UI.choose({ title: '¡Oh, no! ¡Otra vez no!', text: 'Elige la ficha de Mejora Zed que se coloca en el Zed Normal más fuerte:', options: kinds.map(x => ({ label: ZED_UPGRADES[x], value: x })) });
-      pool.splice(pool.indexOf(k), 1); t[k] = true; LOG('Ficha de Mejora Zed «' + ZED_UPGRADES[k] + '» sobre un Zed de Fuerza ' + strength(t) + '.', 'bad'); break; }
+      pool.splice(pool.indexOf(k), 1); t[k] = true; LOG('Ficha de Mejora Zed «' + ZED_UPGRADES[k] + '» sobre un Zed de Fuerza ' + zF(t) + '.', 'bad'); break; }
     case 'desde_lab': { const t = 'T4'; if (G.routes.includes('T')) { const sup = allUnits(x => x.type === 'super').length; await placeZedAt(t, 'Desde el laboratorio', sup ? await makeZedA() : await makeSuperA()); } break; }
     case 'hinchados': { const dr = await drawDestiny(); if (dr) { const all = routeZeds(dr.route); if (all.length) {
       const mi = Math.max(...all.map(z => sp(z.space).i)), top = all.filter(z => sp(z.space).i === mi);

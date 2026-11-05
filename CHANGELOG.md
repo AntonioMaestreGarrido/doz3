@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-05 16:30
+
+### Cambios
+- **Fuerza de los Zeds en el texto:** donde antes se leía «fuerza 9», ahora se lee la fuerza de las dos caras, completa y reducida (p. ej. «9/3»): en el registro, en la ventana de combate, en las hordas («9/3+5/3») y en los avisos de avance, retirada, impactos y cartas. Las insignias de la ficha siguen mostrando la fuerza actual.
+
 ## 2026-11-05 16:00
 
 ### Cambios

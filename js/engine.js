@@ -99,8 +99,10 @@ function removeUnit(u) {
 function unitsAt(id) { return sp(id).units.map(x => G.units[x]).filter(Boolean); }
 const zedsAt = id => unitsAt(id).filter(isZedSide);
 /* Nombres inequívocos para preguntas: un Zed o una Horda, con su fuerza y su espacio. */
-function zedGroupName(zs, id) { return (zs.length > 1 ? 'Horda de ' + zs.length + ' Zeds (fuerza ' + zs.map(strength).join('+') + ')' : zs[0].name + ' (fuerza ' + strength(zs[0]) + ')') + ' en ' + spaceLabel(id); }
-function zedLabel(z) { return z.name + ' (fuerza ' + strength(z) + ')' + (z.hits ? ' ' + '♥'.repeat(z.hits) : '') + (z.flipped ? ' · cara reducida' : '') + ' en ' + spaceLabel(z.space); }
+/* Fuerza de un Zed en texto: completa/reducida (p. ej. 9/3). Los Zeds siempre muestran las dos caras. */
+const zF = u => u.side === 'zed' ? u.full + '/' + u.red : strength(u);
+function zedGroupName(zs, id) { return (zs.length > 1 ? 'Horda de ' + zs.length + ' Zeds (fuerza ' + zs.map(zF).join('+') + ')' : zs[0].name + ' (fuerza ' + zF(zs[0]) + ')') + ' en ' + spaceLabel(id); }
+function zedLabel(z) { return z.name + ' (fuerza ' + zF(z) + ')' + (z.hits ? ' ' + '♥'.repeat(z.hits) : '') + (z.flipped ? ' · cara reducida' : '') + ' en ' + spaceLabel(z.space); }
 const normalZedsAt = id => zedsAt(id).filter(u => u.type !== 'spreader');
 const plAt = id => unitsAt(id).filter(isFighter);
 const softAt = id => unitsAt(id).filter(isSoft);
@@ -290,7 +292,7 @@ async function hitZed(t) {
   const r = hitUnitOnce(t); EVT('zhit', ACTOR, { z: t.name, r });
   if (r === 'flip') { LOG(t.name + ' queda con Fuerza reducida (' + t.red + ').'); await UI.fxFlip(t, before); }
   else if (r === 'dead') await zedDies(t);
-  else { LOG('Impacto a ' + t.name + ' ' + strength(t) + ' (' + t.hits + ').'); await UI.fxHit(t); }
+  else { LOG('Impacto a ' + t.name + ' ' + zF(t) + ' (' + t.hits + ').'); await UI.fxHit(t); }
   UI.redraw();
 }
 async function zedDies(t) {
@@ -436,7 +438,7 @@ async function retreatZeds(zeds, startId) {
     let i = s0.i;
     while (i >= 0 && (z.type !== 'spreader') && (normalZedsAt(s0.route + i).length >= zedCap(s0.route + i) && sp(s0.route + i).kind !== 'crypt' || blocked(s0.route + i))) i--;
     if (i < 0) { const f = firstOpenInitial(); if (f) { putUnit(z, f); LOG('Un Zed retirado se coloca en ' + spaceLabel(f) + '.'); } else { returnZed(z); } continue; }
-    const d = s0.route + i; putUnit(z, d); z.moved = true; LOG(z.name + ' (' + strength(z) + ') se retira a ' + spaceLabel(d) + '.');
+    const d = s0.route + i; putUnit(z, d); z.moved = true; LOG(z.name + ' (' + zF(z) + ') se retira a ' + spaceLabel(d) + '.');
     (landed[d] = landed[d] || []).push(z);
   }
   UI.redraw();
@@ -480,7 +482,7 @@ function hasPart(k) { return G.weapon && G.weapon.parts.includes(k); }
 function weaponFor(u, k) { return hasPart(k) && !(u && u.type === 'guard' && !u.reachedC && !(u.space && G.spaces[u.space] && isCity(u.space))); }
 function zedShifts(zs, o) {
   const s = [];
-  const by = f => zs.filter(f).map(z => z.name + ' ' + strength(z)).join(', ');
+  const by = f => zs.filter(f).map(z => z.name + ' ' + zF(z)).join(', ');
   if (zs.some(z => z.smart)) s.push({ label: 'Inteligentes', v: -1, by: by(z => z.smart) });
   if (zs.some(z => z.leader)) s.push({ label: 'Líder Zed', v: -1, by: by(z => z.leader) });
   if (G.turn.flamed && zs.some(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id))) s.push({ label: 'Zeds flambeados', v: -2, by: by(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id)) });
@@ -594,7 +596,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if (!UI.fast) { if (zeds.length > 1) Sfx.horde(); else Sfx.growl(); }
   await UI.fxClash(space, attackerHuman ? fighter : zeds[0], attackerHuman ? zeds[0] : fighter);
   let initialCard = 0;
-  const zStr = zeds.reduce((a, z) => a + strength(z), 0), pStr = strength(fighter) + meleeStrengthBonus(fighter, { attacking: attackerHuman });
+  const zStr = zeds.reduce((a, z) => a + strength(z), 0), zShow = zeds.length === 1 ? zF(zeds[0]) : zeds.reduce((a, z) => a + z.full, 0) + '/' + zeds.reduce((a, z) => a + z.red, 0), pStr = strength(fighter) + meleeStrengthBonus(fighter, { attacking: attackerHuman });
   const betty = fighter.key === 'betty' && zeds.every(z => isZedSide(z));
   const initCol = betty ? bettyCol(fighter) : ratioCol(zStr, pStr);
   const shifts = betty ? (weaponFor(fighter, 'nudillos') && attackerHuman ? [{ label: 'Nudillos Zeds', v: 1 }] : []) : humanShifts(fighter, { attacking: attackerHuman, vsPlayers: false });
@@ -621,7 +623,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   /* Cordón sanitario (Brigada de Contención Sanitaria): la subida de Infección de un combate en su espacio baja 1 gratis (el pago opcional se ofrece al final del combate). */
   const infBase = !G.lv.infection ? null : o.noInf || vsPl ? 0 : meleeInfection(zeds, fighter);
   const infGain = infBase > 0 && brigadaEn(space) ? infBase - 1 : infBase;
-const cinfo = { canUndo: !!o.undoable && attackerHuman, title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, infGain, cards: combatCards(fighter, attackerHuman) };
+const cinfo = { canUndo: !!o.undoable && attackerHuman, title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, zShow, pStr, initCol, shifts, finalCol, extraDice, infGain, cards: combatCards(fighter, attackerHuman) };
   cinfo.useCard = async c => { if (c.cancel) { cinfo.cancelled = true; return; } if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
   const h = UI.combatOpen(cinfo);
   let dice = await h.roll(extraDice);
