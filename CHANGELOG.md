@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-06 10:20
+
+### Cambios
+- **Resumen de inicio:** el mapa del nivel (A o B) queda de fondo, con un velo oscuro para que se lean las cartas y el texto.
+
 ## 2026-11-06 10:00
 
 ### Nuevo

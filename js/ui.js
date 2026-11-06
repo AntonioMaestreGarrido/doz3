@@ -598,7 +598,11 @@ const ui = {
         '<div class="sumtab">' + rows.map(([k, v]) => '<div><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' +
         '<h3>Bonos de inicio</h3>' + (bonos.length ? '<ul class="sumb">' + bonos.join('') + '</ul>' : '<p>Ningún bono de inicio.</p>') +
         '<p class="ophint">Pasa el ratón (en táctil, mantén pulsado) sobre cualquier ficha o carta para ver su texto.</p><div class="opts"><button class="primary" id="sumok">Empezar la partida</button></div>', 'startsum');
-      $('sumok').onclick = () => { this._close(); res(); };
+      /* Mapa del nivel de fondo, con un velo oscuro para que se lea el texto. */
+      const mapa = G.lv.board === 'B' ? 'assets/mapaB.jpg' : 'assets/mapa.jpg';
+      b.style.backgroundImage = 'linear-gradient(rgba(14,11,8,.78),rgba(14,11,8,.9)), url("' + mapa + '")';
+      b.style.backgroundSize = 'cover'; b.style.backgroundPosition = 'center';
+      $('sumok').onclick = () => { b.style.backgroundImage = ''; this._close(); res(); };
       $('sumok').focus();
     });
   },
