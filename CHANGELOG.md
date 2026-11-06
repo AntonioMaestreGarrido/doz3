@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-06 12:50
+
+### Nuevo
+- **Carta del Rumor «Centro de distribución de Tall-Mart»:** carta completa con su ilustración, en estilo clásico y en arte alternativo.
+
 ## 2026-11-06 12:30
 
 ### Nuevo
