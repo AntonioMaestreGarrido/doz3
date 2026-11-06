@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-06 10:50
+
+### Cambios
+- **Colocar un Rumor:** el mapa enfoca el espacio, una ventana dice dónde se coloca boca abajo (el espacio con más Zeds de la ruta) y el espacio se marca con un pulso y un aviso, igual que al aparecer un Zed.
+
 ## 2026-11-06 10:20
 
 ### Cambios

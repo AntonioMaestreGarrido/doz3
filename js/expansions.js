@@ -168,8 +168,12 @@ refugeeArrives = async function (u) {
   if (!zs.length) { LOG('Rumor perdido: no hay dónde colocarlo.'); await resolveTwist(dr); return; }
   const by = {}; for (const z of zs) by[z.space] = (by[z.space] || 0) + strength(z);
   const best = Object.keys(by).sort((a, b) => by[b] - by[a] || sp(b).i - sp(a).i)[0];
-  const k = G.rumorPool.shift(); sp(best).rumor = k;
-  LOG('Un Rumor se coloca boca abajo en ' + spaceLabel(best) + '.', 'dest'); UI.redraw();
+  /* Igual que un Zed que aparece: se enfoca el espacio, se avisa dónde queda y se marca con un pulso. */
+  const k = G.rumorPool.shift();
+  UI.focus(best, 1.7); UI.redraw(); await UI.settle();
+  await UI.waitAck('Rumor: se coloca boca abajo', 'El Rumor se coloca boca abajo en <b>' + spaceLabel(best) + '</b>, el espacio de la ruta ' + ROUTES[dr.route].short + ' con más Zeds.');
+  sp(best).rumor = k; LOG('Un Rumor se coloca boca abajo en ' + spaceLabel(best) + '.', 'dest');
+  UI.pulseSpace(best, '#3ad6ff'); UI.toast('Rumor en ' + spaceLabel(best), '#3ad6ff', 1400); UI.redraw();
   await resolveTwist(dr);
 };
 async function revealRumor(u, free) {
