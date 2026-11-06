@@ -31,7 +31,7 @@ function zoomInfo(spec) {
     if (s.trap) parts.push('<b>Trampa explosiva</b> (Frank): cuando un Zed intenta entrar en este espacio, cada unidad Zed que entraba sufre 1 Impacto y su movimiento se cancela. Después se retira.');
     return { img: imgs.length ? 'assets/tokens/marcadores/' + imgs[0] + '.webp' : null, title: s.name || spaceLabel(key), html: li(parts) };
   }
-  if (kind === 'k') { const k = RUMORS[key]; if (!k) return null; return { img: RUMOR_CARDS.includes(key) ? (artAltOn() ? 'assets/arte_alt/rumores/k_' + key + '.webp' : 'assets/cartas/k_' + key + '.jpg') : 'assets/tokens/rumores/' + key + '.webp', title: k.name, html: '<div class="zk">Ficha de Rumor · ' + ({ C: 'Colocar', G: 'Guardar', U: 'Unir' }[k.t]) + '</div>' + li([k.txt]) }; }
+  if (kind === 'k') { const k = RUMORS[key]; if (!k) return null; return { img: RUMOR_CARDS.includes(key) && artAltOn() ? 'assets/arte_alt/rumores/k_' + key + '.webp' : RUMOR_CLASSIC.includes(key) ? 'assets/cartas/k_' + key + '.jpg' : 'assets/tokens/rumores/' + key + '.webp', title: k.name, html: '<div class="zk">Ficha de Rumor · ' + ({ C: 'Colocar', G: 'Guardar', U: 'Unir' }[k.t]) + '</div>' + li([k.txt]) }; }
   if (kind === 'h') {
     const h = HEROES[key]; if (!h) return null;
     return { img: heroImg(key), title: h.name, tok: heroTok(key) ? 1 : 0, civ: h.type === 'civh', html: '<div class="zk">' + h.cls + '</div><div class="zrow">Fuerza <b>' + h.full + '</b> (reducida <b>' + h.red + '</b>) · Movimiento <b>' + (h.mpTxt || h.mp) + '</b></div>' + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(key) };
@@ -88,8 +88,9 @@ const evImg = id => artAltOn() && ALT_EVENTS[id] ? 'assets/arte_alt/eventos/e_' 
 const destImgBase = base => artAltOn() && ALT_DEST[base] ? 'assets/arte_alt/destino/d_' + base + '.' + ALT_DEST[base] : 'assets/cartas/d_' + base + '.jpg';
 /* Cartas de Investigación con arte alternativo (assets/arte_alt/investigacion/i_<id>.webp); las cuatro «Función para la Súper Arma» siguen con la original. */
 const ALT_RES = ['cecina', 'cientificos', 'dcp', 'distraccion', 'escasean', 'esperanza', 'folletos', 'intoxicados', 'medio', 'musica', 'noticias', 'pruebas', 'sasha', 'uhm', 'ahora', 'antinatural', 'atascada', 'heroe_c', 'hormona', 'vacunas', 'antidoto'];
-/* Rumores con carta completa (assets/cartas/k_<id>.jpg); el resto solo tiene ficha. */
+/* Rumores con carta completa en arte alternativo (assets/arte_alt/rumores/k_<id>.webp); las nuevas solo se hacen así. RUMOR_CLASSIC: los que además tienen carta clásica (assets/cartas/k_<id>.jpg). El resto usa la ficha. */
 const RUMOR_CARDS = ['cementerio', 'deposito', 'base', 'tallmart'];
+const RUMOR_CLASSIC = ['cementerio', 'deposito', 'base', 'tallmart'];
 const resImg = id => artAltOn() && ALT_RES.includes(id) ? 'assets/arte_alt/investigacion/i_' + id + '.webp' : 'assets/cartas/i_' + id + '.jpg';
 const superImg = (k, red) => zedAlt(k) ? 'assets/arte_alt/zeds/' + SUPER_ZEDS[k].img + (red ? '_r' : '') + '.webp' : 'assets/tokens/' + SUPER_ZEDS[k].img + '.webp';
 const heroAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_KEYS.includes(k));
