@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-06 14:50
+
+### Nuevo
+- **Carta del Rumor «Rumores de nuestra muerte»:** carta completa en arte alternativo.
+
 ## 2026-11-06 14:30
 
 ### Nuevo
