@@ -576,6 +576,32 @@ const ui = {
       };
     });
   },
+  /* Resumen al empezar una partida: todas las cartas de Héroe y Civil Heroico en juego, con sus bonos de inicio, y las condiciones de la partida. */
+  startSummary() {
+    return new Promise(res => {
+      const EXP = { 1: 'Un paso al frente', 2: 'El blues del novato', 3: 'Rumores y ferrocarriles', 4: 'Fiesta privada (Fanmade)' };
+      const heroes = Object.values(G.units).filter(u => u.side === 'pl' && u.key && HEROES[u.key] && (u.type === 'hero' || u.type === 'civh') && u.space && u.space !== 'CEM');
+      const strip = t => String(t).replace(/<[^>]+>/g, '');
+      const cards = heroes.map(u => { const img = heroCard(u.key) || heroTok(u.key); return '<div class="sc">' + (img ? '<img src="' + img + '" alt="">' : '') + '<div class="scn">' + u.name + '</div></div>'; }).join('');
+      /* Bonos de inicio: las líneas de cada carta que hablan de lo que se obtiene al entrar en juego. */
+      const bonos = heroes.map(u => (HEROES[u.key].txt || []).filter(t => /entrar en juego|Combustible/i.test(strip(t))).map(t => '<li><b>' + u.name + ':</b> ' + strip(t) + '</li>')).flat();
+      const np = nPlayers(), players = G.players && G.players.length > 1 ? G.players.map(p => p.name).join(', ') : 'solitario';
+      const exps = (G.exp || []).map(n => EXP[n]).filter(Boolean);
+      const rows = [
+        ['Nivel', G.lv.name], ['Duración', G.len.name], ['Expansiones', exps.length ? exps.join(', ') : 'ninguna'], ['Jugadores', np + ' (' + players + ')'],
+        ['Héroes y Civiles Heroicos', String(heroes.length)], ['Suministros iniciales', String(G.supplies)], ['Munición inicial', String(G.ammo)],
+        ['Infección', G.lv.infection ? 'sí (empieza en 0)' : 'no hay Infección en este nivel'], ['Caos', G.lv.chaos ? String(G.chaosLeft) + ' fichas' : 'no hay Caos'],
+        ['Rutas', String(G.routes.length)], ['Cartas de Evento para ganar', String(G.totalEvents)]
+      ];
+      const cond = 'Si <b>un solo Zed</b> entra en el Centro de la Ciudad, pierdes' + (G.lv.fourR ? ' (y también si te quedas sin fichas de Caos)' : '') + '. Sobrevive a las ' + G.totalEvents + ' cartas de Evento y ganarás.';
+      const b = this._modal('<h2>' + G.lv.name + '</h2><p>' + cond + '</p><div class="sumcards">' + cards + '</div>' +
+        '<div class="sumtab">' + rows.map(([k, v]) => '<div><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' +
+        '<h3>Bonos de inicio</h3>' + (bonos.length ? '<ul class="sumb">' + bonos.join('') + '</ul>' : '<p>Ningún bono de inicio.</p>') +
+        '<p class="ophint">Pasa el ratón (en táctil, mantén pulsado) sobre cualquier ficha o carta para ver su texto.</p><div class="opts"><button class="primary" id="sumok">Empezar la partida</button></div>', 'startsum');
+      $('sumok').onclick = () => { this._close(); res(); };
+      $('sumok').focus();
+    });
+  },
   waitAck(title, text, img, spec) {
     return new Promise(res => {
       const im = img ? '<img src="' + img + '" alt="" ' + (spec ? 'data-zoom="' + spec + '"' : '') + '>' : '';
