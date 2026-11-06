@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-06 12:10
+
+### Cambios
+- **Cartas de Rumor (Cementerio ancestral y Depósito de armas):** con el arte alternativo activado se muestran en el estilo oscuro de las demás cartas alternativas.
+
 ## 2026-11-06 11:50
 
 ### Nuevo

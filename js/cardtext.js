@@ -31,7 +31,7 @@ function zoomInfo(spec) {
     if (s.trap) parts.push('<b>Trampa explosiva</b> (Frank): cuando un Zed intenta entrar en este espacio, cada unidad Zed que entraba sufre 1 Impacto y su movimiento se cancela. Después se retira.');
     return { img: imgs.length ? 'assets/tokens/marcadores/' + imgs[0] + '.webp' : null, title: s.name || spaceLabel(key), html: li(parts) };
   }
-  if (kind === 'k') { const k = RUMORS[key]; if (!k) return null; return { img: RUMOR_CARDS.includes(key) ? 'assets/cartas/k_' + key + '.jpg' : 'assets/tokens/rumores/' + key + '.webp', title: k.name, html: '<div class="zk">Ficha de Rumor · ' + ({ C: 'Colocar', G: 'Guardar', U: 'Unir' }[k.t]) + '</div>' + li([k.txt]) }; }
+  if (kind === 'k') { const k = RUMORS[key]; if (!k) return null; return { img: RUMOR_CARDS.includes(key) ? (artAltOn() ? 'assets/arte_alt/rumores/k_' + key + '.webp' : 'assets/cartas/k_' + key + '.jpg') : 'assets/tokens/rumores/' + key + '.webp', title: k.name, html: '<div class="zk">Ficha de Rumor · ' + ({ C: 'Colocar', G: 'Guardar', U: 'Unir' }[k.t]) + '</div>' + li([k.txt]) }; }
   if (kind === 'h') {
     const h = HEROES[key]; if (!h) return null;
     return { img: heroImg(key), title: h.name, tok: heroTok(key) ? 1 : 0, civ: h.type === 'civh', html: '<div class="zk">' + h.cls + '</div><div class="zrow">Fuerza <b>' + h.full + '</b> (reducida <b>' + h.red + '</b>) · Movimiento <b>' + (h.mpTxt || h.mp) + '</b></div>' + li(h.txt) + '<div class="zrow small">' + LEGEND + '</div>' + HERO_HINT(key) };
