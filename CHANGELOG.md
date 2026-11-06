@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-06 13:50
+
+### Cambios
+- **Rumor «Depósito de armas de la policía»:** nueva ilustración en la carta de arte alternativo.
+
 ## 2026-11-06 13:30
 
 ### Nuevo
