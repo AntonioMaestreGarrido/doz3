@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-06 13:30
+
+### Nuevo
+- **Carta del Rumor «¡Llegó la ayuda!»:** carta completa en arte alternativo.
+
 ## 2026-11-06 13:10
 
 ### Nuevo
