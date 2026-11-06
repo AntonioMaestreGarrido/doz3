@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-06 11:30
+
+### Nuevo
+- **Carta del Rumor «Cementerio ancestral»:** al ampliarlo (ratón o pulsación larga) se ve ahora una carta completa con la ilustración del cementerio de noche, en lugar de la ficha pequeña.
+
 ## 2026-11-06 10:50
 
 ### Cambios
