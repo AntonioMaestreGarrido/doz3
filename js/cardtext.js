@@ -89,7 +89,7 @@ const destImgBase = base => artAltOn() && ALT_DEST[base] ? 'assets/arte_alt/dest
 /* Cartas de Investigación con arte alternativo (assets/arte_alt/investigacion/i_<id>.webp); las cuatro «Función para la Súper Arma» siguen con la original. */
 const ALT_RES = ['cecina', 'cientificos', 'dcp', 'distraccion', 'escasean', 'esperanza', 'folletos', 'intoxicados', 'medio', 'musica', 'noticias', 'pruebas', 'sasha', 'uhm', 'ahora', 'antinatural', 'atascada', 'heroe_c', 'hormona', 'vacunas', 'antidoto'];
 /* Rumores con carta completa en arte alternativo (assets/arte_alt/rumores/k_<id>.webp); las nuevas solo se hacen así. RUMOR_CLASSIC: los que además tienen carta clásica (assets/cartas/k_<id>.jpg). El resto usa la ficha. */
-const RUMOR_CARDS = ['cementerio', 'deposito', 'base', 'tallmart', 'ferreteria', 'ayuda', 'registro', 'tesis', 'muerte'];
+const RUMOR_CARDS = ['cementerio', 'deposito', 'base', 'tallmart', 'ferreteria', 'ayuda', 'registro', 'tesis', 'muerte', 'telefono', 'plan', 'diario'];
 const RUMOR_CLASSIC = ['cementerio', 'deposito', 'base', 'tallmart'];
 const resImg = id => artAltOn() && ALT_RES.includes(id) ? 'assets/arte_alt/investigacion/i_' + id + '.webp' : 'assets/cartas/i_' + id + '.jpg';
 const superImg = (k, red) => zedAlt(k) ? 'assets/arte_alt/zeds/' + SUPER_ZEDS[k].img + (red ? '_r' : '') + '.webp' : 'assets/tokens/' + SUPER_ZEDS[k].img + '.webp';
