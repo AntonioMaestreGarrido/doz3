@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 19:00
+
+### Cambios
+- **Carta del General Lee (arte alternativo):** Instinto equino ya no menciona el «Galope al Hospital» y dice lo de la llegada al Centro con jinete. Ilustración, cabecera y fichas no cambian (`tools/generar_lee.mjs`). La carta de arte por defecto aún no.
+
 ## 2026-11-07 18:40
 
 ### Cambios
