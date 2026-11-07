@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 20:00
+
+### Fixes
+- **Draft:** el equipo inicial salía siempre igual, porque el generador de azar arrancaba con la misma semilla al cargar la página. Ahora el draft usa un azar nuevo (o la semilla de la partida, si hay código).
+
 ## 2026-11-07 19:45
 
 ### Cambios

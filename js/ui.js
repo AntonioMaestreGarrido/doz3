@@ -579,6 +579,8 @@ const ui = {
   /* Draft (partidas draft1/2/3): el equipo inicial (4 Héroes y 1 Civil Heroico al azar) se ofrece; cada jugador puede rechazar hasta X unidades
      y cada rechazada se sustituye al azar por otra del mismo tipo que no esté ya en el equipo. Devuelve { heroes, civh }. */
   async draftTeam(setup) {
+    /* El generador de azar arranca siempre igual al cargar la página: el draft siembra el suyo (o usa la semilla de la partida) para que cada partida salga distinta. */
+    rngSeed(PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]);
     const saved = G.expSel; G.expSel = setup.exps || [];
     const X = +setup.mode.slice(-1), lvl = setup.level;
     const pool = () => heroPoolFor(lvl);
