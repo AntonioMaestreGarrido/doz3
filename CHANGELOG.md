@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 18:00
+
+### Fixes
+- **Héroe montado con el General Lee:** al moverse juntos a un espacio con Zeds, ya no combate siempre Lee. Aparece «Elige quién combate» y eliges cuál de los dos combate.
+
 ## 2026-11-07 11:00
 
 ### Nuevo

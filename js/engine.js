@@ -531,6 +531,11 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   /* Defensoras posibles: las que pueden combatir (no Refugiados, Aldeanos ni Trenes), salvo que no quede ninguna. */
   const defs = hum.filter(isFighter).length ? hum.filter(isFighter) : hum;
   let fighter = defs[0];
+  /* Grupo que llega (p. ej. un Héroe montado con el General Lee): el jugador elige quién combate. */
+  if (attackerHuman && hum.length > 1) {
+    const v = await UI.choose({ title: 'Elige quién combate', text: 'Van juntos en ' + spaceLabel(space) + '. Solo combate la unidad que elijas.', options: hum.map(u => ({ label: u.name + ' (Fuerza ' + strength(u) + ')', value: u.id })) });
+    fighter = G.units[v] || fighter;
+  }
   if (!attackerHuman && defs.length > 1) {
     const v = await UI.choose({ title: 'Elige la unidad defensora', text: 'Varias unidades en ' + spaceLabel(space) + '. La elegida recibe todos los Impactos.', options: defs.map(u => ({ label: u.name + ' (Fuerza ' + strength(u) + ')', value: u.id })) });
     fighter = G.units[v];
@@ -866,10 +871,12 @@ async function doMove(u, dest, path, undoable) {
   if (zs.length) {
     let assassin = false;
     if (u.key === 'darling') { const r = await rollShownFor(u, 'Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r); if (r >= 3) assassin = true; else if (r === 1) {/* combate normal */} else { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { putUnit(u, from); return; } } }
-    const rr0 = await melee({ zeds: zs, hum: [u], space: dest, attacker: 'h', from: prevSp, back, assassin, noInf: assassin, undoable: undoable && rngState() === rng0 });
+    /* Un jinete va con su caballo (General Lee): ambos forman el grupo que llega y se elige cuál combate. */
+    const grupo = [u].concat(u.rider && G.units[u.rider] && G.units[u.rider].space === u.space ? [G.units[u.rider]] : []);
+    const rr0 = await melee({ zeds: zs, hum: grupo, space: dest, attacker: 'h', from: prevSp, back, assassin, noInf: assassin, undoable: undoable && rngState() === rng0 });
     if (rr0.undone) { UI._undoRequested = true; return; }
     if (u.key === 'betty' && rr0.humanWon) await bettyChain(u);
-  } else if (rs.length) { await melee({ zeds: rs, hum: [u], space: dest, attacker: 'h', from: prevSp, back }); }
+  } else if (rs.length) { const grupo = [u].concat(u.rider && G.units[u.rider] && G.units[u.rider].space === u.space ? [G.units[u.rider]] : []); await melee({ zeds: rs, hum: grupo, space: dest, attacker: 'h', from: prevSp, back }); }
 }
 
 /* ================= DISPARO ================= */
