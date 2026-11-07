@@ -279,6 +279,16 @@ async function carterMove(u, dest, info) {
 }
 /* ---------- Lee ---------- */
 async function leeMount(lee, h) { lee.rider = h.id; h.mount = lee.id; LOG(h.name + ' monta al General Lee.', 'good'); }
+async function leeArrivesCentro(lee) {
+  const r = G.units[lee.rider]; if (!r) return;
+  const opts = [{ label: 'Bajarse en el Centro', value: 'c' }].concat(freeBed() ? [{ label: 'Pasar a una cama del Hospital', value: 'h' }] : []);
+  const v = opts.length > 1 ? await UI.choose({ title: 'General Lee', text: r.name + ' llega al Centro. ¿Dónde se baja?', options: opts }) : 'c';
+  leeDismount(lee);
+  const bed = v === 'h' ? freeBed() : null;
+  if (bed) { putUnit(r, bed); r.ecg = false; LOG(r.name + ' pasa a una cama del Hospital.', 'good'); }
+  else LOG(r.name + ' se baja en el Centro.', 'good');
+  UI.redraw();
+}
 function leeDismount(lee) { const r = lee.rider && G.units[lee.rider]; if (r) { r.mount = null; } lee.rider = null; }
 /* ---------- Acciones extra en la ficha de unidad ---------- */
 const _unitActions = unitActions;

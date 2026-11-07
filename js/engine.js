@@ -863,6 +863,8 @@ async function doMove(u, dest, path, undoable) {
   if (u.space && G.spaces[u.space] && sp(u.space).kind === 'crypt' && !u.dr && !wAtajo && !(await cryptRollPlayer(u))) return;
   const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); EVT('move', u.id, { from, to: dest }); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
   if (isSoft(u)) { if (dest === 'C') await refugeeArrives(u); return; }
+  /* El General Lee llega al Centro con su jinete: el jinete puede bajarse en el Centro o pasar a una cama libre del Hospital. */
+  if (u.key === 'lee' && dest === 'C' && u.rider && G.units[u.rider]) await leeArrivesCentro(u);
   const zs = zedsAt(dest), rs = raidAt(dest);
   if (u.key === 'pepinillos' && (zs.length || rs.length)) {
     const r = await rollShownFor(u, 'Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido, convive con ellos sin combate' : '<b>' + r + '</b>: lo descubren, combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos al entrar en ' + spaceLabel(dest) + ': ' + r);

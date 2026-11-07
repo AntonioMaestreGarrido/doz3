@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 18:30
+
+### Cambios
+- **General Lee y su jinete:** cuando Lee llega al Centro con un jinete, se pregunta si el jinete se baja en el Centro o pasa a una cama libre del Hospital (la segunda opción solo aparece si hay una cama libre).
+
 ## 2026-11-07 18:00
 
 ### Fixes
