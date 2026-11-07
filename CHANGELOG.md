@@ -2,6 +2,15 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 11:00
+
+### Nuevo
+- **Tipos de partida** (selector «Tipo» en Nueva partida; no aplica al Juego Básico):
+  - **Normal:** como hasta ahora.
+  - **Equilibrada:** el equipo tiene siempre exactamente un científico (Agee, Carter, Doc Brown, Seaver, Jones, Wright y MacGyver).
+  - **Draft 1, 2 y 3:** antes de empezar, cada jugador puede rechazar hasta 1, 2 o 3 unidades del equipo inicial (4 Héroes y 1 Civil Heroico). Las rechazadas se sustituyen al azar por otras del mismo tipo que no estén ya en el equipo.
+- El tipo de partida aparece en el resumen de inicio.
+
 ## 2026-11-06 10:50
 
 ### Cambios

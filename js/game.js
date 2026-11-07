@@ -78,9 +78,13 @@ let PENDING_SEED = null;
 let PENDING_PLAYERS = null;
 /* Civil Heroico elegido a mano en la pantalla de «Elegir equipo» (clave) para la próxima partida; null = al azar. Se consume al empezar. */
 let PENDING_CIVH = null;
+/* Tipo de partida: 'normal' | 'equi' (un solo científico) | 'draft1' | 'draft2' | 'draft3' (rechazar hasta 1, 2 o 3 unidades). Se consume al empezar. */
+let PENDING_MODE = null;
+/* Científico: clase «Científico/a» o marca de científico (Agee, Carter, Doc, Seaver, Jones, Wright, MacGyver). */
+const isSciKey = k => !!HEROES[k] && (/Cient/.test(HEROES[k].cls) || !!HEROES[k].sci);
 /* personal: clave de héroe o lista de claves elegidas a mano (el resto se completa al azar). */
 function newGame(levelIdx, lenIdx, personal) {
-  const plist = PENDING_PLAYERS; PENDING_PLAYERS = null; const civhPick = PENDING_CIVH; PENDING_CIVH = null;
+  const plist = PENDING_PLAYERS; PENDING_PLAYERS = null; const civhPick = PENDING_CIVH; PENDING_CIVH = null; const mode = PENDING_MODE || 'normal'; PENDING_MODE = null;
   /* Cooperativo: los Héroes Personales de los jugadores y, tras ellos, el resto del equipo elegido a mano (setup.hero). */
   if (plist && plist.length > 1) personal = plist.map(p => p.hero).filter(Boolean).concat([].concat(personal || []));
   UID = 1; const SEMILLA = PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]; rngSeed(SEMILLA); PENDING_SEED = null; const RNG_INI = rngState();
@@ -101,11 +105,17 @@ function newGame(levelIdx, lenIdx, personal) {
   ['B3', 'M2', 'A2', 'F2', 'F4'].forEach((id, i) => { mkciv(civs[i], id, true); if (L.fourR) makeSpecial('aldeanos', id); });
   mkciv(civs[5], 'C', false); G.spareCiv = civs[6];
   // Héroes
+  G.mode = L.n === 0 ? 'normal' : mode;
   const keys = L.n === 0 ? ['piazza', 'hernandez', 'schmidt', 'hunt'] : (() => {
-    const pool = shuffle(heroPoolFor(L.n)); const sel = [];
-    for (const p of [].concat(personal || [])) if (pool.includes(p) && !sel.includes(p) && sel.length < 4) sel.push(p);
-    for (const k of pool) { if (sel.length >= 4) break; if (!sel.includes(k)) sel.push(k); }
-    return sel;
+    const build = () => {
+      const pool = shuffle(heroPoolFor(L.n)); const sel = [];
+      for (const p of [].concat(personal || [])) if (pool.includes(p) && !sel.includes(p) && sel.length < 4) sel.push(p);
+      for (const k of pool) { if (sel.length >= 4) break; if (!sel.includes(k)) sel.push(k); }
+      return sel;
+    };
+    /* Equilibrada: se sortea de nuevo hasta que el equipo tenga exactamente un científico (si no es posible, se queda el sorteo normal). */
+    if (G.mode === 'equi') for (let t = 0; t < 300; t++) { const k = build(); if (k.filter(isSciKey).length === 1) return k; }
+    return build();
   })();
   G.heroKeys = keys;
   const civhKey = L.n === 0 ? 'furias' : (() => { const p = CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[L.n]); return civhPick && p.includes(civhPick) ? civhPick : p[rnd(p.length)]; })();

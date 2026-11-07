@@ -52,7 +52,9 @@ async function playGame(setup, saved) {
     UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     UI.log('Partida recuperada — ' + G.lv.name + ' (' + G.len.name + '), turno ' + G.turnNo + '.', 'turn');
   } else {
-    PENDING_SEED = setup.seed != null ? setup.seed : null; PENDING_PLAYERS = setup.players || null; PENDING_CIVH = setup.civh || null;
+    PENDING_SEED = setup.seed != null ? setup.seed : null; PENDING_PLAYERS = setup.players || null; PENDING_CIVH = setup.civh || null; PENDING_MODE = setup.mode || 'normal';
+    /* Draft: los jugadores rechazan unidades del equipo inicial antes de empezar; las rechazadas se sustituyen al azar. */
+    if (/^draft[123]$/.test(PENDING_MODE) && setup.level > 0) { const d = await UI.draftTeam(setup); setup.hero = d.heroes; PENDING_CIVH = d.civh; }
     newGame(setup.level, setup.len, setup.hero, setup.exps); G.saveId = newSaveId(); G.seedCode = setup.seedCode || null;
     await ui.setMap(G.lv.board); G.busy = true; UI.updateStats(); UI.updateHand(); UI.redraw(); warmEventCards();
     if (G.setupRoll) { const [a, b] = G.setupRoll; G.setupRoll = null; await UI.waitAck('Suministros y munición iniciales', 'Tirada de 2 dados: <b>' + a + '</b> y <b>' + b + '</b>.<br>Suministros: <b>' + (a + b) + '</b> · Munición: <b>' + (6 - Math.min(a, b)) + '</b>.'); }

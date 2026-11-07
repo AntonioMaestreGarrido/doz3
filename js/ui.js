@@ -576,6 +576,52 @@ const ui = {
       };
     });
   },
+  /* Draft (partidas draft1/2/3): el equipo inicial (4 Héroes y 1 Civil Heroico al azar) se ofrece; cada jugador puede rechazar hasta X unidades
+     y cada rechazada se sustituye al azar por otra del mismo tipo que no esté ya en el equipo. Devuelve { heroes, civh }. */
+  async draftTeam(setup) {
+    const saved = G.expSel; G.expSel = setup.exps || [];
+    const X = +setup.mode.slice(-1), lvl = setup.level;
+    const pool = () => heroPoolFor(lvl);
+    const civPool = () => CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[lvl]);
+    let heroes = shuffle(pool()).slice(0, 4);
+    let civh = civPool()[rnd(civPool().length)] || null;
+    const np = setup.players && setup.players.length > 1 ? setup.players.length : 1;
+    const log = [];
+    for (let i = 0; i < np; i++) {
+      const list = heroes.map(k => ({ key: k, type: 'hero' })).concat(civh ? [{ key: civh, type: 'civh' }] : []);
+      const rej = await this._draftPick(list, X, np > 1 ? setup.players[i].name : null);
+      for (const idx of rej) {
+        if (idx < heroes.length) {
+          const old = heroes[idx], cands = pool().filter(k => !heroes.includes(k));
+          if (cands.length) { heroes[idx] = cands[rnd(cands.length)]; log.push('Rechazado ' + HEROES[old].name + ' → entra ' + HEROES[heroes[idx]].name); }
+        } else if (civh) {
+          const old = civh, cands = civPool().filter(k => k !== old);
+          if (cands.length) { civh = cands[rnd(cands.length)]; log.push('Rechazado ' + HEROES[old].name + ' → entra ' + HEROES[civh].name); }
+        }
+      }
+    }
+    G.expSel = saved;
+    const fin = heroes.map(k => HEROES[k].name).concat(civh ? [HEROES[civh].name] : []).join(', ');
+    if (log.length) await this.waitAck('Draft: equipo final', log.join('<br>') + '<br><br><b>Equipo:</b> ' + fin + '.');
+    return { heroes, civh };
+  },
+  /* Ventana de rechazo: se tocan las unidades que se quieren rechazar (hasta X). Devuelve los índices rechazados. */
+  _draftPick(list, X, name) {
+    return new Promise(res => {
+      const sel = new Set();
+      const b = this._modal('<h2>Draft' + (name ? ' · ' + name : '') + '</h2><p>Toca las unidades que quieres <b>rechazar</b> (hasta ' + X + '). Las rechazadas se sustituyen al azar.</p><div class="tpcount"></div><div class="sumcards draftcards"></div><div class="opts"><button id="drOk" class="primary">Aceptar</button></div>', 'startsum');
+      const grid = b.querySelector('.draftcards'), cnt = b.querySelector('.tpcount');
+      const paint = () => { cnt.innerHTML = 'Rechazas <b>' + sel.size + '/' + X + '</b>'; grid.querySelectorAll('.sc').forEach((d, i) => d.style.outline = sel.has(i) ? '3px solid #e8452f' : 'none'); };
+      list.forEach((u, i) => {
+        const img = heroCard(u.key) || heroTok(u.key); const d = document.createElement('div'); d.className = 'sc'; d.style.cursor = 'pointer';
+        d.innerHTML = (img ? '<img src="' + img + '" alt="">' : '') + '<div class="scn">' + HEROES[u.key].name + '</div>';
+        d.onclick = () => { if (sel.has(i)) sel.delete(i); else if (sel.size < X) sel.add(i); paint(); };
+        grid.appendChild(d);
+      });
+      paint();
+      $('drOk').onclick = () => { this._close(); res([...sel]); };
+    });
+  },
   /* Resumen al empezar una partida: todas las cartas de Héroe y Civil Heroico en juego, con sus bonos de inicio, y las condiciones de la partida. */
   startSummary() {
     return new Promise(res => {
@@ -588,7 +634,7 @@ const ui = {
       const np = nPlayers(), players = G.players && G.players.length > 1 ? G.players.map(p => p.name).join(', ') : 'solitario';
       const exps = (G.exp || []).map(n => EXP[n]).filter(Boolean);
       const rows = [
-        ['Nivel', G.lv.name], ['Duración', G.len.name], ['Expansiones', exps.length ? exps.join(', ') : 'ninguna'], ['Jugadores', np + ' (' + players + ')'],
+        ['Nivel', G.lv.name], ['Duración', G.len.name], ['Tipo', ({ normal: 'Normal', equi: 'Equilibrada (un científico)', draft1: 'Draft 1 (rechaza 1)', draft2: 'Draft 2 (rechaza 2)', draft3: 'Draft 3 (rechaza 3)' })[G.mode] || 'Normal'], ['Expansiones', exps.length ? exps.join(', ') : 'ninguna'], ['Jugadores', np + ' (' + players + ')'],
         ['Héroes y Civiles Heroicos', String(heroes.length)], ['Suministros iniciales', String(G.supplies)], ['Munición inicial', String(G.ammo)],
         ['Infección', G.lv.infection ? 'sí (empieza en 0)' : 'no hay Infección en este nivel'], ['Caos', G.lv.chaos ? String(G.chaosLeft) + ' fichas' : 'no hay Caos'],
         ['Rutas', String(G.routes.length)], ['Cartas de Evento para ganar', String(G.totalEvents)]
@@ -863,7 +909,7 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label> <button id="teamBtn" title="Mira las cartas de los Héroes y Civiles Heroicos y elige tu equipo">Elegir equipo</button> <span id="teamInfo" class="sub"></span></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label>Tipo: <select id="modeSel"><option value="normal">Normal</option><option value="equi">Equilibrada (un científico)</option><option value="draft1">Draft 1 (rechaza 1)</option><option value="draft2">Draft 2 (rechaza 2)</option><option value="draft3">Draft 3 (rechaza 3)</option></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label> <button id="teamBtn" title="Mira las cartas de los Héroes y Civiles Heroicos y elige tu equipo">Elegir equipo</button> <span id="teamInfo" class="sub"></span></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       let seed = null; /* { code, seed } cuando hay un código de partida activo */
       let civhSel = null, teamExtra = [];  /* Civil Heroico elegido a mano; Héroes elegidos de más en cooperativo (los primeros van a los jugadores) */
@@ -876,6 +922,7 @@ const ui = {
         G.expSel = [1, 2, 3, 4].filter(k => $('x' + k) && $('x' + k).checked); const pool = n === 0 ? [] : heroPoolFor(n);
         sels().forEach((e, i) => { e.innerHTML = n === 0 ? '<option value="">(los 4 Héroes básicos)</option>' : '<option value="">' + (i ? 'Héroe ' + (i + 1) + ': al azar' : 'Al azar') + '</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join(''); if (pool.includes(keep[i])) e.value = keep[i]; });
         teamExtra = teamExtra.filter(k => pool.includes(k)); if (n === 0 || (civhSel && !civhPool(n).includes(civhSel))) civhSel = null; $('teamBtn').disabled = n === 0; teamTxt();
+        $('modeSel').disabled = n === 0; if (n === 0) $('modeSel').value = 'normal';
         $('heroAll').disabled = n === 0; $('heroMore').hidden = n === 0 || !$('heroAll').checked; $('heroLbl').firstChild.textContent = $('heroAll').checked ? 'Héroe 1: ' : 'Héroe personal: ';
         /* Cooperativo: cada jugador pone su nombre y elige su Héroe Personal (los selectores de un solo jugador se ocultan). */
         const np = +$('nPl').value, prev = [...document.querySelectorAll('#plRows .plname')].map(e => e.value), prevH = [...document.querySelectorAll('#plRows .plhero')].map(e => e.value);
@@ -886,8 +933,8 @@ const ui = {
       };
       const players = () => { const np = +$('nPl').value; if (np < 2) return null; const nm = [...document.querySelectorAll('#plRows .plname')], hs = [...document.querySelectorAll('#plRows .plhero')]; return Array.from({ length: np }, (_, i) => ({ name: (nm[i] && nm[i].value.trim()) || 'Jugador ' + (i + 1), hero: (hs[i] && hs[i].value) || '' })); };
       const picked = () => { const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0) return []; if (+$('nPl').value > 1) return teamExtra.slice(); const v = sels().slice(0, $('heroAll').checked ? 4 : 1).map(e => e.value).filter(Boolean); return v; };
-      const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4].filter(k => $('x' + k).checked), heroes: picked(), civh: civhSel });
-      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4, #teamBtn').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
+      const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4].filter(k => $('x' + k).checked), heroes: picked(), civh: civhSel, mode: $('modeSel').value });
+      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4, #teamBtn, #modeSel').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
       const msg = (t, bad) => { $('seedMsg').hidden = !t; $('seedMsg').textContent = t || ''; $('seedMsg').style.color = bad ? '#ff8a7a' : ''; };
       b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #heroAll, #nPl').forEach(i => i.onchange = upd); upd();
       $('teamBtn').onclick = async () => {
@@ -927,7 +974,7 @@ const ui = {
       $('goBtn').onclick = () => {
         const f = form(), pls = players(), ph = pls ? pls.map(p => p.hero).filter(Boolean) : [], dup = (f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length) || new Set(ph).size !== ph.length; if (dup) { msg('Hay héroes repetidos.', true); return; }
         DEBUG_DICE = !!ui.dbgDice; ui._close();
-        res({ level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), players: pls, exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null, civh: civhSel || null });
+        res({ mode: f.mode, level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), players: pls, exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null, civh: civhSel || null });
       };
     });
   },
