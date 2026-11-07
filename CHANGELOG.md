@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 18:40
+
+### Cambios
+- **General Lee:** se quita la acción «Galope al Hospital». Ahora el jinete se baja al llegar al Centro (pregunta de llegada). El texto de la carta de Instinto equino se actualiza en las reglas del juego; la carta ilustrada aún no.
+
 ## 2026-11-07 18:30
 
 ### Cambios
