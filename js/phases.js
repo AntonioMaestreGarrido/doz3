@@ -245,7 +245,7 @@ async function activateRoute(r, cer) {
 async function routeOrder(rem) {
   const out = [];
   while (rem.length > 1) {
-    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar, o activa el resto en orden aleatorio:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color, focus: routeSpaces(r) })).concat([{ label: 'Aleatorio (resto)', value: 'rnd' }]) });
+    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar (sus Zeds avanzan en ese orden), o activa el resto en orden aleatorio:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color, focus: routeSpaces(r) })).concat([{ label: 'Aleatorio (resto)', value: 'rnd' }]) });
     if (v === 'rnd') { const a = rem.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return out.concat(a); }
     out.push(v); rem = rem.filter(x => x !== v);
   }
@@ -264,9 +264,9 @@ async function phaseZeds() {
     else if (x === 'D2') { const dr = await drawDestiny(); if (dr) { list.push(dr.route, dr.route); await resolveTwist(dr); } }
     else if (G.routes.includes(x)) list.push(x);
   }
-  if (ev.z.includes('MIN2')) { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Ruta con menos Zeds: se activa 2 veces.'); list.push(r, r); }
+  if (ev.z.includes('MIN2')) { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Ruta con menos Zeds: elige la ruta que se activa 2 veces (sus Zeds avanzan dos veces).'); list.push(r, r); }
   for (const r of list) { await conCausa(ROUTES[r].name, () => activateRoute(r, false)); if (G.over) return; }
-  if (anyOther) { const rest = G.routes.filter(r => !list.includes(r)); if (rest.length) { const r = await chooseRoute(rest, 'Cualquier otra: elige la ruta que se activa.'); await conCausa(ROUTES[r].name, () => activateRoute(r, false)); } }
+  if (anyOther) { const rest = G.routes.filter(r => !list.includes(r)); if (rest.length) { const r = await chooseRoute(rest, 'Cualquier otra: elige la ruta que se activa (sus Zeds avanzan).'); await conCausa(ROUTES[r].name, () => activateRoute(r, false)); } }
 }
 
 /* ---------- 4R ---------- */
@@ -458,13 +458,13 @@ async function eventEffect(ev) {
     case 'toxicos': { await placeZedAt('A0', 'Zeds Tóxicos'); const t = strongestNormalZed(); if (t) t.toxic = true; break; }
     case 'rapidos': { await placeZedAt('B0', 'Zeds Rápidos'); const t = strongestNormalZed(); if (t) t.fast = true; break; }
     case 'turba': { const dr = await drawDestiny(); if (dr) { if (G.inf >= 8) await placeZedInitial(dr.route, await makeSuperA()); else { makeSpecial('vip', dr.route + '0', { name: 'Supervivientes V.I.P.', type: 'refugee' }); LOG('Aparecen los Supervivientes V.I.P.', 'good'); } await resolveTwist(dr); } break; }
-    case 'saqueadores': { const rs = SURFACE.map(r => [r, Array.from({ length: lastOf(r) + 1 }, (_, i) => sp(r + i).chaos).reduce((a, b) => a + b, 0)]); const m = Math.max(...rs.map(x => x[1])); const r = await chooseRoute(rs.filter(x => x[1] === m).map(x => x[0]), 'Saqueadores: ruta con más Caos.'); makeSpecial('saqueadores', r + '0'); LOG('¡Aparecen Saqueadores en ' + ROUTES[r].name + '!', 'bad'); break; }
+    case 'saqueadores': { const rs = SURFACE.map(r => [r, Array.from({ length: lastOf(r) + 1 }, (_, i) => sp(r + i).chaos).reduce((a, b) => a + b, 0)]); const m = Math.max(...rs.map(x => x[1])); const r = await chooseRoute(rs.filter(x => x[1] === m).map(x => x[0]), 'Saqueadores: ruta con más Caos. Elige la ruta donde aparecen los Saqueadores (en su espacio Inicial).'); makeSpecial('saqueadores', r + '0'); LOG('¡Aparecen Saqueadores en ' + ROUTES[r].name + '!', 'bad'); break; }
     case 'helicoptero': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && !isInit(x.space) && sp(x.space).route !== 'T').map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, 'Helicóptero: elige un espacio con Zeds.'); const r = d6() + d6(); const n = r <= 5 ? 1 : r <= 9 ? 2 : 3; LOG('Helicóptero: ' + r + ' → ' + n + ' Impacto(s).', 'good'); await applyZedHits(zedsAt(t), n); } break; }
     case 'eficiencia': case 'jornada': case 'monstruo': G.turn.specials.push(mkSpecial(id)); break;
     case 'oh_malo': { const dr = await drawDestiny(); if (dr) { await placeZedAt(dr.route + '1', 'Oh, esto es malo'); await resolveTwist(dr); } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'que_demonios': { await wildOutbreakNow(); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'donde_todos': { for (const r of G.routes) for (let i = 1; i <= lastOf(r); i++) if (sp(r + i).kind === 'pueblo' && controlled(r + i)) await placeZedAt(r + i, '¿De dónde salen todos?'); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
-    case 'guardia': { const dr = await drawDestiny(); if (dr) { let r = dr.route; if (r === 'T') r = await chooseRoute(SURFACE, 'La Guardia Nacional solo puede ir a la superficie: elige ruta.'); const g = makeSpecial('guardia', r + '0'); g.name = 'Guardia Nacional'; await resolveTwist(dr); } break; }
+    case 'guardia': { const dr = await drawDestiny(); if (dr) { let r = dr.route; if (r === 'T') r = await chooseRoute(SURFACE, 'La carta indica el Túnel, pero la Guardia Nacional solo va a la superficie: elige la ruta para activarla y colocar la Guardia en su espacio Inicial.'); const g = makeSpecial('guardia', r + '0'); g.name = 'Guardia Nacional'; await resolveTwist(dr); } break; }
     case 'noelle': { const dr = await drawDestiny(); if (dr) { await placeZedInitial(dr.route, spawnSpreader('noelle')); await resolveTwist(dr); } break; }
     case 'tsunami': for (const r of G.routes) await placeZedInitial(r); break;
     case 'catastrofe': { const id2 = 'A4'; for (const u of plAt(id2)) { await hitPlayer(u, 2); if (u.space === id2) retreatPlayers([u], 'C'); } await placeChaos(id2, 1); G.turn.block.push(id2); break; }
@@ -539,7 +539,7 @@ async function pressureMove(n) {
 }
 async function pressureSpawn(n) {
   for (let k = 0; k < n && !G.over; k++) {
-    const r = await chooseRoute(destRoutes('less'), 'Presión Zed (Ƶ): ruta con menos Zeds. Los jugadores eligen en caso de empate.');
+    const r = await chooseRoute(destRoutes('less'), 'Presión Zed (Ƶ): elige la ruta con menos Zeds para activarla. En caso de empate, eliges tú.');
     LOG('Presión Zed (Ƶ): nuevo Zed en ' + ROUTES[r].name + '.', 'zed'); await placeZedInitial(r);
   }
 }

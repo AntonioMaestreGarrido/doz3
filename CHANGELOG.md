@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 19:30
+
+### Cambios
+- **Preguntas de ruta con su finalidad:** cada pregunta de elegir ruta dice para qué se elige (activar, dónde aparece, qué se aplica). Por ejemplo, la Guardia Nacional: «elige la ruta para activarla y colocar la Guardia en su espacio Inicial».
+
 ## 2026-11-07 19:00
 
 ### Cambios

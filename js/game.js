@@ -159,7 +159,7 @@ async function drawDestiny() {
   if (!G.destDeck.length) { G.destDeck = shuffle(G.destDiscard.splice(0)); EVT('destBarajar', null, { cartas: G.destDeck.length }); }
   if (!G.destDeck.length) { LOG('No quedan cartas de Destino.'); return null; }
   const id = G.destDeck.shift(), d = DEST[id];
-  const route = await chooseRoute(destRoutes(d.where), 'Carta de Destino «' + d.name + '»: ' + ({ choice: 'a elección del jugador', more: 'empate de rutas con más Zeds', less: 'empate de rutas con menos Zeds', moreC: 'empate de rutas con más Caos', lessC: 'empate de rutas con menos Caos' }[d.where] || 'ruta destinada') + '.');
+  const route = await chooseRoute(destRoutes(d.where), 'Carta de Destino «' + d.name + '»: ' + ({ choice: 'a elección del jugador', more: 'empate de rutas con más Zeds', less: 'empate de rutas con menos Zeds', moreC: 'empate de rutas con más Caos', lessC: 'empate de rutas con menos Caos' }[d.where] || 'ruta destinada') + '. Elige la ruta donde se aplica la carta.');
   LOG('Carta de Destino: «' + d.name + '» → ' + ROUTES[route].name + '.', 'dest');
   EVT('dest', null, { id, nm: d.name, ruta: route, donde: d.where, quedan: G.destDeck.length }); CAUSA = 'Destino: ' + d.name;
   return { id, route };
@@ -202,7 +202,7 @@ async function DEST_FX(id, route) {
   const R = route;
   switch (id) {
     case 'lago': await placeZedAt('M5', 'Zeds surgidos del lago'); break;
-    case 'alimanas': { const c = G.routes.map(r => [r, routeZeds(r).length]); const t = Math.max(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === t).map(x => x[0]), 'Alimañas: ruta con más Zeds.'); await placeZedInitial(r, spawnSpreader('alimanas')); break; }
+    case 'alimanas': { const c = G.routes.map(r => [r, routeZeds(r).length]); const t = Math.max(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === t).map(x => x[0]), 'Alimañas: ruta con más Zeds. Elige la ruta donde aparece la unidad de Alimañas Infectadas (en su espacio Inicial).'); await placeZedInitial(r, spawnSpreader('alimanas')); break; }
     case 'muertos': await placeZedAt('B3', '¡Los muertos vivientes!'); await placeZedAt('B3', '¡Los muertos vivientes!'); break;
     case 'municion': G.ammo = Math.max(0, G.ammo - 1); G.supplies = Math.max(0, G.supplies - (G.lv.supplies ? 2 : 0)); UI.updateStats(); break;
     case 'inventarios': { const f = r => r <= 2 ? 2 : r <= 5 ? 1 : 0; const [a, b] = await UI.rollSimple('Inventarios amañados', 2, d => 'Suministros −' + f(d[0]) + ' · Munición −' + f(d[1])); G.supplies = Math.max(0, G.supplies - f(a)); G.ammo = Math.max(0, G.ammo - f(b)); LOG('Inventarios amañados: Suministros ' + f(a) + ' / Munición ' + f(b) + '.', 'bad'); UI.updateStats(); break; }
