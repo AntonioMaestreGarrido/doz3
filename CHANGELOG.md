@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 11:20
+
+### Cambios
+- **Cartas en la mano (Destino y Rumores):** el botón «Usar» pasa a ser «Ver». Abre la carta con su imagen y su texto, y el botón «Usar» está dentro (solo aparece si la carta se puede jugar en ese momento).
+
 ## 2026-11-07 10:50
 
 ### Nuevo
