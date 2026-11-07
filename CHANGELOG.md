@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 11:40
+
+### Cambios
+- **Cartas de Rumor:** se eliminan las cuatro cartas de estilo clásico; las cartas completas de los Rumores solo existen en arte alternativo (sin él se ve la ficha).
+
 ## 2026-11-07 11:20
 
 ### Cambios
