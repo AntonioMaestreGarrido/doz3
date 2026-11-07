@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-07 10:50
+
+### Nuevo
+- **Carta del Rumor «Cristal verde radiante»:** carta completa en arte alternativo. Con esta ya tienen carta los 16 Rumores.
+
 ## 2026-11-07 10:30
 
 ### Nuevo
