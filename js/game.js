@@ -159,7 +159,7 @@ async function drawDestiny() {
   if (!G.destDeck.length) { G.destDeck = shuffle(G.destDiscard.splice(0)); EVT('destBarajar', null, { cartas: G.destDeck.length }); }
   if (!G.destDeck.length) { LOG('No quedan cartas de Destino.'); return null; }
   const id = G.destDeck.shift(), d = DEST[id];
-  const route = await chooseRoute(destRoutes(d.where), 'Carta de Destino «' + d.name + '»: ' + ({ choice: 'a elección del jugador', more: 'empate de rutas con más Zeds', less: 'empate de rutas con menos Zeds', moreC: 'empate de rutas con más Caos', lessC: 'empate de rutas con menos Caos' }[d.where] || 'ruta destinada') + '. Elige la ruta donde se aplica: ' + String(d.txt).replace(/<[^>]+>/g, '') + '.');
+  const route = await chooseRoute(destRoutes(d.where), 'Carta de Destino «' + d.name + '»: ' + ({ choice: 'a elección del jugador', more: 'empate de rutas con más Zeds', less: 'empate de rutas con menos Zeds', moreC: 'empate de rutas con más Caos', lessC: 'empate de rutas con menos Caos' }[d.where] || 'ruta destinada') + '. Elige la ruta donde se aplica: ' + String(d.txt).replace(/<[^>]+>/g, '').replace(/\.+\s*$/, '') + '.');
   LOG('Carta de Destino: «' + d.name + '» → ' + ROUTES[route].name + '.', 'dest');
   EVT('dest', null, { id, nm: d.name, ruta: route, donde: d.where, quedan: G.destDeck.length }); CAUSA = 'Destino: ' + d.name;
   return { id, route };
