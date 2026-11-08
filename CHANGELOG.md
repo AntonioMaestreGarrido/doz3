@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-08 10:00
+
+### Fixes
+- **Expansiones 1 y 2, cartas de Evento:** las cartas de la expansión entran en el pool y sustituyen al azar a cartas base del mismo acto y tipo (normal o especial). Ya no alargan la partida: la duración tiene siempre el mismo número de cartas (p. ej. Corta = 22 en el Nivel V).
+
 ## 2026-11-07 20:00
 
 ### Fixes

@@ -92,17 +92,26 @@ newGame = function (levelIdx, lenIdx, personal, exps) {
   G.rumorPool = []; G.rumorsHeld = [];
   // mazos con las cartas nuevas
   if (expOn(1) || expOn(2)) {
-    const extraE = Object.keys(EV).filter(k => EV[k].exp && ((EV[k].exp === 1 && expOn(1)) || (EV[k].exp === 2 && expOn(2))));
+    /* Las cartas de la expansión entran en el pool: cada carta del mazo base se sustituye al azar por otra del mismo acto y tipo (normal o especial)
+       del pool ampliado. La duración no cambia: el número de cartas por acto y tipo es el mismo que en el mazo base. */
     if (G.lv.cols.includes('b')) {
-      /* La Guardia Nacional se saca aquí y se vuelve a insertar abajo en su posición fija (si no, quedaría barajada con el Acto III). */
-      const deck = G.eventDeck.filter(id => !EV[id].fin && id !== 'guardia'); const fin = G.eventDeck.filter(id => EV[id].fin);
-      const pool = shuffle(extraE.filter(k => !EV[k].fin && !deck.includes(k)));
-      for (const k of pool.slice(0, Math.max(1, Math.floor(pool.length / 2)))) deck.push(k);
-      const byAct = a => deck.filter(id => EV[id].act === a);
-      let out = []; for (let a = 1; a <= 4; a++) out = out.concat(shuffle(byAct(a)));
+      const cur = G.eventDeck.filter(id => !EV[id].fin && id !== 'guardia'); const fin = G.eventDeck.filter(id => EV[id].fin);
+      const pool = Object.values(EV).filter(e => G.lv.cols.includes(e.lvl) && (!e.exp || (e.exp === 1 && expOn(1)) || (e.exp === 2 && expOn(2))) && !e.fin && !e.guardia);
+      let out = [];
+      for (let a = 1; a <= 4; a++) {
+        const grupo = [];
+        for (const sp of [true, false]) {
+          const cnt = cur.filter(id => EV[id].act === a && !!EV[id].sp === sp);
+          const cand = shuffle(pool.filter(e => e.act === a && !!e.sp === sp).map(e => e.id));
+          const pick = cand.slice(0, cnt.length);
+          for (const id of cnt) if (pick.length < cnt.length && !pick.includes(id)) pick.push(id);
+          grupo.push(...pick);
+        }
+        out = out.concat(shuffle(grupo));
+      }
       const finPool = fin.concat(expOn(1) ? ['queda_alguno'] : []);
       out.push(finPool[rnd(finPool.length)]);
-      // mantener la carta de Guardia Nacional si existía
+      /* La Guardia Nacional mantiene su posición fija (si no, quedaría barajada con el Acto III). */
       if (G.lv.n >= 2) out.splice(out.length - 9, 0, 'guardia');
       G.eventDeck = out.filter((v, i, a) => a.indexOf(v) === i); G.totalEvents = G.eventDeck.length;
     }
