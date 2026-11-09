@@ -35,7 +35,7 @@ const frente = () => `<style>${CSS}
 <div class="pan front"><h2>Habilidades</h2>
 <div class="hab"><b>Infiltración</b><p>Atraviesa espacios con Zeds sin combatir ni tirar, sin coste extra de Movimiento. Al coincidir con Zeds o Saqueadores (acaba su movimiento en el espacio o entran ellos en el suyo) tira 1 dado: 1-2 combate; 3-6 pasa desapercibido y convive con ellos.</p></div>
 <div class="hab"><b>Disparo silenciado</b><p>Alcance 0: solo dispara a los Zeds de su espacio con los que coexiste, con 2 columnas a favor. Con 0 Impactos lo detectan: combate Cuerpo a Cuerpo. Si elimina al objetivo, 1 Acción gratis de Mover.</p></div>
-<div class="hab"><b>Tiro de oportunidad</b><p>Cuando un grupo de Zeds sale del espacio que comparte con él, puede dispararles gratis (sin Acción ni Munición), sin riesgo de ser detectado ni Mover gratis por la baja.</p></div>
+<div class="hab"><b>Tiro de oportunidad</b><p>Cuando un grupo de Zeds sale del espacio que comparte con él, puede dispararles sin gastar Acción (1 Munición, que recupera si elimina al objetivo), sin riesgo de ser detectado ni Mover gratis.</p></div>
 </div></div>`;
 
 const ficha = red => `<style>*{box-sizing:border-box;margin:0}body{background:transparent;font-family:${SANS}}

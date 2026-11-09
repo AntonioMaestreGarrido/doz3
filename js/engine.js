@@ -911,15 +911,19 @@ function fireStrength(u, d) {
   if (u.key === 'staub' && u.flipped) return 2;
   return strength(u);
 }
-/* Solid Snake, Tiro de oportunidad: cuando un grupo de Zeds sale del espacio que comparte con él, puede dispararles gratis (sin Acción ni Munición).
+/* Solid Snake, Tiro de oportunidad: cuando un grupo de Zeds sale del espacio que comparte con él, puede dispararles sin gastar Acción (1 Munición, que recupera si elimina al objetivo).
    Es un disparo reactivo: sin riesgo de ser detectado y sin Mover gratis por la baja. Devuelve los Zeds del grupo que siguen en el espacio. */
 async function tiroOportunidad(u, from, go) {
   if (!u || u.space !== from || G.over) return go;
   const zs = go.filter(z => z.space === from && G.units[z.id]); if (!zs.length) return go;
   if (fireTargets(u)[from] === undefined) return go;  /* respeta los eventos que impiden disparar */
-  const v = await UI.choose({ title: 'Tiro de oportunidad', text: 'Los Zeds de ' + spaceLabel(from) + ' se van. ¿Solid Snake les dispara gratis (sin Acción ni Munición)?', options: [{ label: 'Disparar', value: 'y' }, { label: 'Dejarlos ir', value: 'n' }] });
+  if (!G.turn.mercs && G.ammo < 1) return go;
+  const v = await UI.choose({ title: 'Tiro de oportunidad', text: 'Los Zeds de ' + spaceLabel(from) + ' se van. ¿Solid Snake les dispara (1 Munición, sin Acción; la recupera si elimina al objetivo)?', options: [{ label: 'Disparar', value: 'y' }, { label: 'Dejarlos ir', value: 'n' }] });
   if (v !== 'y') return go;
-  await doFire(u, from, 0, { targets: zs, reactive: true });
+  const ammo0 = G.ammo, o = { targets: zs, reactive: true };
+  await payFire(u); const gastada = ammo0 - G.ammo;
+  await doFire(u, from, 0, o);
+  if (o.killed && gastada > 0) { G.ammo = Math.min(20, G.ammo + gastada); UI.updateStats(); LOG('Tiro de oportunidad: la baja devuelve la Munición.', 'good'); }
   return go.filter(z => z.space === from && G.units[z.id]);
 }
 async function doFire(u, targetId, dist, opts) {
@@ -960,6 +964,7 @@ async function doFire(u, targetId, dist, opts) {
   if (hits) { ACTOR = u.id; try { await applyZedHits([target], hits); } finally { ACTOR = null; } if (u.key === 'caza' && target && (!G.units[target.id] || !target.space)) { G.ammo = Math.min(20, G.ammo + 1); LOG('Trofeo: el Club de Caza recupera 1 Munición.', 'good'); UI.updateStats(); } if (hits >= 2 && weaponFor(u, 'balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
   else LOG('El disparo no impacta.');
   /* Solid Snake: 0 Impactos = lo detectan (combate Cuerpo a Cuerpo con los Zeds del espacio); si elimina al objetivo, 1 Acción gratis de Mover. */
+  if (opts.reactive) opts.killed = !!hits && (!target || !G.units[target.id] || !target.space);
   if (u.key === 'snake' && dist === 0 && u.space && !G.over && !opts.reactive) {
     const killed = !target || !G.units[target.id] || !target.space;
     if (!hits) { const left = zedsAt(targetId); if (left.length) { LOG('Solid Snake ha sido detectado: combate Cuerpo a Cuerpo.', 'bad'); await melee({ zeds: left, hum: [u], space: targetId, attacker: 'h' }); } }
