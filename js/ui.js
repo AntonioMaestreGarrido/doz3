@@ -1031,10 +1031,12 @@ const ui = {
       const done = () => { t.remove(); document.body.classList.remove('booting'); res(); };
       t.onclick = () => {
         t.onclick = null; const p0 = t.querySelector('p'); if (p0) p0.remove();
-        this.musicOn();
+        try { this.musicOn(); } catch (e) { }
         const v = document.createElement('video'); v.id = 'openVid'; v.src = 'assets/opening.mp4'; v.playsInline = true;
         v.onended = done; v.onerror = done; t.appendChild(v);
-        const p = v.play(); if (p && p.catch) p.catch(done);
+        /* Si el vídeo no arranca (carga atascada, códec o reproducción bloqueada) no se deja al jugador en la pantalla inicial; un clic sobre el vídeo también lo salta. */
+        v.onclick = done; const wd = setTimeout(() => { if (v.currentTime < .1) done(); }, 6000); v.onplaying = () => clearTimeout(wd);
+        try { const p = v.play(); if (p && p.catch) p.catch(done); } catch (e) { done(); }
       };
     });
   },
