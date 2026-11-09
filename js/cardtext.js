@@ -55,11 +55,11 @@ function zoomInfo(spec) {
 }
 
 /* Cartas de personaje: frente (h_*.jpg) y trasera con el trasfondo (hb_*.jpg). */
-const CARD_IMGS = ['porter','alia','bender','ash','frank','doc','macgyver','samcarter','piazza','hernandez','schmidt','hunt','furias','seaver','pepinillos','horacio','carter','betty','lee','may','jaque','darling','jones','wright','division12','santana','bauer','kingman','antidist','agee','hauser','clarin','wilson','bomberos','salvacion','johnson','staub','wzed','sar','caza','heli','brigada'];
+const CARD_IMGS = ['snake','porter','alia','bender','ash','frank','doc','macgyver','samcarter','piazza','hernandez','schmidt','hunt','furias','seaver','pepinillos','horacio','carter','betty','lee','may','jaque','darling','jones','wright','division12','santana','bauer','kingman','antidist','agee','hauser','clarin','wilson','bomberos','salvacion','johnson','staub','wzed','sar','caza','heli','brigada'];
 const TOKEN_IMGS = ['snake','porter','alia','bender','ash','frank','doc','macgyver','samcarter','agee','betty','carter','darling','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','santana','schmidt','seaver','staub','wilson','wright','furias','bomberos','bauer','antidist','salvacion','clarin','wzed','division12','sar','caza','heli','brigada'];
 /* Arte alternativo (opción «Usar arte alternativo» del menú Opciones): cartas y fichas ilustradas en assets/arte_alt con las mismas claves.
    Si la opción está apagada o el personaje no tiene arte alternativo, se usa siempre el original (y si una imagen falla, el reintento de ui.js vuelve al original). */
-const ALT_KEYS = ['agee','alia','bender','ash','frank','doc','macgyver','samcarter','antidist','bauer','betty','bomberos','carter','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','porter','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed','sar','caza','heli','brigada'];
+const ALT_KEYS = ['snake','agee','alia','bender','ash','frank','doc','macgyver','samcarter','antidist','bauer','betty','bomberos','carter','clarin','darling','division12','furias','hauser','hernandez','horacio','hunt','jaque','johnson','jones','kingman','lee','may','pepinillos','piazza','porter','salvacion','santana','schmidt','seaver','staub','wilson','wright','wzed','sar','caza','heli','brigada'];
 /* Arte alternativo de los Súper Zeds (counters de dos caras en assets/arte_alt/zeds, con las claves de SUPER_ZEDS). */
 /* Propagadores con arte alternativo (clave de SPREADERS): mismo formato que los Súper Zeds, sz_<clave>.webp y sz_<clave>_r.webp. */
 const ALT_SPREADERS = ['noelle', 'alimanas'];
@@ -93,11 +93,11 @@ const superImg = (k, red) => zedAlt(k) ? 'assets/arte_alt/zeds/' + SUPER_ZEDS[k]
 const heroAlt = k => !!(typeof Opciones !== 'undefined' && Opciones.artAlt && ALT_KEYS.includes(k));
 const heroCard = k => CARD_IMGS.includes(k) ? (heroAlt(k) ? 'assets/arte_alt/cartas/h_' + k + '.webp' : 'assets/cartas/h_' + k + '.jpg') : null;
 /* Sin trasera (trasfondo) pendiente: Bender no tiene el texto todavía. */
-const NO_BACK = ['bender', 'ash', 'frank', 'doc', 'macgyver', 'samcarter'];
+const NO_BACK = ['snake', 'bender', 'ash', 'frank', 'doc', 'macgyver', 'samcarter'];
 const heroBack = k => CARD_IMGS.includes(k) && !NO_BACK.includes(k) ? (heroAlt(k) ? 'assets/arte_alt/cartas/hb_' + k + '.webp' : 'assets/cartas/hb_' + k + '.jpg') : null;
 const heroTok = (k, red) => heroAlt(k) ? 'assets/arte_alt/tokens/' + k + (red ? '_r' : '') + '.webp' : (TOKEN_IMGS.includes(k) ? 'assets/tokens/' + k + (red && RED_TOKENS.includes(k) ? '_r' : '') + '.webp' : null);
 /* Fichas por defecto que tienen también cara reducida (ver assets/tokens/<clave>_r.webp). */
-const RED_TOKENS = ['porter', 'sar', 'caza', 'heli', 'brigada'];
+const RED_TOKENS = ['snake', 'porter', 'sar', 'caza', 'heli', 'brigada'];
 /* Imagen del tooltip: la ficha del personaje; si no tiene ficha propia, el frente de su carta. */
 const heroOpt = k => ({ value: k, label: HEROES[k].name, img: heroCard(k) || heroTok(k), sub: HEROES[k].cls + ' · ' + HEROES[k].full + '/' + HEROES[k].red });
 const unitOpt = (u, extra) => ({ value: u.id, label: u.name + (extra || ''), img: u.key && HEROES[u.key] ? (heroCard(u.key) || heroTok(u.key)) : null, sub: u.space === 'CEM' ? 'Cementerio' : u.space && G.spaces[u.space] ? spaceLabel(u.space) : '' });
