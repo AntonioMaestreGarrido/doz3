@@ -911,19 +911,20 @@ function fireStrength(u, d) {
   if (u.key === 'staub' && u.flipped) return 2;
   return strength(u);
 }
-/* Solid Snake, Tiro de oportunidad: cuando un grupo de Zeds sale del espacio que comparte con él, puede dispararles sin gastar Acción (1 Munición, que recupera si elimina al objetivo).
-   Es un disparo reactivo: sin riesgo de ser detectado y sin Mover gratis por la baja. Devuelve los Zeds del grupo que siguen en el espacio. */
+/* Solid Snake, Despedida silenciosa: cuando un grupo de Zeds sale del espacio que comparte con él, puede dispararles sin gastar Acción (1 Munición, que recupera si elimina al objetivo).
+   Es un disparo reactivo: sin riesgo de ser detectado. Si elimina al objetivo, 1 Acción gratis de Mover en su próxima fase de Acciones (carryM: el Mantenimiento borra las gratis). Devuelve los Zeds del grupo que siguen en el espacio. */
 async function tiroOportunidad(u, from, go) {
   if (!u || u.space !== from || G.over) return go;
   const zs = go.filter(z => z.space === from && G.units[z.id]); if (!zs.length) return go;
   if (fireTargets(u)[from] === undefined) return go;  /* respeta los eventos que impiden disparar */
   if (!G.turn.mercs && G.ammo < 1) return go;
-  const v = await UI.choose({ title: 'Tiro de oportunidad', text: 'Los Zeds de ' + spaceLabel(from) + ' se van. ¿Solid Snake les dispara (1 Munición, sin Acción; la recupera si elimina al objetivo)?', options: [{ label: 'Disparar', value: 'y' }, { label: 'Dejarlos ir', value: 'n' }] });
+  const v = await UI.choose({ title: 'Despedida silenciosa', text: 'Los Zeds de ' + spaceLabel(from) + ' se van. ¿Solid Snake les dispara (1 Munición, sin Acción; la recupera si elimina al objetivo)?', options: [{ label: 'Disparar', value: 'y' }, { label: 'Dejarlos ir', value: 'n' }] });
   if (v !== 'y') return go;
   const ammo0 = G.ammo, o = { targets: zs, reactive: true };
   await payFire(u); const gastada = ammo0 - G.ammo;
   await doFire(u, from, 0, o);
-  if (o.killed && gastada > 0) { G.ammo = Math.min(20, G.ammo + gastada); UI.updateStats(); LOG('Tiro de oportunidad: la baja devuelve la Munición.', 'good'); }
+  if (o.killed && gastada > 0) { G.ammo = Math.min(20, G.ammo + gastada); UI.updateStats(); LOG('Despedida silenciosa: la baja devuelve la Munición.', 'good'); }
+  if (o.killed) { u.carryM = (u.carryM || 0) + 1; LOG('Despedida silenciosa: Solid Snake tendrá 1 Acción gratis de Mover en su próxima fase de Acciones.', 'good'); }
   return go.filter(z => z.space === from && G.units[z.id]);
 }
 async function doFire(u, targetId, dist, opts) {

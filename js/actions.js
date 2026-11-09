@@ -370,7 +370,7 @@ async function useHandCard(k) {
 
 /* ---------- mantenimiento ---------- */
 async function maintenance() {
-  for (const u of Object.values(G.units)) if (u.side === 'pl') { u.free = 0; u.freeM = 0; u.freeMF = 0; delete u.keepCalm; u.curedTurn = 0; }
+  for (const u of Object.values(G.units)) if (u.side === 'pl') { u.free = 0; u.freeM = u.carryM || 0; u.carryM = 0; u.freeMF = 0; delete u.keepCalm; u.curedTurn = 0; }
   G.charUsed = {}; G.firstFreeUsed = {};
   if (G.lv.fourR) {
     for (const s of Object.values(G.spaces)) {

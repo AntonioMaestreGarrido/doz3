@@ -148,7 +148,7 @@ async function moveGroup(movers, from, opts) {
       go = go.filter(z => z.space && G.units[z.id]); if (!go.length) { UI.redraw(); return { moved: true }; }
     }
   }
-  /* Solid Snake, Tiro de oportunidad: dispara gratis a los Zeds que salen del espacio que comparte con ellos. */
+  /* Solid Snake, Despedida silenciosa: dispara a los Zeds que salen del espacio que comparte con ellos. */
   const snk = unitsAt(from).find(u => u.key === 'snake');
   if (snk && go.length) { go = await tiroOportunidad(snk, from, go); if (!go.length) { UI.redraw(); return { moved: true }; } }
   UI.focus(dest); for (const z of go) { putUnit(z, dest); z.moved = true; }
