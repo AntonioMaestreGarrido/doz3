@@ -131,8 +131,6 @@ function trapSpaces(u) {
   return [u.space].concat(adjacentIds(u.space)).filter((id, k, a) => a.indexOf(id) === k && sp(id) && isRouteSp(id) && !isInit(id) && sp(id).kind !== 'crypt' && !blocked(id) && !zedsAt(id).length && !hasTrap(sp(id).route));
 }
 /* Salto temporal (Doc Brown): solo desde el Centro, 3 Suministros, a un espacio de ruta de superficie sin Zeds que no sea Inicial. Un acompañante (Héroe o Civiles Heroicos que puedan usar vehículos) puede quedarse allí. */
-/* Solid Snake, Golpe en la pared: espacios con Zeds (el suyo o adyacentes) que puede distraer. */
-function golpeTargets(u) { return [u.space].concat(adjacentIds(u.space)).filter((id, i, a) => id && G.spaces[id] && !isInit(id) && a.indexOf(id) === i && zedsAt(id).length > 0); }
 const DOC_NO_RIDE = ['pepinillos', 'horacio', 'lee', 'carter', 'heli'];
 function docCompanions(u) { return unitsAt('C').filter(x => x !== u && (x.type === 'hero' || x.type === 'civh') && !DOC_NO_RIDE.includes(x.key) && !x.ecg && !x.mount && !x.rider && !x.resist && !isPetra(x)); }
 function docJumpSpaces(u, comp) {
@@ -201,7 +199,6 @@ function unitActions(u) {
     if (u.key === 'jones') A.push({ id: 'planes', label: 'Sus Propios Planes', ok: cu('planes') });
     if (u.key === 'jones' && G.res && u.space && sp(u.space).kind === 'office') A.push({ id: 'jhosp', label: 'Sus Propios Planes: paciente al Cementerio + Investigación', ok: cu('planes') && G.res.deck.length > 0 && hospitalUnits(u).length > 0 });
     if (u.key === 'hunt') A.push({ id: 'lid', label: 'Liderazgo', ok: cu('lid') });
-    if (u.key === 'snake') A.push({ id: 'pared', label: 'Golpe en la pared', ok: cu('pared') && golpeTargets(u).length > 0 });
     if (u.key === 'alia') A.push({ id: 'calle', label: 'Ya no es hora de estar en la calle', ok: cu('calle') && calleTargets(u).length > 0 });
     if (u.key === 'heli') A.push({ id: 'vuelo', label: 'Vuelo: despegar (1 Suministro)', ok: cu('vuelo') && G.supplies >= 1 && heliLandSpaces(u, null).some(id => id !== u.space) });
     if (u.key === 'brigada') A.push({ id: 'desinf', label: 'Desinfección (−2 Infección, 1 acc.)', ok: pay(1) && !!G.lv.infection && G.inf > 0 });
@@ -260,14 +257,6 @@ async function runAction(u, id) {
     case 'bcure': G.supplies--; healUnit(u); u.curedTurn = G.turnNo; LOG(u.name + ' se repara en el Centro (−1 Suministro).', 'good'); UI.redraw(); UI.updateStats(); break;
     case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
-    case 'pared': {
-      const c = golpeTargets(u); if (!c.length) { LOG('No hay Zeds a los que distraer.'); break; }
-      const d = c.length === 1 ? c[0] : await UI.pickSpace(c, 'Golpe en la pared: elige el espacio de Zeds a distraer (el suyo o uno adyacente).', true); if (d == null) break;
-      G.charUsed.pared = true;
-      const r = await rollShownFor(u, 'Golpe en la pared (Solid Snake)', r => r >= 4 ? '<b>' + r + '</b>: los Zeds se distraen y no avanzarán este turno' : '<b>' + r + '</b>: no pican (necesita 4-6)'); LOG('Golpe en la pared: ' + r);
-      if (r >= 4) { G.turn.distraidos = (G.turn.distraidos || []).concat(d); LOG('Los Zeds de ' + spaceLabel(d) + ' siguen el ruido y no avanzarán en la fase de Zeds.', 'good'); } else LOG('Los Zeds ignoran el ruido.');
-      break;
-    }
     case 'calle': { const c = calleTargets(u); if (!c.length) { LOG('No hay Civiles que puedan avanzar.'); break; } const v = c.length === 1 ? c[0].id : await UI.pickUnit(c, 'Elige la unidad que avanza hacia el Centro.', true); if (v == null) break; const x = G.units[v], ds = calleDests(x); const d = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Alia: elige el destino de ' + x.name + ' (hasta 2 espacios hacia el Centro).', true); if (d == null) break; G.charUsed.calle = true; if (x.resist) { x.resist = false; LOG(x.name + ' deja de estar Resistiendo.'); } LOG('Alia manda a ' + x.name + ' hacia el Centro.', 'good'); await doMove(x, d, [x.space, d]); break; }
     case 'despejar': {
       if (!despejarOk(u)) { LOG('No se puede Despejar aquí.'); break; }

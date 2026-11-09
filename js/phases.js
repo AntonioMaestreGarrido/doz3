@@ -127,8 +127,6 @@ async function moveGroup(movers, from, opts) {
   if (!go.length) { LOG('Los Zeds en ' + spaceLabel(from) + ' no pueden avanzar (límite de agrupamiento).'); return { moved: false }; }
   // Perímetro de Kingman
   if (perimeterBlocks(from, dest)) { const r = await rollShown('Perímetro Defensivo de Kingman', r => r >= 5 ? '<b>' + r + '</b>: los Zeds se detienen' : '<b>' + r + '</b>: los Zeds avanzan (necesita 5-6)'); if (r >= 5) { LOG('El Perímetro Defensivo de Kingman detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
-  // Golpe en la pared de Solid Snake
-  if (G.turn.distraidos && G.turn.distraidos.includes(from)) { LOG('Distraídos por el ruido de Solid Snake, los Zeds de ' + spaceLabel(from) + ' no avanzan.', 'good'); return { moved: false }; }
   // Ladrido de Pepinillos
   const pep = unitsAt(from).find(u => u.key === 'pepinillos'); if (pep && !isInit(from)) { const r = await rollShown('Ladrido de Pepinillos', r => r >= 4 ? '<b>' + r + '</b>: los Zeds se detienen' : '<b>' + r + '</b>: los Zeds avanzan (necesita 4-6)'); if (r >= 4) { LOG('El ladrido de Pepinillos detiene a los Zeds (' + r + ').', 'good'); return { moved: false }; } }
   // Trampa explosiva de Frank
