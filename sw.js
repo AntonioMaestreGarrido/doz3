@@ -8,7 +8,7 @@ const SHELL = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/i
 
 /* Fichas, mapas e intro: se guardan en segundo plano tras instalar (sin bloquear ni fallar la instalación) para que la segunda visita y el modo sin conexión vayan desde caché. */
 const PRECACHE = [
-  'assets/tokens/agee.webp', 'assets/tokens/aldeanos.webp', 'assets/tokens/alia.webp', 'assets/tokens/antidist.webp',
+  'assets/tokens/agee.webp', 'assets/tokens/aldeanos.webp', 'assets/tokens/alia.webp', 'assets/tokens/snake.webp', 'assets/tokens/antidist.webp',
   'assets/tokens/arma_balas.webp', 'assets/tokens/arma_cebo.webp', 'assets/tokens/arma_nudillos.webp', 'assets/tokens/arma_rifle_pieza.webp',
   'assets/tokens/bauer.webp', 'assets/tokens/betty.webp', 'assets/tokens/bomberos.webp', 'assets/tokens/carter.webp',
   'assets/tokens/civ1.webp', 'assets/tokens/civ2.webp', 'assets/tokens/civ3.webp', 'assets/tokens/clarin.webp',

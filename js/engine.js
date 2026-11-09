@@ -570,6 +570,10 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
       const r = await rollShownFor(fighter, 'Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido' : '<b>' + r + '</b>: combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos: ' + r);
       if (r >= 2) { LOG('Pepinillos pasa desapercibido.', 'good'); return await sigue(); }
     }
+    if (fighter.key === 'snake') {
+      const r = await rollShownFor(fighter, 'Infiltración (Solid Snake)', r => r >= 3 ? '<b>' + r + '</b>: pasa desapercibido' : '<b>' + r + '</b>: combate Cuerpo a Cuerpo'); LOG('Infiltración de Solid Snake: ' + r);
+      if (r >= 3) { LOG('Solid Snake pasa desapercibido.', 'good'); return await sigue(); }
+    }
     if (fighter.key === 'darling') {
       const r = await rollShownFor(fighter, 'Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r);
       if (r >= 3) { o.assassin = true; o.noInf = true; }
@@ -813,20 +817,22 @@ function reachable(u, extra) {
   }
   for (const id in best) if (id !== u.space && canStop(u, id)) out[id] = best[id];
   Object.defineProperty(out, 'prev', { value: prev, enumerable: false });
-  if (u.key === 'alia') {
-    const st = stealthReach(u, mp), paths = {};
+  if (u.key === 'alia' || u.key === 'snake') {
+    const st = stealthReach(u, mp, u.key === 'snake'), paths = {};
     for (const id in st) if (out[id] === undefined || st[id].cost < out[id]) { out[id] = st[id].cost; paths[id] = st[id].path; }
     Object.defineProperty(out, 'stealthPath', { value: paths, enumerable: false });
   }
   return out;
 }
 /* Alia, Sigilo: atraviesa espacios con Zeds sin combatir (sin coste extra de Movimiento, ignora el Caos) y debe acabar en un espacio libre de Zeds.
+   Solid Snake, Infiltración: igual (sin ignorar el Caos), pero puede acabar en un espacio con Zeds (endInZeds) tirando el dado de Infiltración al llegar.
    Devuelve solo los destinos que obligan a atravesar Zeds, con su coste y recorrido. */
-function stealthReach(u, mp) {
+function stealthReach(u, mp, endInZeds) {
   const key = (id, f) => id + ':' + f, best = { [key(u.space, 0)]: 0 }, prev = {}, q = [[u.space, 0]], res = {};
   while (q.length) {
     const [cur, f] = q.shift(), cb = best[key(cur, f)];
     if (cur !== u.space && raidAt(cur).length) continue;
+    if (endInZeds && cur !== u.space && sp(cur).chaos) continue;  /* Snake no ignora el Caos (Alia sí) */
     const hasZ = cur !== u.space && zedsAt(cur).length > 0;
     for (const n of neighbors(cur).concat(shortcuts(u, cur))) {
       const s = sp(n);
@@ -842,7 +848,7 @@ function stealthReach(u, mp) {
   }
   for (const k in best) {
     const [id, f] = k.split(':'); if (f !== '1' || id === u.space) continue;
-    if (zedsAt(id).length || raidAt(id).length || !canStop(u, id)) continue;
+    if ((!endInZeds && (zedsAt(id).length || raidAt(id).length)) || !canStop(u, id)) continue;  /* Solid Snake sí puede acabar entre Zeds (tira Infiltración al llegar) */
     if (res[id] && res[id].cost <= best[k]) continue;
     const path = [id]; let c = k; for (let i = 0; i < 60 && prev[c]; i++) { c = prev[c]; path.push(c.split(':')[0]); }
     res[id] = { cost: best[k], path: path.reverse() };
@@ -870,6 +876,10 @@ async function doMove(u, dest, path, undoable) {
     const r = await rollShownFor(u, 'Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido, convive con ellos sin combate' : '<b>' + r + '</b>: lo descubren, combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos al entrar en ' + spaceLabel(dest) + ': ' + r);
     if (r >= 2) { LOG('Pepinillos pasa desapercibido.', 'good'); return; }
   }
+  if (u.key === 'snake' && (zs.length || rs.length)) {
+    const r = await rollShownFor(u, 'Infiltración (Solid Snake)', r => r >= 3 ? '<b>' + r + '</b>: pasa desapercibido, convive con ellos sin combate' : '<b>' + r + '</b>: lo descubren, combate Cuerpo a Cuerpo'); LOG('Infiltración de Solid Snake al entrar en ' + spaceLabel(dest) + ': ' + r);
+    if (r >= 3) { LOG('Solid Snake pasa desapercibido.', 'good'); return; }
+  }
   if (zs.length) {
     let assassin = false;
     if (u.key === 'darling') { const r = await rollShownFor(u, 'Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r); if (r >= 3) assassin = true; else if (r === 1) {/* combate normal */} else { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { putUnit(u, from); return; } } }
@@ -885,6 +895,8 @@ async function doMove(u, dest, path, undoable) {
 function fireRange(u) { if (u.nofire || u.key === 'furias' || u.type === 'refugee' || u.type === 'aldeano') return 0; if (u.space && sp(u.space).route === 'T') return 1; return u.key === 'piazza' ? 3 : (u.key === 'hunt' || u.key === 'caza' || u.type === 'marine') ? 2 : 1; }
 function fireTargets(u) {
   const out = {}; const r = fireRange(u); if (!r || !u.space || isInit(u.space)) return out;
+  /* Solid Snake, Disparo silenciado: alcance 0, solo a los Zeds de su propio espacio. */
+  if (u.key === 'snake') { if (zedsAt(u.space).length) out[u.space] = 0; return out; }
   const s = sp(u.space);
   const add = (id, d) => { if (id && sp(id) && (zedsAt(id).length) && !isInit(id) && (!out[id] || out[id] > d)) out[id] = d; };
   for (let d = 1; d <= r; d++) {
@@ -915,6 +927,7 @@ async function doFire(u, targetId, dist, opts) {
   if (u.key === 'samcarter') shifts.push({ label: 'Oficial de la USAF (Carter)', v: 1 });
   if (u.key === 'frank' && !unitsAt(u.space).some(x => x !== u && isHero(x))) shifts.push({ label: 'Tirador implacable (Frank)', v: 1 });
   if (u.key === 'johnson') shifts.push({ label: 'Armas (Johnson)', v: 2 });
+  if (u.key === 'snake' && dist === 0) shifts.push({ label: 'Disparo silenciado (Solid Snake)', v: 2 });
   if (u.type === 'marine' && dist > 1) shifts.push({ label: 'Largo Alcance', v: -1 });
   if (u.key === 'hunt' && dist === 2) shifts.push({ label: 'Largo Alcance (Hunt)', v: -1 });
   if (weaponFor(u, 'rifle') && u.side === 'pl') shifts.push({ label: 'Rifle Hipno-Z', v: 1 });
@@ -935,6 +948,12 @@ async function doFire(u, targetId, dist, opts) {
   EVT('shot', u.id, { to: targetId, d: dist, hits });
   if (hits) { ACTOR = u.id; try { await applyZedHits([target], hits); } finally { ACTOR = null; } if (u.key === 'caza' && target && (!G.units[target.id] || !target.space)) { G.ammo = Math.min(20, G.ammo + 1); LOG('Trofeo: el Club de Caza recupera 1 Munición.', 'good'); UI.updateStats(); } if (hits >= 2 && weaponFor(u, 'balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
   else LOG('El disparo no impacta.');
+  /* Solid Snake: 0 Impactos = lo detectan (combate Cuerpo a Cuerpo con los Zeds del espacio); si elimina al objetivo, 1 Acción gratis de Mover. */
+  if (u.key === 'snake' && dist === 0 && u.space && !G.over) {
+    const killed = !target || !G.units[target.id] || !target.space;
+    if (!hits) { const left = zedsAt(targetId); if (left.length) { LOG('Solid Snake ha sido detectado: combate Cuerpo a Cuerpo.', 'bad'); await melee({ zeds: left, hum: [u], space: targetId, attacker: 'h' }); } }
+    else if (killed) { u.freeM = (u.freeM || 0) + 1; LOG('Baja silenciosa: Solid Snake recibe 1 Acción gratis de Mover.', 'good'); UI.redraw(); }
+  }
   if (u.key === 'piazza' && u.space && u.space !== 'C' && !opts.noVig) {
     // Retroceder = alejarse del objetivo, es decir, hacia el Centro (índice mayor en la ruta).
     const s = sp(u.space); let back = s.route ? nextToward(u.space) : null;
