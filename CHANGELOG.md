@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-09 12:00
+
+### Fixes
+- **Pantalla inicial en PC con ratón:** si el vídeo de apertura no arranca o falla, se salta solo a los 6 s, y un clic sobre el vídeo también lo salta.
+
 ## 2026-11-08 10:00
 
 ### Fixes
