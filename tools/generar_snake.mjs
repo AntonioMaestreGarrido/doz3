@@ -23,7 +23,7 @@ const CSS = `*{box-sizing:border-box;margin:0}body{background:transparent}
 .pan h2{font:700 31px ${SERIF};color:#f0d58f;border-bottom:1px solid #d9c9a0;padding-bottom:6px;margin-bottom:6px;text-shadow:0 1px 2px #000}`;
 
 const frente = () => `<style>${CSS}
-.card{height:1010px}.art{position:absolute;inset:0;background:url(${ART}) 3% 50px/auto 700px no-repeat,#120b07}
+.card{height:1010px}.art{position:absolute;inset:0;background:url(${ART}) 0% 66px/auto 530px no-repeat,#120b07}
 .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(14,9,6,.7) 62%,#120b07 70%)}
 .cls{position:absolute;left:56px;top:112px;font-size:21px;background:rgba(20,14,10,.62);padding:7px 14px;border-radius:0 12px 12px 0;z-index:3}
 .fz{position:absolute;left:26px;top:168px;width:150px;height:84px;background:rgba(190,40,30,.75);font:700 54px/84px ${SANS};text-align:center;text-shadow:0 3px 5px #000;z-index:3}
@@ -38,12 +38,14 @@ const frente = () => `<style>${CSS}
 <div class="hab"><b>Golpe en la pared</b><p>Acción de Personaje, 1 vez por turno: elige un espacio con Zeds (el suyo o adyacente) y tira 1 dado. Con 4-6 esos Zeds no avanzan en la siguiente fase de Zeds.</p></div></div></div>`;
 
 const ficha = red => `<style>*{box-sizing:border-box;margin:0}body{background:transparent;font-family:${SANS}}
-.t{position:relative;width:220px;height:400px;border-radius:22px;overflow:hidden;border:5px solid ${red ? '#b3261e' : '#d9b94f'};background:url(${ART}) 19% 18px/auto 400px no-repeat,#120b07}
+.t{position:relative;width:220px;height:400px;border-radius:22px;overflow:hidden;border:5px solid ${red ? '#b3261e' : '#d9b94f'};background:#120b07}
+.bg{position:absolute;inset:-20px;background:url(${ART}) 15% 50%/auto 440px;filter:blur(9px) brightness(.5)}
+.im{position:absolute;left:0;right:0;top:46px;height:300px;background:url(${ART}) 17% 0/auto 300px no-repeat;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 14%,#000 86%,transparent 100%)}
 .tag{position:absolute;left:12px;top:12px;padding:5px 14px;border-radius:12px;font:700 19px ${SANS};color:#fff;background:${red ? 'rgba(179,38,30,.92)' : 'rgba(130,100,20,.92)'};border:3px solid ${red ? '#e8e0d0' : '#f2e3a8'}}
 .mv{position:absolute;left:8px;bottom:14px;width:112px;height:46px;background:linear-gradient(90deg,rgba(38,86,168,.7),rgba(38,86,168,.5));clip-path:polygon(0 0,calc(100% - 22px) 0,100% 50%,calc(100% - 22px) 100%,0 100%);font:700 32px/46px ${SANS};color:#fff;padding-left:30px;text-shadow:0 2px 3px #000}
 .fz{position:absolute;right:10px;bottom:12px;width:74px;height:62px;border-radius:14px;background:rgba(20,12,8,.92);border:4px solid ${red ? '#b3261e' : '#d9b94f'};color:#f4ecdc;font:700 50px/54px ${SANS};padding-left:12px}
 .fz small{font-size:18px;color:#b9b2a4;position:absolute;right:8px;bottom:5px;line-height:1}</style>
-<div class="t"><div class="tag">${red ? 'REDUCIDO' : 'COMPLETO'}</div><div class="mv">5</div><div class="fz">${red ? '2' : '3'}<small>/${red ? '3' : '2'}</small></div></div>`;
+<div class="t"><div class="bg"></div><div class="im"></div><div class="tag">${red ? 'REDUCIDO' : 'COMPLETO'}</div><div class="mv">5</div><div class="fz">${red ? '2' : '3'}<small>/${red ? '3' : '2'}</small></div></div>`;
 
 const salida = async (browser, html, w, h, destino) => {
   const page = await browser.newPage({ viewport: { width: w + 20, height: h + 20 }, deviceScaleFactor: 1 });
