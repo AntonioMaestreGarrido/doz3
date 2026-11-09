@@ -23,7 +23,7 @@ const CSS = `*{box-sizing:border-box;margin:0}body{background:transparent}
 .pan h2{font:700 31px ${SERIF};color:#f0d58f;border-bottom:1px solid #d9c9a0;padding-bottom:6px;margin-bottom:6px;text-shadow:0 1px 2px #000}`;
 
 const frente = () => `<style>${CSS}
-.card{height:910px}.art{position:absolute;inset:0;background:url(${ART}) 0% 66px/auto 530px no-repeat,#120b07}
+.card{height:990px}.art{position:absolute;inset:0;background:url(${ART}) 0% 66px/auto 530px no-repeat,#120b07}
 .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(14,9,6,.7) 62%,#120b07 70%)}
 .cls{position:absolute;left:56px;top:112px;font-size:21px;background:rgba(20,14,10,.62);padding:7px 14px;border-radius:0 12px 12px 0;z-index:3}
 .fz{position:absolute;left:26px;top:168px;width:150px;height:84px;background:rgba(190,40,30,.75);font:700 54px/84px ${SANS};text-align:center;text-shadow:0 3px 5px #000;z-index:3}
@@ -35,6 +35,7 @@ const frente = () => `<style>${CSS}
 <div class="pan front"><h2>Habilidades</h2>
 <div class="hab"><b>Infiltración</b><p>Atraviesa espacios con Zeds sin combatir ni tirar, sin coste extra de Movimiento. Al coincidir con Zeds o Saqueadores (acaba su movimiento en el espacio o entran ellos en el suyo) tira 1 dado: 1-2 combate; 3-6 pasa desapercibido y convive con ellos.</p></div>
 <div class="hab"><b>Disparo silenciado</b><p>Alcance 0: solo dispara a los Zeds de su espacio con los que coexiste, con 2 columnas a favor. Con 0 Impactos lo detectan: combate Cuerpo a Cuerpo. Si elimina al objetivo, 1 Acción gratis de Mover.</p></div>
+<div class="hab"><b>Reflejos de élite</b><p>Acción de Personaje, una vez por fase de Acciones, solo para su unidad: 1 Acción gratis, de la clase que elijas al gastarla.</p></div>
 </div></div>`;
 
 const ficha = red => `<style>*{box-sizing:border-box;margin:0}body{background:transparent;font-family:${SANS}}
@@ -59,7 +60,7 @@ const salida = async (browser, html, w, h, destino) => {
 const b = await chromium.launch();
 mkdirSync(ROOT + '/assets/arte_alt/cartas', { recursive: true });
 const tareas = [
-  [frente(), 620, 910, 'assets/arte_alt/cartas/h_snake.webp', 'assets/cartas/h_snake.jpg'],
+  [frente(), 620, 990, 'assets/arte_alt/cartas/h_snake.webp', 'assets/cartas/h_snake.jpg'],
   [ficha(false), 220, 400, 'assets/arte_alt/tokens/snake.webp', 'assets/tokens/snake.webp'],
   [ficha(true), 220, 400, 'assets/arte_alt/tokens/snake_r.webp', 'assets/tokens/snake_r.webp'],
 ];

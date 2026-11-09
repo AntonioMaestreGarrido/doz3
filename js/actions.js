@@ -196,6 +196,7 @@ function unitActions(u) {
   if (act && !isSoft(u)) {
     const cu = k => !G.charUsed[k];
     if (u.key === 'schmidt') A.push({ id: 'ini', label: 'Iniciativa', ok: cu('ini') });
+    if (u.key === 'snake') A.push({ id: 'reflejos', label: 'Reflejos de élite', ok: cu('reflejos') });
     if (u.key === 'jones') A.push({ id: 'planes', label: 'Sus Propios Planes', ok: cu('planes') });
     if (u.key === 'jones' && G.res && u.space && sp(u.space).kind === 'office') A.push({ id: 'jhosp', label: 'Sus Propios Planes: paciente al Cementerio + Investigación', ok: cu('planes') && G.res.deck.length > 0 && hospitalUnits(u).length > 0 });
     if (u.key === 'hunt') A.push({ id: 'lid', label: 'Liderazgo', ok: cu('lid') });
@@ -256,6 +257,7 @@ async function runAction(u, id) {
     case 'visions': await UI.willyVisions(); break;
     case 'bcure': G.supplies--; healUnit(u); u.curedTurn = G.turnNo; LOG(u.name + ' se repara en el Centro (−1 Suministro).', 'good'); UI.redraw(); UI.updateStats(); break;
     case 'jhosp': { const c = hospitalUnits(u); if (!c.length) break; const v = await UI.pickUnit(c, 'Jones: elige la unidad del Hospital que va al Cementerio.', true); if (v == null) break; G.charUsed.planes = true; await sendCemetery(G.units[v], 'es trasladada al Cementerio por Jones'); await revealResearch(); break; }
+    case 'reflejos': G.charUsed.reflejos = true; u.free++; LOG('Solid Snake usa Reflejos de élite: 1 acción gratis para él.', 'good'); break;
     case 'planes': G.charUsed.planes = true; u.free++; LOG('Jones usa Sus Propios Planes: 1 acción gratis para él.', 'good'); break;
     case 'calle': { const c = calleTargets(u); if (!c.length) { LOG('No hay Civiles que puedan avanzar.'); break; } const v = c.length === 1 ? c[0].id : await UI.pickUnit(c, 'Elige la unidad que avanza hacia el Centro.', true); if (v == null) break; const x = G.units[v], ds = calleDests(x); const d = ds.length === 1 ? ds[0] : await UI.pickSpace(ds, 'Alia: elige el destino de ' + x.name + ' (hasta 2 espacios hacia el Centro).', true); if (d == null) break; G.charUsed.calle = true; if (x.resist) { x.resist = false; LOG(x.name + ' deja de estar Resistiendo.'); } LOG('Alia manda a ' + x.name + ' hacia el Centro.', 'good'); await doMove(x, d, [x.space, d]); break; }
     case 'despejar': {
