@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 14:20
+
+### Cambios
+- **Exp. 5, «Brigada civil»:** ya lleva su ilustración definitiva (civiles armados cargando por la calle). Caché v80.
+
 ## 2026-11-10 14:18
 
 ### Cambios
