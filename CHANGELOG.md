@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 18:40
+
+### Fixes
+- **Nueva partida con las 10 partidas llenas:** el aviso «Partidas guardadas (máximo 10)» sobre la portada usa el mismo panel translúcido que Nueva partida y recibe los toques (antes sus botones no respondían). Rescatado de la rama del modo móvil antiguo. Caché v110.
+
 ## 2026-11-10 18:10
 
 ### Recuperado
