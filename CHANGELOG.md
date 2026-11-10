@@ -8,7 +8,7 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
 - **Exp. 5 · Jefe final: la Banda de Bubba (versión de prueba).** Casilla nueva en el menú de creación de partida (también en los códigos de semilla). Con ella activa:
   - **Se retira la carta de Destino normal «Banda de Bubba DeNardo».**
   - **Aparición:** cuando quedan 9 cartas de Evento por revelar (`BOSS_AT` en `js/jefe.js`), su arte aparece a pantalla completa y suena su canción. La ficha entra en el Inicial de la ruta de superficie con menos Zeds.
-  - **Música:** `assets/sonidos/musica/musica_bubba.mp3` (suena en bucle mientras está en juego, en lugar de la música de fondo). Si el archivo no existe, la música normal sigue sonando.
+  - **Música:** «Saints of Modern Decay» (`assets/sonidos/musica/musica_bubba.mp3`, 4:45). Suena en bucle mientras está en juego, en lugar de la música de fondo. Si el archivo faltara, la música normal seguiría sonando.
   - **Vida de prueba:** Fuerza 6/3 y 3 Impactos por cara. No «huye» al ser derrotado: sale de la partida.
   - **No combate con los Zeds:** comparte espacio con ellos, como Noelle, y no cuenta para el límite de agrupamiento.
   - **Movimiento:** cada turno, tras la fase 4R, avanza 1 espacio hacia el Centro y arrastra a los Zeds de su espacio con las reglas normales de movimiento (límite de agrupamiento, combate, Barricadas…). Si llega al Centro, pierdes, como con cualquier Zed. No se mueve además con la activación de su ruta ni suma Infección.
