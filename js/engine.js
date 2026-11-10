@@ -548,6 +548,8 @@ async function tiradlesAttack(zeds) {
 async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCol, noInf, assassin }
   let zeds = o.zeds.filter(z => z.space), hum = o.hum.filter(u => u.space);
   if (!zeds.length || !hum.length) return {};
+  /* Espacios Iniciales: nunca hay combate (las unidades están a salvo de los Zeds ahí). */
+  if (isInit(o.space)) return {};
   const attackerHuman = o.attacker === 'h';
   const space = o.space;
   /* Defensoras posibles: las que pueden combatir (no Refugiados, Aldeanos ni Trenes), salvo que no quede ninguna. */
@@ -749,6 +751,7 @@ function retreatRaiders(rs) { for (const r of rs) { const p = prevToward(r.space
 async function hitRaider(u, n) { for (let k = 0; k < n && u.space; k++) { const before = { flipped: u.flipped, hits: u.hits }; const r = hitUnitOnce(u); if (r === 'dead') { await sendCemetery(u, 'es destruida'); return; } if (r === 'flip') await UI.fxFlip(u, before); else await UI.fxHit(u); } }
 
 async function zedAttack(zeds, space, from) {
+  if (isInit(space)) return {}; /* Iniciales: sin combate ni Refugiados devorados */
   /* Un Zed (o una Banda que se retira) no lucha contra sí mismo: solo cuentan las demás unidades del espacio. */
   /* Helicóptero Medevac: despegue de emergencia antes del combate (exp. 4). */
   const heli = hero('heli'), heliHere = heli && heli.space === space ? heli : null, route0 = sp(space).route;
@@ -762,6 +765,7 @@ async function zedAttack(zeds, space, from) {
   return r;
 }
 async function devourSoft(zeds, space) {
+  if (isInit(space)) return;
   for (const u of softAt(space)) {
     if (u.type === 'aldeano') continue;
     LOG(u.name + ' es devorado.', 'bad'); await infUp(2);

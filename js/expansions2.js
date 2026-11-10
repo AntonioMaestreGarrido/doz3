@@ -163,3 +163,10 @@ async function heliTurnStart() {
   LOG('Patrulla: el helicóptero sobrevuela ' + ROUTES[v].name + ' (−1 Suministro).', 'good'); UI.toast('Patrulla: ' + ROUTES[v].name, '#7fb6ff', 1800);
   const id2 = G.eventDeck[0]; if (id2) await UI.waitAck('Helicóptero: siguiente carta de Evento', 'Desde el aire ves la próxima carta: «' + EV[id2].name + '».', evImg(id2), 'e:' + id2);
 }
+
+/* Espacios Iniciales: ahí no se pueden aplicar efectos ni hacer Acciones, salvo Mover para salir (el Camión conserva recargar/reparar). Debe ser la última extensión para filtrar también las acciones de personaje. */
+extend('unitActions', function (_unitActions, u) {
+  const A = _unitActions(u);
+  if (!u || !u.space || !isInit(u.space)) return A;
+  return A.filter(a => ['move', 'creload', 'crepair'].includes(a.id));
+});

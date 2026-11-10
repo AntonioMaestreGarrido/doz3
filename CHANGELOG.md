@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 22:32
+
+### Fixes
+- **Espacios Iniciales:** nunca hay combate (ni ataques de Zeds, ni retiradas, ni Refugiados devorados) y las unidades solo pueden usar la Acción de Mover para salir (el Camión conserva recargar y reparar). Caché v114.
+
 ## 2026-11-10 21:10
 
 ### Cambios
