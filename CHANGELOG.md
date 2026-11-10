@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 14:21
+
+### Cambios
+- **Exp. 5, «Cargamento aéreo»:** ya lleva su ilustración definitiva (avión de carga lanzando cajas con paracaídas). Con esto, las 5 cartas de compensación tienen ilustración. Caché v81.
+
 ## 2026-11-10 14:20
 
 ### Cambios
