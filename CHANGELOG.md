@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 13:49
+
+### Cambios
+- **Exp. 5, cartas de compensación:** las columnas de las 5 cartas pasan a su valor más favorable: **4 Acciones de Evento** (el máximo del medidor), **4R 2** (el máximo de las cartas), **una sola ruta de Zeds** (Refuerzo de Héroe: Túnel · Cargamento: Bosque · Brigada: Montaña · Puesto médico: Afueras · Adrenalina: Autovía), sin tirada de Infección ni de Alimentación. Cartas regeneradas. Caché v76.
+
 ## 2026-11-10 13:48
 
 ### Cambios
