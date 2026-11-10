@@ -174,7 +174,7 @@ async function moveGroup(movers, from, opts) {
 async function stepSpace(id, cer, second) {
   if (G.over) return;
   const s = sp(id);
-  let group = zedsAt(id).filter(z => !z.moved && z.frozen !== G.turnNo);
+  let group = zedsAt(id).filter(z => !z.moved && z.frozen !== G.turnNo && !z.boss);   /* el jefe (exp. 5) se mueve solo en su propio paso (jefe.js) */
   if (!group.length) return;
   if (s.kind === 'crypt') {
     const sorted = group.slice().sort((a, b) => strength(b) - strength(a));
@@ -230,7 +230,7 @@ async function activateRoute(r, cer) {
   if (G.hand.includes('hipnotizados')) { const occ = []; for (let i = 0; i <= lastOf(r); i++) if (zedsAt(r + i).length) occ.push(r + i); const v = await UI.askZeds({ title: 'Zeds hipnotizados', text: '¿Cancelas la activación de la ' + ROUTES[r].name + '? Se activarían: ' + (occ.map(id => zedGroupName(zedsAt(id), id)).join(' · ') || 'ninguno (entra un Zed nuevo en el Inicial)') + '.', spaces: occ, options: [{ label: 'Cancelar la activación', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('hipnotizados'), 1); G.destDiscard.push('hipnotizados'); (G.turn.hypno || (G.turn.hypno = [])).push(r); zenPlayed(); UI.updateHand(); LOG('Zeds hipnotizados: se cancelan todas las activaciones de la ' + ROUTES[r].name + ' este turno.', 'good'); return; } }
   LOG('Se activa la ' + ROUTES[r].name + '.', 'zed'); UI.flashRoute(r); if (!UI.fast) Sfx.ambience(); await UI.announce('Se activa la ' + ROUTES[r].name, ROUTES[r].color, 700);
   const zs = routeZeds(r);
-  if (!zs.length) { await placeZedInitial(r); return; }
+  if (!zs.filter(z => !z.boss).length) { await placeZedInitial(r); return; }   /* el jefe (exp. 5) solo no cuenta como Zed de la ruta */
   zs.forEach(z => { z.moved = false; z.flamedHit = false; });
   for (const z of zs) if (z.key === 'reanimador') { if (z.hits > 0) z.hits--; else if (z.flipped) { z.flipped = false; z.hits = 2; } }
   const L = lastOf(r);
@@ -338,7 +338,7 @@ async function phase4R() {
 async function phaseInfection() {
   if (!G.lv.infection) return;
   if (G.inf >= 10) await offerHandCards('inf', 'La Infección está en <b>' + G.inf + '</b> / 13.');
-  const sps = allUnits(x => x.type === 'spreader' && x.space && isRouteSp(x.space) && !isInit(x.space));
+  const sps = allUnits(x => x.type === 'spreader' && !x.boss && x.space && isRouteSp(x.space) && !isInit(x.space));
   if (sps.length) { LOG(sps.length + ' Propagador(es) de Enfermedad: +' + sps.length + ' Infección.', 'bad'); await infUp(sps.length); }
   if (G.event.inf === 'B') {
     const bd = await zenReroll([d6(), d6()], 'Tirada de Brote'); const a = bd[0], b = bd[1]; LOG('Tirada de Brote: ' + (a + b) + ' (Infección ' + G.inf + ').');
@@ -459,6 +459,11 @@ async function eventEffect(ev) {
     case 'pelo': for (const r of G.routes) await placeZedInitial(r); for (const z of allUnits(isZedSide)) z.hits = 0; break;
     case 'odio': { const zs = allUnits(x => x.type === 'zed' && strength(x) <= 3 && isRouteSp(x.space)).sort((a, b) => sp(b.space).i - sp(a.space).i); let n = 0; for (const z of zs) { const w = z.space; let nz = await makeZedA(); /* se roba antes de devolver la ficha vieja: no puede volver a salir la misma (salvo que la reserva esté vacía) */ discardZed(z); if (!nz) nz = await makeZedA(); if (nz) { putUnit(nz, w); n++; } } LOG(n + ' Zeds débiles sustituidos por Zeds de Fuerza completa.', 'bad'); break; }
     case 'heroe_b': case 'heroe_g': { const k = randomAvailableHero(); if (k) { const inits = ['C'].concat(G.routes.map(r => r + '0')); await spawnHero(k, null, inits); } else LOG('No quedan Héroes disponibles.'); break; }
+    case 'boss_heroe': { const pool = heroPoolFor(G.lv.n).filter(x => !hero(x) && !G.cemetery.some(c => c.key === x)); if (!pool.length) { LOG('Refuerzos: no quedan Héroes disponibles.'); break; } const key = pool.length === 1 ? pool[0] : await UI.chooseCards({ title: 'Refuerzos: llega un Héroe', text: 'Elige el Héroe que llega.', options: pool.map(heroOpt) }); if (key == null) break; const w = await UI.pickSpace(['C'].concat(G.routes.map(r => r + '0')), 'Elige dónde aparece el Héroe (el Centro o un espacio Inicial).', false); await spawnHero(key, w == null ? 'C' : w); break; }
+    case 'boss_brigada': { const ch = CIVH_POOL.filter(x => civhAvail(x) && !hero(x) && HEROES[x].lv <= MAX_CIVH_LV[G.lv.n] && !G.cemetery.some(c => c.key === x)); if (!ch.length) { LOG('Brigada civil: no quedan Civiles Heroicos disponibles.'); break; } const v = ch.length === 1 ? ch[0] : await UI.chooseCards({ title: 'Brigada civil', text: 'Elige el Civil Heroico que llega al Centro.', options: ch.map(heroOpt) }); if (v != null) await spawnHero(v, 'C'); break; }
+    case 'boss_medico': { const us = allUnits(x => isFighter(x) && x.space && x.space !== 'CEM'); for (const u of us) { u.hits = 0; u.flipped = false; u.ecg = false; } LOG('Puesto médico de campaña: ' + us.length + ' unidad(es) de jugador se recuperan por completo.', 'good'); infDown(2); UI.redraw(); break; }
+    case 'boss_cargamento': { G.ammo = Math.min(20, G.ammo + 5); G.supplies = Math.min(20, G.supplies + 5); UI.updateStats(); LOG('Cargamento aéreo: +5 de Munición y +5 de Suministros.', 'good'); break; }
+    case 'boss_adrenalina': { const us = allUnits(x => ['hero', 'civh'].includes(x.type) && x.space && x.space !== 'CEM' && !x.ecg); us.forEach(u => { u.free = (u.free || 0) + 1; }); LOG('Adrenalina colectiva: ' + us.length + ' unidad(es) reciben 1 Acción gratis.', 'good'); UI.updateStats(); UI.updateHand(); UI.redraw(); break; }
     case 'keepcalm': { const hs = allUnits(x => x.type === 'hero' && x.space); if (hs.length) { const v = await UI.pickUnit(hs, '«Keep calm»: elige un Héroe (2 columnas a favor al atacar).'); G.units[v].keepCalm = true; } break; }
     case 'mina': { const mid = 'M3'; G.turn.block.push(mid); for (const u of plAt(mid)) { await hitPlayer(u, 1); if (u.space === mid) retreatPlayers([u], 'C'); }
       for (const z of zedsAt(mid).slice()) { if (!G.units[z.id] || z.space !== mid) continue; await hitZed(z); if (G.units[z.id] && z.space === mid) await retreatZeds([z], zedOrigin(z)); } break; }

@@ -11,7 +11,7 @@ const SeedCode = {
   heroList() { return this.ORDER.concat(Object.keys(HEROES).filter(k => !this.ORDER.includes(k))); },
   sum(b) { let s = 7; for (const x of b) s = (s * 31 + x) & 255; return s; },
   random() { return crypto.getRandomValues(new Uint32Array(1))[0]; },
-  /* o = { level, len, exps: [1..4], heroes: [claves de héroe elegidas, 0 a 4], civh: clave de Civil Heroico elegido (opcional), seed } */
+  /* o = { level, len, exps: [1..5], heroes: [claves de héroe elegidas, 0 a 4], civh: clave de Civil Heroico elegido (opcional), seed } */
   encode(o) {
     const hl = this.heroList(), hs = (o.level === 0 ? [] : o.heroes || []).map(k => hl.indexOf(k));
     let mask = 0; for (const n of o.exps || []) mask |= 1 << (n - 1);
@@ -33,7 +33,7 @@ const SeedCode = {
     const ver = b[0], n = b[4], xb = ver >= 2 ? 1 : 0, len = 5 + n + xb + 4 + 1;
     if (b.length < len || b.length > len + 1) throw new Error('El código está incompleto o mal copiado.');
     if (this.sum(b.slice(0, len - 1)) !== b[len - 1]) throw new Error('El código está mal copiado (no pasa la comprobación).');
-    const hl = this.heroList(), level = b[1], lenIdx = b[2], exps = [1, 2, 3, 4].filter(k => b[3] & (1 << (k - 1)));
+    const hl = this.heroList(), level = b[1], lenIdx = b[2], exps = [1, 2, 3, 4, 5].filter(k => b[3] & (1 << (k - 1)));
     const heroes = b.slice(5, 5 + n).map(i => hl[i]);
     const civh = xb && b[5 + n] ? CIVH_POOL[b[5 + n] - 1] : null, q = 5 + n + xb;
     if (xb && b[5 + n] && !civh) throw new Error('El código no es válido.');

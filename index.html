@@ -14,7 +14,7 @@
 </head>
 <body class="booting">
 <canvas id="spawnfx"></canvas>
-<div id="intro"><img src="assets/intro.png" alt=""><p>Pulsa para empezar</p></div>
+<div id="intro"><img src="assets/intro.png" alt=""><p>Pulsa para empezar</p><small class="introBuild" id="introBuild"></small></div>
 <script>/* Un clic dado mientras aún carga el juego no se pierde: ui.intro() lo recoge al estar listo. */
 (function () { var t = document.getElementById('intro'); if (t) t.addEventListener('click', function () { window.__introClick = true; }); })();</script>
 <div id="app">
@@ -77,6 +77,7 @@
 <script src="js/anim.js"></script>
 <script src="js/expansions.js"></script>
 <script src="js/expansions2.js"></script>
+<script src="js/jefe.js"></script>
 <script src="js/sfx.js"></script>
 <script src="js/mapzoom.js"></script>
 <script src="js/movil.js"></script>

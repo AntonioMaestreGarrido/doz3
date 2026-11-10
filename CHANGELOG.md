@@ -2,6 +2,85 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 14:26
+
+### Nuevo
+- **Pantalla inicial:** debajo de «Pulsa para empezar» aparece ahora la build (por ejemplo, «Build 2026-11-10 14:26»), la misma que se ve en Créditos y en el registro. Desaparece al pulsar. Caché v103.
+
+## 2026-11-10 14:23
+
+### Recuperado
+- **Exp. 5 (jefe final) integrada con `main`:** se fusiona la rama de la Exp. 5 con todos los cambios de `main` hasta el 10/11 (selector de modo de partida, resumen inicial y correcciones). La casilla «Exp. 5 · Jefe final: la Banda de Bubba» convive con el nuevo selector «Tipo» del menú de creación. Caché v102.
+
+## 2026-11-10 14:21
+
+### Cambios
+- **Exp. 5, «Cargamento aéreo»:** ya lleva su ilustración definitiva (avión de carga lanzando cajas con paracaídas). Con esto, las 5 cartas de compensación tienen ilustración. Caché v81.
+
+## 2026-11-10 14:20
+
+### Cambios
+- **Exp. 5, «Brigada civil»:** ya lleva su ilustración definitiva (civiles armados cargando por la calle). Caché v80.
+
+## 2026-11-10 14:18
+
+### Cambios
+- **Exp. 5, «Adrenalina colectiva»:** ya lleva su ilustración definitiva (la carga conjunta tras la barricada). Caché v79.
+
+## 2026-11-10 13:55
+
+### Cambios
+- **Exp. 5, «Puesto médico de campaña»:** ya lleva su ilustración definitiva (puesto médico de campaña con la doctora en primer plano). Caché v78.
+
+## 2026-11-10 13:51
+
+### Cambios
+- **Exp. 5, cartas de compensación:** las Acciones de Evento de las 5 cartas bajan de 4 a **3**. Cartas regeneradas. Caché v77.
+
+## 2026-11-10 13:49
+
+### Cambios
+- **Exp. 5, cartas de compensación:** las columnas de las 5 cartas pasan a su valor más favorable: **4 Acciones de Evento** (el máximo del medidor), **4R 2** (el máximo de las cartas), **una sola ruta de Zeds** (Refuerzo de Héroe: Túnel · Cargamento: Bosque · Brigada: Montaña · Puesto médico: Afueras · Adrenalina: Autovía), sin tirada de Infección ni de Alimentación. Cartas regeneradas. Caché v76.
+
+## 2026-11-10 13:48
+
+### Cambios
+- **Exp. 5, «Puesto médico de campaña»:** ahora cura a **todas** las unidades de jugador en juego (antes solo a las del Centro): retira todos sus Impactos y recuperan la cara completa; −2 de Infección. Carta regenerada. Caché v75.
+
+## 2026-11-10 13:45
+
+### Cambios
+- **Exp. 5, cartas de compensación:** nuevo formato de carta (pergamino, cinta con estrellas del Acto, ventana de ilustración y fila 4R · Infección · Alim. · Zeds · Acc.). **«Refuerzos: llega un Héroe»** ya lleva su ilustración definitiva; las otras 4 siguen con la ventana «ilustración pendiente» (`assets/cartas/e_boss_*.jpg`). Caché v74.
+
+## 2026-11-10 13:33
+
+### Nuevo
+- **Exp. 5 (jefe final): 5 cartas de compensación.** Se barajan por Actos como cartas de Nivel IV y solo entran con la Exp. 5:
+  - **Refuerzos: llega un Héroe:** eliges un Héroe disponible y dónde entra (Centro o un Inicial).
+  - **Cargamento aéreo:** +5 de Munición y +5 de Suministros.
+  - **Brigada civil:** eliges un Civil Heroico disponible y entra en el Centro.
+  - **Puesto médico de campaña:** las unidades de jugador del Centro recuperan todos los Impactos y su cara completa; −2 de Infección.
+  - **Adrenalina colectiva:** cada Héroe y Civil Heroico en juego recibe 1 Acción gratis ese turno.
+  - Las ilustraciones de carta son provisionales (`assets/cartas/e_boss_*.jpg`).
+
+### Cambios
+- **Exp. 5, el mazo:** ya **no lleva carta de Fin**. La partida acaba cuando Bubba muere (ganas) o llega al Centro (pierdes). La Guardia Nacional, si sale, sube 5 cartas (queda a 14 del final) por las 5 cartas extra.
+- **Exp. 5, aparición:** Bubba aparece cuando quedan **10 cartas** por revelar (antes 9).
+- **Exp. 5, mazo sin fin:** si se acaba el mazo con Bubba vivo, se siguen sacando cartas de Nivel IV al azar (las cartas extra incluidas) hasta que caiga o llegue al Centro. Si el jefe desaparece de otra forma, también cuenta como derrotado.
+- **Exp. 5, pantalla de aparición:** nueva ilustración horizontal a pantalla completa (`assets/jefe/bubba_arte.webp`); si el ratón estaba sobre una ficha, su aviso ya no tapa el arte. Canción «Saints of Modern Decay» (`assets/sonidos/musica/musica_bubba.mp3`). Caché v73.
+
+## 2026-11-10 13:17
+
+### Nuevo
+- **Exp. 5 · Jefe final: la Banda de Bubba (versión de prueba).** Casilla nueva en el menú de creación de partida (también en los códigos de semilla). Con ella activa:
+  - **Se retira la carta de Destino normal «Banda de Bubba DeNardo».**
+  - **Aparición:** cuando quedan 9 cartas de Evento por revelar (`BOSS_AT` en `js/jefe.js`), su arte aparece a pantalla completa y suena su canción. La ficha entra en el Inicial de la ruta de superficie con menos Zeds.
+  - **Música:** «Saints of Modern Decay» (`assets/sonidos/musica/musica_bubba.mp3`, 4:45). Suena en bucle mientras está en juego, en lugar de la música de fondo. Si el archivo faltara, la música normal seguiría sonando.
+  - **Vida de prueba:** Fuerza 6/3 y 3 Impactos por cara. No «huye» al ser derrotado: sale de la partida.
+  - **No combate con los Zeds:** comparte espacio con ellos, como Noelle, y no cuenta para el límite de agrupamiento.
+  - **Movimiento:** cada turno, tras la fase 4R, avanza 1 espacio hacia el Centro y arrastra a los Zeds de su espacio con las reglas normales de movimiento (límite de agrupamiento, combate, Barricadas…). Si llega al Centro, pierdes, como con cualquier Zed. No se mueve además con la activación de su ruta ni suma Infección.
+  - Archivos nuevos: `js/jefe.js` y `assets/jefe/bubba_arte.webp` (recorte de la carta). Caché v72.
+
 ## 2026-11-10 02:00
 
 ### Fixes

@@ -21,6 +21,7 @@ async function loadAssets() {
   for (const k of ['caos', 'barricada', 'bastion', 'mina_4', 'mina_7', 'puente', 'ecg']) now.push(['m_' + k, T + 'marcadores/' + k + '.webp']);
   for (const k of ['petra', 'aldeanos', 'refugiados', 'civ1', 'civ2', 'civ3']) now.push(['u_' + k, T + k + '.webp']);
   for (const k of Object.keys(HEROES)) if (HEROES[k].img) later.push([HEROES[k].img, T + HEROES[k].img + '.webp']);
+  later.push(['altz_bubba', 'assets/arte_alt/unidades/bubba.webp'], ['altz_bubba_r', 'assets/arte_alt/unidades/bubba_r.webp']);   /* ficha del jefe final (exp. 5): se usa aunque el arte alternativo esté desactivado */
   for (const k of Object.keys(SUPER_ZEDS)) later.push([SUPER_ZEDS[k].img, T + SUPER_ZEDS[k].img + '.webp']);
   later.push(['noelle', T + 'noelle.webp'], ['jaque', T + 'jaque.webp'], ['marines', T + 'marines.webp'], ['guardia', T + 'guardia.webp'], ['porter_r', T + 'porter_r.webp']);
   for (const k of Object.keys(RUMORS).concat('reverso')) later.push(['rum_' + k, T + 'rumores/' + k + '.webp']);
@@ -440,7 +441,7 @@ const ui = {
       const ax = hw - 2; c.fillText(u.tkey === 'local' ? 'TREN L' : 'TREN M', dirs.length === 1 ? -dirs[0] * 5 : 0, 4);
       for (const dd of dirs) { c.beginPath(); c.moveTo(dd * (ax + 5), 0); c.lineTo(dd * (ax - 5), -6); c.lineTo(dd * (ax - 5), 6); c.closePath(); c.fill(); } }
     else if (isZedSide(u)) {
-      const altz = Opciones.artAlt && (u.type === 'super' ? IMG['altz_' + u.key + (u.flipped ? '_r' : '')] : u.type === 'spreader' ? IMG['altz_' + u.skey + (u.flipped ? '_r' : '')] : (u.type === 'zed' && IMG['altzn_' + zedAltN(u)]));
+      const altz = (Opciones.artAlt || u.boss) && (u.type === 'super' ? IMG['altz_' + u.key + (u.flipped ? '_r' : '')] : u.type === 'spreader' ? IMG['altz_' + u.skey + (u.flipped ? '_r' : '')] : (u.type === 'zed' && IMG['altzn_' + zedAltN(u)]));
       if (altz) {
         c.save(); rr(c, -hw, -hh, r.w, r.h, 8); c.clip(); c.drawImage(altz, -hw, -hh, r.w, r.h); c.restore();
         if (sel) { c.strokeStyle = '#ffd54a'; c.lineWidth = 5; rr(c, -hw, -hh, r.w, r.h, 8); c.stroke(); }
@@ -542,6 +543,21 @@ const ui = {
   /* Súper Zed: la ficha aparece en grande en el centro con su nombre y su efecto (OK). Al pulsar OK vuela a su espacio y solo entonces se coloca.
      Con «Animaciones rápidas» no vuela: se muestra la información igual y se coloca al pulsar OK. */
   /* Con carta (p. ej. Marines): la carta se muestra junto a la ficha y se desvanece al pulsar OK, cuando la ficha vuela. */
+  /* Aparición del jefe final (exp. 5): su arte a pantalla completa; se cierra con el botón, Intro, Espacio o Esc. */
+  bossIntro(o) {
+    return new Promise(res => {
+      if (this.fast) { res(); return; }
+      this._mapZoom = false; this.zoomHide();   /* si el ratón estaba sobre una ficha, su aviso no debe quedar tapando el arte */
+      const ov = document.createElement('div'); ov.className = 'bossfx';
+      ov.innerHTML = '<div class="bfx-bg" style="background-image:url(' + o.img + ')"></div><img class="bfx-art" src="' + o.img + '" alt=""><div class="bfx-info"><h2>' + o.title + '</h2><p>' + o.text + '</p><button class="primary" id="bfxOk">¡Adelante!</button></div>';
+      document.body.appendChild(ov);
+      let done = false;
+      const finish = () => { if (done) return; done = true; document.removeEventListener('keydown', onKey, true); ov.remove(); res(); };
+      const onKey = e => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finish(); } };
+      document.addEventListener('keydown', onKey, true);
+      ov.querySelector('#bfxOk').onclick = finish;
+    });
+  },
   superIntro(zed, target, card, txt) {
     return new Promise(res => {
       const d = SUPER_ZEDS[zed.key] || { name: zed.name, txt: txt || '', img: zed.img || null };
@@ -922,7 +938,7 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label>Tipo: <select id="modeSel"><option value="normal">Normal</option><option value="equi">Equilibrada (un científico)</option><option value="draft1">Draft 1 (rechaza 1)</option><option value="draft2">Draft 2 (rechaza 2)</option><option value="draft3">Draft 3 (rechaza 3)</option></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label> <button id="teamBtn" title="Mira las cartas de los Héroes y Civiles Heroicos y elige tu equipo">Elegir equipo</button> <span id="teamInfo" class="sub"></span></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label> <label title="Jefe final de prueba: la Banda de Bubba aparece al final de la partida"><input type="checkbox" id="x5"> Exp. 5 · Jefe final: la Banda de Bubba</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label>Tipo: <select id="modeSel"><option value="normal">Normal</option><option value="equi">Equilibrada (un científico)</option><option value="draft1">Draft 1 (rechaza 1)</option><option value="draft2">Draft 2 (rechaza 2)</option><option value="draft3">Draft 3 (rechaza 3)</option></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label> <button id="teamBtn" title="Mira las cartas de los Héroes y Civiles Heroicos y elige tu equipo">Elegir equipo</button> <span id="teamInfo" class="sub"></span></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       let seed = null; /* { code, seed } cuando hay un código de partida activo */
       let civhSel = null, teamExtra = [];  /* Civil Heroico elegido a mano; Héroes elegidos de más en cooperativo (los primeros van a los jugadores) */
@@ -932,7 +948,7 @@ const ui = {
       const upd = () => {
         const n = +b.querySelector('input[name=lv]:checked').value, L = LEVELS[n], keep = sels().map(e => e.value), lenKeep = $('lenSel').value;
         $('lenSel').innerHTML = L.lengths.map((x, i) => '<option value="' + i + '">' + x.name + '</option>').join(''); if (L.lengths[lenKeep]) $('lenSel').value = lenKeep;
-        G.expSel = [1, 2, 3, 4].filter(k => $('x' + k) && $('x' + k).checked); const pool = n === 0 ? [] : heroPoolFor(n);
+        G.expSel = [1, 2, 3, 4, 5].filter(k => $('x' + k) && $('x' + k).checked); const pool = n === 0 ? [] : heroPoolFor(n);
         sels().forEach((e, i) => { e.innerHTML = n === 0 ? '<option value="">(los 4 Héroes básicos)</option>' : '<option value="">' + (i ? 'Héroe ' + (i + 1) + ': al azar' : 'Al azar') + '</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join(''); if (pool.includes(keep[i])) e.value = keep[i]; });
         teamExtra = teamExtra.filter(k => pool.includes(k)); if (n === 0 || (civhSel && !civhPool(n).includes(civhSel))) civhSel = null; $('teamBtn').disabled = n === 0; teamTxt();
         $('modeSel').disabled = n === 0; if (n === 0) $('modeSel').value = 'normal';
@@ -946,10 +962,10 @@ const ui = {
       };
       const players = () => { const np = +$('nPl').value; if (np < 2) return null; const nm = [...document.querySelectorAll('#plRows .plname')], hs = [...document.querySelectorAll('#plRows .plhero')]; return Array.from({ length: np }, (_, i) => ({ name: (nm[i] && nm[i].value.trim()) || 'Jugador ' + (i + 1), hero: (hs[i] && hs[i].value) || '' })); };
       const picked = () => { const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0) return []; if (+$('nPl').value > 1) return teamExtra.slice(); const v = sels().slice(0, $('heroAll').checked ? 4 : 1).map(e => e.value).filter(Boolean); return v; };
-      const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4].filter(k => $('x' + k).checked), heroes: picked(), civh: civhSel, mode: $('modeSel').value });
-      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4, #teamBtn, #modeSel').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
+      const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4, 5].filter(k => $('x' + k).checked), heroes: picked(), civh: civhSel, mode: $('modeSel').value });
+      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #x5, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4, #teamBtn, #modeSel').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
       const msg = (t, bad) => { $('seedMsg').hidden = !t; $('seedMsg').textContent = t || ''; $('seedMsg').style.color = bad ? '#ff8a7a' : ''; };
-      b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #heroAll, #nPl').forEach(i => i.onchange = upd); upd();
+      b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #x5, #heroAll, #nPl').forEach(i => i.onchange = upd); upd();
       $('teamBtn').onclick = async () => {
         const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0) return;
         const np = +$('nPl').value, ph = [...document.querySelectorAll('#plRows .plhero')].map(e => e.value).filter(Boolean);
@@ -978,7 +994,7 @@ const ui = {
       };
       $('seedUse').onclick = () => {
         let o; try { o = SeedCode.decode($('seedTxt').value); } catch (e) { msg(e.message, true); return; }
-        b.querySelector('input[name=lv][value="' + o.level + '"]').checked = true; [1, 2, 3, 4].forEach(k => $('x' + k).checked = o.exps.includes(k));
+        b.querySelector('input[name=lv][value="' + o.level + '"]').checked = true; [1, 2, 3, 4, 5].forEach(k => $('x' + k).checked = o.exps.includes(k));
         $('heroAll').checked = o.heroes.length > 1; upd(); $('lenSel').value = o.len; o.heroes.forEach((k, i) => { sels()[i].value = k; }); civhSel = o.civh || null; teamTxt();
         seed = { code: SeedCode.encode(o), seed: o.seed }; $('seedTxt').value = seed.code; lock(true);
         msg('Semilla ' + seed.code + ' cargada: la configuración queda fijada. Con «Quitar semilla» vuelves a la partida libre.');
@@ -1038,10 +1054,10 @@ const ui = {
       try { const skip = sessionStorage.getItem('doz3.skipIntro') === '1'; sessionStorage.removeItem('doz3.skipIntro'); if (skip) { document.body.classList.remove('booting'); const old = document.getElementById('intro'); if (old) old.remove(); return res(); } } catch (e) { }
       /* La intro ya está en el HTML (visible desde el primer dibujo); si no existe, se crea aquí. */
       let t = document.getElementById('intro');
-      if (!t) { t = document.createElement('div'); t.id = 'intro'; t.innerHTML = '<img src="assets/intro.png" alt=""><p>Pulsa para empezar</p>'; document.body.appendChild(t); }
+      if (!t) { t = document.createElement('div'); t.id = 'intro'; t.innerHTML = '<img src="assets/intro.png" alt=""><p>Pulsa para empezar</p><small class="introBuild">Build ' + BUILD_TIME + '</small>'; document.body.appendChild(t); }
       const done = () => { t.remove(); document.body.classList.remove('booting'); res(); };
       t.onclick = () => {
-        t.onclick = null; const p0 = t.querySelector('p'); if (p0) p0.remove();
+        t.onclick = null; const p0 = t.querySelector('p'); if (p0) p0.remove(); const b0 = t.querySelector('.introBuild'); if (b0) b0.remove();
         try { this.musicOn(); } catch (e) { }
         const v = document.createElement('video'); v.id = 'openVid'; v.src = 'assets/opening.mp4'; v.playsInline = true;
         v.onended = done; v.onerror = done; t.appendChild(v);
@@ -1068,11 +1084,15 @@ const ui = {
     this._bgI = 0; this._danger = false; this._lastStand = false;
     this._dg = new Audio('assets/sonidos/musica/musica_peligro.mp3'); this._dg.loop = true; this._dg.volume = .5;
     this._ls = new Audio('assets/sonidos/musica/musica_last_stand.mp3'); this._ls.loop = true; this._ls.volume = .5;
+    /* Canción del jefe final (exp. 5): si el archivo no existe, se ignora y sigue la música normal. */
+    this._boss = new Audio('assets/sonidos/musica/musica_bubba.mp3'); this._boss.loop = true; this._boss.volume = .55;
+    this._boss.onerror = () => { this._bossOn = false; this._gamePlay(); };
+    this._bossOn = !!(G.boss && G.boss.state === 'active');
     this._gamePlay();
   },
   /* Fin de partida: para la música de fondo y el tema de peligro y toca el tema de victoria o derrota. */
   gameMusicEnd(win) {
-    if (this._bg) { this._bg.forEach(a => { a.onended = null; a.pause(); }); this._dg.pause(); this._ls.pause(); this._bg = null; }
+    if (this._bg) { this._bg.forEach(a => { a.onended = null; a.pause(); }); this._dg.pause(); this._ls.pause(); if (this._boss) { this._boss.onerror = null; this._boss.pause(); } this._bossOn = false; this._bg = null; }
     this._danger = false; this._lastStand = false;
     /* Solo debe sonar un tema: se corta el del menú si quedara alguno, y el de la victoria/derrota reemplaza al anterior. */
     if (this._mus) { this._mus.pause(); this._mus = null; }
@@ -1085,7 +1105,7 @@ const ui = {
   _gamePlay() {
     if (!this._bg) return;
     const bg = this._bg[this._bgI], danger = this._lastStand ? this._ls : this._dg;
-    const cur = this._danger ? danger : bg, tracks = [bg, this._dg, this._ls], vmax = a => (a === bg ? .4 : .5) * Sound.music.vol;
+    const cur = this._bossOn && this._boss ? this._boss : this._danger ? danger : bg, tracks = [bg, this._dg, this._ls].concat(this._boss ? [this._boss] : []), vmax = a => (a === bg ? .4 : a === this._boss ? .55 : .5) * Sound.music.vol;
     /* Cada pista conserva su posición al pausarse (no se reinicia): el tema de fondo se reanuda donde se quedó. */
     if (!Sound.music.on) { this._stopFade(); tracks.forEach(a => { a.volume = a === cur ? vmax(a) : 0; a.pause(); }); this._curTrack = cur; return; }
     const changed = this._curTrack !== cur; this._curTrack = cur;
@@ -1107,6 +1127,8 @@ const ui = {
       if (!busy) this._stopFade();
     }, STEP);
   },
+  /* Canción del jefe final: sustituye a la música de fondo mientras está en juego. */
+  bossMusic(on) { this._bossOn = !!on; if (on && this._boss) this._boss.currentTime = 0; this._gamePlay(); },
   _stopFade() { if (this._fadeT) { clearInterval(this._fadeT); this._fadeT = null; } },
   /* Lo llama el mapa: true si hay Zeds en el penúltimo espacio (o junto al Centro). Al entrar en peligro, la voz avisa. */
   setDanger(v) {

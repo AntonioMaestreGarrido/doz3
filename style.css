@@ -251,6 +251,7 @@ body:has(#title.bg) #modalbox.setup{background:rgba(14,11,8,.62)}
 #intro p{margin:18px 0 0;font:700 15px "Segoe UI",system-ui,sans-serif;letter-spacing:2px;text-transform:uppercase;color:var(--mut);animation:introBlink 1.4s infinite}
 #intro video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000;cursor:default}
 @keyframes introBlink{50%{opacity:.3}}
+#intro .introBuild{display:block;margin-top:10px;font:600 12px "Segoe UI",system-ui,sans-serif;letter-spacing:1px;color:var(--mut);opacity:.7}
 
 /* Panel de sonido: un canal por fila, con interruptor y volumen */
 #modalbox.sound{max-width:min(520px,96vw)}
@@ -602,3 +603,13 @@ body:has(#title.bgrank) #modalbox,body:has(#title.bgnew) #modalbox{pointer-event
 #modalbox.startsum h3{font-size:14px;color:var(--gold);margin:10px 0 4px;text-transform:uppercase;letter-spacing:1px}
 #modalbox.startsum ul.sumb{margin:0 0 6px 18px;padding:0;font-size:13px;line-height:1.4}
 #modalbox.startsum ul.sumb li{margin:2px 0}
+
+/* Jefe final (exp. 5): arte a pantalla completa */
+.bossfx{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;animation:bfxIn .6s ease both}
+.bossfx .bfx-bg{position:absolute;inset:-5%;background-size:cover;background-position:center;filter:blur(26px) brightness(.45);transform:scale(1.1)}
+.bossfx .bfx-art{position:relative;max-width:100vw;max-height:calc(100vh - 150px);object-fit:contain;filter:drop-shadow(0 0 30px rgba(255,60,30,.55));animation:bfxArt 1s cubic-bezier(.2,.7,.2,1) both}
+.bossfx .bfx-info{position:relative;text-align:center;padding:10px 16px 16px;max-width:760px;color:#fff}
+.bossfx .bfx-info h2{margin:6px 0;font-size:clamp(20px,4vw,32px);color:#ffd54a;text-shadow:0 2px 8px #000}
+.bossfx .bfx-info p{margin:0 0 10px;font-size:clamp(13px,2.4vw,16px);text-shadow:0 1px 4px #000}
+@keyframes bfxIn{from{opacity:0}to{opacity:1}}
+@keyframes bfxArt{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}

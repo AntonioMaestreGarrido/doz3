@@ -242,7 +242,7 @@ async function baseDEST_FX(id, route) {
     case 'averia': { if (G.weapon && G.weapon.parts.length) { G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); LOG('Pierdes un componente de la Súper Arma.', 'bad'); } else { const optA = G.res ? await UI.choose({ title: 'Avería grave', text: 'No tienes Súper Arma. Elige:', options: [{ label: 'a) Una carta de Investigación Inicial al azar encima del mazo', value: 'a' }, { label: 'b) Activar la ruta con menos Zeds', value: 'b' }] }) : 'b'; if (optA === 'a') { pushInitialResearch(1); LOG('Avería grave: una carta de Investigación Inicial pasa encima del mazo.', 'good'); } else { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Avería grave: ruta con menos Zeds.'); await activateRoute(r, false); } } break; }
   }
 }
-function spawnSpreader(k) { const d = SPREADERS[k]; return newUnit({ side: 'zed', type: 'spreader', skey: k, name: d.name, full: d.full, red: d.red, hf: 2, hr: 2, img: d.img }); }
+function spawnSpreader(k) { const d = SPREADERS[k]; return newUnit({ side: 'zed', type: 'spreader', skey: k, name: d.name, full: d.full, red: d.red, hf: d.hf || 2, hr: d.hr || 2, img: d.img, boss: d.boss ? 1 : 0 }); }
 function pushInitialResearch(n) {
   if (!G.res) return; const pool = Object.keys(RES).filter(k => RES[k].kind === 'ini' && !G.res.deck.includes(k) && !G.res.disc.includes(k));
   for (let i = 0; i < n && pool.length; i++) G.res.deck.unshift(pool.splice(rnd(pool.length), 1)[0]);
