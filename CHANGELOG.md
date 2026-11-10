@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 14:18
+
+### Cambios
+- **Exp. 5, «Adrenalina colectiva»:** ya lleva su ilustración definitiva (la carga conjunta tras la barricada). Caché v79.
+
 ## 2026-11-10 13:55
 
 ### Cambios
