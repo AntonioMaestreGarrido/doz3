@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 17:35
+
+### Nuevo
+- **Exp. 5, cartas de compensación con arte alternativo:** las 5 cartas («Refuerzos: llega un Héroe», «Cargamento aéreo», «Brigada civil», «Puesto médico de campaña», «Adrenalina colectiva») tienen ahora versión en el formato oscuro del arte alternativo (`assets/arte_alt/eventos/e_boss_*.webp`); con la opción «Usar arte alternativo» ya no sale el diseño antiguo de pergamino. Generador: `tools/boss_alt/generar_boss_alt.py`. Caché v105.
+
 ## 2026-11-10 16:56
 
 ### Mejoras
