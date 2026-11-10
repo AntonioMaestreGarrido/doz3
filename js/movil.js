@@ -43,7 +43,7 @@ Object.assign(ui, {
     side.insertBefore(tabs, side.firstChild);
     tabs.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => ui.mobShowTab(b.dataset.tab, true));
     $('mEnd').onclick = () => ui.mobEndPhase();
-    const radar = document.createElement('section'); radar.id = 'radar'; side.insertBefore(radar, $('actbox'));
+    const radar = document.createElement('section'); radar.id = 'radar'; { const ab = $('actbox'); /* con pantalla ancha (≥1500 px) actbox vive en #left, no en #side: insertBefore fallaba y la intro nunca arrancaba */ side.insertBefore(radar, ab && ab.parentNode === side ? ab : $('eventbox')); }
 
     const wrap = $('mapwrap');
     const cyc = document.createElement('div'); cyc.id = 'cyc';

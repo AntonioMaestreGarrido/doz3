@@ -2,6 +2,32 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 02:00
+
+### Fixes
+- **Mensajero del Clarín:** eliminar a todos los Zeds que entraban en el Centro hacía perder la partida. Ahora solo se pierde si los Zeds ganan el combate o si queda alguno en el Centro.
+- **Retirada de Zeds en un espacio Inicial:** dos Zeds que perdían un combate en un Inicial podían saltar al Inicial de otra ruta o volver a la reserva. Ahora se quedan en su espacio.
+- **Lluvia:** un Zed que avanzaba y perdía el combate se «retiraba» al mismo espacio y atacaba otra vez. Ahora se retira al espacio del que venía.
+- **Saqueadores y Banda de Bubba:** ya no hacen tirada de Salvación al ser eliminados (consumía dados sin efecto).
+- **Base aérea secreta:** la Investigación gratis cobra el Suministro de la carta cuando lo pide, y no se ofrece si no puedes pagarlo.
+- **Deshacer:** una acción que revela información (mirar la carta de Evento con Wright, Visiones de Wilson, robar una carta de Destino o de Investigación) ya no se puede deshacer para recuperar la acción.
+- **Acción que falla por un error:** se vuelve al estado anterior a la acción en vez de guardar la partida a medias.
+- **Recursos al entrar en juego:** Horacio y el Ejército de Salvación respetan el tope de 20 Suministros en la preparación, y la segunda Civil Heroica que trae el Mensajero del Clarín aporta sus recursos.
+- **Cartas en niveles sin Túnel, Hospital o Laboratorio:** «Expediente», «Cama de hospital» y «Atajos» ya no pueden dar error si el espacio no existe.
+- **Modo de prueba automática (`?bot=`):** solo funciona en local; un enlace a la web publicada ya no puede activarlo ni borrar partidas guardadas.
+
+### Mejoras
+- **Guardado más ligero:** en mitad del turno solo se guardan los eventos nuevos del registro, no el registro entero en cada acción.
+- **Interno:** las expansiones amplían las reglas mediante puntos de extensión declarados (`extensible` / `extend`) en lugar de reasignar funciones globales.
+- **Catálogo de cartas** regenerado con los datos actuales.
+
+## 2026-11-09 17:00
+
+### Fixes
+- **Pantalla inicial en PC (pantallas anchas):** con 1500 px de ancho o más el arranque fallaba al montar el panel de móvil (`actbox` está en la columna izquierda) y la intro no lanzaba el vídeo; ahora se inserta bien.
+- **Vídeo de apertura con ratón:** un doble clic ya no lo salta al instante, y si el navegador bloquea el sonido se reintenta sin sonido.
+- **Service worker:** las peticiones con `Range` (vídeo/audio) van directas a la red.
+
 ## 2026-11-09 12:00
 
 ### Fixes

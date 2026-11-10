@@ -20,7 +20,7 @@ function mkSpecial(kind, n) {
       s.label = 'Jornada doble: +1 Infección → Curar o Investigar gratis';
       s.fn = async () => {
         /* Investigar gratis solo se ofrece si se puede pagar: si la carta en curso cuesta Suministro, hace falta uno (la Infección ya se ha subido). */
-        const lab = G.res && G.res.cur && !G.turn.researched && (!G.res.cur.sup || G.supplies >= 1) ?unitsAt('LAB').filter(x => x.sci && canAct(x)) : [];
+        const lab = G.res && G.res.cur && G.res.deck.length && !G.turn.researched && (!G.res.cur.sup || G.supplies >= 1) ?unitsAt('LAB').filter(x => x.sci && canAct(x)) : [];
         const opts = [{ label: 'a) 1 Acción de Curar gratis', value: 'h' }].concat(lab.length ? [{ label: 'b) 1 Acción de Investigar gratis', value: 'i' }] : []).concat([{ label: 'Cancelar', value: '' }]);
         const v = await UI.choose({ title: 'Trabajando una jornada doble (' + (s.n + 1) + '/3)', text: 'Aumentas la Infección en 1 a cambio de:', options: opts });
         if (!v) { G.turn.specials.push(s); return; }
@@ -39,7 +39,7 @@ function mkSpecial(kind, n) {
       break;
     case 'atajos':
       s.label = 'Atajos: 1 Impacto a un Héroe del Laboratorio → Investigación';
-      s.fn = async () => { G.turn.specials.push(s); /* «Puedes hacer esto tantas veces como quieras»: el botón sigue disponible */ const h = unitsAt('LAB').filter(isFighter)[0]; if (!h) { LOG('No hay nadie en el Laboratorio.'); return; } await hitPlayer(h, 1); if ((await rollShown('Laboratorio: investigación', v => v >= 2 ? '<b>' + v + '</b>: se revela la investigación' : '<b>' + v + '</b>: sin efecto (necesita 2-6)')) >= 2) await revealResearch(); };
+      s.fn = async () => { G.turn.specials.push(s); /* «Puedes hacer esto tantas veces como quieras»: el botón sigue disponible */ const h = G.spaces.LAB ? unitsAt('LAB').filter(isFighter)[0] : null; if (!h) { LOG('No hay nadie en el Laboratorio.'); return; } await hitPlayer(h, 1); if ((await rollShown('Laboratorio: investigación', v => v >= 2 ? '<b>' + v + '</b>: se revela la investigación' : '<b>' + v + '</b>: sin efecto (necesita 2-6)')) >= 2) await revealResearch(); };
       break;
     case 'necesidad':
       s.label = 'Necesidad: 2 Suministros → 1 Munición';
@@ -100,7 +100,23 @@ function slotMeta(g) {
 const LOG_PREFIX = 'doz3.log.';
 function trySet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
 /* Sin sitio: se liberan los registros de las otras partidas guardadas (las partidas no se tocan). */
-function freeOtherLogs(keep) { for (const id of slotIds()) if (id !== keep) try { localStorage.removeItem(LOG_PREFIX + id); } catch (e) { } }
+/* El registro completo solo se escribe al guardar el turno (y la primera vez que se guarda una partida en esta sesión). Los guardados de mitad de turno
+   escriben solo la «cola»: los eventos posteriores a ese registro completo (doz3.logt.<id>). Así cada acción no reescribe miles de eventos. */
+const LOG_TAIL = 'doz3.logt.';
+const logFull = { id: null, n: 0 };   /* partida y n.º del último evento que ya está en el registro completo guardado */
+function removeLog(id) { try { localStorage.removeItem(LOG_PREFIX + id); localStorage.removeItem(LOG_TAIL + id); } catch (e) { } }
+function freeOtherLogs(keep) { for (const id of slotIds()) if (id !== keep) removeLog(id); }
+function saveLog(at) {
+  const id = G.saveId, log = G.evlog || [];
+  if (at !== 'turn' && logFull.id === id) {
+    const tail = log.filter(e => e.n > logFull.n);
+    if (!trySet(LOG_TAIL + id, JSON.stringify(tail))) { try { localStorage.removeItem(LOG_TAIL + id); } catch (e) { } }
+    return;
+  }
+  try { localStorage.removeItem(LOG_TAIL + id); } catch (e) { }
+  if (!trySet(LOG_PREFIX + id, JSON.stringify(log)) && !trySet(LOG_PREFIX + id, JSON.stringify(log.slice(-1000)))) { try { localStorage.removeItem(LOG_PREFIX + id); } catch (e) { } }
+  logFull.id = id; logFull.n = log.length ? log[log.length - 1].n : 0;
+}
 let saveWarned = false;
 /* at: 'actions' (a mitad de la fase de Acciones) o 'turn' (al empezar un turno). */
 function saveGame(at) {
@@ -110,7 +126,7 @@ function saveGame(at) {
   const snap = snapshotState(); delete snap.evlog;
   const data = JSON.stringify({ v: 1, at, uid: UID, rng: rngState(), dbg: !!DEBUG_DICE, G: snap, meta: slotMeta(snap) });
   let ok = trySet(SLOT_PREFIX + G.saveId, data);
-  if (!ok) { try { localStorage.removeItem(LOG_PREFIX + G.saveId); } catch (e) { } freeOtherLogs(G.saveId); ok = trySet(SLOT_PREFIX + G.saveId, data); }
+  if (!ok) { removeLog(G.saveId); logFull.id = null; freeOtherLogs(G.saveId); ok = trySet(SLOT_PREFIX + G.saveId, data); }
   if (!ok) {
     console.warn('No se pudo guardar la partida: el almacenamiento del navegador está lleno.');
     if (!saveWarned && typeof UI !== 'undefined' && UI) { saveWarned = true; UI.log('No se ha podido guardar la partida: el almacenamiento del navegador está lleno. Borra alguna partida guardada desde «Cargar partida».', 'bad'); }
@@ -118,8 +134,7 @@ function saveGame(at) {
   }
   saveWarned = false;
   const ids = slotIds(); if (ids[0] !== G.saveId) setSlotIds([G.saveId].concat(ids.filter(x => x !== G.saveId)));
-  const log = G.evlog || [];
-  if (!trySet(LOG_PREFIX + G.saveId, JSON.stringify(log)) && !trySet(LOG_PREFIX + G.saveId, JSON.stringify(log.slice(-1000)))) { try { localStorage.removeItem(LOG_PREFIX + G.saveId); } catch (e) { } }
+  saveLog(at);
 }
 /* Lista de partidas guardadas (la más reciente primero). */
 function listSaves() {
@@ -134,11 +149,16 @@ function listSaves() {
 function loadSave(id) {
   const s = listSaves().find(x => x.id === id) || null;
   /* Las partidas antiguas llevan el registro dentro; las nuevas, en su clave aparte. */
-  if (s && !s.G.evlog) { try { const l = JSON.parse(localStorage.getItem(LOG_PREFIX + id) || '[]'); s.G.evlog = Array.isArray(l) ? l : []; } catch (e) { s.G.evlog = []; } }
+  if (s && !s.G.evlog) {
+    const rd = k => { try { const l = JSON.parse(localStorage.getItem(k + id) || '[]'); return Array.isArray(l) ? l : []; } catch (e) { return []; } };
+    const full = rd(LOG_PREFIX), last = full.length ? full[full.length - 1].n : 0;
+    /* La cola solo vale hasta el evento que tenía la partida al guardarse (evn): lo posterior sería de un guardado más nuevo que no llegó a escribirse. */
+    s.G.evlog = full.concat(rd(LOG_TAIL).filter(e => e && e.n > last)).filter(e => e && !(s.G.evn && e.n > s.G.evn));
+  }
   return s;
 }
-function deleteSave(id) { if (!id) return; try { localStorage.removeItem(SLOT_PREFIX + id); localStorage.removeItem(LOG_PREFIX + id); } catch (e) { } setSlotIds(slotIds().filter(x => x !== id)); }
-function applySave(s) { restoreState(s.G); G.saveId = s.id || G.saveId; UID = s.uid; rngRestore(s.rng); DEBUG_DICE = !!s.dbg || !!ui.dbgDice; /* el modo debug se guarda con la partida */ }
+function deleteSave(id) { if (!id) return; try { localStorage.removeItem(SLOT_PREFIX + id); } catch (e) { } removeLog(id); setSlotIds(slotIds().filter(x => x !== id)); }
+function applySave(s) { logFull.id = null; restoreState(s.G); G.saveId = s.id || G.saveId; UID = s.uid; rngRestore(s.rng); DEBUG_DICE = !!s.dbg || !!ui.dbgDice; /* el modo debug se guarda con la partida */ }
 
 /* Ranking local de partidas terminadas (victorias primero, luego por puntos). */
 const TOP_KEY = 'doz3.top.v1';

@@ -1,7 +1,7 @@
 /* Service worker: permite instalar la web como app y jugar sin conexión.
    Código (html/js/css): red primero, con copia local de reserva. Imágenes y audio: caché primero. */
 'use strict';
-const CACHE = 'doz3-v100';
+const CACHE = 'doz3-v101';
 const SHELL = ['./', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'assets/portada.jpg', 'assets/fondo_nueva.webp', 'assets/fondo_ranking.webp',
   'js/version.js', 'js/data.js', 'js/events.js', 'js/dest.js', 'js/evlog.js', 'js/preview.js', 'js/obituario.js', 'js/engine.js', 'js/game.js', 'js/phases.js', 'js/actions.js', 'js/cardtext.js', 'js/ui.js', 'js/anim.js',
   'js/expansions.js', 'js/expansions2.js', 'js/sfx.js', 'js/sound.js', 'js/opciones.js', 'js/voz.js', 'js/ost.js', 'assets/sonidos/letras/letras.js', 'assets/sonidos/efectos/sfx_disparo.mp3', 'assets/sonidos/efectos/sfx_disparo_largo.mp3', 'js/mapzoom.js', 'js/movil.js', 'js/seedcode.js', 'js/save.js', 'js/main.js', 'js/bot.js'];
@@ -43,6 +43,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request; if (req.method !== 'GET') return;
   const url = new URL(req.url); if (url.origin !== location.origin) return;
+  /* Vídeo y audio los pide el navegador con Range; una respuesta 200 de la caché (o del servidor de Python del .bat) a esa petición hace que no se reproduzcan. Van directos a la red. */
+  if (req.headers.has('range')) return;
   const isCode = req.mode === 'navigate' || /\.(html|js|css|webmanifest)$/.test(url.pathname) || url.pathname.endsWith('/');
   if (isCode) {
     e.respondWith(fetch(req).then(r => { if (r.ok) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); } return r; }).catch(() => caches.match(req).then(r => r || caches.match('index.html'))));

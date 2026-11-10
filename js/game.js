@@ -4,7 +4,8 @@
 const MAX_HERO_LV = [0, 1, 2, 3, 4, 5];  /* nivel de héroe (color de la carta: azul 1, verde 2, amarillo 3, naranja 4) permitido en cada nivel de partida */
 const MAX_CIVH_LV = [0, 1, 2, 3, 4, 5];
 
-function heroPoolFor(level) { return Object.keys(HEROES).filter(k => HEROES[k].type === 'hero' || k === 'horacio').filter(k => HEROES[k].lv <= MAX_HERO_LV[level]); }
+const heroPoolFor = extensible('heroPoolFor', baseHeroPoolFor);
+function baseHeroPoolFor(level) { return Object.keys(HEROES).filter(k => HEROES[k].type === 'hero' || k === 'horacio').filter(k => HEROES[k].lv <= MAX_HERO_LV[level]); }
 
 function makeHero(key, where) {
   const d = HEROES[key];
@@ -18,19 +19,29 @@ function makeSpecial(key, where, extra) {
   const u = newUnit(Object.assign({ side: ['saqueadores', 'bubba'].includes(key) ? 'raid' : 'pl', type: d.type, skey: key, name: d.name, full: d.full, red: d.red, mp: d.mp, hf: d.hf || (d.type === 'raider' ? 3 : 1), hr: d.hr || (d.type === 'raider' ? 3 : 1), bonus: d.bonus, bubba: d.bubba, vip: d.vip, dr: d.dr, img: d.img }, extra || {}));
   putUnit(u, where); return u;
 }
+/* Recursos que aporta una unidad al entrar en juego, en la preparación o durante la partida (tope de 20). Devuelve el texto para el registro, o '' si no hay nada que anunciar. */
+function entryResources(u) {
+  const ys = G.lv.supplies, sup = k => { if (ys) G.supplies = Math.min(20, G.supplies + k); }, am = k => { G.ammo = Math.min(20, G.ammo + k); };
+  switch (u.key) {
+    case 'johnson': sup(2); am(3); return 'Johnson aporta 3 de Munición' + (ys ? ' y 2 Suministros' : '') + '.';
+    case 'frank': sup(2); am(4); return 'Frank aporta 4 de Munición' + (ys ? ' y 2 Suministros' : '') + '.';
+    case 'horacio': sup(3); return ys ? 'Horacio trae 3 Suministros.' : '';
+    case 'heli': sup(3); return ys ? 'El Helicóptero Medevac trae 3 Suministros de combustible.' : '';
+    case 'salvacion': sup(2); return '';
+  }
+  return '';
+}
 async function heroEnters(u) {
   EVT('enter', u.id, { name: u.name });
-  if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (G.lv.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); LOG('Johnson aporta 3 de Munición' + (G.lv.supplies ? ' y 2 Suministros' : '') + '.', 'good'); }
-  if (u.key === 'horacio' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 3); LOG('Horacio trae 3 Suministros.', 'good'); }
-  if (u.key === 'frank') { G.supplies = Math.min(20, G.supplies + (G.lv.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 4); LOG('Frank aporta 4 de Munición' + (G.lv.supplies ? ' y 2 Suministros' : '') + '.', 'good'); }
-  if (u.key === 'salvacion' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 2); }
-  if (u.key === 'heli' && G.lv.supplies) { G.supplies = Math.min(20, G.supplies + 3); LOG('El Helicóptero Medevac trae 3 Suministros de combustible.', 'good'); }
+  const msg = entryResources(u); if (msg) LOG(msg, 'good');
   if (u.key === 'clarin') { const k = pickCivh(); if (k) await spawnHero(k, 'C'); }
   UI.updateStats();
 }
 /* Los Civiles Heroicos de una expansión solo están disponibles si esa expansión está activada. */
 const civhAvail = k => !HEROES[k].exp || (G.expSel || []).includes(HEROES[k].exp);
-function pickCivh() { const pool = CIVH_POOL.filter(k => civhAvail(k) && !hero(k) && HEROES[k].lv <= MAX_CIVH_LV[G.lv.n] && !G.cemetery.some(u => u.key === k)); return pool.length ? pool[rnd(pool.length)] : null; }
+/* Civiles Heroicos que aún pueden entrar: de una expansión activa, del nivel de la partida, que no estén en juego ni en el Cementerio. */
+function civhLibres() { return CIVH_POOL.filter(k => civhAvail(k) && !hero(k) && HEROES[k].lv <= MAX_CIVH_LV[G.lv.n] && !G.cemetery.some(u => u.key === k)); }
+function pickCivh() { const pool = civhLibres(); return pool.length ? pool[rnd(pool.length)] : null; }
 /* Regla de niveles: un Héroe o Civil Heroico solo puede entrar si su color de carta está entre los de la partida (y, si es de expansión, esta está activa). */
 function heroAllowed(key) {
   if (!G.lv || G.lv.n === 0) return true;
@@ -83,7 +94,8 @@ let PENDING_MODE = null;
 /* Científico: clase «Científico/a» o marca de científico (Agee, Carter, Doc, Seaver, Jones, Wright, MacGyver). */
 const isSciKey = k => !!HEROES[k] && (/Cient/.test(HEROES[k].cls) || !!HEROES[k].sci);
 /* personal: clave de héroe o lista de claves elegidas a mano (el resto se completa al azar). */
-function newGame(levelIdx, lenIdx, personal) {
+const newGame = extensible('newGame', baseNewGame);
+function baseNewGame(levelIdx, lenIdx, personal) {
   const plist = PENDING_PLAYERS; PENDING_PLAYERS = null; const civhPick = PENDING_CIVH; PENDING_CIVH = null; const mode = PENDING_MODE || 'normal'; PENDING_MODE = null;
   /* Cooperativo: los Héroes Personales de los jugadores y, tras ellos, el resto del equipo elegido a mano (setup.hero). */
   if (plist && plist.length > 1) personal = plist.map(p => p.hero).filter(Boolean).concat([].concat(personal || []));
@@ -121,16 +133,16 @@ function newGame(levelIdx, lenIdx, personal) {
   const civhKey = L.n === 0 ? 'furias' : (() => { const p = CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[L.n]); return civhPick && p.includes(civhPick) ? civhPick : p[rnd(p.length)]; })();
   // recursos
   if (L.n === 0) { G.ammo = 4; G.supplies = 0; } else { const a = d6(), b = d6(); G.supplies = a + b; G.ammo = 6 - Math.min(a, b); G.setupRoll = [a, b]; }
-  for (const k of keys) { const u = makeHero(k, 'C'); if (u.key === 'johnson') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 3); } if (u.key === 'horacio' && L.supplies) G.supplies += 3; if (u.key === 'heli' && L.supplies) G.supplies = Math.min(20, G.supplies + 3); if (u.key === 'frank') { G.supplies = Math.min(20, G.supplies + (L.supplies ? 2 : 0)); G.ammo = Math.min(20, G.ammo + 4); } }
+  for (const k of keys) entryResources(makeHero(k, 'C'));
   /* Héroe Personal de cada jugador: el que eligió; si no eligió (o es el Juego Básico) se le da uno de los iniciales aún sin dueño. */
   if (nPlayers() > 1) {
     const inits = Object.values(G.units).filter(u => u.type === 'hero' && keys.includes(u.key));
     plist.forEach((p, i) => { const u = inits.find(x => x.key === p.hero && x.owner == null); if (u) u.owner = i; });
     plist.forEach((p, i) => { if (!inits.some(x => x.owner === i)) { const u = inits.find(x => x.owner == null); if (u) u.owner = i; } });
   }
-  const ch = makeHero(civhKey, 'C'); if (civhKey === 'salvacion' && L.supplies) G.supplies += 2;
+  const ch = makeHero(civhKey, 'C'); entryResources(ch);
   /* Mensajero del Clarín: «al entrar en juego trae otra Civil Heroica» (también si sale en la preparación). */
-  if (civhKey === 'clarin') { const k2 = pickCivh(); if (k2) makeHero(k2, 'C'); }
+  if (civhKey === 'clarin') { const k2 = pickCivh(); if (k2) entryResources(makeHero(k2, 'C')); }
   if (L.tunnel) { makeSpecial('diamante', 'T8'); makeSpecial('diamante', 'T6'); }
   G.eventDeck = buildEventDeck(len); G.totalEvents = G.eventDeck.length;
   G.destDeck = buildDestinyDeck();
@@ -158,7 +170,7 @@ async function chooseRoute(c, text) {
 async function drawDestiny() {
   if (!G.destDeck.length) { G.destDeck = shuffle(G.destDiscard.splice(0)); EVT('destBarajar', null, { cartas: G.destDeck.length }); }
   if (!G.destDeck.length) { LOG('No quedan cartas de Destino.'); return null; }
-  const id = G.destDeck.shift(), d = DEST[id];
+  const id = G.destDeck.shift(), d = DEST[id]; noUndo();
   const route = await chooseRoute(destRoutes(d.where), 'Carta de Destino «' + d.name + '»: ' + ({ choice: 'a elección del jugador', more: 'empate de rutas con más Zeds', less: 'empate de rutas con menos Zeds', moreC: 'empate de rutas con más Caos', lessC: 'empate de rutas con menos Caos' }[d.where] || 'ruta destinada') + '. Elige la ruta donde se aplica: ' + String(d.txt).replace(/<[^>]+>/g, '').replace(/\.+\s*$/, '') + '.');
   LOG('Carta de Destino: «' + d.name + '» → ' + ROUTES[route].name + '.', 'dest');
   EVT('dest', null, { id, nm: d.name, ruta: route, donde: d.where, quedan: G.destDeck.length }); CAUSA = 'Destino: ' + d.name;
@@ -166,7 +178,8 @@ async function drawDestiny() {
 }
 const DEST_IMG = { sin_nombre: 'hombre', heroe_d: 'llega_heroe', techo: 'techo_tunel', planes: 'planes_marteuse', cama: 'cama_hospital', heli_noticias: 'helicoptero_noticias', senal: 'senal_rescate', tiradles: 'tiradles_algo', llamamiento: 'llamamiento' };
 const destImg = id => destImgBase(DEST_IMG[id] || id);
-async function resolveTwist(dr) {
+const resolveTwist = extensible('resolveTwist', baseResolveTwist);
+async function baseResolveTwist(dr) {
   if (!dr) return; const d = DEST[dr.id]; CAUSA = null; /* fin de los efectos de la carta de Destino */
   if (d.keep) {
     G.hand.push(dr.id); UI.updateHand();
@@ -198,7 +211,8 @@ async function lossChoice(n, opts) { // pierdes n en combinación de opciones: s
 }
 
 /* ---------- efectos de las cartas de Destino «Juega esta carta» ---------- */
-async function DEST_FX(id, route) {
+const DEST_FX = extensible('DEST_FX', baseDEST_FX);
+async function baseDEST_FX(id, route) {
   const R = route;
   switch (id) {
     case 'lago': await placeZedAt('M5', 'Zeds surgidos del lago'); break;
@@ -208,7 +222,7 @@ async function DEST_FX(id, route) {
     case 'inventarios': { const f = r => r <= 2 ? 2 : r <= 5 ? 1 : 0; const [a, b] = await UI.rollSimple('Inventarios amañados', 2, d => 'Suministros −' + f(d[0]) + ' · Munición −' + f(d[1])); G.supplies = Math.max(0, G.supplies - f(a)); G.ammo = Math.max(0, G.ammo - f(b)); LOG('Inventarios amañados: Suministros ' + f(a) + ' / Munición ' + f(b) + '.', 'bad'); UI.updateStats(); break; }
     case 'llamamiento': { for (const r of G.routes) for (let i = 1; i <= lastOf(r); i++) { const s = sp(r + i); if (s.chaos) { const z = await makeZedA(); if (!z) break; if (z.full < spaceNum(r + i)) await placeZedAt(r + i, 'Llamamiento zombi', z); else returnZed(z); } } break; }
     case 'puente': { const id2 = 'F6'; if (G.spaces[id2]) { sp(id2).bridge = 'down'; LOG('El puente colgante se derrumba.', 'bad'); } break; }
-    case 'lluvia': { G.turn.rain = true; for (const z of routeZeds('M')) { if (!z.space || !G.units[z.id]) continue; /* Antes de tirar, se enseña el Zed: cámara sobre su espacio y destello. */ UI.focus(z.space, 1.7); UI.pulseSpace(z.space, '#7fb8ff'); UI.redraw(); await UI.settle(); const r = await rollShown('Lluvia: Zed en ' + spaceLabel(z.space), v => v <= 2 ? '<b>' + v + '</b>: avanza un espacio' : v === 6 ? '<b>6</b>: retrocede un espacio' : '<b>' + v + '</b>: se queda'); if (r <= 2) { const n = nextToward(z.space); if (n !== 'C' && normalZedsAt(n).length < zedCap(n)) { putUnit(z, n); await handleArrival([z], n, z.space); } } else if (r === 6) { const p = prevToward(z.space); if (p && normalZedsAt(p).length < zedCap(p)) putUnit(z, p); } } break; }
+    case 'lluvia': { G.turn.rain = true; for (const z of routeZeds('M')) { if (!z.space || !G.units[z.id]) continue; /* Antes de tirar, se enseña el Zed: cámara sobre su espacio y destello. */ UI.focus(z.space, 1.7); UI.pulseSpace(z.space, '#7fb8ff'); UI.redraw(); await UI.settle(); const r = await rollShown('Lluvia: Zed en ' + spaceLabel(z.space), v => v <= 2 ? '<b>' + v + '</b>: avanza un espacio' : v === 6 ? '<b>6</b>: retrocede un espacio' : '<b>' + v + '</b>: se queda'); if (r <= 2) { const n = nextToward(z.space); if (n !== 'C' && normalZedsAt(n).length < zedCap(n)) { const desde = z.space; putUnit(z, n); await handleArrival([z], n, desde); } } else if (r === 6) { const p = prevToward(z.space); if (p && normalZedsAt(p).length < zedCap(p)) putUnit(z, p); } } break; }
     case 'olvidado': { for (const u of allUnits(x => x.type === 'refugee' && isRouteSp(x.space))) { const p = prevToward(u.space); if (p) { putUnit(u, p); if (zedsAt(p).length) await devourSoft(zedsAt(p), p); } } break; }
     case 'techo': { const n = await rollShown('El techo del Túnel: ¿qué espacio se sepulta?', v => 'Queda sepultado el espacio n.º ' + v + ' del Túnel'); const idx = G.routes.includes('T') ? lastOf('T') - n : null; if (idx === null || idx < 1) break; const id2 = 'T' + idx; G.turn.block.push(id2); for (const u of unitsAt(id2).filter(x => isFighter(x))) { await hitPlayer(u, 1); const tgt = { 6: 'A4', 5: 'F3', 4: 'M3', 3: 'B4' }[n]; if (u.space === id2) { if (tgt && playerRoom(tgt, u)) putUnit(u, tgt); else putUnit(u, nextToward(id2)); } } LOG('El techo del Túnel se derrumba en el espacio n.º ' + n + '.', 'bad'); break; }
     case 'planes': { const dr = await drawDestiny(); if (dr) { for (let i = 1; i <= lastOf(dr.route); i++) if (sp(dr.route + i).chaos && (await rollShown('Planes maníacos: ' + spaceLabel(dr.route + i), v => v <= 3 ? '<b>' + v + '</b>: se coloca un Zed' : '<b>' + v + '</b>: no pasa nada')) <= 3) await placeZedAt(dr.route + i, 'Planes maníacos'); await resolveTwist(dr); } for (const r of G.routes) await placeZedInitial(r); break; }

@@ -2,6 +2,8 @@
 'use strict';
 (function () {
   const q = new URLSearchParams(location.search).get('bot'); if (!q) return;
+  /* Solo en local: el bot acepta los confirm() y borra partidas guardadas para hacer sitio, así que un enlace ?bot= a la web publicada no debe activarlo. */
+  if (!['', 'localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) return;
   window.__errs = [];
   window.addEventListener('error', e => __errs.push(e.message + ' @' + e.filename.split('/').pop() + ':' + e.lineno));
   window.addEventListener('unhandledrejection', e => __errs.push('rej ' + (e.reason && e.reason.stack || e.reason)));

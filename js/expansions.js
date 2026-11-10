@@ -81,14 +81,12 @@ const RUMORS = {
 const expOn = n => G.exp && G.exp.includes(n);
 const trainsAt = id => G.spaces[id] ? unitsAt(id).filter(u => u.type === 'train') : [];
 /* ---------- preparación ---------- */
-const _heroPoolFor = heroPoolFor;
-heroPoolFor = function (level) {
+extend('heroPoolFor', function (_heroPoolFor, level) {
   const base = _heroPoolFor(level).filter(k => !HEROES[k].exp);
   const add = []; for (const n of (G && G.expSel || [])) for (const k of (EXP_HEROES[n] || [])) if (HEROES[k].lv <= MAX_HERO_LV[level]) add.push(k);
   return base.concat(add);
-};
-const _newGame = newGame;
-newGame = function (levelIdx, lenIdx, personal, exps) {
+});
+extend('newGame', function (_newGame, levelIdx, lenIdx, personal, exps) {
   G.expSel = exps || []; G.exp = exps || [];
   _newGame(levelIdx, lenIdx, personal);
   G.rumorPool = []; G.rumorsHeld = [];
@@ -127,29 +125,25 @@ newGame = function (levelIdx, lenIdx, personal, exps) {
     for (const [k, rt] of [['mercancias', ['B', 'A']], ['local', ['F', 'M']]]) { const u = newUnit({ side: 'pl', type: 'train', name: k === 'mercancias' ? 'Tren de Mercancías' : 'Tren Local', routes: rt, tkey: k, mp: 99, full: 0, red: 0, state: 'leaving' }); putUnit(u, 'C'); }
   }
   if (expOn(3)) G.turn.railPerks = {};
-};
+});
 /* ---------- Fuerza y agrupamiento ---------- */
-const _strength = strength;
-strength = function (u) {
+extend('strength', function (_strength, u) {
   if (u.key === 'jaque') { const n = allUnits(x => x.space === 'CAMP' && (x.type === 'refugee')).length; return u.flipped ? 1 + Math.floor(n / 2) : 1 + n; }
   /* SAR (exp. 4), «Cada vida cuenta»: +1 de Fuerza por cada Refugiados en el Campamento, con cualquiera de las dos caras. */
   if (u.key === 'sar') return _strength(u) + allUnits(x => x.space === 'CAMP' && x.type === 'refugee').length;
   return _strength(u);
-};
-const _putUnit = putUnit;
-putUnit = function (u, id, why) {
+});
+extend('putUnit', function (_putUnit, u, id, why) {
   const from = u.space; _putUnit(u, id, why);
   if (u.key === 'lee' && u.rider && G.units[u.rider] && id && id !== 'CEM') { const r = G.units[u.rider]; if (r.space !== id) _putUnit(r, id); }
   if (u.mount && G.units[u.mount] && id !== G.units[u.mount].space && !u._sync) { /* el jinete se mueve solo con el caballo */ const l = G.units[u.mount]; l.rider = null; u.mount = null; }
-};
-const _terrainOf = terrainOf;
-terrainOf = function (id) { let t = _terrainOf(id); if (G.turn.noTerrain) return t; return t + trainsAt(id).length; };
-const _meleeInfection = meleeInfection;
-meleeInfection = function (zs, h) {
+});
+extend('terrainOf', function (_terrainOf, id) { let t = _terrainOf(id); if (G.turn.noTerrain) return t; return t + trainsAt(id).length; });
+extend('meleeInfection', function (_meleeInfection, zs, h) {
   if (h && (h.key === 'carter' || h.key === 'lee' || h.key === 'horacio')) return 0;
   if (h && h.type === 'hero' && lee_with(h)) return 0;
   return _meleeInfection(zs, h);
-};
+});
 function lee_with(h) { const l = hero('lee'); return l && l.space && l.space === h.space && l !== h; }
 /* ---------- combate: ajustes de las expansiones ---------- */
 function meleeStrengthBonus(f, o) {
@@ -161,16 +155,14 @@ function meleeStrengthBonus(f, o) {
 /* Betty: columna fija */
 function bettyCol(f) { return f.flipped ? 5 : 6; }
 /* ---------- guardado de Munición (May) ---------- */
-const _payFire = payFire;
-payFire = async function (u) {
+extend('payFire', async function (_payFire, u) {
   const may = alive('may');
   if (u.key === 'may' && !G.firstFreeUsed.may) { G.firstFreeUsed.may = true; return; }
   const before = G.ammo; _payFire(u);
   if (may && may.space && isCity(may.space) && G.ammo < before && !G.turn.mercs) { const r = await rollShown('May ahorra Munición', v => v >= 5 ? '<b>' + v + '</b>: no gastas la Munición' : '<b>' + v + '</b>: se gasta la Munición (necesita 5-6)'); if (r >= 5) { G.ammo = before; LOG('May ahorra la Munición (' + r + ').', 'good'); UI.updateStats(); } }
-};
+});
 /* ---------- Rumores: llegada de Refugiados ---------- */
-const _refugeeArrives = refugeeArrives;
-refugeeArrives = async function (u) {
+extend('refugeeArrives', async function (_refugeeArrives, u) {
   await _refugeeArrives(u);
   if (!expOn(3) || !G.rumorPool.length) return;
   const dr = await drawDestiny(); if (!dr) return;
@@ -186,7 +178,7 @@ refugeeArrives = async function (u) {
   sp(best).rumor = k; LOG('Un Rumor se coloca boca abajo en ' + spaceLabel(best) + '.', 'dest');
   UI.pulseSpace(best, '#3ad6ff'); UI.toast('Rumor en ' + spaceLabel(best), '#3ad6ff', 1400); UI.redraw();
   await resolveTwist(dr);
-};
+});
 async function revealRumor(u, free) {
   const s = sp(u.space), k = s.rumor; if (!k) return; const R = RUMORS[k];
   s.rumor = null; if (!free) spendActions(u, 1);
@@ -214,11 +206,10 @@ async function useRumor(k) {
   UI.updateStats(); UI.redraw();
 }
 /* ---------- Efectos de Rumores en el mapa ---------- */
-const _zedsOccupy = zedsOccupy;
-zedsOccupy = async function (zs, id) {
+extend('zedsOccupy', async function (_zedsOccupy, zs, id) {
   await _zedsOccupy(zs, id);
   if (sp(id).cem) for (const z of zs.filter(x => x.space === id)) await applyZedHits([z], 2);
-};
+});
 /* ---------- Trenes ---------- */
 const TRAIN_STOPS = { F3: ['inf', 'Universidad: −4 Infección'], B4: ['sup', 'Granja: +3 Suministros'], M3: ['ammo', 'Mina: +2 Munición'], A4: ['evt', 'Central nuclear: +2 Acciones de Evento'] };
 async function trainDestinations(t) {
@@ -247,14 +238,15 @@ async function moveTrain(t, dest) {
   if (zedsAt(dest).length) { const pl = plAt(dest); if (pl.length) await melee({ zeds: zedsAt(dest), hum: pl, space: dest, attacker: 'h', from: t.space }); }
   UI.redraw(); UI.updateStats();
 }
+/* tmove devuelve null si no llega a moverse (sin destino o cancelado); si se mueve, si lleva Refugiados. */
 async function doTrainAction(t, id, opts) {
   opts = opts || {}; let withRefugees = false;
   if (id === 'tmove') {
-    const dests = await trainDestinations(t); if (!dests.length) { LOG('El tren no puede ir a ningún sitio.'); return; }
+    const dests = await trainDestinations(t); if (!dests.length) { LOG('El tren no puede ir a ningún sitio.'); return null; }
     const cands = unitsAt(t.space).filter(x => (isFighter(x) && !x.mount && x.key !== 'lee' && x.key !== 'heli' || x.type === 'refugee') && x.type !== 'train' && x.type !== 'guard');  /* la Guardia Nacional no sube a los trenes */
     let carried = [];
     if (cands.length) { for (let k = 0; k < 2; k++) { const c = cands.filter(x => !carried.includes(x)); if (!c.length) break; const v = await UI.choose({ title: 'Pasajeros', text: 'Sube pasajeros al ' + t.name + ' (máx. 2 unidades o 1 de Refugiados; subir Refugiados cuesta 1 Acción más).', options: c.filter(x => x.type !== 'refugee' || canPay(null, 2)).map(x => ({ label: x.name, value: x.id, focus: x.space })).concat([{ label: 'Salir ya', value: '' }]) }); if (!v) break; const x = G.units[v]; if (x.type === 'refugee') { if (carried.length) break; carried.push(x); break; } if (carried.some(y => y.type === 'refugee')) break; carried.push(x); } }
-    const d = await UI.pickSpace(dests, 'Elige el destino del tren.', true); if (d == null) return;
+    const d = await UI.pickSpace(dests, 'Elige el destino del tren.', true); if (d == null) return null;
     carried.forEach(x => x.ride = t.id);
     withRefugees = carried.some(x => x.type === 'refugee');
     if (!opts.free) { spendActions(null, 1, 'move'); if (withRefugees) spendActions(null, 1); }
@@ -302,8 +294,7 @@ async function leeArrivesCentro(lee) {
 }
 function leeDismount(lee) { const r = lee.rider && G.units[lee.rider]; if (r) { r.mount = null; } lee.rider = null; }
 /* ---------- Acciones extra en la ficha de unidad ---------- */
-const _unitActions = unitActions;
-unitActions = function (u) {
+extend('unitActions', function (_unitActions, u) {
   let A = _unitActions(u);
   if (!u || u.side !== 'pl' || G.phase !== 'actions' || G.busy) return A;
   const act = canAct(u), pay = n => canPay(u, n);
@@ -322,9 +313,8 @@ unitActions = function (u) {
   for (const k of (u.chips || [])) { if (k === 'sirena') A.push({ id: 'sirena', label: 'Sirena para Zeds (1 acc.)', ok: pay(1) && (G.sirenaUses || 0) < 2 && adjacentIds(u.space).some(i => zedsAt(i).length && !isInit(i)) }); }
   if ((u.chips || []).length && unitsAt(u.space).some(x => x !== u && isFighter(x))) A.push({ id: 'chipgive', label: 'Pasar ficha de Rumor (gratis)', ok: true });
   return A;
-};
-const _runAction = runAction;
-runAction = async function (u, id) {
+});
+extend('runAction', async function (_runAction, u, id) {
   switch (id) {
     case 'cmove': { const info = carterReach(u); const ids = Object.keys(info); if (!ids.length) { LOG('Carter no puede ir a ningún sitio.'); return; } const d = await UI.pickSpace(ids, 'Carter: elige el destino.', true); if (d == null) return; spendActions(u, 1, 'move'); await carterMove(u, d, info[d]); return; }
     case 'creload': spendActions(u, 1); u.loaded = true; LOG('Carter recoge un nuevo cargamento.', 'good'); return;
@@ -338,15 +328,14 @@ runAction = async function (u, id) {
     case 'tmove': case 'tflip': await doTrainAction(u, id); return;
   }
   return _runAction(u, id);
-};
+});
 /* Mantenimiento de las expansiones */
-const _maintenance = maintenance;
-maintenance = async function () {
+extend('maintenance', async function (_maintenance) {
   await _maintenance();
   for (const s of Object.values(G.spaces)) if (s.tall && unitsAt(s.id).some(x => isFighter(x) && x.type !== 'refugee')) { const v = await UI.choose({ title: 'Tall-Mart', text: 'Elige tu recompensa:', options: [{ label: '2 Suministros (tienes ' + G.supplies + ')', value: 's' }, { label: '1 Munición (tienes ' + G.ammo + ')', value: 'a' }] }); if (v === 's') G.supplies = Math.min(20, G.supplies + 2); else G.ammo = Math.min(20, G.ammo + 1); }
   for (const u of Object.values(G.units)) { delete u._chipDie; u.freeChip = false; }
   UI.updateStats();
-};
+});
 /* ---------- Presión Zed (cooperativo): iconos de cada carta de Evento, transcritos de las imágenes ----------
    's'/'e' = «al inicio» / «al final» de la fase de los Zeds · M = Z (movimiento) · P = Ƶ (colocación, el icono Z enmarcado). Orden = orden en la carta.
    Las cartas que no aparecen no tienen iconos de Presión. */

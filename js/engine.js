@@ -4,6 +4,16 @@
 const G = {};
 let UI = null;
 function bindUI(u) { UI = u; }
+/* Puntos de extensión: las funciones que las expansiones amplían se declaran con extensible() y se amplían con extend() (expansions.js, expansions2.js).
+   extend(nombre, fn): fn recibe como primer argumento la versión anterior de la función (la base o la ampliación registrada antes) y después los argumentos
+   de la llamada. La última ampliación registrada es la que se ejecuta primero. */
+const EXT = {};
+function extensible(name, base) {
+  const ws = EXT[name] = [];
+  const call = (k, args) => k < 0 ? base(...args) : ws[k]((...a) => call(k - 1, a), ...args);
+  return (...args) => call(ws.length - 1, args);
+}
+function extend(name, fn) { if (!EXT[name]) throw new Error('extend: «' + name + '» no es un punto de extensión'); EXT[name].push(fn); }
 /* Generador con semilla (mulberry32): su estado se guarda con la partida para que repetir una acción dé las mismas tiradas. */
 let RNG_S = 1;
 function rngSeed(v) { RNG_S = v >>> 0; }
@@ -23,6 +33,8 @@ function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i +
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const LOG = (m, c) => UI && UI.log(m, c);
+/* La acción en curso ha revelado información oculta (una carta, un mazo): ya no se puede deshacer, aunque no haya tirado dados. */
+function noUndo() { if (UI) UI._noUndo = true; }
 
 /* ================= TABLERO ================= */
 function buildBoard() {
@@ -73,7 +85,7 @@ const isCrypt = id => sp(id).kind === 'crypt';
 /* ================= UNIDADES ================= */
 let UID = 1;
 function newUnit(o) { const u = Object.assign({ id: 'u' + (UID++), hits: 0, flipped: false, space: null, free: 0, hf: 1, hr: 1 }, o); G.units[u.id] = u; return u; }
-let strength = u => (u.flipped ? u.red : u.full) + (u.trained ? 2 : 0);
+const strength = extensible('strength', u => (u.flipped ? u.red : u.full) + (u.trained ? 2 : 0));
 const isZedSide = u => u.side === 'zed';
 const isPetra = u => !!u && u.skey === 'petra';   /* Ángeles de Petra (su tipo en SPECIALS es civh) */
 const isFighter = u => u.side === 'pl' && !['refugee', 'aldeano', 'train'].includes(u.type);  /* los Trenes (exp. 3) no combaten, no se retiran ni sufren Impactos */
@@ -81,7 +93,8 @@ const isSoft = u => u.type === 'refugee' || u.type === 'aldeano';
 const isHero = u => u.type === 'hero';
 const isCiv = u => u.type === 'civ';
 /* why (opcional): causa concreta de la colocación (p. ej. «Brote»); si no, vale la causa en curso. */
-function putUnit(u, id, why) {
+const putUnit = extensible('putUnit', basePutUnit);
+function basePutUnit(u, id, why) {
   const from = u.space;
   if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); }
   u.space = id; if (id && G.spaces[id]) sp(id).units.push(u.id);
@@ -135,7 +148,8 @@ function playerRoom(id, u) {
   if (s.route === 'T' && s.kind !== 'crypt' && s.i !== lastOf('T')) return here === 0 && !zedsAt(id).length;
   return here < playerCap(id);
 }
-function terrainOf(id) {
+const terrainOf = extensible('terrainOf', baseTerrainOf);
+function baseTerrainOf(id) {
   if (G.turn.noTerrain) return 0;
   const s = sp(id); let t = 0;
   if (s.kind === 'city' || s.kind === 'centro') t = 2; else if (s.kind === 'pueblo' || s.kind === 'named' || (s.route && s.name && s.kind !== 'init')) t = 1;
@@ -263,7 +277,8 @@ async function cordonSanitario(n, space) {
   }
   LOG('Cordón sanitario: ' + b.name + ' reduce la subida de Infección de +' + n + ' a +' + r + '.', 'good'); return r;
 }
-function meleeInfection(zs, h) {
+const meleeInfection = extensible('meleeInfection', baseMeleeInfection);
+function baseMeleeInfection(zs, h) {
   let n = 1;
   for (const z of zs) { if (z.toxic) n = Math.max(n, 3); if (z.key === 'supurador') n = Math.max(n, 3); if (z.key === 'lobo') n = Math.max(n, 2); }
   if (h && (h.key === 'horacio' || h.key === 'antidist' || h.key === 'bender')) return 0;
@@ -354,6 +369,8 @@ function saveBonus() {
 }
 async function unitDown(u) {
   const where = u.space;
+  /* Saqueadores y la Banda de Bubba no tienen tirada de Salvación: se eliminan sin tirar dados. */
+  if (u.side === 'raid') { await sendCemetery(u, 'es eliminada'); return; }
   if (G.lv.infection && u.side === 'pl') { const v = await UI.choose({ title: 'Último Impacto: ' + u.name, text: '¿Haces la tirada de Salvación (4-6: al Hospital, +1 Infección) o la mandas directamente al Cementerio?', options: [{ label: 'Tirada de Salvación', value: 'y' }, { label: 'Al Cementerio', value: 'n' }] }); if (v === 'n') { await sendCemetery(u, 'renuncia a la tirada de Salvación'); return; } }
   let r;
   if (DEBUG_DICE) { /* con Debug, la tirada se muestra con Continuar y el botón Debug para cambiar los dados */
@@ -366,7 +383,6 @@ async function unitDown(u) {
     else r = await zen1(r, 'Tirada de Salvación');
   }
   const tot = r + saveBonus();
-  if (u.side === 'raid') { await sendCemetery(u, 'es eliminada'); return; }
   LOG(u.name + ' recibe su último Impacto. Tirada de Salvación: ' + r + (saveBonus() ? '+' + saveBonus() : '') + '.', 'bad');
   await UI.fxSave(u, r, tot > 3, saveBonus());
   if (tot <= 3) { await sendCemetery(u, 'no se salva'); return; }
@@ -402,7 +418,7 @@ async function unitDown2(u, where) {
   if (G.turn.outbreakLocal && wasCiv && where && isRouteSp(where)) await brotLocalZed(where);
 }
 async function dischargeSomeone(forceCem, o) {
-  const cands = BEDS.map(b => unitsAt(b)[0]).filter(Boolean);
+  const cands = BEDS.map(b => G.spaces[b] && unitsAt(b)[0]).filter(Boolean);
   if (!cands.length) return false;
   const v = await UI.chooseCards({ title: (o && o.title) || 'Dar de alta', text: (o && o.text) || 'Elige la unidad a dar de alta (sin ECG: al Centro; con ECG: Cementerio).', options: cands.map(u => unitOpt(u, u.ecg ? ' (coma → Cementerio)' : '')), extra: o && o.none ? [{ label: o.none, value: null }] : null });
   if (v === null) return false;
@@ -436,7 +452,8 @@ async function retreatZeds(zeds, startId) {
   const landed = {};
   for (const z of sorted) {
     let i = s0.i;
-    while (i >= 0 && (z.type !== 'spreader') && (normalZedsAt(s0.route + i).length >= zedCap(s0.route + i) && sp(s0.route + i).kind !== 'crypt' || blocked(s0.route + i))) i--;
+    /* El propio Zed no cuenta para el límite: si la retirada empieza en su espacio (está en un Inicial), se queda donde está. */
+    while (i >= 0 && (z.type !== 'spreader') && (normalZedsAt(s0.route + i).filter(x => x !== z).length >= zedCap(s0.route + i) && sp(s0.route + i).kind !== 'crypt' || blocked(s0.route + i))) i--;
     if (i < 0) { const f = firstOpenInitial(); if (f) { putUnit(z, f); LOG('Un Zed retirado se coloca en ' + spaceLabel(f) + '.'); } else { returnZed(z); } continue; }
     const d = s0.route + i; putUnit(z, d); z.moved = true; LOG(z.name + ' (' + zF(z) + ') se retira a ' + spaceLabel(d) + '.');
     (landed[d] = landed[d] || []).push(z);
@@ -753,7 +770,8 @@ async function convertAldeanos(space) {
     const nx = nextToward(space); if (nx !== 'C' && !zedsAt(nx).length) putUnit(u, nx); else if (nx === 'C') await refugeeArrives(u);
   }
 }
-async function refugeeArrives(u) {
+const refugeeArrives = extensible('refugeeArrives', baseRefugeeArrives);
+async function baseRefugeeArrives(u) {
   await infUp(1); putUnit(u, 'CAMP'); LOG(u.name + ' llega al Campo de Refugiados.', 'good');
   if (u.vip) await vipBenefit(u);
 }
@@ -789,7 +807,8 @@ function shortcuts(u, cur) {
   const n = spaceNum(cur);
   return SHORT_ADJ[s.route].filter(r => G.routes.includes(r)).map(r => r + (lastOf(r) - n)).filter(id => G.spaces[id]);
 }
-function reachable(u, extra) {
+const reachable = extensible('reachable', baseReachable);
+function baseReachable(u, extra) {
   /* Las unidades del Campo de Refugiados ya han llegado: no vuelven a moverse (si no, cada «llegada» repetida sumaría Infección, Rumores y beneficios V.I.P.). */
   const out = {}; if (!canAct(u) || u.resist || u.type === 'aldeano' || sp(u.space).kind === 'camp') return out;
   if (G.turn.noSurfaceMove && isSurface(u.space)) return out;
@@ -893,7 +912,8 @@ async function doMove(u, dest, path, undoable) {
 
 /* ================= DISPARO ================= */
 function fireRange(u) { if (u.nofire || u.key === 'furias' || u.type === 'refugee' || u.type === 'aldeano') return 0; if (u.space && sp(u.space).route === 'T') return 1; return u.key === 'piazza' ? 3 : (u.key === 'hunt' || u.key === 'caza' || u.type === 'marine') ? 2 : 1; }
-function fireTargets(u) {
+const fireTargets = extensible('fireTargets', baseFireTargets);
+function baseFireTargets(u) {
   const out = {}; const r = fireRange(u); if (!r || !u.space || isInit(u.space)) return out;
   /* Solid Snake, Disparo silenciado: alcance 0, solo a los Zeds de su propio espacio. */
   if (u.key === 'snake') { if (zedsAt(u.space).length) out[u.space] = 0; return out; }

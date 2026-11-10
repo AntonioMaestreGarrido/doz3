@@ -152,9 +152,9 @@ const ui = {
     let h = '<div class="big">Turno ' + G.turnNo + ' · ' + ({ setup: 'Preparación', fourR: 'Fase 4R', infection: 'Infección', feeding: 'Alimentación', zeds: 'Fase de los Zeds', actions: 'Fase de Acciones', maint: 'Mantenimiento', end: 'Fin de la partida' }[G.phase] || '') + '</div>';
     if (multiP()) h += '<div id="plbar" style="grid-column:1/3">' + G.players.map((p, i) => '<button class="plchip' + (i === G.act ? ' on' : '') + '" data-pl="' + i + '" style="--c:' + p.color + '">' + p.name + (G.phase === 'actions' ? ' <b>' + plTok(i) + '</b>' : '') + '</button>').join('') + '<button id="tieBtn" title="Si el grupo no se pone de acuerdo, se decide con un dado">🎲 Desempate</button></div>';
     h += '<div>Munición: <b>' + G.ammo + '</b></div><div>' + (L.supplies ? 'Suministros: <b>' + G.supplies + '</b>' : 'Reserva Zed: <b>' + G.reserve.length + '</b>') + '</div>';
-    if (L.infection) h += '<div>Infección: <b id="infv" style="color:' + (G.inf >= 10 ? '#ff6b5a' : G.inf >= 7 ? '#ffb347' : '#fff') + '">' + G.inf + ' / 13</b>' + (G.antidote ? ' (Antídoto)' : '') + (G.berra ? ' (Elwood)' : '') + '</div>';
+    if (L.infection) h += '<div>Infección: <b id="infv" style="color:' + (G.inf >= 10 ? '#ff6b5a' : G.inf >= 7 ? '#ffb347' : '#fff') + '">' + G.inf + ' / 13</b>' + (G.antidote ? ' <span style="color:#7bd45a" title="El Antídoto reduce la Infección en 1 al final de cada Mantenimiento">(Antídoto −1/turno)</span>' : '') + (G.berra ? ' (Elwood)' : '') + '</div>';
     if (L.fourR) h += '<div>Caos: <b>' + chaosOnMap() + '</b> (quedan ' + G.chaosLeft + ')</div>';
-    if (L.res && G.res) h += '<div style="grid-column:1/3" data-zoom="r:' + G.res.cur.id + '">Investigación: <b>' + G.res.cur.name + '</b> (' + G.res.cur.th + '+' + (G.res.cur.sup ? ', 1 Sum.' : '') + ') · quedan ' + G.res.deck.length + (G.weapon ? '<br>Súper Arma: ' + G.weapon.parts.map(k => '<img class="wpart" src="assets/tokens/arma_' + k + (WEAPON_EXT[k] || '.webp') + '" title="' + WEAPON_PARTS[k].name + '" alt="' + WEAPON_PARTS[k].name + '">').join('') : '') + '</div>';
+    if (L.res && G.res) h += '<div style="grid-column:1/3" data-zoom="r:' + G.res.cur.id + '">Investigación: <b>' + G.res.cur.name + '</b> (' + G.res.cur.th + '+' + (G.res.cur.sup ? ', 1 Sum.' : '') + ') · ' + (G.res.deck.length > 1 ? 'quedan ' + G.res.deck.length + ' en el mazo' : G.res.deck.length ? '<b style="color:#ffb347">queda 1: la última</b>' : '<b style="color:#ff8a76">mazo agotado: no se puede investigar más</b>') + (G.finalPlaced ? '<br>' + (G.antidote ? '<b style="color:#7bd45a">Antídoto descubierto</b>' : 'Componente Final en el Laboratorio: falta volver a revelar «Avances en el Antídoto»') : '') + (G.weapon ? '<br>Súper Arma: ' + G.weapon.parts.map(k => '<img class="wpart" src="assets/tokens/arma_' + k + (WEAPON_EXT[k] || '.webp') + '" title="' + WEAPON_PARTS[k].name + '" alt="' + WEAPON_PARTS[k].name + '">').join('') : '') + '</div>';
     h += '<div style="grid-column:1/3;font-size:12px;color:var(--mut)">Cartas de Evento: ' + done + ' / ' + tot + '</div><div class="bar"><i style="width:' + (tot ? 100 * done / tot : 0) + '%"></i></div>';
     if (G.phase === 'actions' && !G.busy) h += '<button class="primary" id="endBtn" style="grid-column:1/3">Terminar fase de Acciones ▶</button>';
     $('status').innerHTML = h;
@@ -185,7 +185,7 @@ const ui = {
     if (!G.destDeck.length && !G.destDiscard.length) { this._modal('<h2>Visiones</h2><p>No quedan cartas de Destino.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>'); $('xb').onclick = () => ui._close(); return; }
     /* Mazo vacío: se baraja el descarte igual que al robar (drawDestiny) y se mira la primera carta de ese mazo nuevo. */
     if (!G.destDeck.length) G.destDeck = shuffle(G.destDiscard.splice(0));
-    const id = G.destDeck[0], d = DEST[id];
+    const id = G.destDeck[0], d = DEST[id]; noUndo();
     await this.waitAck('Visiones de Wilson: «' + d.name + '»', '<div class="rulebox"><b>Regla</b><br>' + d.txt + '</div><p>Es la siguiente carta del mazo de Destino (sigue ahí, sin robarla).</p>', destImg(id));
   },
   /* Panel con todas las acciones que quedan este turno. */
@@ -257,11 +257,19 @@ const ui = {
     const undoable = G.phase === 'actions' && !G.over && !(G.event && G.event.cer);
     const pre = undoable ? ui._undoSnap() : null, rng0 = rngState();
     G.busy = true; ui.mode = null; ui.setBanner(null); ui.updateStats(); ui.updateHand();
-    try { await fn(); } catch (e) { console.error(e); ui.log('Error: ' + e.message, 'bad'); }
+    let failed = false; ui._noUndo = false;
+    try { await fn(); } catch (e) { console.error(e); failed = true; ui.log('Error: ' + e.message, 'bad'); }
     G.busy = false;
+    /* Una acción que falla a medias deja el estado incoherente: se vuelve al de antes de la acción (si lo hay) y no se guarda nada de ella. */
+    if (failed) {
+      ui._undoRequested = false; try { ui._close(); } catch (e2) { }
+      if (pre) { const s = JSON.parse(pre.s), log = G.evlog || []; restoreState(s.G); G.evlog = log.filter(e => e.n <= (G.evn || 0)); UID = s.uid; rngRestore(s.rng); G.busy = false; G.sel = null; ui.log('La acción ha fallado: se ha vuelto al estado anterior a ella.', 'bad'); }
+      if (G.over && ui._endRes) { const r = ui._endRes; ui._endRes = null; r(); }
+      ui.updateStats(); ui.updateHand(); ui.redraw(); return;
+    }
     if (ui._undoRequested) { /* «Deshacer el movimiento» en la ventana de combate, antes de tirar: vuelve al estado previo a la acción. */
       ui._undoRequested = false; if (pre) { const s = JSON.parse(pre.s); restoreState(s.G); UID = s.uid; rngRestore(s.rng); G.sel = null; ui.log('↶ Movimiento deshecho antes de tirar los dados.', 'turn'); }
-    } else if (pre) { if (rngState() !== rng0) ui._undo = []; else if (!G.over && ui._undoSnap().s !== pre.s) { ui._undo.push(pre); if (ui._undo.length > 60) ui._undo.shift(); } }
+    } else if (pre) { if (rngState() !== rng0 || ui._noUndo) ui._undo = []; else if (!G.over && ui._undoSnap().s !== pre.s) { ui._undo.push(pre); if (ui._undo.length > 60) ui._undo.shift(); } }
     if (G.sel && !G.units[G.sel]) G.sel = null;
     if (G.phase === 'actions' && !G.over && !G.event.cer) saveGame('actions');
     if (G.over && ui._endRes) { const r = ui._endRes; ui._endRes = null; r(); }
@@ -371,7 +379,7 @@ const ui = {
   },
   /* Firma de lo que se pinta en el fondo (mapa y marcadores): si no cambia, se reutiliza la capa ya pintada. */
   _bgSig() {
-    let s = (this.board || '') + '|' + this.canvas.width + 'x' + this.canvas.height + '|' + ((G.turn && G.turn.block) || []).join(',');
+    let s = (this.board || '') + '|' + this.canvas.width + 'x' + this.canvas.height + '|' + ((G.turn && G.turn.block) || []).join(',') + '|' + (G.antidote ? 'A' : G.finalPlaced ? 'F' : '');
     for (const id in G.spaces) { const x = G.spaces[id]; if (x.chaos || x.bar || x.mine || x.trap || x.rumor || x.cem || x.base || x.tall || x.registro || x.bridge) s += '|' + id + ':' + x.chaos + x.bar + x.mine + (x.trap ? 'T' : '') + (x.rumor ? 'r' : '') + (x.cem ? 'c' : '') + (x.base ? 'b' : '') + (x.tall ? 't' : '') + (x.registro ? 'g' : '') + (x.bridge || ''); }
     return s;
   },
@@ -414,6 +422,9 @@ const ui = {
       else if (s.bridge === 'ferry') { c.save(); c.font = '900 18px Impact'; c.fillStyle = '#7bd4ff'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('FERRY', s.x, s.y + 62); c.fillText('FERRY', s.x, s.y + 62); c.restore(); }
       else if (s.bridge === 'down') { c.save(); c.font = '900 20px Impact'; c.fillStyle = '#ff3b2a'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('PUENTE ROTO', s.x, s.y + 62); c.fillText('PUENTE ROTO', s.x, s.y + 62); c.restore(); }
     }
+    /* Componente Final / Antídoto: ficha en el Laboratorio (nivel III). */
+    const lab = G.spaces.LAB;
+    if (lab && G.finalPlaced) { const t = G.antidote ? 'ANTÍDOTO' : 'COMP. FINAL'; c.save(); c.font = '900 28px Impact'; const w = c.measureText(t).width + 26; c.fillStyle = G.antidote ? '#2f9a55' : '#3a6fa8'; c.strokeStyle = '#000'; c.lineWidth = 4; c.shadowColor = '#000'; c.shadowBlur = 8; c.beginPath(); if (c.roundRect) c.roundRect(lab.x - w / 2, lab.y - 112, w, 40, 10); else c.rect(lab.x - w / 2, lab.y - 112, w, 40); c.fill(); c.shadowBlur = 0; c.stroke(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, lab.x, lab.y - 91); c.restore(); }
     /* Zona «En el aire» del Helicóptero Medevac (exp. 4): ahí quedan el helicóptero y su Héroe mientras vuelan. */
     const air = G.spaces.AIR;
     if (air) { c.save(); c.fillStyle = 'rgba(20,40,90,.55)'; c.strokeStyle = '#7fb6ff'; c.lineWidth = 3; c.beginPath(); if (c.roundRect) c.roundRect(air.x - 150, air.y - 56, 300, 112, 18); else c.rect(air.x - 150, air.y - 56, 300, 112); c.fill(); c.stroke(); c.font = '900 20px Impact'; c.fillStyle = '#cfe6ff'; c.strokeStyle = '#000'; c.lineWidth = 3; c.textAlign = 'center'; c.strokeText('EN EL AIRE', air.x, air.y - 34); c.fillText('EN EL AIRE', air.x, air.y - 34); c.restore(); }
@@ -1035,9 +1046,14 @@ const ui = {
         const v = document.createElement('video'); v.id = 'openVid'; v.src = 'assets/opening.mp4'; v.playsInline = true;
         v.onended = done; v.onerror = done; t.appendChild(v);
         /* Si el vídeo no arranca (carga atascada, códec o reproducción bloqueada) no se deja al jugador en la pantalla inicial; un clic sobre el vídeo también lo salta. */
-        v.onclick = done; const wd = setTimeout(() => { if (v.currentTime < .1) done(); }, 6000); v.onplaying = () => clearTimeout(wd);
-        try { const p = v.play(); if (p && p.catch) p.catch(done); } catch (e) { done(); }
+        /* Con ratón, un doble clic (o un clic repetido) caía sobre el vídeo recién creado y lo saltaba al instante: solo se puede saltar cuando ya lleva medio segundo reproduciéndose. */
+        v.onclick = () => { if (v.currentTime > .5) done(); }; const wd = setTimeout(() => { if (v.currentTime < .1) done(); }, 6000); v.onplaying = () => clearTimeout(wd);
+        /* Si el navegador bloquea el vídeo con sonido, se reintenta sin sonido antes de rendirse. */
+        const fallo = () => { v.muted = true; try { const q = v.play(); if (q && q.catch) q.catch(done); } catch (e) { done(); } };
+        try { const p = v.play(); if (p && p.catch) p.catch(fallo); } catch (e) { done(); }
       };
+      /* Si el jugador ya pulsó mientras cargaba el juego, arranca sin pedirle otro clic. */
+      if (window.__introClick) t.onclick();
     });
   },
   musicStop() {
@@ -1258,7 +1274,8 @@ const ui = {
     $('chrBack').onclick = () => { this._modal(this._endHtml); this._bindEnd(); };
   }
 };
-function payFire(u) {
+const payFire = extensible('payFire', basePayFire);
+function basePayFire(u) {
   if (G.turn.mercs) return;
   if (u.key === 'jones' || isPetra(u)) { G.supplies--; return; }
   if ((u.key === 'staub' || u.key === 'division12') && !G.firstFreeUsed[u.key]) { G.firstFreeUsed[u.key] = true; return; }
