@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 13:45
+
+### Cambios
+- **Exp. 5, cartas de compensación:** nuevo formato de carta (pergamino, cinta con estrellas del Acto, ventana de ilustración y fila 4R · Infección · Alim. · Zeds · Acc.). **«Refuerzos: llega un Héroe»** ya lleva su ilustración definitiva; las otras 4 siguen con la ventana «ilustración pendiente» (`assets/cartas/e_boss_*.jpg`). Caché v74.
+
 ## 2026-11-10 13:33
 
 ### Nuevo
