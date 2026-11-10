@@ -165,7 +165,7 @@ extend('payFire', async function (_payFire, u) {
 extend('refugeeArrives', async function (_refugeeArrives, u) {
   await _refugeeArrives(u);
   if (!expOn(3) || !G.rumorPool.length) return;
-  const dr = await drawDestiny(); if (!dr) return;
+  const dr = await drawDestiny('Rumor: ruta donde se coloca el Rumor'); if (!dr) return;
   if (Object.values(G.spaces).some(s => s.route === dr.route && s.rumor)) { LOG('Rumor perdido: esa ruta ya tiene un Rumor sin revelar.'); await resolveTwist(dr); return; }
   const zs = routeZeds(dr.route).filter(z => !isInit(z.space) && !sp(z.space).rumor);
   if (!zs.length) { LOG('Rumor perdido: no hay dónde colocarlo.'); await resolveTwist(dr); return; }

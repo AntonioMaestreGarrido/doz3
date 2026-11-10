@@ -6,7 +6,7 @@ async function outbreak(wild, noReduce) {
   if (!G.lv.infection) return;
   if (alreadyHas('medio')) { G.inf = 2; LOG('A medio convertir: la Infección baja a 2.'); }
   else if (!noReduce) { const [a, b] = await UI.rollSimple('Tirada de Brote: la Infección baja', 2, d => 'Total <b>' + (d[0] + d[1]) + '</b>: la Infección baja ' + (d[0] + d[1]) + '.'); LOG('Tirada de Brote: ' + (a + b) + '. La Infección baja.', 'good'); infDown(a + b); }
-  const dr = await drawDestiny(); if (!dr) return;
+  const dr = await drawDestiny(wild ? 'Brote Descontrolado: ruta donde se coloca un Súper Zed' : 'Brote: ruta donde se coloca un Zed'); if (!dr) return;
   const r = dr.route; let target;
   /* La carta de Destino solo elige la ruta del Brote: la causa de lo que aparece es el Brote. */
   CAUSA = (wild ? 'Brote Descontrolado' : 'Brote') + ' en ' + ROUTES[r].name;
@@ -266,7 +266,7 @@ async function phaseZeds() {
     if (x === 'ANY' || x === 'MIN2') continue;
     if (x === 'INIT') { await activateInitial(); return; }
     if (x === '*') list.push(...(await routeOrder(G.routes.slice())));
-    else if (x === 'D2') { const dr = await drawDestiny(); if (dr) { list.push(dr.route, dr.route); await resolveTwist(dr); } }
+    else if (x === 'D2') { const dr = await drawDestiny('Ruta que se activa 2 veces (sus Zeds avanzan dos veces)'); if (dr) { list.push(dr.route, dr.route); await resolveTwist(dr); } }
     else if (G.routes.includes(x)) list.push(x);
   }
   if (ev.z.includes('MIN2')) { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Ruta con menos Zeds: elige la ruta que se activa 2 veces (sus Zeds avanzan dos veces).'); list.push(r, r); }
@@ -394,7 +394,7 @@ async function groundAttack(u) {
   await hitPlayer(u, ph);
 }
 async function sneakAttack(label) {
-  const dr = await drawDestiny(); if (!dr) return;
+  const dr = await drawDestiny(label + ': ruta donde una unidad de jugador sufre un ataque'); if (!dr) return;
   const c = []; for (let i = 1; i <= lastOf(dr.route); i++) c.push(...plAt(dr.route + i));
   if (!c.length) LOG('No hay unidades de jugador en la ruta destinada.');
   else { const v = await UI.pickUnit(c, label + ': elige la unidad que sufre el ataque.'); await groundAttack(G.units[v]); }
@@ -451,11 +451,11 @@ async function eventEffect(ev) {
   const id = ev.id;
   const lowestInitial = () => { let best = null; for (const r of G.routes) { const zs = zedsAt(r + '0'); const m = zs.length ? Math.min(...zs.map(strength)) : -1; if (!best || m < best.m) best = { id: r + '0', m }; } return best.id; };
   switch (id) {
-    case 'entusiasma': { const dr = await drawDestiny(); if (dr) { const us = []; for (let i = 0; i <= lastOf(dr.route); i++) us.push(...plAt(dr.route + i)); us.push(...plAt('C')); us.forEach(u => u.freeMF = (u.freeMF || 0) + 1); LOG(us.length + ' unidades reciben 1 Acción gratis (Mover o disparar).', 'good'); await resolveTwist(dr); } break; }
+    case 'entusiasma': { const dr = await drawDestiny('Entusiasmo: ruta cuyas unidades de jugador reciben 1 Acción gratis'); if (dr) { const us = []; for (let i = 0; i <= lastOf(dr.route); i++) us.push(...plAt(dr.route + i)); us.push(...plAt('C')); us.forEach(u => u.freeMF = (u.freeMF || 0) + 1); LOG(us.length + ' unidades reciben 1 Acción gratis (Mover o disparar).', 'good'); await resolveTwist(dr); } break; }
     case 'cardio': { G.turn.cardio = true; const empty = G.routes.map(r => r + '0').filter(i => !zedsAt(i).length); const t = empty.length ? await UI.pickSpace(empty, 'Cardio: elige un espacio Inicial vacío para el nuevo Zed.') : lowestInitial(); await placeZedAt(t, 'Cardio'); break; }
     case 'armados': { const cs = allUnits(x => x.type === 'civ' && x.space !== 'CEM'); if (cs.length) { const v = cs.length === 1 ? cs[0].id : await UI.pickUnit(cs, 'Civiles Bien Armados: elige la unidad.'); G.units[v].armed = true; LOG('Civiles Bien Armados en ' + spaceLabel(G.units[v].space) + '.', 'good'); } break; }
     case 'bajo_pies': case 'errantes': case 'renqueantes': await sneakAttack(ev.name); break;
-    case 'propagacion': { const dr = await drawDestiny(); if (dr) { G.turn.propag = true; await placeZedInitial(dr.route); await resolveTwist(dr); } break; }
+    case 'propagacion': { const dr = await drawDestiny('Propagación: ruta donde se coloca una unidad Zed en su Inicial'); if (dr) { G.turn.propag = true; await placeZedInitial(dr.route); await resolveTwist(dr); } break; }
     case 'pelo': for (const r of G.routes) await placeZedInitial(r); for (const z of allUnits(isZedSide)) z.hits = 0; break;
     case 'odio': { const zs = allUnits(x => x.type === 'zed' && strength(x) <= 3 && isRouteSp(x.space)).sort((a, b) => sp(b.space).i - sp(a.space).i); let n = 0; for (const z of zs) { const w = z.space; let nz = await makeZedA(); /* se roba antes de devolver la ficha vieja: no puede volver a salir la misma (salvo que la reserva esté vacía) */ discardZed(z); if (!nz) nz = await makeZedA(); if (nz) { putUnit(nz, w); n++; } } LOG(n + ' Zeds débiles sustituidos por Zeds de Fuerza completa.', 'bad'); break; }
     case 'heroe_b': case 'heroe_g': { const k = randomAvailableHero(); if (k) { const inits = ['C'].concat(G.routes.map(r => r + '0')); await spawnHero(k, null, inits); } else LOG('No quedan Héroes disponibles.'); break; }
@@ -470,18 +470,18 @@ async function eventEffect(ev) {
     case 'resistentes': { await placeZedAt('M0', 'Zeds Resistentes'); const t = strongestNormalZed(); if (t) { t.zresist = true; LOG('Resistentes en un Zed de Fuerza ' + zF(t) + '.', 'bad'); } break; }
     case 'cerebros_b1': case 'cerebros_b2': break;
     case 'agua': await lossChoice(await rollShown('Agua contaminada: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' (Suministros o Impactos).'), ['s', 'p']); break;
-    case 'marines': { const dr = await drawDestiny(); if (dr) { const t = dr.route + '0'; const m = makeSpecial('marines', t); removeUnit(m); await UI.superIntro(m, t, 'assets/cartas/u_marines.jpg', SPECIALS.marines.txt.join(' ')); putUnit(m, t); UI.redraw(); G.ammo = Math.min(20, G.ammo + 4); LOG('Llegan los Marines (+4 Munición).', 'good'); await resolveTwist(dr); } break; }
+    case 'marines': { const dr = await drawDestiny('Marines: ruta donde llegan los Marines'); if (dr) { const t = dr.route + '0'; const m = makeSpecial('marines', t); removeUnit(m); await UI.superIntro(m, t, 'assets/cartas/u_marines.jpg', SPECIALS.marines.txt.join(' ')); putUnit(m, t); UI.redraw(); G.ammo = Math.min(20, G.ammo + 4); LOG('Llegan los Marines (+4 Munición).', 'good'); await resolveTwist(dr); } break; }
     case 'toxicos': { await placeZedAt('A0', 'Zeds Tóxicos'); const t = strongestNormalZed(); if (t) t.toxic = true; break; }
     case 'rapidos': { await placeZedAt('B0', 'Zeds Rápidos'); const t = strongestNormalZed(); if (t) t.fast = true; break; }
-    case 'turba': { const dr = await drawDestiny(); if (dr) { if (G.inf >= 8) await placeZedInitial(dr.route, await makeSuperA()); else { makeSpecial('vip', dr.route + '0', { name: 'Supervivientes V.I.P.', type: 'refugee' }); LOG('Aparecen los Supervivientes V.I.P.', 'good'); } await resolveTwist(dr); } break; }
+    case 'turba': { const dr = await drawDestiny(G.inf >= 8 ? 'Turba no identificada: ruta donde se coloca un Súper Zed' : 'Turba no identificada: ruta donde aparecen los Supervivientes V.I.P.'); if (dr) { if (G.inf >= 8) await placeZedInitial(dr.route, await makeSuperA()); else { makeSpecial('vip', dr.route + '0', { name: 'Supervivientes V.I.P.', type: 'refugee' }); LOG('Aparecen los Supervivientes V.I.P.', 'good'); } await resolveTwist(dr); } break; }
     case 'saqueadores': { const rs = SURFACE.map(r => [r, Array.from({ length: lastOf(r) + 1 }, (_, i) => sp(r + i).chaos).reduce((a, b) => a + b, 0)]); const m = Math.max(...rs.map(x => x[1])); const r = await chooseRoute(rs.filter(x => x[1] === m).map(x => x[0]), 'Saqueadores: ruta con más Caos. Elige la ruta donde aparecen los Saqueadores (en su espacio Inicial).'); makeSpecial('saqueadores', r + '0'); LOG('¡Aparecen Saqueadores en ' + ROUTES[r].name + '!', 'bad'); break; }
     case 'helicoptero': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && !isInit(x.space) && sp(x.space).route !== 'T').map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, 'Helicóptero: elige un espacio con Zeds.'); const r = d6() + d6(); const n = r <= 5 ? 1 : r <= 9 ? 2 : 3; LOG('Helicóptero: ' + r + ' → ' + n + ' Impacto(s).', 'good'); await applyZedHits(zedsAt(t), n); } break; }
     case 'eficiencia': case 'jornada': case 'monstruo': G.turn.specials.push(mkSpecial(id)); break;
-    case 'oh_malo': { const dr = await drawDestiny(); if (dr) { await placeZedAt(dr.route + '1', 'Oh, esto es malo'); await resolveTwist(dr); } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
+    case 'oh_malo': { const dr = await drawDestiny('Oh, esto es malo: ruta donde se coloca un Zed'); if (dr) { await placeZedAt(dr.route + '1', 'Oh, esto es malo'); await resolveTwist(dr); } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'que_demonios': { await wildOutbreakNow(); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'donde_todos': { for (const r of G.routes) for (let i = 1; i <= lastOf(r); i++) if (sp(r + i).kind === 'pueblo' && controlled(r + i)) await placeZedAt(r + i, '¿De dónde salen todos?'); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
-    case 'guardia': { const dr = await drawDestiny(); if (dr) { let r = dr.route; if (r === 'T') r = await chooseRoute(SURFACE, 'La carta indica el Túnel, pero la Guardia Nacional solo va a la superficie: elige la ruta para activarla y colocar la Guardia en su espacio Inicial.'); const g = makeSpecial('guardia', r + '0'); g.name = 'Guardia Nacional'; await resolveTwist(dr); } break; }
-    case 'noelle': { const dr = await drawDestiny(); if (dr) { await placeZedInitial(dr.route, spawnSpreader('noelle')); await resolveTwist(dr); } break; }
+    case 'guardia': { const dr = await drawDestiny('Guardia Nacional: ruta donde se activa y se coloca la Guardia'); if (dr) { let r = dr.route; if (r === 'T') r = await chooseRoute(SURFACE, 'La carta indica el Túnel, pero la Guardia Nacional solo va a la superficie: elige la ruta para activarla y colocar la Guardia en su espacio Inicial.'); const g = makeSpecial('guardia', r + '0'); g.name = 'Guardia Nacional'; await resolveTwist(dr); } break; }
+    case 'noelle': { const dr = await drawDestiny('Noelle: ruta donde se coloca la unidad de Propagador'); if (dr) { await placeZedInitial(dr.route, spawnSpreader('noelle')); await resolveTwist(dr); } break; }
     case 'tsunami': for (const r of G.routes) await placeZedInitial(r); break;
     case 'catastrofe': { const id2 = 'A4'; for (const u of plAt(id2)) { await hitPlayer(u, 2); if (u.space === id2) retreatPlayers([u], 'C'); } await placeChaos(id2, 1); G.turn.block.push(id2); break; }
     case 'desesperacion': { let n = 0; for (const r of G.routes) for (const k of [0, 1, 2]) n += zedsAt(r + (lastOf(r) - k)).length; LOG('Aumenta la desesperación: pierdes ' + n + '.', 'bad'); await lossChoice(n, ['s', 'a', 'p']); break; }
@@ -500,14 +500,14 @@ async function eventEffect(ev) {
     case 'civ_heroicos': { const k = pickCivh(); if (k) await spawnHero(k, 'C'); break; }
     case 'murcielagos': { const us = allUnits(x => isFighter(x) && x.space && isRouteSp(x.space) && sp(x.space).route === 'T').sort((a, b) => sp(a.space).i - sp(b.space).i); if (us.length) { const u = us[0]; await infUp(1); await hitPlayer(u, 1); if (u.space && isRouteSp(u.space)) retreatPlayers([u], 'C'); } break; }
     case 'brote_local': break;
-    case 'artefacto': { const dr = await drawDestiny(); if (dr) { const n = await rollShown('Artefacto: ¿dónde aparece?', v => 'Aparece el Súper Zed en el espacio n.º ' + v + ' de la ruta'); const t = dr.route + clamp(lastOf(dr.route) - n, 1, lastOf(dr.route) - 1); await placeZedAt(t, 'Artefacto', await makeSuperA()); await revealResearch(); await resolveTwist(dr); } break; }
+    case 'artefacto': { const dr = await drawDestiny('Artefacto: ruta donde se coloca un Súper Zed'); if (dr) { const n = await rollShown('Artefacto: ¿dónde aparece?', v => 'Aparece el Súper Zed en el espacio n.º ' + v + ' de la ruta'); const t = dr.route + clamp(lastOf(dr.route) - n, 1, lastOf(dr.route) - 1); await placeZedAt(t, 'Artefacto', await makeSuperA()); await revealResearch(); await resolveTwist(dr); } break; }
     case 'oh_no': { const pool = G.upgrades || []; if (!pool.length) { LOG('¡Oh, no! ¡Otra vez no!: no hay fichas de Mejora Zed retiradas, sin efecto.'); break; }
       const zs = allUnits(x => x.type === 'zed' && isRouteSp(x.space)); if (!zs.length) break; const m = Math.max(...zs.map(strength)), top = zs.filter(z => strength(z) === m);
       const t = top.length === 1 ? top[0] : G.units[await UI.pickUnit(top, '¡Oh, no! ¡Otra vez no!: elige el Zed Normal más fuerte que recibe la ficha.')];
       const kinds = [...new Set(pool)]; const k = kinds.length === 1 ? kinds[0] : await UI.choose({ title: '¡Oh, no! ¡Otra vez no!', text: 'Elige la ficha de Mejora Zed que se coloca en el Zed Normal más fuerte:', options: kinds.map(x => ({ label: ZED_UPGRADES[x], value: x })) });
       pool.splice(pool.indexOf(k), 1); t[k] = true; LOG('Ficha de Mejora Zed «' + ZED_UPGRADES[k] + '» sobre un Zed de Fuerza ' + zF(t) + '.', 'bad'); break; }
     case 'desde_lab': { const t = 'T4'; if (G.routes.includes('T')) { const sup = allUnits(x => x.type === 'super').length; await placeZedAt(t, 'Desde el laboratorio', sup ? await makeZedA() : await makeSuperA()); } break; }
-    case 'hinchados': { const dr = await drawDestiny(); if (dr) { const all = routeZeds(dr.route); if (all.length) {
+    case 'hinchados': { const dr = await drawDestiny('Zeds hinchados: ruta cuyos Zeds estallan'); if (dr) { const all = routeZeds(dr.route); if (all.length) {
       const mi = Math.max(...all.map(z => sp(z.space).i)), top = all.filter(z => sp(z.space).i === mi);
       const z = top.length === 1 ? top[0] : G.units[await UI.pickUnit(top, 'Zeds hinchados: empate, elige la unidad Zed que estalla.')]; const sid = z.space;
       if (z.type === 'super' || z.type === 'spreader') { removeUnit(z); delete G.units[z.id]; } else discardZed(z);

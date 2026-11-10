@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 16:56
+
+### Mejoras
+- **Carta de Destino al elegir ruta:** el aviso empieza ahora por el motivo de la ruta (p. ej. «Brote Descontrolado: ruta donde se coloca un Súper Zed», «Turba no identificada: ruta donde se coloca un Súper Zed», «Artefacto», «Noelle», «Marines», «Guardia Nacional», ataques sorpresa, Rumores…) y después el texto de la carta de Destino. Caché v104.
+
 ## 2026-11-10 14:26
 
 ### Nuevo
