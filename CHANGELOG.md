@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 13:55
+
+### Cambios
+- **Exp. 5, «Puesto médico de campaña»:** ya lleva su ilustración definitiva (puesto médico de campaña con la doctora en primer plano). Caché v78.
+
 ## 2026-11-10 13:51
 
 ### Cambios
