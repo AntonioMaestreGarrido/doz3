@@ -112,7 +112,7 @@ ev('fin_r', 'Por fin ha terminado la larga pesadilla', 'r', 5, 0, 'B', 2, ['*','
 ev('boss_heroe', 'Refuerzos: llega un Héroe', 'o', 2, 1, 0, 0, ['A','T'], 2, ['Al inicio: elige un nuevo Héroe disponible y colócalo en el Centro de la Ciudad o en cualquier espacio Inicial.'], { exp: 5, fase: 'a' });
 ev('boss_cargamento', 'Cargamento aéreo', 'o', 2, 1, 0, 0, ['B','T'], 2, ['Al inicio: +5 de Munición y +5 de Suministros.'], { exp: 5, fase: 'a' });
 ev('boss_brigada', 'Brigada civil', 'o', 3, 1, 0, 0, ['M','A'], 2, ['Al inicio: elige una nueva unidad de Civiles Heroicos disponible y colócala en el Centro de la Ciudad.'], { exp: 5, fase: 'a' });
-ev('boss_medico', 'Puesto médico de campaña', 'o', 3, 1, 0, 0, ['F','T'], 2, ['Al inicio: retira todas las fichas de Impacto a las unidades de jugador del Centro de la Ciudad y recuperan su cara de Fuerza completa. −2 de Infección.'], { exp: 5, fase: 'a' });
+ev('boss_medico', 'Puesto médico de campaña', 'o', 3, 1, 0, 0, ['F','T'], 2, ['Al inicio: retira todas las fichas de Impacto a todas las unidades de jugador en juego (en cualquier espacio) y recuperan su cara de Fuerza completa. −2 de Infección.'], { exp: 5, fase: 'a' });
 ev('boss_adrenalina', 'Adrenalina colectiva', 'o', 4, 1, 0, 0, ['A','F'], 2, ['Al inicio: cada Héroe y cada Civil Heroico en juego recibe 1 Acción gratis este turno.'], { exp: 5, fase: 'a' });
 /* Las cartas del Jugador Zed y el texto «En Versus» de «¡Aquí está el Doctor!» (Dr. Marteuse) son solo del modo Versus (no incluido); el efecto en solitario de esa carta sí está. */
 

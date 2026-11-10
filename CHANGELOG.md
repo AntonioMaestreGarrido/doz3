@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 13:48
+
+### Cambios
+- **Exp. 5, «Puesto médico de campaña»:** ahora cura a **todas** las unidades de jugador en juego (antes solo a las del Centro): retira todos sus Impactos y recuperan la cara completa; −2 de Infección. Carta regenerada. Caché v75.
+
 ## 2026-11-10 13:45
 
 ### Cambios
