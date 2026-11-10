@@ -90,7 +90,9 @@ const SUPER_ZEDS = {
 };
 const SPREADERS = {
   alimanas: { name: 'Alimañas Infectadas', full: 2, red: 1, img: 'zed' },
-  noelle:   { name: 'Noelle «Hell» Razer', full: 3, red: 2, img: 'noelle' }
+  noelle:   { name: 'Noelle «Hell» Razer', full: 3, red: 2, img: 'noelle' },
+  /* Jefe final (exp. 5): la Banda de Bubba. Para la prueba, 3 Impactos por cara. */
+  bubba:    { name: 'Banda de Bubba', full: 6, red: 3, img: 'zed', boss: 1, hf: 3, hr: 3 }
 };
 /* Civiles Normales [completa, reducida] (resisten 4 Impactos) */
 const CIV_TOKENS = [[3,1],[3,1],[2,1],[2,1],[2,1],[2,1],[4,2]];

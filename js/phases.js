@@ -169,7 +169,7 @@ async function moveGroup(movers, from, opts) {
 async function stepSpace(id, cer, second) {
   if (G.over) return;
   const s = sp(id);
-  let group = zedsAt(id).filter(z => !z.moved && z.frozen !== G.turnNo);
+  let group = zedsAt(id).filter(z => !z.moved && z.frozen !== G.turnNo && !z.boss);   /* el jefe (exp. 5) se mueve solo en su propio paso (jefe.js) */
   if (!group.length) return;
   if (s.kind === 'crypt') {
     const sorted = group.slice().sort((a, b) => strength(b) - strength(a));
@@ -225,7 +225,7 @@ async function activateRoute(r, cer) {
   if (G.hand.includes('hipnotizados')) { const occ = []; for (let i = 0; i <= lastOf(r); i++) if (zedsAt(r + i).length) occ.push(r + i); const v = await UI.askZeds({ title: 'Zeds hipnotizados', text: '¿Cancelas la activación de la ' + ROUTES[r].name + '? Se activarían: ' + (occ.map(id => zedGroupName(zedsAt(id), id)).join(' · ') || 'ninguno (entra un Zed nuevo en el Inicial)') + '.', spaces: occ, options: [{ label: 'Cancelar la activación', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('hipnotizados'), 1); G.destDiscard.push('hipnotizados'); (G.turn.hypno || (G.turn.hypno = [])).push(r); zenPlayed(); UI.updateHand(); LOG('Zeds hipnotizados: se cancelan todas las activaciones de la ' + ROUTES[r].name + ' este turno.', 'good'); return; } }
   LOG('Se activa la ' + ROUTES[r].name + '.', 'zed'); UI.flashRoute(r); if (!UI.fast) Sfx.ambience(); await UI.announce('Se activa la ' + ROUTES[r].name, ROUTES[r].color, 700);
   const zs = routeZeds(r);
-  if (!zs.length) { await placeZedInitial(r); return; }
+  if (!zs.filter(z => !z.boss).length) { await placeZedInitial(r); return; }   /* el jefe (exp. 5) solo no cuenta como Zed de la ruta */
   zs.forEach(z => { z.moved = false; z.flamedHit = false; });
   for (const z of zs) if (z.key === 'reanimador') { if (z.hits > 0) z.hits--; else if (z.flipped) { z.flipped = false; z.hits = 2; } }
   const L = lastOf(r);
@@ -332,7 +332,7 @@ async function phase4R() {
 async function phaseInfection() {
   if (!G.lv.infection) return;
   if (G.inf >= 10) await offerHandCards('inf', 'La Infección está en <b>' + G.inf + '</b> / 13.');
-  const sps = allUnits(x => x.type === 'spreader' && x.space && isRouteSp(x.space) && !isInit(x.space));
+  const sps = allUnits(x => x.type === 'spreader' && !x.boss && x.space && isRouteSp(x.space) && !isInit(x.space));
   if (sps.length) { LOG(sps.length + ' Propagador(es) de Enfermedad: +' + sps.length + ' Infección.', 'bad'); await infUp(sps.length); }
   if (G.event.inf === 'B') {
     const bd = await zenReroll([d6(), d6()], 'Tirada de Brote'); const a = bd[0], b = bd[1]; LOG('Tirada de Brote: ' + (a + b) + ' (Infección ' + G.inf + ').');

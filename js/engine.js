@@ -296,6 +296,7 @@ async function hitZed(t) {
 async function zedDies(t) {
   EVT('kill', ACTOR, { z: t.name, ty: t.type, sp: t.space });
   G.stats.killed++; Voz.say('muerte_zed', .1);
+  if (t.boss) { await UI.fxBoom(t); LOG(t.name + ' queda fuera de juego.', 'good'); removeUnit(t); delete G.units[t.id]; await bossDefeated(); return; }   /* el jefe no «huye» (jefe.js) */
   if (t.type === 'spreader') {
     const r = d6(); const rt = routeOfZ(t);
     if (r <= 3 && rt) { await UI.fxResist(t, r, 'Huye'); t.hits = 0; t.flipped = false; putUnit(t, rt + '0'); LOG(t.name + ' vuelve al espacio Inicial (tirada ' + r + ').'); }
