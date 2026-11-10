@@ -2,6 +2,20 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 19:30
+
+### Recuperado
+- **Revisión de cartas contra las originales (rama del 20-oct, integrada con `main`):**
+  - *Actos:* «No hay escapatoria», «Conductos del vapor» y «Aumenta la desesperación» pasan al Acto IV; «¡Shhh!» al III y «¡Esto me entusiasma tanto!» al IV.
+  - *Feria de las tinieblas y Conductos del vapor:* se resuelven al inicio de la fase de los Zeds. Los Zeds del Túnel luchan también contra Saqueadores, ponen Caos y respetan «No Pasar».
+  - *Zeds hinchados:* los Saqueadores reciben los Impactos como Saqueadores; no se tira contra Trenes ni Aldeanos.
+  - *Zed alfa:* la ficha de Líder va al Zed Normal más fuerte de todo el mapa y se activa su ruta.
+  - *¡Oh, no! ¡Otra vez no!:* no ofrece fichas que el Zed ya tiene. *Helicóptero de las Noticias-12:* solo desde la superficie y a espacios sin Zeds ni Saqueadores.
+  - *Datos:* «Oh, esto es malo…» pasa a amarilla (Nivel III); Alimentación de Bomberos (tirada) y de Fortuna (1); Voluntarios de Bomberos 129 mueven 4; «Brote local» sin «Al inicio».
+  - *Eventos:* los ataques sorpresa suben la Infección; Catástrofe nuclear también alcanza a los Zeds; Lluvia torrencial sin tirada en el Inicial y sin activar la Montaña; Hedor nocivo (ficha al Zed más alejado, ataque pestilente con reparto de Impactos que también alcanza a Refugiados y Saqueadores); Techo del Túnel con tirada de Cripta al escapar; empates del Zed Normal más fuerte a elección; «Odio cuando pasa eso» sustituye desde los Zeds más cercanos al Centro; los efectos «Durante esta fase» acaban con la fase de los Zeds.
+  - *Destino y Héroes:* Saqueadores y Bubba en el Centro quitan su Fuerza en Suministros y en Munición; WZED puede anular un Destino «Juega esta carta»; Hunt lidera también a Refugiados; el Ataque asesino de Darling sin Terreno; Descontaminación solo si restaura Agee y el General Lee no restaura el orden.
+  - Catálogo regenerado. Caché v111.
+
 ## 2026-11-10 18:40
 
 ### Fixes

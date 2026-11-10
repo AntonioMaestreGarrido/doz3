@@ -1,19 +1,19 @@
 # Catálogo de cartas y unidades
 
-Generado por `tools/generar_catalogo.mjs` (`npm run catalogo`) a partir de los datos del juego (build 2026-11-09 17:00). **No se edita a mano.**
+Generado por `tools/generar_catalogo.mjs` (`npm run catalogo`) a partir de los datos del juego (build 2026-11-10 18:40). **No se edita a mano.**
 
 Cómo buscar: Ctrl+F por nombre, por `id` (el nombre interno que usa el código) o por una palabra del texto. El buscador visual está en `catalogo_cartas.html`.
 
 La **fase** de cada Evento es la columna cuya pestaña se extiende hasta el texto en la carta original; el texto da el momento exacto dentro de la fase. Se define en la tabla `EV_FASE` de `js/expansions.js`.
 
-**257 entradas** — Evento: 100 · Destino: 48 · Investigación: 25 · Héroe: 31 · Civiles Heroicos: 12 · Unidad especial: 9 · Súper Zed: 9 · Propagador: 2 · Rumor: 16 · Súper Arma: 5
+**263 entradas** — Evento: 105 · Destino: 48 · Investigación: 25 · Héroe: 31 · Civiles Heroicos: 12 · Unidad especial: 9 · Súper Zed: 9 · Propagador: 3 · Rumor: 16 · Súper Arma: 5
 
 ## Eventos por fase
 
 - **Fase 4R (4):** `artefacto`, `hace_falta`, `saqueadores`, `turba`
 - **Fase de Infección (2):** `aqui_doctor`, `contaminacion`
 - **Fase de los Zeds (44):** `agua`, `alcantarilla`, `asalto_a`, `asalto_b`, `asalto_f`, `asalto_m`, `bajo_pies`, `brote_local`, `campanas`, `caos_abs`, `caos_control`, `cardio`, `catastrofe`, `conductos`, `desde_lab`, `doc_problema`, `donde_todos`, `duros`, `entusiasma`, `errantes`, `experimentos`, `feria`, `flambeados`, `hinchados`, `irrupcion`, `mina`, `misterioso`, `no_comer`, `no_detendran`, `no_escapatoria`, `noche`, `noelle`, `oh_malo`, `oh_no`, `pelo`, `propagacion`, `que_demonios`, `que_diablos`, `que_olor`, `rapidos`, `renqueantes`, `resiste`, `resistentes`, `tsunami`
-- **Fase de Acciones (43):** `accidente`, `armados`, `atajos`, `bomberos`, `cabana`, `civ_heroicos`, `crisis`, `descubrimiento`, `desesperacion`, `despensa`, `eficiencia`, `elwood`, `fin_b1`, `fin_g`, `fin_o`, `fin_r`, `fin_y`, `fortuna`, `frenesi`, `gente`, `granero`, `helicoptero`, `heroe_b`, `heroe_g`, `inteligentes`, `jornada`, `keepcalm`, `marines`, `materiales`, `misiles`, `monstruo`, `moteros`, `murcielagos`, `negacion`, `no_hay_tiempo`, `odio`, `panico`, `queda_alguno`, `rumores`, `shhh`, `soldados`, `super_enloq`, `toxicos`
+- **Fase de Acciones (48):** `accidente`, `armados`, `atajos`, `bomberos`, `boss_adrenalina`, `boss_brigada`, `boss_cargamento`, `boss_heroe`, `boss_medico`, `cabana`, `civ_heroicos`, `crisis`, `descubrimiento`, `desesperacion`, `despensa`, `eficiencia`, `elwood`, `fin_b1`, `fin_g`, `fin_o`, `fin_r`, `fin_y`, `fortuna`, `frenesi`, `gente`, `granero`, `helicoptero`, `heroe_b`, `heroe_g`, `inteligentes`, `jornada`, `keepcalm`, `marines`, `materiales`, `misiles`, `monstruo`, `moteros`, `murcielagos`, `negacion`, `no_hay_tiempo`, `odio`, `panico`, `queda_alguno`, `rumores`, `shhh`, `soldados`, `super_enloq`, `toxicos`
 - **Fases de los Zeds y de Acciones (1):** `fin_b2`
 - **Sin fase (turno especial) (6):** `cerebros_b1`, `cerebros_b2`, `cerebros_g`, `cerebros_y1`, `cerebros_y2`, `guardia`
 
@@ -129,7 +129,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds
 ![bajo_pies](../assets/cartas/e_bajo_pies.jpg)
 
 ### bomberos — Los Aldeanos organizan unidades de bomberos
-Naranja (Nivel IV) · Acto 3 · **Fase de Acciones** · 4R: 2 · Infección: tirada de Brote · Alimentación: 2 · Zeds: Túnel → Túnel → Montaña · Acciones: 3
+Naranja (Nivel IV) · Acto 3 · **Fase de Acciones** · 4R: 2 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: Túnel → Túnel → Montaña · Acciones: 3
 
 > Al final de esta fase: puedes retirar cualquier cantidad de fichas de Caos en espacios de Pueblo; +1 de Infección por cada una que retires.
 
@@ -137,10 +137,55 @@ Resuelve el código: phases.js › eventEnd: al final de la fase de Acciones
 
 ![bomberos](../assets/cartas/e_bomberos.jpg)
 
+### boss_adrenalina — Adrenalina colectiva
+Naranja (Nivel IV) · Acto 4 · **Fase de Acciones** · Expansión 5 · 4R: 2 · Infección: No · Alimentación: 0 · Zeds: Autovía · Acciones: 3
+
+> Al inicio: cada Héroe y cada Civil Heroico en juego recibe 1 Acción gratis este turno.
+
+Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
+
+![boss_adrenalina](../assets/cartas/e_boss_adrenalina.jpg)
+
+### boss_brigada — Brigada civil
+Naranja (Nivel IV) · Acto 3 · **Fase de Acciones** · Expansión 5 · 4R: 2 · Infección: No · Alimentación: 0 · Zeds: Montaña · Acciones: 3
+
+> Al inicio: elige una nueva unidad de Civiles Heroicos disponible y colócala en el Centro de la Ciudad.
+
+Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
+
+![boss_brigada](../assets/cartas/e_boss_brigada.jpg)
+
+### boss_cargamento — Cargamento aéreo
+Naranja (Nivel IV) · Acto 2 · **Fase de Acciones** · Expansión 5 · 4R: 2 · Infección: No · Alimentación: 0 · Zeds: Bosque · Acciones: 3
+
+> Al inicio: +5 de Munición y +5 de Suministros.
+
+Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
+
+![boss_cargamento](../assets/cartas/e_boss_cargamento.jpg)
+
+### boss_heroe — Refuerzos: llega un Héroe
+Naranja (Nivel IV) · Acto 2 · **Fase de Acciones** · Expansión 5 · 4R: 2 · Infección: No · Alimentación: 0 · Zeds: Túnel · Acciones: 3
+
+> Al inicio: elige un nuevo Héroe disponible y colócalo en el Centro de la Ciudad o en cualquier espacio Inicial.
+
+Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
+
+![boss_heroe](../assets/cartas/e_boss_heroe.jpg)
+
+### boss_medico — Puesto médico de campaña
+Naranja (Nivel IV) · Acto 3 · **Fase de Acciones** · Expansión 5 · 4R: 2 · Infección: No · Alimentación: 0 · Zeds: Afueras · Acciones: 3
+
+> Al inicio: retira todas las fichas de Impacto a todas las unidades de jugador en juego (en cualquier espacio) y recuperan su cara de Fuerza completa. −2 de Infección.
+
+Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
+
+![boss_medico](../assets/cartas/e_boss_medico.jpg)
+
 ### brote_local — Brote local de Zeds
 Rojo (Nivel V) · Acto 1 · **Fase de los Zeds** · 4R: 1 · Infección: tirada de Brote · Alimentación: 1 · Zeds: Afueras → Montaña → Túnel · Acciones: 2
 
-> Al inicio, Z. Durante este turno, por cada unidad de Civiles Normales eliminada o ingresada en el Hospital (tras su tirada de Salvación), coloca una nueva unidad Zed en el espacio en el que fue eliminada y aplica el límite de agrupamiento si es necesario. Los nuevos Zeds no se mueven este turno.
+> Durante este turno, por cada unidad de Civiles Normales eliminada o ingresada en el Hospital (tras su tirada de Salvación), coloca una nueva unidad Zed en el espacio en el que fue eliminada y aplica el límite de agrupamiento si es necesario. Los nuevos Zeds no se mueven este turno.
 
 Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds; bandera de turno: Civil eliminado = Brote local
 
@@ -255,11 +300,11 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
 ![civ_heroicos](../assets/cartas/e_civ_heroicos.jpg)
 
 ### conductos — Conexión por los conductos del vapor
-Rojo (Nivel V) · Acto 3 · **Fase de los Zeds** · 4R: 1 · Infección: tirada de Brote · Alimentación: 0 · Zeds: Autovía → Autovía → Bosque → Bosque · Acciones: 3
+Rojo (Nivel V) · Acto 4 · **Fase de los Zeds** · 4R: 1 · Infección: tirada de Brote · Alimentación: 0 · Zeds: Autovía → Autovía → Bosque → Bosque · Acciones: 3
 
 > Al inicio de esta fase. Por cada unidad Zed en un espacio de Cripta, tira 1 dado: 1-2 = intenta entrar en la Central Nuclear; 3-5 = intenta entrar en la Granja (primero tira en la tabla de Cripta); 6 = no pasa nada. Si no hay sitio, se queda donde está.
 
-Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds; phases.js › eventAfterZeds: al final de la fase de los Zeds; conductos (Túnel)
+Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds; conductos (Túnel)
 
 ![conductos](../assets/cartas/e_conductos.jpg)
 
@@ -300,7 +345,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds
 ![desde_lab](../assets/cartas/e_desde_lab.jpg)
 
 ### desesperacion — Aumenta la desesperación
-Amarillo (Nivel III) · Acto 3 · **Fase de Acciones** · 4R: 2 · Infección: tirada de Brote · Alimentación: 2 · Zeds: Autovía → Afueras → Bosque · Acciones: 2
+Amarillo (Nivel III) · Acto 4 · **Fase de Acciones** · 4R: 2 · Infección: tirada de Brote · Alimentación: 2 · Zeds: Autovía → Afueras → Bosque · Acciones: 2
 
 > Al inicio: 1. Suma el número de unidades Zed (incluyendo Súper Zeds y Propagadores) en los espacios n.º 2, n.º 1 y n.º 0. 2. Pierdes esa cantidad en cualquier combinación de Suministros, Munición y/o Impactos a unidades de jugador.
 
@@ -363,7 +408,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
 ![elwood](../assets/cartas/e_elwood.jpg)
 
 ### entusiasma — ¡Esto me entusiasma tanto!
-Azul (Juego Básico y Nivel I) · Acto 3 · **Fase de los Zeds** · Expansión 1 · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 · Zeds: * · Acciones: 3
+Azul (Juego Básico y Nivel I) · Acto 4 · **Fase de los Zeds** · Expansión 1 · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 · Zeds: * · Acciones: 3
 
 > Al inicio de esta fase, roba 1 carta de Destino: cada unidad de jugador en la Ruta Destinada (incluyendo el Centro) puede realizar de inmediato una Acción de Mover gratis o un ataque con Arma de Fuego gratis (necesita Munición).
 
@@ -392,9 +437,9 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds
 ### feria — La feria de las tinieblas
 Rojo (Nivel V) · Acto 2 · **Fase de los Zeds** · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: * · Acciones: 3
 
-> Después de moverse los Zeds, en cada espacio de Cripta tira 1 dado: 1 = coloca 2 nuevas unidades Zed en ese espacio; 2-5 = coloca 1 nueva unidad Zed; 6 = sin efecto.
+> Al inicio: en cada espacio de Cripta tira 1 dado: 1 = coloca 2 nuevas unidades Zed en ese espacio; 2-5 = coloca 1 nueva unidad Zed; 6 = sin efecto.
 
-Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds; phases.js › eventAfterZeds: al final de la fase de los Zeds
+Resuelve el código: phases.js › eventEffect: al inicio de la fase de los Zeds
 
 ![feria](../assets/cartas/e_feria.jpg)
 
@@ -462,7 +507,7 @@ Resuelve el código: bandera de turno: Zeds flambeados (Caos)
 ![flambeados](../assets/cartas/e_flambeados.jpg)
 
 ### fortuna — La fortuna favorece a los que se preparan
-Azul (Juego Básico y Nivel I) · Acto 1 · **Fase de Acciones** · Expansión 2 · 4R: 1 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: Autovía → cualquier otra ruta (a tu elección) · Acciones: 1
+Azul (Juego Básico y Nivel I) · Acto 1 · **Fase de Acciones** · Expansión 2 · 4R: 1 · Infección: tirada de Brote · Alimentación: 1 · Zeds: Autovía → cualquier otra ruta (a tu elección) · Acciones: 1
 
 > Al inicio de esta fase: cada Héroe y Civiles Heroicos en un espacio con nombre puede realizar gratis una Acción de Buscar.
 
@@ -687,7 +732,7 @@ Resuelve el código: bandera de turno: los defensores no reciben Modificador por
 ![no_detendran](../assets/cartas/e_no_detendran.jpg)
 
 ### no_escapatoria — No hay escapatoria
-Rojo (Nivel V) · Acto 3 · **Fase de los Zeds** · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: Autovía → Afueras → Túnel → Túnel · Acciones: 2
+Rojo (Nivel V) · Acto 4 · **Fase de los Zeds** · 4R: 0 · Infección: tirada de Brote · Alimentación: 1 dado · Zeds: Autovía → Afueras → Túnel → Túnel · Acciones: 2
 
 > Durante esta fase, tras el primer ataque Zed, ningún bando se retira: en su lugar, la unidad u Horda Zed ataca de inmediato otra vez (si puede). No puedes usar habilidades para evitar el segundo ataque.
 
@@ -732,7 +777,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
 ![odio](../assets/cartas/e_odio.jpg)
 
 ### oh_malo — Oh, esto es malo…
-Verde (Nivel II) · Acto 4 · especial · **Fase de los Zeds** · 4R: 0 · Infección: No · Alimentación: 1 dado · Zeds: * · Acciones: 3
+Amarillo (Nivel III) · Acto 4 · especial · **Fase de los Zeds** · 4R: 0 · Infección: No · Alimentación: 1 dado · Zeds: * · Acciones: 3
 
 > Al inicio: 1. Roba Destino y coloca una unidad Zed en el espacio n.º 1 de la Ruta Destinada (límite de agrupamiento). 2. Retira todas las fichas de Impacto de los Zeds. Después se activan todas las rutas (tú eliges el orden).
 
@@ -865,7 +910,7 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase 4R
 ![saqueadores](../assets/cartas/e_saqueadores.jpg)
 
 ### shhh — ¡Shhh! Sé que están ahí fuera…
-Azul (Juego Básico y Nivel I) · Acto 2 · **Fase de Acciones** · Expansión 2 · 4R: 1 · Infección: No · Alimentación: 1 dado · Zeds: solo los Zeds de espacios Iniciales · Acciones: 3
+Azul (Juego Básico y Nivel I) · Acto 3 · **Fase de Acciones** · Expansión 2 · 4R: 1 · Infección: No · Alimentación: 1 dado · Zeds: solo los Zeds de espacios Iniciales · Acciones: 3
 
 > Los ataques con Arma de Fuego y Cuerpo a Cuerpo no están permitidos durante esta fase. Las Acciones de Mover no pueden finalizar de manera que una unidad de Jugador acabe en un espacio controlado por Zeds.
 
@@ -1630,7 +1675,7 @@ Científico · Fuerza 3 / 1 · Mov. 4 · Nivel 3
 ### snake — Solid Snake
 Militar · Fuerza 3 / 2 · Mov. 5 · Nivel 1 · Expansión 4
 
-> Infiltración: puede atravesar espacios con Zeds sin combatir ni tirar, y sin coste extra de Movimiento. Al coincidir con Zeds o Saqueadores (porque acaba su movimiento en el espacio o porque entran ellos en el suyo) tira 1 dado: 1-2 combate normal; 3-6 pasa desapercibido y convive con ellos sin combatir. Disparo silenciado: solo dispara a los Zeds de su propio espacio con los que coexiste sin combatir (alcance 0), con 2 columnas a favor. Si el disparo hace 0 Impactos, lo detectan: pierde el sigilo y hay combate Cuerpo a Cuerpo. Si elimina al objetivo, recibe 1 Acción gratis de Mover. Reflejos de élite: una Acción de Personaje por fase de Acciones, solo para su unidad: 1 Acción gratis, de la clase que elijas al gastarla.
+> Infiltración: puede atravesar espacios con Zeds sin combatir ni tirar, y sin coste extra de Movimiento. Al coincidir con Zeds o Saqueadores (porque acaba su movimiento en el espacio o porque entran ellos en el suyo) tira 1 dado: 1-2 combate normal; 3-6 pasa desapercibido y convive con ellos sin combatir. Disparo silenciado: solo dispara a los Zeds de su propio espacio con los que coexiste sin combatir (alcance 0), con 2 columnas a favor. Si el disparo hace 0 Impactos, lo detectan: pierde el sigilo y hay combate Cuerpo a Cuerpo. Si elimina al objetivo, recibe 1 Acción gratis de Mover. Despedida silenciosa: cuando un grupo de Zeds sale del espacio que comparte con él, puede dispararles sin gastar Acción (1 Munición) con las reglas del Disparo silenciado, sin riesgo de ser detectado. Si elimina al objetivo, recupera la Munición y tiene 1 Acción gratis de Mover en su próxima fase de Acciones. Los supervivientes avanzan.
 
 ![snake](../assets/cartas/h_snake.jpg)
 
@@ -1673,7 +1718,7 @@ Civiles Heroicos · Fuerza 3 / 2 · Mov. 3 · Nivel 2
 ![bauer](../assets/cartas/h_bauer.jpg)
 
 ### bomberos — Voluntarios de Bomberos 129
-Civiles Heroicos · Fuerza 3 / 2 · Mov. 3 · Nivel 2
+Civiles Heroicos · Fuerza 3 / 2 · Mov. 4 · Nivel 2
 
 > 1 columna a favor en todos los combates Cuerpo a Cuerpo. Autoridad Civil: Acción de Personaje: libera Civiles Resistiendo o convierte Aldeanos en Refugiados (en o adyacente a un Pueblo). Mangueras: tira 2 dados; si el total ≥ a la Fuerza de un Zed adyacente, se retira.
 
@@ -1865,6 +1910,11 @@ Fuerza 5 / 3
 
 ### alimanas — Alimañas Infectadas
 Fuerza 2 / 1
+
+> +1 Infección en cada fase de Infección mientras esté en juego fuera de un espacio Inicial.
+
+### bubba — Banda de Bubba
+Fuerza 6 / 3
 
 > +1 Infección en cada fase de Infección mientras esté en juego fuera de un espacio Inicial.
 
