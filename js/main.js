@@ -78,7 +78,7 @@ async function playGame(setup, saved) {
       await heliTurnStart(); if (G.over) break;
       await bossCheck(); if (G.over) break;
       if (ev.guardia) { G.phase = 'zeds'; await UI.spawnBatch(() => withPeek(eventStart)); await maintenance(); G.dangerNext = enPeligro(); saveGame('turn'); continue; }
-      G.phase = 'fourR'; UI.updateStats(); await UI.spawnBatch(() => withPeek(() => eventAtPhase('4'))); if (G.over) break; await phase4R(); if (G.over) break; await bossMove(); if (G.over) break;
+      G.phase = 'fourR'; UI.updateStats(); await UI.spawnBatch(() => withPeek(() => eventAtPhase('4'))); if (G.over) break; await phase4R(); if (G.over) break;
       await UI.spawnBatch(() => pressure('e', '4')); if (G.over) break;
       /* La fase de Infección puede estallar un Brote (y su carta de Destino): las unidades nuevas también vuelan desde la columna. */
       G.phase = 'infection'; UI.updateStats(); await UI.spawnBatch(async () => { await withPeek(() => eventAtPhase('i')); if (G.over) return; await phaseInfection(); if (G.over) return; await withPeek(eventAfterInfection); if (G.over) return; await pressure('e', 'i'); }); if (G.over) break;
@@ -90,6 +90,7 @@ async function playGame(setup, saved) {
       await UI.spawnBatch(() => pressure('s', 'z')); if (G.over) break;
       await offerHandCards('zeds', 'Hay Refugiados junto a unidades Zed y las rutas están a punto de activarse.'); if (G.over) break;
       await UI.spawnBatch(() => phaseZeds()); if (G.over) break;
+      await UI.spawnBatch(() => bossEnsure()); if (G.over) break;
       await UI.spawnBatch(() => withPeek(eventAfterZeds)); UI.release(); if (G.over) break;
       await UI.spawnBatch(() => pressure('e', 'z')); if (G.over) break;
       endZedPhaseFlags();

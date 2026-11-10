@@ -8,8 +8,8 @@
      4. Si se acaba el mazo con el jefe vivo, se siguen sacando cartas de Nivel IV (bossOvertime, llamado desde revealEvent).
      5. Bubba es una unidad de Propagador (como Noelle) con 3 Impactos por cara y Fuerza 6/3: comparte espacio con los Zeds (y no se le puede dañar mientras haya Zeds en su casilla)
         sin combatir con ellos y no cuenta para el límite de agrupamiento.
-     6. Cada turno, tras la fase 4R, se mueve 1 espacio hacia el Centro y arrastra a los Zeds de su espacio con las reglas
-        normales de movimiento (límite de agrupamiento, combate, Barricadas…).
+     6. Cada turno la ruta donde está Bubba se activa siempre (si la carta no lo hace, se activa al final de la fase de los Zeds: bossEnsure).
+        Bubba avanza dentro de esa activación y arrastra a TODOS los Zeds de su espacio (sin límite de agrupamiento; combate, Barricadas… normales).
    La partida acaba solo cuando Bubba muere (ganas) o llega al Centro (pierdes, como con cualquier Zed).
    Estado: G.boss = { state: 'wait' | 'active' | 'dead', over: nº de cartas extra sacadas tras acabarse el mazo, pile: mazo de Nivel IV }. */
 'use strict';
@@ -18,6 +18,8 @@ const BOSS_ART = 'assets/jefe/bubba_arte.webp';
 const BOSS_GUARDIA_AT = 14;   /* la Guardia Nacional queda a estas cartas del final (de serie 9, +5 por las cartas extra) */
 const BOSS_CARDS = ['boss_heroe', 'boss_cargamento', 'boss_brigada', 'boss_medico', 'boss_adrenalina'];
 const bossUnit = () => allUnits(u => u.boss)[0] || null;
+/* ¿Está Bubba en esta casilla? Los efectos que eliminan Zeds de golpe (Napalm, Sirena, Florecimiento, Hinchados, Urbanistas, ¡Bajad la música!) nunca se aplican a su casilla. */
+const bossHere = id => { const b = bossUnit(); return !!(b && id && b.space === id); };
 
 extend('newGame', function (_newGame, levelIdx, lenIdx, personal, exps) {
   _newGame(levelIdx, lenIdx, personal, exps);
@@ -49,21 +51,19 @@ async function bossCheck() {
   const c = G.routes.filter(r => r !== 'T').map(r => [r, routeZeds(r).length]), m = Math.max(...c.map(x => x[1]));
   const cand = c.filter(x => x[1] === m), r = cand[rnd(cand.length)][0];
   UI.bossMusic(true);
-  await UI.bossIntro({ img: BOSS_ART, title: '¡La Banda de Bubba!', text: 'Bubba DeNardo y su banda llegan por ' + ROUTES[r].name + ' arrastrando a los Zeds que encuentran. Comparten espacio con ellos sin luchar y no se les puede dañar mientras haya Zeds en su casilla: primero hay que eliminar a los Zeds. No hay carta de Fin: solo ganas si los eliminas, y pierdes si llegan al Centro.' });
+  await UI.bossIntro({ img: BOSS_ART, title: '¡La Banda de Bubba!', text: 'Bubba DeNardo y su banda llegan por ' + ROUTES[r].name + ' arrastrando a los Zeds que encuentran: su ruta se activa siempre cada turno y se llevan a todos los de su casilla. Comparten espacio con ellos sin luchar y no se les puede dañar mientras haya Zeds en su casilla: primero hay que eliminar a los Zeds. No hay carta de Fin: solo ganas si los eliminas, y pierdes si llegan al Centro.' });
   const u = spawnSpreader('bubba');
   await placeZedInitial(r, u);
   LOG('¡Aparece Bubba DeNardo y su banda en ' + spaceLabel(u.space || r + '0') + '!', 'bad');
 }
 
-/* Tras la fase 4R: el jefe avanza y arrastra a los Zeds de su espacio con las reglas normales de movimiento. */
-async function bossMove() {
-  const u = bossUnit(); if (!u || !u.space || !isRouteSp(u.space) || G.over) return;
-  const from = u.space, group = zedsAt(from);   /* incluye al propio jefe */
-  UI.focus(from, 1.7); UI.redraw(); await UI.settle();
-  const others = group.length - 1;
-  LOG('Bubba avanza' + (others ? ', arrastrando a ' + others + ' unidad' + (others > 1 ? 'es' : '') + ' Zed' : '') + '.', 'zed');
-  const r = await moveGroup(group, from);
-  if (!r.moved && !G.over) LOG('Bubba no puede avanzar esta vez.');
+/* Al acabar la fase de los Zeds: la ruta donde está Bubba se activa siempre. Si la carta del turno no la activó, se activa ahora (sus Zeds avanzan
+   con las reglas normales). Bubba avanza dentro de esa activación (stepSpace/moveGroup en phases.js) y arrastra a TODOS los Zeds de su espacio. */
+async function bossEnsure() {
+  const u = bossUnit(); if (!u || !u.space || !isRouteSp(u.space) || G.over || G.turn.bossAct) return;
+  const r = sp(u.space).route;
+  LOG('La carta no activa la ' + ROUTES[r].name + ', pero Bubba siempre avanza: se activa igualmente.', 'bad');
+  await conCausa('Bubba', () => activateRoute(r, false));
 }
 
 /* Antes de revelar una carta: con el jefe vivo y el mazo vacío, se saca una carta de Nivel IV al azar (nunca se acaba). */

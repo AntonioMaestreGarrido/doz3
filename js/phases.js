@@ -147,6 +147,7 @@ async function moveGroup(movers, from, opts) {
   const spreaders = movers.filter(z => z.type === 'spreader'), norm = movers.filter(z => z.type !== 'spreader').sort((a, b) => strength(b) - strength(a));
   const room = zedCap(dest) - normalZedsAt(dest).length;
   let go = norm.slice(0, Math.max(0, room)).concat(spreaders);
+  if (movers.some(z => z.boss)) go = movers.slice();   /* Bubba (exp. 5) arrastra a TODOS los Zeds de su espacio, sin límite de agrupamiento */
   /* De una Cripta sale una unidad cada vez, y solo si cabe en el espacio de destino (los Propagadores no cuentan para el límite). */
   if (sp(from).kind === 'crypt') go = go.slice(0, 1);
   if (!go.length) { LOG('Los Zeds en ' + spaceLabel(from) + ' no pueden avanzar (límite de agrupamiento).'); return { moved: false }; }
@@ -164,7 +165,7 @@ async function moveGroup(movers, from, opts) {
   const leavingChaos = sp(from).chaos > 0;
   if (sp(dest).bar === 1 && G.turn.smash) { sp(dest).bar = 0; LOG('Los Zeds destruyen la Barricada de ' + spaceLabel(dest) + '.', 'bad'); }
   /* ¡Los urbanistas contraatacan!: se puede jugar al avanzar un Zed hacia un espacio de Ciudad, antes del combate. */
-  if (isCity(dest) && G.hand.includes('urbanistas') && go.length) {
+  if (isCity(dest) && G.hand.includes('urbanistas') && go.length && !go.some(z => z.boss)) {   /* no vale contra el grupo de Bubba */
     const r = await UI.choose({ title: DEST.urbanistas.name, text: (go.length > 1 ? 'Una Horda Zed' : go[0].name + ' (Fuerza ' + zF(go[0]) + ')') + ' en ' + spaceLabel(from) + ' intenta entrar en ' + spaceLabel(dest) + '. ¿Juegas la carta para eliminar una unidad Zed?', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
     if (r === 'y') {
       const t = go.length === 1 ? go[0] : G.units[await UI.pickUnit(go, 'Urbanistas: elige la unidad Zed que se elimina.')];
@@ -197,7 +198,7 @@ async function moveGroup(movers, from, opts) {
 async function stepSpace(id, cer, second) {
   if (G.over) return;
   const s = sp(id);
-  let group = zedsAt(id).filter(z => !z.moved && z.frozen !== G.turnNo && !z.boss);   /* el jefe (exp. 5) se mueve solo en su propio paso (jefe.js) */
+  let group = zedsAt(id).filter(z => !z.moved && z.frozen !== G.turnNo);   /* incluye al jefe (exp. 5): avanza con los Zeds de su espacio */
   if (!group.length) return;
   if (s.kind === 'crypt') {
     const sorted = group.slice().sort((a, b) => strength(b) - strength(a));
@@ -249,13 +250,14 @@ async function cryptLost(z, from) {
 }
 async function activateRoute(r, cer) {
   if (G.over) return;
+  { const bu = typeof bossUnit === 'function' && bossUnit(); if (bu && bu.space && sp(bu.space).route === r) G.turn.bossAct = true; }   /* la ruta de Bubba ya se activó este turno (jefe.js: bossEnsure) */
   if ((G.turn.hypno || []).includes(r)) { LOG('La ' + ROUTES[r].name + ' no se activa (Zeds hipnotizados).', 'good'); return; }
   if (G.hand.includes('hipnotizados')) { const occ = []; for (let i = 0; i <= lastOf(r); i++) if (zedsAt(r + i).length) occ.push(r + i); const v = await UI.askZeds({ title: 'Zeds hipnotizados', text: '¿Cancelas la activación de la ' + ROUTES[r].name + '? Se activarían: ' + (occ.map(id => zedGroupName(zedsAt(id), id)).join(' · ') || 'ninguno (entra un Zed nuevo en el Inicial)') + '.', spaces: occ, options: [{ label: 'Cancelar la activación', value: 'y' }, { label: 'No', value: 'n' }] }); if (v === 'y') { G.hand.splice(G.hand.indexOf('hipnotizados'), 1); G.destDiscard.push('hipnotizados'); (G.turn.hypno || (G.turn.hypno = [])).push(r); zenPlayed(); UI.updateHand(); LOG('Zeds hipnotizados: se cancelan todas las activaciones de la ' + ROUTES[r].name + ' este turno.', 'good'); return; } }
   /* Lluvia torrencial: no se permite más movimiento en la Montaña este turno (si no hay Zeds, el nuevo sigue entrando por el Inicial). */
   if (G.turn.rain && r === 'M' && routeZeds(r).length) { LOG('Lluvia torrencial: los Zeds de la ' + ROUTES[r].name + ' no se mueven este turno.', 'good'); return; }
   LOG('Se activa la ' + ROUTES[r].name + '.', 'zed'); UI.flashRoute(r); if (!UI.fast) Sfx.ambience(); await UI.announce('Se activa la ' + ROUTES[r].name, ROUTES[r].color, 700);
   const zs = routeZeds(r);
-  if (!zs.filter(z => !z.boss).length) { await placeZedInitial(r); return; }   /* el jefe (exp. 5) solo no cuenta como Zed de la ruta */
+  if (!zs.length) { await placeZedInitial(r); return; }   /* con el jefe (exp. 5) en la ruta no se coloca un Zed nuevo: Bubba avanza solo */
   zs.forEach(z => { z.moved = false; z.flamedHit = false; });
   for (const z of zs) if (z.key === 'reanimador') { if (z.hits > 0) z.hits--; else if (z.flipped) { z.flipped = false; z.hits = 2; } }
   const L = lastOf(r);
@@ -547,7 +549,7 @@ async function eventEffect(ev) {
       const k = kinds.length === 1 ? kinds[0] : await UI.choose({ title: '¡Oh, no! ¡Otra vez no!', text: 'Elige la ficha de Mejora Zed que se coloca en el Zed Normal más fuerte:', options: kinds.map(x => ({ label: ZED_UPGRADES[x], value: x })) });
       pool.splice(pool.indexOf(k), 1); t[k] = true; LOG('Ficha de Mejora Zed «' + ZED_UPGRADES[k] + '» sobre un Zed de Fuerza ' + zF(t) + '.', 'bad'); break; }
     case 'desde_lab': { const t = 'T4'; if (G.routes.includes('T')) { const sup = allUnits(x => x.type === 'super').length; await placeZedAt(t, 'Desde el laboratorio', sup ? await makeZedA() : await makeSuperA()); } break; }
-    case 'hinchados': { const dr = await drawDestiny('Zeds hinchados: ruta cuyos Zeds estallan'); if (dr) { const all = routeZeds(dr.route); if (all.length) {
+    case 'hinchados': { const dr = await drawDestiny('Zeds hinchados: ruta cuyos Zeds estallan'); if (dr) { const all = routeZeds(dr.route).filter(z => !bossHere(z.space)); if (all.length) {   /* nunca estalla un Zed de la casilla de Bubba */
       const mi = Math.max(...all.map(z => sp(z.space).i)), top = all.filter(z => sp(z.space).i === mi);
       const z = top.length === 1 ? top[0] : G.units[await UI.pickUnit(top, 'Zeds hinchados: empate, elige la unidad Zed que estalla.')]; const sid = z.space;
       if (z.type === 'super' || z.type === 'spreader') { removeUnit(z); delete G.units[z.id]; } else discardZed(z);

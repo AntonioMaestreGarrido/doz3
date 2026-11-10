@@ -79,7 +79,7 @@ async function applyResearch(c) {
       }
       if (!done.length) LOG('Distribución de folletos: no se cura a ninguna Civil.'); break; }
     case 'cecina': G.supplies = Math.min(20, G.supplies + 2); break;
-    case 'musica': { const c = allUnits(x => isZedSide(x) && isRouteSp(x.space)).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, '¡Bajad la música!: elige un espacio; sus Zeds se retiran.'); await retreatZeds(zedsAt(t), zedOrigin(zedsAt(t)[0])); } break; }
+    case 'musica': { const c = allUnits(x => isZedSide(x) && isRouteSp(x.space) && !bossHere(x.space)).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, '¡Bajad la música!: elige un espacio; sus Zeds se retiran.'); await retreatZeds(zedsAt(t), zedOrigin(zedsAt(t)[0])); } break; }
     case 'cientificos': { const cs = Object.values(G.spaces).filter(s => s.chaos).map(s => s.id); if (cs.length) { const id = cs.length === 1 ? cs[0] : await UI.pickSpace(cs, 'Científicos seguros de sí mismos: elige de dónde retiras 1 ficha de Caos.'); sp(id).chaos--; G.chaosLeft++; LOG('Se retira 1 ficha de Caos de ' + spaceLabel(id) + '.', 'good'); UI.redraw(); } break; }
     case 'pruebas': if (G.weapon && G.weapon.parts.length) G.weapon.parts.splice(rnd(G.weapon.parts.length), 1); else pushInitialResearch(1); break;
     case 'hormona': {

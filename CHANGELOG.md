@@ -2,6 +2,12 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 21:10
+
+### Cambios
+- **Exp. 5, Bubba siempre avanza:** la ruta donde está Bubba se activa cada turno aunque la carta del turno no lo haga (al final de la fase de los Zeds, con aviso en el registro). Bubba avanza **dentro** de esa activación, junto con los Zeds de su ruta, y arrastra a **todos** los Zeds de su casilla (antes solo avanzaban los que cabían por el límite de agrupamiento, a menudo dos). Se quita su movimiento aparte tras la fase 4R. Si está solo en la ruta, avanza solo y no se coloca un Zed nuevo.
+- **Exp. 5, efectos que eliminan Zeds de golpe:** Napalm (Rumor «El teléfono rojo»), Sirena para Zeds, El florecimiento, Zeds hinchados, ¡Bajad la música! y ¡Los urbanistas contraatacan! nunca se aplican a la casilla de Bubba (no se ofrece como objetivo ni como candidato). Caché v113.
+
 ## 2026-11-10 20:30
 
 ### Cambios
