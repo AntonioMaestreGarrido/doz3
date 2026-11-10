@@ -1,8 +1,7 @@
 /* Expansiones (parte 2): reglas de turno de las nuevas cartas, Rumores guardados y Base aérea. */
 'use strict';
 
-const _reachable = reachable;
-reachable = function (u, extra) {
+extend('reachable', function (_reachable, u, extra) {
   if (G.turn.cLock && u.space === 'C') return {};
   if (G.turn.negation && (zedsAt(u.space).length || adjacentIds(u.space).some(i => zedsAt(i).length))) return {};
   const r = _reachable(u, extra);
@@ -10,13 +9,12 @@ reachable = function (u, extra) {
   if (u.key === 'lee' && !u.rider) for (const k in r) if (sp(k).chaos || sp(k).route === 'T') delete r[k];
   if (G.turn.noFight) for (const k in r) if (controlled(k) || zedsAt(k).length) delete r[k];
   return r;
-};
-const _fireTargets = fireTargets;
-fireTargets = function (u) {
+});
+extend('fireTargets', function (_fireTargets, u) {
   if (G.turn.noFight) return {};
   if (G.turn.negation && (zedsAt(u.space).length || adjacentIds(u.space).some(i => zedsAt(i).length))) return {};
   return _fireTargets(u);
-};
+});
 function moveIsFree(u, dest) {
   if (G.turn.freeFromC && u.space === 'C') return true;
   if (G.turn.panic && (adjacentIds(u.space).some(i => zedsAt(i).length) || zedsAt(u.space).length)) { const cur = sp(u.space), d = sp(dest); if (dest === 'C' || (cur.route && d.route === cur.route && d.i > cur.i)) return true; }
@@ -29,8 +27,7 @@ function canMoveFree(u) {
   return Object.keys(reachable(u)).some(k => moveIsFree(u, k));
 }
 
-const _DEST_FX = DEST_FX;
-DEST_FX = async function (id, route) {
+extend('DEST_FX', async function (_DEST_FX, id, route) {
   if (id === 'hija') { G.turn.cLock = true; LOG('Las unidades del Centro no pueden mover este turno.', 'bad'); return; }
   if (id === 'discutiendo') {
     const spaces = Object.values(G.spaces).filter(s => s.id !== 'AIR' && unitsAt(s.id).filter(isFighter).length >= 2).map(s => s.id);
@@ -41,27 +38,25 @@ DEST_FX = async function (id, route) {
     us.forEach(u => u.locked = true); LOG('Dos unidades discuten y no pueden actuar este turno.', 'bad'); return;
   }
   return _DEST_FX(id, route);
-};
-const _resolveTwist = resolveTwist;
-resolveTwist = async function (dr) {
+});
+extend('resolveTwist', async function (_resolveTwist, dr) {
   if (dr && !DEST[dr.id].keep && G.hand.includes('pensar')) {
     const v = await UI.choose({ title: 'Pensar fríamente', text: 'Acaba de salir «' + DEST[dr.id].name + '». ¿Cancelas este evento?', img: destImg(dr.id), options: [{ label: 'Cancelarlo', value: 'y' }, { label: 'No', value: 'n' }] });
     if (v === 'y') { G.hand.splice(G.hand.indexOf('pensar'), 1); G.destDiscard.push('pensar', dr.id); zenPlayed(); UI.updateHand(); return; }
   }
   return _resolveTwist(dr);
-};
-const _maint2 = maintenance;
-maintenance = async function () { for (const u of Object.values(G.units)) u.locked = false; await _maint2(); };
+});
+extend('maintenance', async function (_maint2) { for (const u of Object.values(G.units)) u.locked = false; await _maint2(); });
 
 /* Base aérea secreta: al final de la fase de Acciones (antes de cerrarla). Devuelve true si se elige la Acción de Evento extra. */
 async function baseAereaEnd() {
   if (G.turn.baseDone) return false;
   for (const s of Object.values(G.spaces)) if (s.base && unitsAt(s.id).some(isFighter)) {
     G.turn.baseDone = true;
-    const opts = [{ label: '1 Curación gratis', value: 'h' }, { label: '1 Acción de Evento extra (para usar ya)', value: 'e' }]; if (G.res && !G.turn.researched) opts.splice(1, 0, { label: '1 Investigación gratis', value: 'i' });
+    const opts = [{ label: '1 Curación gratis', value: 'h' }, { label: '1 Acción de Evento extra (para usar ya)', value: 'e' }]; if (G.res && G.res.cur && G.res.deck.length && !G.turn.researched && (!G.res.cur.sup || G.supplies >= 1)) opts.splice(1, 0, { label: '1 Investigación gratis', value: 'i' });
     const v = await UI.choose({ title: 'Base aérea secreta', text: 'Elige tu beneficio:', options: opts });
     if (v === 'h') { const c = allUnits(x => isFighter(x) && x.space && curable(x)); if (c.length) { const w = await UI.pickUnit(c, '¿A quién curas?'); healUnit(G.units[w]); G.units[w].curedTurn = G.turnNo; cureInf(); } }
-    else if (v === 'i') { const c = G.res.cur, d = await UI.rollSimple('Investigar gratis (hace falta ' + c.th + '+)', 1); if (d[0] >= c.th) { G.turn.researched = true; await revealResearch(); } }
+    else if (v === 'i') { const c = G.res.cur; if (c.sup) { G.supplies--; UI.updateStats(); } /* es gratis de Acción, pero la carta sigue costando su Suministro */ const d = await UI.rollSimple('Investigar gratis (hace falta ' + c.th + '+)', 1); if (d[0] >= c.th) { G.turn.researched = true; await revealResearch(); } }
     else { addEventActions(1); return true; }
     return false;
   }

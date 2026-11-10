@@ -9,7 +9,7 @@ Object.assign(HEROES, {
   carter: { name: 'Carter «Ruedas Grandes»', type: 'hero', cls: 'Montado', full: 8, red: 4, mp: 5, img: 'carter', card: 'h_carter', lv: 3, exp: 1, nofire: 1, hf: 3, hr: 3, special: 'carter',
     txt: ['<b>El rey de la carretera:</b> solo rutas de la superficie; no dispara, arresta ni usa otros vehículos; no sube la Infección al combatir. No tiene que parar al conducir por el Caos (pero no empieza un movimiento desde él).', '<b>Transportista de Cargamento:</b> entra por un Inicial con la ficha en «Cargado». Al llegar al Centro cargado, el movimiento termina: +5 Suministros y +3 Munición, y se da la vuelta a «Vacío». Recarga en un Inicial con 1 Acción.', '<b>Barrer Zeds:</b> al cruzar un espacio con Zeds (si le quedan puntos): 1 dado, 4-6 inflige 1 Impacto a cada Zed y sigue; si falla se detiene y combate.', '<b>Reparar:</b> solo sufre Impactos su camión (6 en total). En el Centro o un Inicial retira 1 Impacto por turno (1 Suministro o 1 Acción).'] },
   lee:    { name: 'General Lee', type: 'hero', cls: 'Equino', full: 2, red: 1, mp: 6, img: 'lee', card: 'h_lee', lv: 2, exp: 1, nofire: 1, special: 'lee',
-    txt: ['<b>Ensillar:</b> puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento.', '<b>Carga de caballería:</b> cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir.', '<b>Purasangre:</b> recibe 1 Acción de Mover gratis por fase de Acciones.', '<b>Instinto equino:</b> cuando no transporta a un jinete, no puede entrar voluntariamente en un espacio con Caos ni en la ruta del Túnel. Puede llevar a un herido al Hospital («Galope al Hospital»).', '<b>Un caballo es un caballo:</b> no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.'] },
+    txt: ['<b>Ensillar:</b> puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento.', '<b>Carga de caballería:</b> cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir.', '<b>Purasangre:</b> recibe 1 Acción de Mover gratis por fase de Acciones.', '<b>Instinto equino:</b> cuando no transporta a un jinete, no puede entrar voluntariamente en un espacio con Caos ni en la ruta del Túnel. Al llegar al Centro con un jinete, este puede bajarse allí o pasar a una cama libre del Hospital.', '<b>Un caballo es un caballo:</b> no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.'] },
   jaque:  { name: 'Jaque Mates™', type: 'civh', cls: 'Civiles Heroicos', full: 1, red: 1, mp: 3, img: 'jaque', card: 'h_jaque', lv: 2, exp: 1, hf: 2, hr: 2, special: 'jaque',
     txt: ['<b>Estrategas:</b> al comienzo de cada fase de Acciones tira 1 dado: si es mayor que tus Acciones de Evento, obtienes 1 Acción de Evento más (incluso por encima de 4).', '<b>Ruse de jeu:</b> por cada Refugiados en el Campo de Refugiados su Fuerza aumenta +1 (cara completa) y +½ (cara reducida, redondeando abajo).'] },
   porter: { name: 'Antonio «Porter» Maestre', type: 'hero', cls: 'Ciudadano', full: 5, red: 3, mp: 4, img: 'porter', card: 'h_porter', lv: 1, exp: 4, res: 'f',
@@ -23,7 +23,7 @@ Object.assign(HEROES, {
   frank: { name: 'Frank «El Castigador» Castle', type: 'hero', cls: 'Militar', full: 4, red: 3, mp: 4, img: 'frank', lv: 3, exp: 4, res: 'r',
     txt: ['<b>Arsenal privado:</b> al entrar en juego obtienes 4 de Munición y 2 Suministros.', '<b>Tirador implacable:</b> 1 columna a favor al disparar. Una vez por turno puede repetir una tirada de disparo (la segunda es definitiva).', '<b>Sin piedad:</b> si gana un combate Cuerpo a Cuerpo, la Infección no sube.', '<b>Lobo solitario:</b> solo en su espacio, 1 columna a favor al defender. Agrupado con otros Héroes pierde esa columna y la de Tirador implacable.', '<b>Trampa explosiva:</b> Acción de Personaje (1 Suministro): coloca una trampa en su espacio o en uno adyacente de una ruta (también en el Túnel), sin Zeds y no Inicial. Solo una por ruta. Cuando un Zed intenta entrar en ese espacio, cada unidad Zed que entraba sufre 1 Impacto y su movimiento se cancela. La trampa se retira.', '<b>Resistente:</b> ignora Impactos con 4-6.'] },
   doc: { name: 'Dr. Emmett «Doc» Brown', type: 'hero', cls: 'Científico', full: 2, red: 1, mp: 4, img: 'doc', lv: 3, exp: 4,
-    txt: ['<b>Científico:</b> puede entrar en el Laboratorio, donde puede Investigar.', '<b>Mr. Fusion:</b> si al Buscar no encuentra nada, obtiene 1 Suministro.', '<b>Salto temporal:</b> Acción de Personaje (3 Suministros), una vez por turno, solo desde el Centro. Doc, con una unidad agrupada con él si quiere, viaja a un espacio de ruta de superficie sin Zeds que no sea Inicial. La unidad acompañante puede quedarse allí (no pueden acompañarlo Pepinillos, Horacio, el General Lee ni Carter). Doc vuelve al Centro al final del turno, tras el Mantenimiento, y puede volver solo, con la unidad que llevó o con otra que esté en su espacio.', '<b>Paradoja:</b> si Doc está en un espacio con Caos durante el Mantenimiento, restaurar el orden allí no sube la Infección.'] },
+    txt: ['<b>Científico:</b> puede entrar en el Laboratorio, donde puede Investigar. +1 a las tiradas de Investigar (máx. 6).', '<b>Mr. Fusion:</b> si al Buscar no encuentra nada, obtiene 1 Suministro.', '<b>Salto temporal:</b> Acción de Personaje (3 Suministros), una vez por turno, solo desde el Centro. Doc, con una unidad agrupada con él si quiere, viaja a un espacio de ruta de superficie sin Zeds que no sea Inicial. La unidad acompañante puede quedarse allí (no pueden acompañarlo Pepinillos, Horacio, el General Lee ni Carter). Doc vuelve al Centro al final del turno, tras el Mantenimiento, y puede volver solo, con la unidad que llevó o con otra que esté en su espacio.', '<b>Paradoja:</b> si Doc está en un espacio con Caos durante el Mantenimiento, restaurar el orden allí no sube la Infección.'] },
   samcarter: { name: 'Dra. Samantha Carter', type: 'hero', cls: 'Científica', full: 3, red: 2, mp: 4, img: 'samcarter', lv: 3, exp: 4,
     txt: ['<b>Científica:</b> puede entrar en el Laboratorio, donde puede Investigar.', '<b>Teoría del campo unificado:</b> +1 a la tirada de Investigar (máx. 6).', '<b>Contramedidas:</b> el primer intento de Investigar de cada turno, con éxito o no, reduce la Infección en 2.', '<b>Oficial de la USAF:</b> 1 columna a favor al disparar.', '<b>En el último segundo:</b> una vez por partida, cuando la Infección vaya a subir 2 o más (o a llegar a 13), cancela hasta 5 de esa subida.'] },
   macgyver: { name: 'Angus MacGyver', type: 'hero', cls: 'Ciudadano', full: 3, red: 2, mp: 4, img: 'macgyver', lv: 2, exp: 4, nofire: 1, sci: 1,
@@ -35,10 +35,12 @@ Object.assign(HEROES, {
   brigada: { name: 'Brigada de Contención Sanitaria', type: 'civh', cls: 'Civiles Heroicos', full: 2, red: 1, mp: 3, img: 'brigada', card: 'h_brigada', lv: 1, exp: 4, hf: 2, hr: 2, nofire: 1,
     txt: ['<b>Desinfección:</b> Acción de Personaje (1 Acción), sin límite por turno: la Infección baja 2.', '<b>Cordón sanitario:</b> en los combates Cuerpo a Cuerpo de su espacio, si la Infección fuese a subir 1, no sube; si fuese a subir 2 o más, sube 1 menos, y pagando 1 Suministro no sube nada.', '<b>Frágil:</b> no dispara y tiene 1 columna en contra en combates Cuerpo a Cuerpo.'] },
   caza: { name: 'Club de Caza de Farmingdale', type: 'civh', cls: 'Civiles Heroicos', full: 3, red: 2, mp: 3, img: 'caza', card: 'h_caza', lv: 2, exp: 4, hf: 2, hr: 2,
-    txt: ['<b>Puesto de caza:</b> disparan a 2 espacios sin penalización de columna.', '<b>Trofeo:</b> cuando su disparo elimina a una unidad Zed, recuperan 1 Munición.', '<b>Presa marcada:</b> Acción de Personaje (1 Acción), una vez por turno: marcan una unidad Zed a su alcance. Los disparos de cualquier unidad de jugador contra ella tienen 1 columna a favor hasta que sea eliminada o termine el turno.', '<b>A campo abierto:</b> tienen 1 columna en contra en combates Cuerpo a Cuerpo.'] }
+    txt: ['<b>Puesto de caza:</b> disparan a 2 espacios sin penalización de columna.', '<b>Trofeo:</b> cuando su disparo elimina a una unidad Zed, recuperan 1 Munición.', '<b>Presa marcada:</b> Acción de Personaje (1 Acción), una vez por turno: marcan una unidad Zed a su alcance. Los disparos de cualquier unidad de jugador contra ella tienen 1 columna a favor hasta que sea eliminada o termine el turno.', '<b>A campo abierto:</b> tienen 1 columna en contra en combates Cuerpo a Cuerpo.'] },
+  snake:     { name: 'Solid Snake',        type: 'hero', cls: 'Militar',    full: 3, red: 2, mp: 5, img: 'snake', card: 'h_snake', lv: 1, exp: 4,
+    txt: ['<b>Infiltración:</b> puede atravesar espacios con Zeds sin combatir ni tirar, y sin coste extra de Movimiento. Al coincidir con Zeds o Saqueadores (porque acaba su movimiento en el espacio o porque entran ellos en el suyo) tira 1 dado: 1-2 combate normal; 3-6 pasa desapercibido y convive con ellos sin combatir.', '<b>Disparo silenciado:</b> solo dispara a los Zeds de su propio espacio con los que coexiste sin combatir (alcance 0), con 2 columnas a favor. Si el disparo hace 0 Impactos, lo detectan: pierde el sigilo y hay combate Cuerpo a Cuerpo. Si elimina al objetivo, recibe 1 Acción gratis de Mover.', '<b>Despedida silenciosa:</b> cuando un grupo de Zeds sale del espacio que comparte con él, puede dispararles sin gastar Acción (1 Munición) con las reglas del Disparo silenciado, sin riesgo de ser detectado. Si elimina al objetivo, recupera la Munición y tiene 1 Acción gratis de Mover en su próxima fase de Acciones. Los supervivientes avanzan.'] },
 });
 CIVH_POOL.push('jaque', 'sar', 'caza', 'brigada');
-const EXP_HEROES = { 1: ['carter', 'lee', 'may'], 2: ['betty'], 4: ['porter', 'alia', 'bender', 'ash', 'frank', 'doc', 'samcarter', 'macgyver', 'heli'] };
+const EXP_HEROES = { 1: ['carter', 'lee', 'may'], 2: ['betty'], 4: ['porter', 'alia', 'bender', 'ash', 'frank', 'doc', 'samcarter', 'macgyver', 'heli', 'snake'] };
 /* Cartas nuevas de Evento y Destino */
 function evx(id, name, act, r4, inf, al, z, acc, txt, o) { EV[id] = Object.assign({ id, name, lvl: 'b', act, r4, inf, al, z, acc, txt, sp: 0, exp: 1 }, o || {}); }
 evx('fortuna', 'La fortuna favorece a los que se preparan', 1, 1, 'B', 'd', ['A', 'ANY'], 1, ['Al inicio de esta fase: cada Héroe y Civiles Heroicos en un espacio con nombre puede realizar gratis una Acción de Buscar.'], { freeSearch: 1, exp: 2 });
@@ -79,30 +81,37 @@ const RUMORS = {
 const expOn = n => G.exp && G.exp.includes(n);
 const trainsAt = id => G.spaces[id] ? unitsAt(id).filter(u => u.type === 'train') : [];
 /* ---------- preparación ---------- */
-const _heroPoolFor = heroPoolFor;
-heroPoolFor = function (level) {
+extend('heroPoolFor', function (_heroPoolFor, level) {
   const base = _heroPoolFor(level).filter(k => !HEROES[k].exp);
   const add = []; for (const n of (G && G.expSel || [])) for (const k of (EXP_HEROES[n] || [])) if (HEROES[k].lv <= MAX_HERO_LV[level]) add.push(k);
   return base.concat(add);
-};
-const _newGame = newGame;
-newGame = function (levelIdx, lenIdx, personal, exps) {
+});
+extend('newGame', function (_newGame, levelIdx, lenIdx, personal, exps) {
   G.expSel = exps || []; G.exp = exps || [];
   _newGame(levelIdx, lenIdx, personal);
   G.rumorPool = []; G.rumorsHeld = [];
   // mazos con las cartas nuevas
   if (expOn(1) || expOn(2)) {
-    const extraE = Object.keys(EV).filter(k => EV[k].exp && ((EV[k].exp === 1 && expOn(1)) || (EV[k].exp === 2 && expOn(2))));
+    /* Las cartas de la expansión entran en el pool: cada carta del mazo base se sustituye al azar por otra del mismo acto y tipo (normal o especial)
+       del pool ampliado. La duración no cambia: el número de cartas por acto y tipo es el mismo que en el mazo base. */
     if (G.lv.cols.includes('b')) {
-      /* La Guardia Nacional se saca aquí y se vuelve a insertar abajo en su posición fija (si no, quedaría barajada con el Acto III). */
-      const deck = G.eventDeck.filter(id => !EV[id].fin && id !== 'guardia'); const fin = G.eventDeck.filter(id => EV[id].fin);
-      const pool = shuffle(extraE.filter(k => !EV[k].fin && !deck.includes(k)));
-      for (const k of pool.slice(0, Math.max(1, Math.floor(pool.length / 2)))) deck.push(k);
-      const byAct = a => deck.filter(id => EV[id].act === a);
-      let out = []; for (let a = 1; a <= 4; a++) out = out.concat(shuffle(byAct(a)));
+      const cur = G.eventDeck.filter(id => !EV[id].fin && id !== 'guardia'); const fin = G.eventDeck.filter(id => EV[id].fin);
+      const pool = Object.values(EV).filter(e => G.lv.cols.includes(e.lvl) && (!e.exp || (e.exp === 1 && expOn(1)) || (e.exp === 2 && expOn(2))) && !e.fin && !e.guardia);
+      let out = [];
+      for (let a = 1; a <= 4; a++) {
+        const grupo = [];
+        for (const sp of [true, false]) {
+          const cnt = cur.filter(id => EV[id].act === a && !!EV[id].sp === sp);
+          const cand = shuffle(pool.filter(e => e.act === a && !!e.sp === sp).map(e => e.id));
+          const pick = cand.slice(0, cnt.length);
+          for (const id of cnt) if (pick.length < cnt.length && !pick.includes(id)) pick.push(id);
+          grupo.push(...pick);
+        }
+        out = out.concat(shuffle(grupo));
+      }
       const finPool = fin.concat(expOn(1) ? ['queda_alguno'] : []);
       out.push(finPool[rnd(finPool.length)]);
-      // mantener la carta de Guardia Nacional si existía
+      /* La Guardia Nacional mantiene su posición fija (si no, quedaría barajada con el Acto III). */
       if (G.lv.n >= 2) out.splice(out.length - 9, 0, 'guardia');
       G.eventDeck = out.filter((v, i, a) => a.indexOf(v) === i); G.totalEvents = G.eventDeck.length;
     }
@@ -116,29 +125,25 @@ newGame = function (levelIdx, lenIdx, personal, exps) {
     for (const [k, rt] of [['mercancias', ['B', 'A']], ['local', ['F', 'M']]]) { const u = newUnit({ side: 'pl', type: 'train', name: k === 'mercancias' ? 'Tren de Mercancías' : 'Tren Local', routes: rt, tkey: k, mp: 99, full: 0, red: 0, state: 'leaving' }); putUnit(u, 'C'); }
   }
   if (expOn(3)) G.turn.railPerks = {};
-};
+});
 /* ---------- Fuerza y agrupamiento ---------- */
-const _strength = strength;
-strength = function (u) {
+extend('strength', function (_strength, u) {
   if (u.key === 'jaque') { const n = allUnits(x => x.space === 'CAMP' && (x.type === 'refugee')).length; return u.flipped ? 1 + Math.floor(n / 2) : 1 + n; }
   /* SAR (exp. 4), «Cada vida cuenta»: +1 de Fuerza por cada Refugiados en el Campamento, con cualquiera de las dos caras. */
   if (u.key === 'sar') return _strength(u) + allUnits(x => x.space === 'CAMP' && x.type === 'refugee').length;
   return _strength(u);
-};
-const _putUnit = putUnit;
-putUnit = function (u, id, why) {
+});
+extend('putUnit', function (_putUnit, u, id, why) {
   const from = u.space; _putUnit(u, id, why);
   if (u.key === 'lee' && u.rider && G.units[u.rider] && id && id !== 'CEM') { const r = G.units[u.rider]; if (r.space !== id) _putUnit(r, id); }
   if (u.mount && G.units[u.mount] && id !== G.units[u.mount].space && !u._sync) { /* el jinete se mueve solo con el caballo */ const l = G.units[u.mount]; l.rider = null; u.mount = null; }
-};
-const _terrainOf = terrainOf;
-terrainOf = function (id) { let t = _terrainOf(id); if (G.turn.noTerrain) return t; return t + trainsAt(id).length; };
-const _meleeInfection = meleeInfection;
-meleeInfection = function (zs, h) {
+});
+extend('terrainOf', function (_terrainOf, id) { let t = _terrainOf(id); if (G.turn.noTerrain) return t; return t + trainsAt(id).length; });
+extend('meleeInfection', function (_meleeInfection, zs, h) {
   if (h && (h.key === 'carter' || h.key === 'lee' || h.key === 'horacio')) return 0;
   if (h && h.type === 'hero' && lee_with(h)) return 0;
   return _meleeInfection(zs, h);
-};
+});
 function lee_with(h) { const l = hero('lee'); return l && l.space && l.space === h.space && l !== h; }
 /* ---------- combate: ajustes de las expansiones ---------- */
 function meleeStrengthBonus(f, o) {
@@ -150,16 +155,14 @@ function meleeStrengthBonus(f, o) {
 /* Betty: columna fija */
 function bettyCol(f) { return f.flipped ? 5 : 6; }
 /* ---------- guardado de Munición (May) ---------- */
-const _payFire = payFire;
-payFire = async function (u) {
+extend('payFire', async function (_payFire, u) {
   const may = alive('may');
   if (u.key === 'may' && !G.firstFreeUsed.may) { G.firstFreeUsed.may = true; return; }
   const before = G.ammo; _payFire(u);
   if (may && may.space && isCity(may.space) && G.ammo < before && !G.turn.mercs) { const r = await rollShown('May ahorra Munición', v => v >= 5 ? '<b>' + v + '</b>: no gastas la Munición' : '<b>' + v + '</b>: se gasta la Munición (necesita 5-6)'); if (r >= 5) { G.ammo = before; LOG('May ahorra la Munición (' + r + ').', 'good'); UI.updateStats(); } }
-};
+});
 /* ---------- Rumores: llegada de Refugiados ---------- */
-const _refugeeArrives = refugeeArrives;
-refugeeArrives = async function (u) {
+extend('refugeeArrives', async function (_refugeeArrives, u) {
   await _refugeeArrives(u);
   if (!expOn(3) || !G.rumorPool.length) return;
   const dr = await drawDestiny(); if (!dr) return;
@@ -168,10 +171,14 @@ refugeeArrives = async function (u) {
   if (!zs.length) { LOG('Rumor perdido: no hay dónde colocarlo.'); await resolveTwist(dr); return; }
   const by = {}; for (const z of zs) by[z.space] = (by[z.space] || 0) + strength(z);
   const best = Object.keys(by).sort((a, b) => by[b] - by[a] || sp(b).i - sp(a).i)[0];
-  const k = G.rumorPool.shift(); sp(best).rumor = k;
-  LOG('Un Rumor se coloca boca abajo en ' + spaceLabel(best) + '.', 'dest'); UI.redraw();
+  /* Igual que un Zed que aparece: se enfoca el espacio, se avisa dónde queda y se marca con un pulso. */
+  const k = G.rumorPool.shift();
+  UI.focus(best, 1.7); UI.redraw(); await UI.settle();
+  await UI.waitAck('Rumor: se coloca boca abajo', 'El Rumor se coloca boca abajo en <b>' + spaceLabel(best) + '</b>, el espacio de la ruta ' + ROUTES[dr.route].short + ' con más Zeds.');
+  sp(best).rumor = k; LOG('Un Rumor se coloca boca abajo en ' + spaceLabel(best) + '.', 'dest');
+  UI.pulseSpace(best, '#3ad6ff'); UI.toast('Rumor en ' + spaceLabel(best), '#3ad6ff', 1400); UI.redraw();
   await resolveTwist(dr);
-};
+});
 async function revealRumor(u, free) {
   const s = sp(u.space), k = s.rumor; if (!k) return; const R = RUMORS[k];
   s.rumor = null; if (!free) spendActions(u, 1);
@@ -192,18 +199,17 @@ async function useRumor(k) {
     case 'plan': G.ammo = Math.min(20, G.ammo + 2); G.supplies = Math.min(20, G.supplies + 1); G.turn.combineFire = true; LOG('Plan de guerra negro: este turno las unidades agrupadas combinan su Fuerza al disparar.', 'good'); rm(); break;
     case 'tesis': { for (let i = 0; i < 3 && G.destDiscard.length; i++) { const opts = G.destDiscard.map((c, j) => ({ label: DEST[c].name, value: j, img: destImg(c), keep: DEST[c] && DEST[c].keep })).filter(o => o.keep); if (!opts.length) break; const v = await UI.chooseCards({ title: 'Tesis', text: 'Recupera una carta del descarte de Destino (' + (i + 1) + '/3):', options: opts, extra: [{ label: 'Terminar', value: -1 }] }); if (v < 0) break; const c = G.destDiscard.splice(v, 1)[0]; G.hand.push(c); LOG('Tesis: recuperas «' + DEST[c].name + '» y pasa a tu mano.', 'good'); } UI.updateHand(); rm(); break; }
     case 'muerte': { for (let i = 0; i < 2; i++) { const cs = G.cemetery.filter(isFighter); if (!cs.length) break; const v = await UI.chooseCards({ title: 'Rumores de nuestra muerte', text: 'Elige una unidad:', options: cs.map(u => unitOpt(u)) }); const u = G.units[v]; G.cemetery = G.cemetery.filter(x => x.id !== u.id); putUnit(u, 'C'); u.flipped = true; u.hits = 0; u.ecg = false; } rm(); break; }
-    case 'ayuda': { const pool = heroPoolFor(G.lv.n).concat(CIVH_POOL.filter(x => civhAvail(x) && HEROES[x].lv <= MAX_CIVH_LV[G.lv.n])).filter((x, i, a) => a.indexOf(x) === i && !hero(x) && !G.cemetery.some(c => c.key === x)); const key = !pool.length ? null : pool.length === 1 ? pool[0] : await UI.chooseCards({ title: '¡Llegó la ayuda!', text: 'Elige la unidad que llega.', options: pool.map(heroOpt) }); if (key) { const w = await UI.pickSpace(['C'].concat(G.routes.filter(r => r !== 'T').map(r => r + '0')), '¡Llegó la ayuda!: elige el espacio.'); await spawnHero(key, w); rm(); } break; }
+    case 'ayuda': { const pool = heroPoolFor(G.lv.n).concat(CIVH_POOL.filter(x => civhAvail(x) && HEROES[x].lv <= MAX_CIVH_LV[G.lv.n])).filter((x, i, a) => a.indexOf(x) === i && !hero(x) && !G.cemetery.some(c => c.key === x)); const key = !pool.length ? null : pool.length === 1 ? pool[0] : await UI.chooseCards({ title: '¡Llegó la ayuda!', text: 'Elige la unidad que llega.', options: pool.map(heroOpt) }); if (key) { /* Primero se revela la unidad que llega (spawnHero lo muestra) y después se elige el espacio. */ await spawnHero(key, null, ['C'].concat(G.routes.filter(r => r !== 'T').map(r => r + '0'))); rm(); } break; }
     case 'telefono': { const c = Object.values(G.spaces).filter(s => s.route && s.route !== 'T' && s.i > 0); const a = await UI.pickSpace(c.map(s => s.id), 'Napalm: primer espacio.', true); if (a == null) break; const adj = adjacentIds(a).filter(i => isRouteSp(i) && !isInit(i) && sp(i).route === sp(a).route); const b = adj.length ? await UI.pickSpace(adj, 'Napalm: espacio adyacente (o el mismo).') : a; for (const id of [a, b].filter((v, i, x) => x.indexOf(v) === i)) { for (const u of unitsAt(id).slice()) { if (isZedSide(u)) { if (u.type === 'super') { removeUnit(u); delete G.units[u.id]; } else if (u.type === 'spreader') { removeUnit(u); delete G.units[u.id]; } else discardZed(u); } else if (u.type === 'train' || u.type === 'aldeano') { removeUnit(u); delete G.units[u.id]; } else if (u.side === 'pl' || u.side === 'raid') { LOG(u.name + ' es calcinada: se elimina (con su tirada de Salvación).', 'bad'); await unitDown(u); } } const sx = sp(id); sx.bar = 0; sx.mine = 0; sx.rumor = null; await placeChaos(id, 1); } G.turn.block.push(sp(a).i < sp(b).i ? a : b); rm(); break; }
     case 'diario': { const sup = allUnits(x => x.type === 'super'); if (sup.length) { const v = await UI.pickUnit(sup, 'Elige el Súper Zed que se retira.', true); if (v == null) break; const z = G.units[v]; G.supers.push(z.key); removeUnit(z); delete G.units[z.id]; } if (G.res) await revealResearch(); rm(); break; }
   }
   UI.updateStats(); UI.redraw();
 }
 /* ---------- Efectos de Rumores en el mapa ---------- */
-const _zedsOccupy = zedsOccupy;
-zedsOccupy = async function (zs, id) {
+extend('zedsOccupy', async function (_zedsOccupy, zs, id) {
   await _zedsOccupy(zs, id);
   if (sp(id).cem) for (const z of zs.filter(x => x.space === id)) await applyZedHits([z], 2);
-};
+});
 /* ---------- Trenes ---------- */
 const TRAIN_STOPS = { F3: ['inf', 'Universidad: −4 Infección'], B4: ['sup', 'Granja: +3 Suministros'], M3: ['ammo', 'Mina: +2 Munición'], A4: ['evt', 'Central nuclear: +2 Acciones de Evento'] };
 async function trainDestinations(t) {
@@ -224,20 +230,23 @@ async function moveTrain(t, dest) {
   if (dest === 'C') { for (const p of allUnits(x => x.ride === t.id)) p.ride = null; t.state = 'leaving'; }
   else if (t.state === 'leaving' && TRAIN_STOPS[dest]) {
     const [k, txt] = TRAIN_STOPS[dest]; LOG('Parada especial: ' + txt, 'good');
+    /* El beneficio se muestra en una ventana antes de aplicarse. */
+    await UI.waitAck('Parada especial: ' + t.name, '<b>' + txt + '</b>.');
     if (k === 'inf') infDown(4); else if (k === 'sup') G.supplies = Math.min(20, G.supplies + 3); else if (k === 'ammo') G.ammo = Math.min(20, G.ammo + 2); else if (k === 'evt') addEventActions(2);
   }
   for (const p of pass) { if (p.type === 'refugee' && dest === 'C') await refugeeArrives(p); p.ride = null; }
   if (zedsAt(dest).length) { const pl = plAt(dest); if (pl.length) await melee({ zeds: zedsAt(dest), hum: pl, space: dest, attacker: 'h', from: t.space }); }
   UI.redraw(); UI.updateStats();
 }
+/* tmove devuelve null si no llega a moverse (sin destino o cancelado); si se mueve, si lleva Refugiados. */
 async function doTrainAction(t, id, opts) {
   opts = opts || {}; let withRefugees = false;
   if (id === 'tmove') {
-    const dests = await trainDestinations(t); if (!dests.length) { LOG('El tren no puede ir a ningún sitio.'); return; }
+    const dests = await trainDestinations(t); if (!dests.length) { LOG('El tren no puede ir a ningún sitio.'); return null; }
     const cands = unitsAt(t.space).filter(x => (isFighter(x) && !x.mount && x.key !== 'lee' && x.key !== 'heli' || x.type === 'refugee') && x.type !== 'train' && x.type !== 'guard');  /* la Guardia Nacional no sube a los trenes */
     let carried = [];
-    if (cands.length) { for (let k = 0; k < 2; k++) { const c = cands.filter(x => !carried.includes(x)); if (!c.length) break; const v = await UI.choose({ title: 'Pasajeros', text: 'Sube pasajeros al ' + t.name + ' (máx. 2 unidades o 1 de Refugiados; subir Refugiados cuesta 1 Acción más).', options: c.filter(x => x.type !== 'refugee' || canPay(null, 2)).map(x => ({ label: x.name, value: x.id })).concat([{ label: 'Salir ya', value: '' }]) }); if (!v) break; const x = G.units[v]; if (x.type === 'refugee') { if (carried.length) break; carried.push(x); break; } if (carried.some(y => y.type === 'refugee')) break; carried.push(x); } }
-    const d = await UI.pickSpace(dests, 'Elige el destino del tren.', true); if (d == null) return;
+    if (cands.length) { for (let k = 0; k < 2; k++) { const c = cands.filter(x => !carried.includes(x)); if (!c.length) break; const v = await UI.choose({ title: 'Pasajeros', text: 'Sube pasajeros al ' + t.name + ' (máx. 2 unidades o 1 de Refugiados; subir Refugiados cuesta 1 Acción más).', options: c.filter(x => x.type !== 'refugee' || canPay(null, 2)).map(x => ({ label: x.name, value: x.id, focus: x.space })).concat([{ label: 'Salir ya', value: '' }]) }); if (!v) break; const x = G.units[v]; if (x.type === 'refugee') { if (carried.length) break; carried.push(x); break; } if (carried.some(y => y.type === 'refugee')) break; carried.push(x); } }
+    const d = await UI.pickSpace(dests, 'Elige el destino del tren.', true); if (d == null) return null;
     carried.forEach(x => x.ride = t.id);
     withRefugees = carried.some(x => x.type === 'refugee');
     if (!opts.free) { spendActions(null, 1, 'move'); if (withRefugees) spendActions(null, 1); }
@@ -273,10 +282,19 @@ async function carterMove(u, dest, info) {
 }
 /* ---------- Lee ---------- */
 async function leeMount(lee, h) { lee.rider = h.id; h.mount = lee.id; LOG(h.name + ' monta al General Lee.', 'good'); }
+async function leeArrivesCentro(lee) {
+  const r = G.units[lee.rider]; if (!r) return;
+  const opts = [{ label: 'Bajarse en el Centro', value: 'c' }].concat(freeBed() ? [{ label: 'Pasar a una cama del Hospital', value: 'h' }] : []);
+  const v = opts.length > 1 ? await UI.choose({ title: 'General Lee', text: r.name + ' llega al Centro. ¿Dónde se baja?', options: opts }) : 'c';
+  leeDismount(lee);
+  const bed = v === 'h' ? freeBed() : null;
+  if (bed) { putUnit(r, bed); r.ecg = false; LOG(r.name + ' pasa a una cama del Hospital.', 'good'); }
+  else LOG(r.name + ' se baja en el Centro.', 'good');
+  UI.redraw();
+}
 function leeDismount(lee) { const r = lee.rider && G.units[lee.rider]; if (r) { r.mount = null; } lee.rider = null; }
 /* ---------- Acciones extra en la ficha de unidad ---------- */
-const _unitActions = unitActions;
-unitActions = function (u) {
+extend('unitActions', function (_unitActions, u) {
   let A = _unitActions(u);
   if (!u || u.side !== 'pl' || G.phase !== 'actions' || G.busy) return A;
   const act = canAct(u), pay = n => canPay(u, n);
@@ -289,16 +307,14 @@ unitActions = function (u) {
     A.push({ id: 'lmount', label: 'Montar a un Héroe', ok: act && !u.rider && near.length > 0 });
     A.push({ id: 'ldis', label: 'Desmontar al jinete', ok: act && !!u.rider });
     A.push({ id: 'lpura', label: 'Purasangre (1 Mover gratis)', ok: act && !G.charUsed.pura });
-    if (u.rider) A.push({ id: 'lhosp', label: 'Galope al Hospital con el jinete', ok: G.lv.infection && act && canPay(u, 1, 'move') && !(G.turn.cLock && u.space === 'C') });
   }
   if (u.mount) { A = A.filter(a => a.id !== 'move'); }
   if (sp(u.space) && sp(u.space).rumor && ['hero', 'civh', 'marine', 'petra'].includes(u.type) && act) A.push({ id: 'rumor', label: 'Revelar Rumor (1 acc.)', ok: !sp(u.space).chaos && pay(1) });
   for (const k of (u.chips || [])) { if (k === 'sirena') A.push({ id: 'sirena', label: 'Sirena para Zeds (1 acc.)', ok: pay(1) && (G.sirenaUses || 0) < 2 && adjacentIds(u.space).some(i => zedsAt(i).length && !isInit(i)) }); }
   if ((u.chips || []).length && unitsAt(u.space).some(x => x !== u && isFighter(x))) A.push({ id: 'chipgive', label: 'Pasar ficha de Rumor (gratis)', ok: true });
   return A;
-};
-const _runAction = runAction;
-runAction = async function (u, id) {
+});
+extend('runAction', async function (_runAction, u, id) {
   switch (id) {
     case 'cmove': { const info = carterReach(u); const ids = Object.keys(info); if (!ids.length) { LOG('Carter no puede ir a ningún sitio.'); return; } const d = await UI.pickSpace(ids, 'Carter: elige el destino.', true); if (d == null) return; spendActions(u, 1, 'move'); await carterMove(u, d, info[d]); return; }
     case 'creload': spendActions(u, 1); u.loaded = true; LOG('Carter recoge un nuevo cargamento.', 'good'); return;
@@ -306,22 +322,20 @@ runAction = async function (u, id) {
     case 'lmount': { const near = unitsAt(u.space).filter(x => x.type === 'hero' && x.key !== 'lee' && !x.mount && !['carter', 'pepinillos', 'heli'].includes(x.key)); const v = near.length === 1 ? near[0].id : await UI.pickUnit(near, 'Elige al jinete.', true); if (v == null) return; await leeMount(u, G.units[v]); return; }
     case 'ldis': leeDismount(u); return;
     case 'lpura': G.charUsed.pura = true; u.freeM = (u.freeM || 0) + 1; LOG('Purasangre: el General Lee tiene 1 Acción de Mover gratis.', 'good'); return;
-    case 'lhosp': { const r = G.units[u.rider]; const reach = reachable(u); const ok = (u.space === 'C') || reach['C'] !== undefined; if (!ok) { LOG('Lee no llega al Centro con sus puntos de Movimiento.'); return; } const bed = freeBed(); if (!bed) { LOG('No hay Camas libres.'); return; } spendActions(u, 1, 'move'); leeDismount(u); putUnit(u, 'C'); putUnit(r, bed); r.ecg = false; LOG(r.name + ' es llevado al Hospital a galope.', 'good'); return; }
     case 'rumor': await revealRumor(u, false); return;
     case 'chipgive': { const k = u.chips.length === 1 ? u.chips[0] : await UI.choose({ title: 'Pasar ficha', text: '¿Qué ficha pasas?', options: u.chips.map(c => ({ label: RUMORS[c].name, value: c })), cancel: true }); if (k == null) return; const mates = unitsAt(u.space).filter(x => x !== u && isFighter(x)); const t = mates.length === 1 ? mates[0] : G.units[await UI.pickUnit(mates, '¿A quién se la pasas?', true)]; if (!t || !t.id) return; u.chips.splice(u.chips.indexOf(k), 1); t.chips = (t.chips || []).concat(k); LOG(u.name + ' pasa «' + RUMORS[k].name + '» a ' + t.name + '.', 'good'); return; }
     case 'sirena': { const c = adjacentIds(u.space).filter(i => zedsAt(i).length && !isInit(i)); const t = await UI.pickSpace(c, 'Sirena: elige el espacio.', true); if (t == null) return; const zs = zedsAt(t); const v = zs.length === 1 ? zs[0].id : await UI.pickUnit(zs, 'Elige el Zed.', true); if (v == null) return; spendActions(u, 1); G.sirenaUses = (G.sirenaUses || 0) + 1; const z = G.units[v]; const a = d6(), b = d6(); LOG('Sirena: ' + (a + b), 'good'); if (a + b >= strength(z)) { if (a === b) { if (z.type === 'zed') discardZed(z); else { removeUnit(z); delete G.units[z.id]; } LOG('El Zed estalla en combustión espontánea.', 'good'); } else await retreatZeds([z], zedOrigin(z)); } return; }
     case 'tmove': case 'tflip': await doTrainAction(u, id); return;
   }
   return _runAction(u, id);
-};
+});
 /* Mantenimiento de las expansiones */
-const _maintenance = maintenance;
-maintenance = async function () {
+extend('maintenance', async function (_maintenance) {
   await _maintenance();
   for (const s of Object.values(G.spaces)) if (s.tall && unitsAt(s.id).some(x => isFighter(x) && x.type !== 'refugee')) { const v = await UI.choose({ title: 'Tall-Mart', text: 'Elige tu recompensa:', options: [{ label: '2 Suministros (tienes ' + G.supplies + ')', value: 's' }, { label: '1 Munición (tienes ' + G.ammo + ')', value: 'a' }] }); if (v === 's') G.supplies = Math.min(20, G.supplies + 2); else G.ammo = Math.min(20, G.ammo + 1); }
   for (const u of Object.values(G.units)) { delete u._chipDie; u.freeChip = false; }
   UI.updateStats();
-};
+});
 /* ---------- Presión Zed (cooperativo): iconos de cada carta de Evento, transcritos de las imágenes ----------
    's'/'e' = «al inicio» / «al final» de la fase de los Zeds · M = Z (movimiento) · P = Ƶ (colocación, el icono Z enmarcado). Orden = orden en la carta.
    Las cartas que no aparecen no tienen iconos de Presión. */

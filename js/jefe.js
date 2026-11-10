@@ -19,9 +19,8 @@ const BOSS_GUARDIA_AT = 14;   /* la Guardia Nacional queda a estas cartas del fi
 const BOSS_CARDS = ['boss_heroe', 'boss_cargamento', 'boss_brigada', 'boss_medico', 'boss_adrenalina'];
 const bossUnit = () => allUnits(u => u.boss)[0] || null;
 
-const _newGameBoss = newGame;
-newGame = function (levelIdx, lenIdx, personal, exps) {
-  _newGameBoss(levelIdx, lenIdx, personal, exps);
+extend('newGame', function (_newGame, levelIdx, lenIdx, personal, exps) {
+  _newGame(levelIdx, lenIdx, personal, exps);
   if (!expOn(5)) return;
   G.destDeck = G.destDeck.filter(k => k !== 'bubba');
   G.destDiscard = (G.destDiscard || []).filter(k => k !== 'bubba');
@@ -32,7 +31,7 @@ newGame = function (levelIdx, lenIdx, personal, exps) {
   let out = []; for (let a = 1; a <= 4; a++) out = out.concat(shuffle(all.filter(id => EV[id].act === a)));
   if (hadGuardia && G.lv.n >= 2) out.splice(Math.max(0, out.length - BOSS_GUARDIA_AT), 0, 'guardia');
   G.eventDeck = out; G.totalEvents = out.length;
-};
+});
 
 /* Si el jefe desapareció sin pasar por zedDies (p. ej. «Los Zeds hinchados estallan»), cuenta como derrotado. */
 async function bossSync() {

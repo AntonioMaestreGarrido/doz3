@@ -51,12 +51,20 @@ async function revealResearch() {
   if (!G.res) return;
   if (!G.res.deck.length) { LOG('No quedan cartas de Investigación.'); return; }
   if (G.res.cur) G.res.disc.push(G.res.cur.id);
-  const id = G.res.deck.shift(); G.res.cur = RES[id];
+  const id = G.res.deck.shift(); G.res.cur = RES[id]; noUndo();
   EVT('carta_inv', null, { id, nombre: RES[id].name, umbral: RES[id].th, quedan: G.res.deck.length });
-  LOG('Nueva carta de Investigación: «' + RES[id].name + '».', 'dest');
-  await UI.waitAck('Investigación: ' + RES[id].name, RES[id].txt + '<br><i>Siguiente investigación: tirada de ' + RES[id].th + (RES[id].th < 6 ? '+' : '') + (RES[id].sup ? ' y 1 Suministro' : '') + '.</i>', resImg(id), 'r:' + id);
+  LOG('Nueva carta de Investigación: «' + RES[id].name + '»' + (G.res.deck.length ? ' (quedan ' + G.res.deck.length + ' en el mazo).' : ' (era la última del mazo).'), 'dest');
+  await UI.waitAck('Investigación: ' + RES[id].name, RES[id].txt + '<br><i>' + resNextNote(id) + '</i>', resImg(id), 'r:' + id);
   await applyResearch(RES[id]);
-  UI.updateStats();
+  UI.updateStats(); UI.redraw();
+}
+/* Nota bajo la carta recién revelada: qué hace falta para la siguiente y cuántas quedan en el mazo. */
+function resNextNote(id) {
+  const c = RES[id], n = G.res.deck.length;
+  if (id === 'antidoto' && !G.finalPlaced) return 'El Componente Final va al Laboratorio y esta carta vuelve al mazo de Investigación' + (n ? '' : ' (como última carta)') + ': cuando la reveles otra vez, descubrirás el Antídoto.';
+  if (id === 'antidoto') return '¡Antídoto descubierto! La Infección baja 1 al final de cada fase de Mantenimiento.' + (n ? (n > 1 ? ' Quedan ' + n + ' cartas en el mazo.' : ' Queda 1 carta en el mazo: la próxima es la última.') : ' Era la última carta: la Investigación ha terminado.');
+  if (!n) return 'Era la última carta del mazo de Investigación: ya no se puede investigar más.';
+  return 'Siguiente investigación: tirada de ' + c.th + (c.th < 6 ? '+' : '') + (c.sup ? ' y 1 Suministro' : '') + '. ' + (n === 1 ? 'Queda 1 carta en el mazo: la próxima es la última.' : 'Quedan ' + n + ' cartas en el mazo.');
 }
 async function applyResearch(c) {
   switch (c.id) {
@@ -81,8 +89,15 @@ async function applyResearch(c) {
       const nz = await makeZedA(); if (nz) { putUnit(nz, w); nz.hits = Math.min(hits, (nz.hf || 2) - 1); LOG('Hormona anticrecimiento: el Súper Zed se sustituye por un Zed de Fuerza ' + nz.full + '.', 'good'); } UI.redraw(); break; }
     case 'heroe_c': { const ks = Object.keys(HEROES).filter(x => (HEROES[x].sci || /Cient/.test(HEROES[x].cls)) && !hero(x) && !G.cemetery.some(c => c.key === x) && heroAllowed(x)); if (!ks.length) { LOG('No hay ningún Científico disponible en este nivel.'); break; } const k = ks.length === 1 ? ks[0] : await UI.choose({ title: 'Llega un Héroe Científico', text: 'Elige el Héroe Científico que llega al Centro de la Ciudad:', options: ks.map(x => ({ label: HEROES[x].name, value: x })) }); await spawnHero(k, 'C'); break; }
     case 'antidoto': {
-      if (!G.finalPlaced) { G.finalPlaced = true; LOG('Componente Final colocado en el Laboratorio.', 'good'); G.res.deck.splice(rnd(G.res.deck.length + 1), 0, 'antidoto'); }
-      else { G.antidote = true; LOG('¡Habéis descubierto el Antídoto! La Infección baja 1 cada turno.', 'good'); }
+      /* Primera vez: Componente Final al Laboratorio y la carta se baraja en el mazo (si el mazo está vacío, queda como última carta).
+         Al salir de la pila de descarte, la carta en curso vuelve a ser la anterior (con su tirada y su efecto «mientras…»). */
+      if (!G.finalPlaced) {
+        G.finalPlaced = true; G.res.deck.splice(rnd(G.res.deck.length + 1), 0, 'antidoto');
+        if (G.res.disc.length) G.res.cur = RES[G.res.disc.pop()];
+        LOG('Componente Final colocado en el Laboratorio. «Avances en el Antídoto» vuelve al mazo de Investigación; la carta en curso vuelve a ser «' + G.res.cur.name + '».', 'good');
+        UI.toast('Componente Final en el Laboratorio', '#7bd45a', 2200);
+      }
+      else { G.antidote = true; LOG('¡Habéis descubierto el Antídoto! La Infección baja 1 al final de cada Mantenimiento.', 'good'); UI.toast('¡ANTÍDOTO DESCUBIERTO!', '#7bd45a', 2600); }
       break; }
     case 'arma1': case 'arma2': case 'arma3': case 'arma4': {
       const have = G.weapon ? G.weapon.parts.length : 0; const agee = alive('agee') && agee_inLab();
@@ -107,7 +122,7 @@ async function doInvestigate(u, free) {
     G.charUsed.samContra = true;
     if (G.inf > 0) { const bajada = Math.min(2, G.inf); infDown(2); LOG('Contramedidas: Samantha Carter reduce la Infección en ' + bajada + '.', 'good'); }
   }
-  const ib = u.key === 'agee' || u.key === 'samcarter' ? 1 : 0, mods = ib ? [{ label: u.key === 'agee' ? 'Profesora Agee' : 'Samantha Carter', v: 1 }] : [];
+  const ib = u.key === 'agee' || u.key === 'samcarter' || u.key === 'doc' ? 1 : 0, mods = ib ? [{ label: u.key === 'agee' ? 'Profesora Agee' : u.key === 'doc' ? 'Doc Brown' : 'Samantha Carter', v: 1 }] : [];
   let dice = await UI.rollSimple('Investigar (hace falta ' + c.th + '+)', 1, null, { mods });
   let r = Math.min(6, dice[0] + ib);
   if (r < c.th && r + 1 >= c.th && u.key === 'macgyver' && G.supplies >= 1 && await UI.choose({ title: 'Ingeniero', text: 'La Investigación ha fallado (' + r + '). ¿Gastas 1 Suministro para sumar +1 y conseguirla?', options: [{ label: 'Gastar 1 Suministro', value: 'y' }, { label: 'No', value: 'n' }] }) === 'y') { G.supplies--; r++; LOG('MacGyver improvisa con 1 Suministro (+1).', 'good'); }
@@ -167,7 +182,8 @@ async function doCure(u, free, noInf) {
 function mayDischargeBonus(u) { const m = alive('may'); if (G.phase === 'actions' && m && m.space && sp(m.space).kind === 'office' && u.side === 'pl') { u.free = (u.free || 0) + 1; LOG('May (Oficina): ' + u.name + ' recibe 1 Acción gratis al recibir el alta.', 'good'); } }
 
 /* ---------- lista de acciones de una unidad ---------- */
-function unitActions(u) {
+const unitActions = extensible('unitActions', baseUnitActions);
+function baseUnitActions(u) {
   const A = []; if (!u || u.side !== 'pl' || G.phase !== 'actions' || G.busy) return A;
   const act = canAct(u), pay = n => canPay(u, n);
   A.push({ id: 'move', label: 'Mover', ok: act && u.key !== 'heli' && (canPay(u, 1, 'move') || canMoveFree(u)) && !u.resist && u.type !== 'aldeano' && sp(u.space).kind !== 'camp' });
@@ -183,7 +199,7 @@ function unitActions(u) {
   if (bedAct && u.type !== 'aldeano') A.push({ id: 'cure', label: 'Curar', ok: curable(u) && (pay(1) || G.turn.freeHeal > 0 || G.turn.freeHealNoInf > 0) });
   if (bedAct) A.push({ id: 'discharge', label: 'Dar de alta (gratis)', ok: true });
   if (G.lv.fourR && canBuild(u)) A.push({ id: 'build', label: 'Construir Barricada', ok: pay(1) });
-  if (G.lv.res && u.sci && u.space === 'LAB' && act && !G.turn.researched) A.push({ id: 'investigate', label: 'Investigar', ok: pay(1) ? (!G.res.cur.sup || G.supplies > 0) : (alreadyHas('escasean') && G.supplies >= 1 + (G.res.cur.sup ? 1 : 0)) });
+  if (G.lv.res && u.sci && u.space === 'LAB' && act && !G.turn.researched && G.res.deck.length) A.push({ id: 'investigate', label: 'Investigar', ok: pay(1) ? (!G.res.cur.sup || G.supplies > 0) : (alreadyHas('escasean') && G.supplies >= 1 + (G.res.cur.sup ? 1 : 0)) });
   if (u.space && sp(u.space).kind === 'camp' && u.type === 'refugee' && !G.turn.equipped && !u.vip) A.push({ id: 'equip', label: 'Equipar Refugiados (gratis)', ok: G.cemetery.some(x => x.type === 'civ') });
   /* Visiones de Wilson: en cualquier momento, sin gastar Acción. */
   if (u.key === 'wilson' && u.space) A.push({ id: 'visions', label: '🔮 Visiones: mirar la carta superior de Destino', ok: true });
@@ -223,7 +239,7 @@ function unitActions(u) {
   }
   return A;
 }
-function canBuildBar(u) { const r = sp(u.space).route; for (let i = 0; i <= lastOf(r); i++) if (sp(r + i).bar) return false; return true; }
+const canBuildBar = u => canBuildBarAt(u.space);
 
 /* Civiles (normales o heroicos) en el espacio de Porter o adyacente: a quienes puede dar 1 acción gratis (Jefe de equipo). */
 /* SAR: hay Caos en su espacio y no está en coma. */
@@ -241,7 +257,8 @@ const calleDests = x => {
 const calleTargets = u => allUnits(x => (x.type === 'civ' || x.type === 'civh' || x.type === 'refugee') && x.space && (x.space === u.space || adjacentIds(u.space).includes(x.space)) && calleDests(x).length);
 /* Unidades del Hospital (camas y Oficinas del Personal) a las que Jones puede trasladar al Cementerio; no cuenta él mismo. */
 const hospitalUnits = self => ['H1', 'H2', 'H3', 'H4', 'O1', 'O2'].filter(k => G.spaces[k]).flatMap(k => unitsAt(k)).filter(x => x.id !== self.id);
-async function runAction(u, id) {
+const runAction = extensible('runAction', baseRunAction);
+async function baseRunAction(u, id) {
   EVT('act', u.id, { id });
   switch (id) {
     case 'search': spendActions(u, 1); await doSearch(u); break;
@@ -288,7 +305,7 @@ async function runAction(u, id) {
     case 'medico': { const c = BEDS.map(b => G.spaces[b] && unitsAt(b)[0]).filter(x => x && curable(x)); const v = await UI.pickUnit(c, 'Médico: elige a quién curas.', true); if (v == null) break; G.charUsed.medico = true; await doCure(G.units[v], true); break; }
     case 'firstaid': { const near = u.key === 'seaver' && (u.space === 'C' || sp(u.space).kind === 'office'); const c = allUnits(x => isFighter(x) && x.space && curable(x) && (x.space === u.space || adjacentIds(u.space).includes(x.space) || (near && sp(x.space).kind === 'bed'))); if (!c.length) { LOG('No hay nadie herido cerca.'); break; } const v = await UI.pickUnit(c, 'Primeros auxilios: elige a quién curas.', true); if (v == null) break; if (u.key === 'johnson') spendActions(u, 1); else G.charUsed['aid' + u.key] = true; G.supplies--; healUnit(G.units[v]); G.units[v].curedTurn = G.turnNo; cureInf(); UI.updateStats(); break; }
     case 'ammo': G.supplies -= 2; G.ammo = Math.min(20, G.ammo + 1); G.charUsed.bauer = true; UI.updateStats(); break;
-    case 'peek': { spendActions(u, 1); const id2 = G.eventDeck[0]; if (id2) await UI.waitAck('Próxima carta de Evento', 'La siguiente carta es «' + EV[id2].name + '».', evImg(id2), 'e:' + id2); break; }
+    case 'peek': { spendActions(u, 1); noUndo(); const id2 = G.eventDeck[0]; if (id2) await UI.waitAck('Próxima carta de Evento', 'La siguiente carta es «' + EV[id2].name + '».', evImg(id2), 'e:' + id2); break; }
     case 'boost': { G.charUsed.boost = true; await infUp(3); addEventActions(1); break; }
     case 'bastion': spendActions(u, 1); await doBuild(u, true); break;
     case 'mines': spendActions(u, 1); G.supplies -= 2; G.ammo--; sp(u.space).mine = 1; G.once.mines = true; LOG('Campo de Minas en ' + spaceLabel(u.space) + '.', 'good'); UI.updateStats(); UI.redraw(); break;
@@ -321,7 +338,7 @@ async function runAction(u, id) {
 
 /* ---------- cartas de la mano ---------- */
 /* Coordinador de la comunidad: solo si queda una ficha de Civiles Normales (la reserva) o un Civil Heroico disponible */
-function coordinadorOpts() { return (G.spareCiv ? 1 : 0) + CIVH_POOL.filter(x => civhAvail(x) && !hero(x) && HEROES[x].lv <= MAX_CIVH_LV[G.lv.n] && !G.cemetery.some(c => c.key === x)).length; }
+function coordinadorOpts() { return (G.spareCiv ? 1 : 0) + civhLibres().length; }
 function handUsable(k) {
   if (G.phase !== 'actions' && !['hoguera', 'desesperados', 'barrelotodo', 'senal', 'exploradores', 'civiles'].includes(k)) return false;
   if (k === 'coordinador' && !coordinadorOpts()) return false;
@@ -351,10 +368,10 @@ async function useHandCard(k) {
   switch (k) {
     case 'adrenalina': rm(); addEventActions(2); break;
     case 'civiles': { const cs = allUnits(x => x.type === 'civ' && x.space); if (!cs.length) return; const v = await UI.pickUnit(cs, 'Líder Civil: elige las Civiles.', true); if (v == null) return; G.units[v].leader = true; rm(); break; }
-    case 'coordinador': { const ch = CIVH_POOL.filter(x => civhAvail(x) && !hero(x) && HEROES[x].lv <= MAX_CIVH_LV[G.lv.n] && !G.cemetery.some(c => c.key === x)); const opts = (G.spareCiv ? [{ label: 'Civiles Normales ' + G.spareCiv[0] + '/' + G.spareCiv[1], value: '_civ' }] : []).concat(ch.map(x => ({ label: HEROES[x].name, value: x }))); if (!opts.length) { LOG('No quedan Civiles disponibles.'); return; } const v = opts.length === 1 ? opts[0].value : await UI.chooseCards({ title: 'Coordinador de la comunidad', text: 'Elige la unidad que llega al Centro.', options: (G.spareCiv ? [{ value: '_civ', label: 'Civiles Normales', sub: G.spareCiv[0] + '/' + G.spareCiv[1] }] : []).concat(ch.map(heroOpt)), extra: [{ label: 'Cancelar', value: null }] }); if (v == null) return; rm(); if (v === '_civ') { const t = G.spareCiv; G.spareCiv = null; const u = newUnit({ side: 'pl', type: 'civ', name: civName(t[0], t[1]), full: t[0], red: t[1], mp: 2, hf: 2, hr: 2 }); putUnit(u, 'C'); } else await spawnHero(v, 'C'); break; }
-    case 'veo_alguien': case 'heroe_d': { let key = randomAvailableHero(); if (!key) { LOG('No quedan Héroes disponibles.'); return; } if (k === 'veo_alguien') { const pool = heroPoolFor(G.lv.n).filter(x => !hero(x) && !G.cemetery.some(c => c.key === x)); key = pool.length === 1 ? pool[0] : await UI.chooseCards({ title: 'Creo que veo a alguien', text: 'Elige el Héroe.', options: pool.map(heroOpt), extra: [{ label: 'Cancelar', value: null }] }); if (key == null) return; } const inits = (k === 'veo_alguien' ? SURFACE.map(r => r + '0') : ['C'].concat(G.routes.map(r => r + '0'))); const w = await UI.pickSpace(inits, 'Elige dónde aparece el Héroe.', true); if (w == null) return; rm(); await spawnHero(key, w); break; }
-    case 'cama': { const cs = BEDS.map(b => unitsAt(b)[0]).filter(x => x && x.type === 'civ' && x.curedTurn !== G.turnNo); if (!cs.length) { LOG('No hay Civiles en el Hospital que puedan curarse este turno.'); return; } const v = await UI.pickUnit(cs, 'Elige la unidad que sale del Hospital totalmente curada.', true); if (v == null) return; const u = G.units[v]; const c = Object.values(G.spaces).filter(s => s.route && s.route !== 'T' && s.name && !controlled(s.id)); const w = await UI.pickSpace(c.map(s => s.id), 'Elige el espacio con nombre donde aparece.', true); if (w == null) return; u.hits = 0; u.flipped = false; u.ecg = false; u.curedTurn = G.turnNo; infDown(1); putUnit(u, w); rm(); break; }
-    case 'expediente': { if (!unitsAt('T4').some(isFighter)) { LOG('Necesitas una unidad en la Oficina del Dr. Marteuse.'); return; } rm(); await revealResearch(); break; }
+    case 'coordinador': { const ch = civhLibres(); const opts = (G.spareCiv ? [{ label: 'Civiles Normales ' + G.spareCiv[0] + '/' + G.spareCiv[1], value: '_civ' }] : []).concat(ch.map(x => ({ label: HEROES[x].name, value: x }))); if (!opts.length) { LOG('No quedan Civiles disponibles.'); return; } const v = opts.length === 1 ? opts[0].value : await UI.chooseCards({ title: 'Coordinador de la comunidad', text: 'Elige la unidad que llega al Centro.', options: (G.spareCiv ? [{ value: '_civ', label: 'Civiles Normales', sub: G.spareCiv[0] + '/' + G.spareCiv[1] }] : []).concat(ch.map(heroOpt)), extra: [{ label: 'Cancelar', value: null }] }); if (v == null) return; rm(); if (v === '_civ') { const t = G.spareCiv; G.spareCiv = null; const u = newUnit({ side: 'pl', type: 'civ', name: civName(t[0], t[1]), full: t[0], red: t[1], mp: 2, hf: 2, hr: 2 }); putUnit(u, 'C'); } else await spawnHero(v, 'C'); break; }
+    case 'veo_alguien': case 'heroe_d': { let key = randomAvailableHero(); if (!key) { LOG('No quedan Héroes disponibles.'); return; } if (k === 'veo_alguien') { const pool = heroPoolFor(G.lv.n).filter(x => !hero(x) && !G.cemetery.some(c => c.key === x)); key = pool.length === 1 ? pool[0] : await UI.chooseCards({ title: 'Creo que veo a alguien', text: 'Elige el Héroe.', options: pool.map(heroOpt), extra: [{ label: 'Cancelar', value: null }] }); if (key == null) return; } if (k === 'heroe_d') { /* Primero se revela qué Héroe llega (spawnHero lo muestra) y después se elige el espacio. */ rm(); await spawnHero(key, null, ['C'].concat(G.routes.map(r => r + '0'))); break; } const inits = SURFACE.map(r => r + '0'); const w = await UI.pickSpace(inits, 'Elige dónde aparece el Héroe.', true); if (w == null) return; rm(); await spawnHero(key, w); break; }
+    case 'cama': { const cs = BEDS.map(b => G.spaces[b] && unitsAt(b)[0]).filter(x => x && x.type === 'civ' && x.curedTurn !== G.turnNo); if (!cs.length) { LOG('No hay Civiles en el Hospital que puedan curarse este turno.'); return; } const v = await UI.pickUnit(cs, 'Elige la unidad que sale del Hospital totalmente curada.', true); if (v == null) return; const u = G.units[v]; const c = Object.values(G.spaces).filter(s => s.route && s.route !== 'T' && s.name && !controlled(s.id)); const w = await UI.pickSpace(c.map(s => s.id), 'Elige el espacio con nombre donde aparece.', true); if (w == null) return; u.hits = 0; u.flipped = false; u.ecg = false; u.curedTurn = G.turnNo; infDown(1); putUnit(u, w); rm(); break; }
+    case 'expediente': { if (!G.spaces.T4 || !unitsAt('T4').some(isFighter)) { LOG('Necesitas una unidad en la Oficina del Dr. Marteuse.'); return; } rm(); await revealResearch(); break; }
     case 'necesidad': { if (G.supplies < 2) { LOG('Necesitas 2 Suministros.'); return; } rm(); await mkSpecial('necesidad').fn(); break; }
     case 'canon': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && spaceNum(x.space) <= 1).map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (!c.length) { LOG('No hay objetivos en espacios 0 ó 1.'); return; } const t = await UI.pickSpace(c, 'Cañón: elige el objetivo.', true); if (t == null) return; const a = d6(), b = d6(), hits = FIRE[sumRow(a + b)][4]; LOG('Cañón: ' + hits + ' Impactos.', 'good'); await applyZedHits(zedsAt(t), hits); if (d6() <= 5) rm(); break; }
     case 'hoguera': rm(); infDown(2); break;
@@ -369,8 +386,9 @@ async function useHandCard(k) {
 }
 
 /* ---------- mantenimiento ---------- */
-async function maintenance() {
-  for (const u of Object.values(G.units)) if (u.side === 'pl') { u.free = 0; u.freeM = 0; u.freeMF = 0; delete u.keepCalm; u.curedTurn = 0; }
+const maintenance = extensible('maintenance', baseMaintenance);
+async function baseMaintenance() {
+  for (const u of Object.values(G.units)) if (u.side === 'pl') { u.free = 0; u.freeM = u.carryM || 0; u.carryM = 0; u.freeMF = 0; delete u.keepCalm; u.curedTurn = 0; }
   G.charUsed = {}; G.firstFreeUsed = {};
   if (G.lv.fourR) {
     for (const s of Object.values(G.spaces)) {
@@ -383,7 +401,7 @@ async function maintenance() {
       if (rs.length) { s.chaos--; G.chaosLeft++; LOG('Se restaura el orden en ' + spaceLabel(s.id) + ' (−1 Caos' + (sinInf ? ', sin Infección' : ', +1 Infección') + ').', 'good'); UI.pulseSpace(s.id, '#7bd45a'); UI.toast('Orden restaurado en ' + spaceLabel(s.id) + ': −1 Caos', '#7bd45a', 1600); if (!sinInf) { if (G.weapon && alive('agee')) infDown(2); else await infUp(1); } }
     }
   }
-  if (G.antidote) { infDown(1); LOG('El Antídoto reduce la Infección en 1.', 'good'); }
+  if (G.antidote) { if (G.inf > 0) { infDown(1); LOG('El Antídoto reduce la Infección en 1.', 'good'); UI.toast('Antídoto: −1 Infección', '#7bd45a', 1600); } else LOG('El Antídoto no tiene efecto: la Infección ya está a 0.'); }
   if (G.berra) { infDown(1); LOG('Elwood Berra reduce la Infección en 1.', 'good'); }
   /* Salto temporal (Doc): vuelve al Centro tras el Mantenimiento, cuando ya ha restaurado el orden donde estuviera. */
   for (const d of allUnits(x => x.key === 'doc' && x.away)) {

@@ -153,9 +153,9 @@ const ui = {
     let h = '<div class="big">Turno ' + G.turnNo + ' · ' + ({ setup: 'Preparación', fourR: 'Fase 4R', infection: 'Infección', feeding: 'Alimentación', zeds: 'Fase de los Zeds', actions: 'Fase de Acciones', maint: 'Mantenimiento', end: 'Fin de la partida' }[G.phase] || '') + '</div>';
     if (multiP()) h += '<div id="plbar" style="grid-column:1/3">' + G.players.map((p, i) => '<button class="plchip' + (i === G.act ? ' on' : '') + '" data-pl="' + i + '" style="--c:' + p.color + '">' + p.name + (G.phase === 'actions' ? ' <b>' + plTok(i) + '</b>' : '') + '</button>').join('') + '<button id="tieBtn" title="Si el grupo no se pone de acuerdo, se decide con un dado">🎲 Desempate</button></div>';
     h += '<div>Munición: <b>' + G.ammo + '</b></div><div>' + (L.supplies ? 'Suministros: <b>' + G.supplies + '</b>' : 'Reserva Zed: <b>' + G.reserve.length + '</b>') + '</div>';
-    if (L.infection) h += '<div>Infección: <b id="infv" style="color:' + (G.inf >= 10 ? '#ff6b5a' : G.inf >= 7 ? '#ffb347' : '#fff') + '">' + G.inf + ' / 13</b>' + (G.antidote ? ' (Antídoto)' : '') + (G.berra ? ' (Elwood)' : '') + '</div>';
+    if (L.infection) h += '<div>Infección: <b id="infv" style="color:' + (G.inf >= 10 ? '#ff6b5a' : G.inf >= 7 ? '#ffb347' : '#fff') + '">' + G.inf + ' / 13</b>' + (G.antidote ? ' <span style="color:#7bd45a" title="El Antídoto reduce la Infección en 1 al final de cada Mantenimiento">(Antídoto −1/turno)</span>' : '') + (G.berra ? ' (Elwood)' : '') + '</div>';
     if (L.fourR) h += '<div>Caos: <b>' + chaosOnMap() + '</b> (quedan ' + G.chaosLeft + ')</div>';
-    if (L.res && G.res) h += '<div style="grid-column:1/3" data-zoom="r:' + G.res.cur.id + '">Investigación: <b>' + G.res.cur.name + '</b> (' + G.res.cur.th + '+' + (G.res.cur.sup ? ', 1 Sum.' : '') + ') · quedan ' + G.res.deck.length + (G.weapon ? '<br>Súper Arma: ' + G.weapon.parts.map(k => '<img class="wpart" src="assets/tokens/arma_' + k + (WEAPON_EXT[k] || '.webp') + '" title="' + WEAPON_PARTS[k].name + '" alt="' + WEAPON_PARTS[k].name + '">').join('') : '') + '</div>';
+    if (L.res && G.res) h += '<div style="grid-column:1/3" data-zoom="r:' + G.res.cur.id + '">Investigación: <b>' + G.res.cur.name + '</b> (' + G.res.cur.th + '+' + (G.res.cur.sup ? ', 1 Sum.' : '') + ') · ' + (G.res.deck.length > 1 ? 'quedan ' + G.res.deck.length + ' en el mazo' : G.res.deck.length ? '<b style="color:#ffb347">queda 1: la última</b>' : '<b style="color:#ff8a76">mazo agotado: no se puede investigar más</b>') + (G.finalPlaced ? '<br>' + (G.antidote ? '<b style="color:#7bd45a">Antídoto descubierto</b>' : 'Componente Final en el Laboratorio: falta volver a revelar «Avances en el Antídoto»') : '') + (G.weapon ? '<br>Súper Arma: ' + G.weapon.parts.map(k => '<img class="wpart" src="assets/tokens/arma_' + k + (WEAPON_EXT[k] || '.webp') + '" title="' + WEAPON_PARTS[k].name + '" alt="' + WEAPON_PARTS[k].name + '">').join('') : '') + '</div>';
     h += '<div style="grid-column:1/3;font-size:12px;color:var(--mut)">Cartas de Evento: ' + done + ' / ' + tot + '</div><div class="bar"><i style="width:' + (tot ? 100 * done / tot : 0) + '%"></i></div>';
     if (G.phase === 'actions' && !G.busy) h += '<button class="primary" id="endBtn" style="grid-column:1/3">Terminar fase de Acciones ▶</button>';
     $('status').innerHTML = h;
@@ -186,7 +186,7 @@ const ui = {
     if (!G.destDeck.length && !G.destDiscard.length) { this._modal('<h2>Visiones</h2><p>No quedan cartas de Destino.</p><div class="opts"><button class="primary" id="xb">Cerrar</button></div>'); $('xb').onclick = () => ui._close(); return; }
     /* Mazo vacío: se baraja el descarte igual que al robar (drawDestiny) y se mira la primera carta de ese mazo nuevo. */
     if (!G.destDeck.length) G.destDeck = shuffle(G.destDiscard.splice(0));
-    const id = G.destDeck[0], d = DEST[id];
+    const id = G.destDeck[0], d = DEST[id]; noUndo();
     await this.waitAck('Visiones de Wilson: «' + d.name + '»', '<div class="rulebox"><b>Regla</b><br>' + d.txt + '</div><p>Es la siguiente carta del mazo de Destino (sigue ahí, sin robarla).</p>', destImg(id));
   },
   /* Panel con todas las acciones que quedan este turno. */
@@ -258,11 +258,19 @@ const ui = {
     const undoable = G.phase === 'actions' && !G.over && !(G.event && G.event.cer);
     const pre = undoable ? ui._undoSnap() : null, rng0 = rngState();
     G.busy = true; ui.mode = null; ui.setBanner(null); ui.updateStats(); ui.updateHand();
-    try { await fn(); } catch (e) { console.error(e); ui.log('Error: ' + e.message, 'bad'); }
+    let failed = false; ui._noUndo = false;
+    try { await fn(); } catch (e) { console.error(e); failed = true; ui.log('Error: ' + e.message, 'bad'); }
     G.busy = false;
+    /* Una acción que falla a medias deja el estado incoherente: se vuelve al de antes de la acción (si lo hay) y no se guarda nada de ella. */
+    if (failed) {
+      ui._undoRequested = false; try { ui._close(); } catch (e2) { }
+      if (pre) { const s = JSON.parse(pre.s), log = G.evlog || []; restoreState(s.G); G.evlog = log.filter(e => e.n <= (G.evn || 0)); UID = s.uid; rngRestore(s.rng); G.busy = false; G.sel = null; ui.log('La acción ha fallado: se ha vuelto al estado anterior a ella.', 'bad'); }
+      if (G.over && ui._endRes) { const r = ui._endRes; ui._endRes = null; r(); }
+      ui.updateStats(); ui.updateHand(); ui.redraw(); return;
+    }
     if (ui._undoRequested) { /* «Deshacer el movimiento» en la ventana de combate, antes de tirar: vuelve al estado previo a la acción. */
       ui._undoRequested = false; if (pre) { const s = JSON.parse(pre.s); restoreState(s.G); UID = s.uid; rngRestore(s.rng); G.sel = null; ui.log('↶ Movimiento deshecho antes de tirar los dados.', 'turn'); }
-    } else if (pre) { if (rngState() !== rng0) ui._undo = []; else if (!G.over && ui._undoSnap().s !== pre.s) { ui._undo.push(pre); if (ui._undo.length > 60) ui._undo.shift(); } }
+    } else if (pre) { if (rngState() !== rng0 || ui._noUndo) ui._undo = []; else if (!G.over && ui._undoSnap().s !== pre.s) { ui._undo.push(pre); if (ui._undo.length > 60) ui._undo.shift(); } }
     if (G.sel && !G.units[G.sel]) G.sel = null;
     if (G.phase === 'actions' && !G.over && !G.event.cer) saveGame('actions');
     if (G.over && ui._endRes) { const r = ui._endRes; ui._endRes = null; r(); }
@@ -320,7 +328,7 @@ const ui = {
   onClick(e) {
     if (!G.units) return; const p = this.toMap(e), uid = this.hitUnit(p), sid = this.hitSpace(p), m = this.mode;
     if (this._pick) { if (uid && this._pick.ids.includes(uid)) this._pick.select(uid); return; }
-    if (m && m.type === 'pick') { if (sid && m.ids.includes(sid)) { this.mode = null; this.setBanner(null); this.redraw(); m.resolve(sid); } return; }
+    if (m && m.type === 'pick') { if (sid && m.ids.includes(sid)) { m.sel = sid; this.marks = [sid]; this.focus(sid); this._pickBanner(m); this.redraw(); } return; }
     if (G.busy) return;
     if (m && (m.type === 'move' || m.type === 'fire')) {
       if (sid && m.opts[sid] !== undefined) {
@@ -372,7 +380,7 @@ const ui = {
   },
   /* Firma de lo que se pinta en el fondo (mapa y marcadores): si no cambia, se reutiliza la capa ya pintada. */
   _bgSig() {
-    let s = (this.board || '') + '|' + this.canvas.width + 'x' + this.canvas.height + '|' + ((G.turn && G.turn.block) || []).join(',');
+    let s = (this.board || '') + '|' + this.canvas.width + 'x' + this.canvas.height + '|' + ((G.turn && G.turn.block) || []).join(',') + '|' + (G.antidote ? 'A' : G.finalPlaced ? 'F' : '');
     for (const id in G.spaces) { const x = G.spaces[id]; if (x.chaos || x.bar || x.mine || x.trap || x.rumor || x.cem || x.base || x.tall || x.registro || x.bridge) s += '|' + id + ':' + x.chaos + x.bar + x.mine + (x.trap ? 'T' : '') + (x.rumor ? 'r' : '') + (x.cem ? 'c' : '') + (x.base ? 'b' : '') + (x.tall ? 't' : '') + (x.registro ? 'g' : '') + (x.bridge || ''); }
     return s;
   },
@@ -415,6 +423,9 @@ const ui = {
       else if (s.bridge === 'ferry') { c.save(); c.font = '900 18px Impact'; c.fillStyle = '#7bd4ff'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('FERRY', s.x, s.y + 62); c.fillText('FERRY', s.x, s.y + 62); c.restore(); }
       else if (s.bridge === 'down') { c.save(); c.font = '900 20px Impact'; c.fillStyle = '#ff3b2a'; c.strokeStyle = '#000'; c.lineWidth = 4; c.textAlign = 'center'; c.strokeText('PUENTE ROTO', s.x, s.y + 62); c.fillText('PUENTE ROTO', s.x, s.y + 62); c.restore(); }
     }
+    /* Componente Final / Antídoto: ficha en el Laboratorio (nivel III). */
+    const lab = G.spaces.LAB;
+    if (lab && G.finalPlaced) { const t = G.antidote ? 'ANTÍDOTO' : 'COMP. FINAL'; c.save(); c.font = '900 28px Impact'; const w = c.measureText(t).width + 26; c.fillStyle = G.antidote ? '#2f9a55' : '#3a6fa8'; c.strokeStyle = '#000'; c.lineWidth = 4; c.shadowColor = '#000'; c.shadowBlur = 8; c.beginPath(); if (c.roundRect) c.roundRect(lab.x - w / 2, lab.y - 112, w, 40, 10); else c.rect(lab.x - w / 2, lab.y - 112, w, 40); c.fill(); c.shadowBlur = 0; c.stroke(); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(t, lab.x, lab.y - 91); c.restore(); }
     /* Zona «En el aire» del Helicóptero Medevac (exp. 4): ahí quedan el helicóptero y su Héroe mientras vuelan. */
     const air = G.spaces.AIR;
     if (air) { c.save(); c.fillStyle = 'rgba(20,40,90,.55)'; c.strokeStyle = '#7fb6ff'; c.lineWidth = 3; c.beginPath(); if (c.roundRect) c.roundRect(air.x - 150, air.y - 56, 300, 112, 18); else c.rect(air.x - 150, air.y - 56, 300, 112); c.fill(); c.stroke(); c.font = '900 20px Impact'; c.fillStyle = '#cfe6ff'; c.strokeStyle = '#000'; c.lineWidth = 3; c.textAlign = 'center'; c.strokeText('EN EL AIRE', air.x, air.y - 34); c.fillText('EN EL AIRE', air.x, air.y - 34); c.restore(); }
@@ -424,7 +435,11 @@ const ui = {
     const c = this.ctx, sel = G.sel === u.id || this.hl === u.id;
     c.save(); c.translate(r.x, r.y); if (r.scale && r.scale !== 1) c.scale(r.scale, r.scale); const hw = r.w / 2, hh = r.h / 2;
     if (sel) { c.shadowColor = '#ffd54a'; c.shadowBlur = 26; } else if (r.glow) { c.shadowColor = r.glow; c.shadowBlur = 34; }
-    if (u.type === 'train') { c.fillStyle = u.state === 'leaving' ? '#d9822b' : '#3c7fc4'; rr(c, -hw - 8, -hh / 2, r.w + 16, hh, 6); c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center'; c.fillText(u.tkey === 'local' ? 'TREN L' : 'TREN M', 0, 4); }
+    if (u.type === 'train') { c.fillStyle = u.state === 'leaving' ? '#d9822b' : '#3c7fc4'; rr(c, -hw - 8, -hh / 2, r.w + 16, hh, 6); c.fill(); c.strokeStyle = sel ? '#ffd54a' : '#000'; c.lineWidth = sel ? 5 : 3; c.stroke(); c.shadowBlur = 0; c.fillStyle = '#fff'; c.font = '800 11px Segoe UI'; c.textAlign = 'center';
+      /* Sentido: saliendo = izquierda en Afueras y Bosque, derecha en Autovía y Montaña; volviendo, al revés. En el Centro (sale por cualquiera de sus dos rutas) flechas a ambos lados. */
+      const rt = u.space && G.spaces[u.space] ? sp(u.space).route : null, d0 = { B: -1, F: -1, A: 1, M: 1 }[rt], dirs = d0 ? [u.state === 'leaving' ? d0 : -d0] : [-1, 1];
+      const ax = hw - 2; c.fillText(u.tkey === 'local' ? 'TREN L' : 'TREN M', dirs.length === 1 ? -dirs[0] * 5 : 0, 4);
+      for (const dd of dirs) { c.beginPath(); c.moveTo(dd * (ax + 5), 0); c.lineTo(dd * (ax - 5), -6); c.lineTo(dd * (ax - 5), 6); c.closePath(); c.fill(); } }
     else if (isZedSide(u)) {
       const altz = (Opciones.artAlt || u.boss) && (u.type === 'super' ? IMG['altz_' + u.key + (u.flipped ? '_r' : '')] : u.type === 'spreader' ? IMG['altz_' + u.skey + (u.flipped ? '_r' : '')] : (u.type === 'zed' && IMG['altzn_' + zedAltN(u)]));
       if (altz) {
@@ -588,6 +603,84 @@ const ui = {
       };
     });
   },
+  /* Draft (partidas draft1/2/3): el equipo inicial (4 Héroes y 1 Civil Heroico al azar) se ofrece; cada jugador puede rechazar hasta X unidades
+     y cada rechazada se sustituye al azar por otra del mismo tipo que no esté ya en el equipo. Devuelve { heroes, civh }. */
+  async draftTeam(setup) {
+    /* El generador de azar arranca siempre igual al cargar la página: el draft siembra el suyo (o usa la semilla de la partida) para que cada partida salga distinta. */
+    rngSeed(PENDING_SEED != null ? PENDING_SEED : crypto.getRandomValues(new Uint32Array(1))[0]);
+    const saved = G.expSel; G.expSel = setup.exps || [];
+    const X = +setup.mode.slice(-1), lvl = setup.level;
+    const pool = () => heroPoolFor(lvl);
+    const civPool = () => CIVH_POOL.filter(k => civhAvail(k) && HEROES[k].lv <= MAX_CIVH_LV[lvl]);
+    let heroes = shuffle(pool()).slice(0, 4);
+    let civh = civPool()[rnd(civPool().length)] || null;
+    const np = setup.players && setup.players.length > 1 ? setup.players.length : 1;
+    const log = [];
+    for (let i = 0; i < np; i++) {
+      const list = heroes.map(k => ({ key: k, type: 'hero' })).concat(civh ? [{ key: civh, type: 'civh' }] : []);
+      const rej = await this._draftPick(list, X, np > 1 ? setup.players[i].name : null);
+      for (const idx of rej) {
+        if (idx < heroes.length) {
+          const old = heroes[idx], cands = pool().filter(k => !heroes.includes(k));
+          if (cands.length) { heroes[idx] = cands[rnd(cands.length)]; log.push('Rechazado ' + HEROES[old].name + ' → entra ' + HEROES[heroes[idx]].name); }
+        } else if (civh) {
+          const old = civh, cands = civPool().filter(k => k !== old);
+          if (cands.length) { civh = cands[rnd(cands.length)]; log.push('Rechazado ' + HEROES[old].name + ' → entra ' + HEROES[civh].name); }
+        }
+      }
+    }
+    G.expSel = saved;
+    const fin = heroes.map(k => HEROES[k].name).concat(civh ? [HEROES[civh].name] : []).join(', ');
+    if (log.length) await this.waitAck('Draft: equipo final', log.join('<br>') + '<br><br><b>Equipo:</b> ' + fin + '.');
+    return { heroes, civh };
+  },
+  /* Ventana de rechazo: se tocan las unidades que se quieren rechazar (hasta X). Devuelve los índices rechazados. */
+  _draftPick(list, X, name) {
+    return new Promise(res => {
+      const sel = new Set();
+      const b = this._modal('<h2>Draft' + (name ? ' · ' + name : '') + '</h2><p>Toca las unidades que quieres <b>rechazar</b> (hasta ' + X + '). Las rechazadas se sustituyen al azar.</p><div class="tpcount"></div><div class="sumcards draftcards"></div><div class="opts"><button id="drOk" class="primary">Aceptar</button></div>', 'startsum');
+      const grid = b.querySelector('.draftcards'), cnt = b.querySelector('.tpcount');
+      const paint = () => { cnt.innerHTML = 'Rechazas <b>' + sel.size + '/' + X + '</b>'; grid.querySelectorAll('.sc').forEach((d, i) => d.style.outline = sel.has(i) ? '3px solid #e8452f' : 'none'); };
+      list.forEach((u, i) => {
+        const img = heroCard(u.key) || heroTok(u.key); const d = document.createElement('div'); d.className = 'sc'; d.style.cursor = 'pointer';
+        d.innerHTML = (img ? '<img src="' + img + '" alt="">' : '') + '<div class="scn">' + HEROES[u.key].name + '</div>';
+        d.onclick = () => { if (sel.has(i)) sel.delete(i); else if (sel.size < X) sel.add(i); paint(); };
+        grid.appendChild(d);
+      });
+      paint();
+      $('drOk').onclick = () => { this._close(); res([...sel]); };
+    });
+  },
+  /* Resumen al empezar una partida: todas las cartas de Héroe y Civil Heroico en juego, con sus bonos de inicio, y las condiciones de la partida. */
+  startSummary() {
+    return new Promise(res => {
+      const EXP = { 1: 'Un paso al frente', 2: 'El blues del novato', 3: 'Rumores y ferrocarriles', 4: 'Fiesta privada (Fanmade)' };
+      const heroes = Object.values(G.units).filter(u => u.side === 'pl' && u.key && HEROES[u.key] && (u.type === 'hero' || u.type === 'civh') && u.space && u.space !== 'CEM');
+      const strip = t => String(t).replace(/<[^>]+>/g, '');
+      const cards = heroes.map(u => { const img = heroCard(u.key) || heroTok(u.key); return '<div class="sc">' + (img ? '<img src="' + img + '" alt="">' : '') + '<div class="scn">' + u.name + '</div></div>'; }).join('');
+      /* Bonos de inicio: las líneas de cada carta que hablan de lo que se obtiene al entrar en juego. */
+      const bonos = heroes.map(u => (HEROES[u.key].txt || []).filter(t => /entrar en juego|Combustible/i.test(strip(t))).map(t => '<li><b>' + u.name + ':</b> ' + strip(t) + '</li>')).flat();
+      const np = nPlayers(), players = G.players && G.players.length > 1 ? G.players.map(p => p.name).join(', ') : 'solitario';
+      const exps = (G.exp || []).map(n => EXP[n]).filter(Boolean);
+      const rows = [
+        ['Nivel', G.lv.name], ['Duración', G.len.name], ['Tipo', ({ normal: 'Normal', equi: 'Equilibrada (un científico)', draft1: 'Draft 1 (rechaza 1)', draft2: 'Draft 2 (rechaza 2)', draft3: 'Draft 3 (rechaza 3)' })[G.mode] || 'Normal'], ['Expansiones', exps.length ? exps.join(', ') : 'ninguna'], ['Jugadores', np + ' (' + players + ')'],
+        ['Héroes y Civiles Heroicos', String(heroes.length)], ['Suministros iniciales', String(G.supplies)], ['Munición inicial', String(G.ammo)],
+        ['Infección', G.lv.infection ? 'sí (empieza en 0)' : 'no hay Infección en este nivel'], ['Caos', G.lv.chaos ? String(G.chaosLeft) + ' fichas' : 'no hay Caos'],
+        ['Rutas', String(G.routes.length)], ['Cartas de Evento para ganar', String(G.totalEvents)]
+      ];
+      const cond = 'Si <b>un solo Zed</b> entra en el Centro de la Ciudad, pierdes' + (G.lv.fourR ? ' (y también si te quedas sin fichas de Caos)' : '') + '. Sobrevive a las ' + G.totalEvents + ' cartas de Evento y ganarás.';
+      const b = this._modal('<h2>' + G.lv.name + '</h2><p>' + cond + '</p><div class="sumcards">' + cards + '</div>' +
+        '<div class="sumtab">' + rows.map(([k, v]) => '<div><span>' + k + '</span><b>' + v + '</b></div>').join('') + '</div>' +
+        '<h3>Bonos de inicio</h3>' + (bonos.length ? '<ul class="sumb">' + bonos.join('') + '</ul>' : '<p>Ningún bono de inicio.</p>') +
+        '<p class="ophint">Pasa el ratón (en táctil, mantén pulsado) sobre cualquier ficha o carta para ver su texto.</p><div class="opts"><button class="primary" id="sumok">Empezar la partida</button></div>', 'startsum');
+      /* Mapa del nivel de fondo, con un velo oscuro para que se lea el texto. */
+      const mapa = G.lv.board === 'B' ? 'assets/mapaB.jpg' : 'assets/mapa.jpg';
+      b.style.backgroundImage = 'linear-gradient(rgba(14,11,8,.78),rgba(14,11,8,.9)), url("' + mapa + '")';
+      b.style.backgroundSize = 'cover'; b.style.backgroundPosition = 'center';
+      $('sumok').onclick = () => { b.style.backgroundImage = ''; this._close(); res(); };
+      $('sumok').focus();
+    });
+  },
   waitAck(title, text, img, spec) {
     return new Promise(res => {
       const im = img ? '<img src="' + img + '" alt="" ' + (spec ? 'data-zoom="' + spec + '"' : '') + '>' : '';
@@ -617,7 +710,14 @@ const ui = {
       this._pick = { ids: units.map(u => u.id), select };
     });
   },
-  pickSpace(ids, text, cancel) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res, cancel: !!cancel }; this.setBanner(text); this.redraw(); }); },
+  /* Elegir espacio: tocar un espacio válido lo selecciona y mueve la cámara; «Aceptar» confirma (igual que elegir unidad). */
+  pickSpace(ids, text, cancel) { return new Promise(res => { this.mode = { type: 'pick', ids, resolve: res, cancel: !!cancel, text, sel: null }; this.setBanner(text); this.redraw(); }); },
+  _pickBanner(m) {
+    this.setBanner(m.text + (m.sel ? ' — ' + spaceLabel(m.sel) : ''));
+    const b = $('banner'); const ok = document.createElement('button'); ok.id = 'pkOk'; ok.className = 'primary'; ok.textContent = 'Aceptar'; ok.disabled = !m.sel;
+    ok.onclick = () => { if (!m.sel || this.mode !== m) return; const id = m.sel; this.mode = null; this.marks = null; this.setBanner(null); this.redraw(); m.resolve(id); };
+    b.appendChild(ok);
+  },
   /* opts.mods: modificadores de la tirada ([{label, v}]). Se muestran antes de tirar; tras la tirada el dado se anima para sumarlos.
      El valor devuelto es el dado sin modificar: quien llama suma el modificador como antes. opts.modDie: índice del dado que suma (por defecto el mejor). */
   async rollSimple(label, n, resultFn, opts) {
@@ -727,10 +827,10 @@ const ui = {
   },
   combatOpen(info) {
     const zs = info.zeds.map(z => { const img = typeof zedImgOf === 'function' ? zedImgOf(z) : null, sup = z.type === 'super' && SUPER_ZEDS[z.key];
-      return '<div class="zrow2" data-zoom="u:' + z.id + '">' + (img ? '<img src="' + img + '" alt="">' : '') + '<div><b>' + z.name + ' ' + strength(z) + '</b>' + (z.hits ? ' <span class="bad">' + '♥'.repeat(z.hits) + '</span>' : '') + (z.flipped ? ' · cara reducida' : '') + (z.type === 'super' ? ' <span class="pill">Súper Zed</span>' : '') + (zedBadges(z).map(b => ' <span class="pill">' + b.ico + ' ' + b.txt + '</span>').join('')) + (sup ? '<div class="zab">' + sup.txt + '</div>' : '') + '</div></div>'; }).join('');
+      return '<div class="zrow2" data-zoom="u:' + z.id + '">' + (img ? '<img src="' + img + '" alt="">' : '') + '<div><b>' + z.name + ' ' + zF(z) + '</b>' + (z.hits ? ' <span class="bad">' + '♥'.repeat(z.hits) + '</span>' : '') + (z.flipped ? ' · cara reducida' : '') + (z.type === 'super' ? ' <span class="pill">Súper Zed</span>' : '') + (zedBadges(z).map(b => ' <span class="pill">' + b.ico + ' ' + b.txt + '</span>').join('')) + (sup ? '<div class="zab">' + sup.txt + '</div>' : '') + '</div></div>'; }).join('');
     const shHtml = () => info.shifts.length ? info.shifts.map(s => '<li>' + s.label + ': ' + (s.v > 0 ? s.v + '►' : (-s.v) + '◄') + (s.by ? ' <span class="mut">— ' + s.by + '</span>' : '') + '</li>').join('') : '<li>Sin modificadores de columna</li>';
     const colsInner = () => 'Columna inicial: <b>' + CAC_COLS[info.initCol] + '</b><ul style="margin:2px 0 2px 18px;padding:0">' + shHtml() + '</ul>' + (info.extraDice ? '<div>+' + info.extraDice + ' dado(s) extra: se usan los 2 mejores.</div>' : '') + 'Columna final: <b style="color:var(--gold)">' + CAC_COLS[info.finalCol] + '</b>' + (info.infGain != null ? (info.infGain ? '<div class="bad">Este combate sube la Infección <b>+' + info.infGain + '</b>.</div>' : '<div>Este combate no sube la Infección.</div>') : '');
-    const b = this._modal('<h2>' + info.title + '</h2><div class="sides"><div class="side z"><div>' + (info.zeds.length > 1 ? 'Horda' : 'Atacantes / Zeds') + '</div><div class="big" style="color:#ff8a76">' + info.zStr + '</div><div style="font-size:12px">' + zs + '</div></div><div class="vs">VS</div><div class="side"><div>' + info.fighter.name + '</div><div class="big" style="color:#9bd68a">' + info.pStr + '</div><div style="font-size:12px">Fuerza ' + (info.fighter.flipped ? 'reducida' : 'completa') + '</div></div></div><div class="cols" id="ccols">' + colsInner() + '</div><div id="ctab">' + this._cacTable(info.initCol, info.finalCol) + '</div><div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
+    const b = this._modal('<h2>' + info.title + '</h2><div class="sides"><div class="side z"><div>' + (info.zeds.length > 1 ? 'Horda' : 'Atacantes / Zeds') + '</div><div class="big" style="color:#ff8a76">' + (info.zShow || info.zStr) + '</div><div style="font-size:12px">' + zs + '</div></div><div class="vs">VS</div><div class="side"><div>' + info.fighter.name + '</div><div class="big" style="color:#9bd68a">' + info.pStr + '</div><div style="font-size:12px">Fuerza ' + (info.fighter.flipped ? 'reducida' : 'completa') + '</div></div></div><div class="cols" id="ccols">' + colsInner() + '</div><div id="ctab">' + this._cacTable(info.initCol, info.finalCol) + '</div><div class="dice"><div class="die">·</div><div class="die">·</div></div><div class="result" id="rr"></div><div class="opts" id="rb"></div>', 'cbt');
     const mark = best => { const row = sumRow(best[0] + best[1]); const cell = b.querySelector('tr[data-r="' + row + '"] td[data-c="' + info.finalCol + '"]'); b.querySelectorAll('td.hit').forEach(x => x.classList.remove('hit')); if (cell) cell.classList.add('hit'); $('rr').innerHTML = 'Suma <b>' + (best[0] + best[1]) + '</b>'; };
     return {
       mark,
@@ -838,7 +938,7 @@ const ui = {
   setupScreen() {
     return new Promise(res => {
       const lvls = LEVELS.map(l => '<label class="lvl"><input type="radio" name="lv" value="' + l.n + '" ' + (l.n === 0 ? 'checked' : '') + '><span><b>' + l.name + '</b><br><span>' + l.sub + '</span></span></label>').join('');
-      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label> <label title="Jefe final de prueba: la Banda de Bubba aparece al final de la partida"><input type="checkbox" id="x5"> Exp. 5 · Jefe final: la Banda de Bubba</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label> <button id="teamBtn" title="Mira las cartas de los Héroes y Civiles Heroicos y elige tu equipo">Elegir equipo</button> <span id="teamInfo" class="sub"></span></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
+      const b = this._modal('<h2>Dawn of the Zeds</h2><p>Elige el nivel de juego (solitario o cooperativo en el mismo dispositivo).</p><div class="lvls">' + lvls + '</div><div class="row"><label><input type="checkbox" id="x1"> Exp. 1 · Un paso al frente</label> <label><input type="checkbox" id="x2"> Exp. 2 · El blues del novato</label> <label><input type="checkbox" id="x3"> Exp. 3 · Rumores y ferrocarriles</label> <label><input type="checkbox" id="x4"> Exp. 4 · Fiesta privada (Fanmade)</label> <label title="Jefe final de prueba: la Banda de Bubba aparece al final de la partida"><input type="checkbox" id="x5"> Exp. 5 · Jefe final: la Banda de Bubba</label></div><div class="row"><label>Duración: <select id="lenSel"></select></label> <label id="heroLbl">Héroe personal: <select id="heroSel"></select></label> <label>Tipo: <select id="modeSel"><option value="normal">Normal</option><option value="equi">Equilibrada (un científico)</option><option value="draft1">Draft 1 (rechaza 1)</option><option value="draft2">Draft 2 (rechaza 2)</option><option value="draft3">Draft 3 (rechaza 3)</option></select></label> <label><input type="checkbox" id="heroAll"> Elegir los 4 héroes</label> <button id="teamBtn" title="Mira las cartas de los Héroes y Civiles Heroicos y elige tu equipo">Elegir equipo</button> <span id="teamInfo" class="sub"></span></div><div class="row"><label>Jugadores: <select id="nPl"><option value="1">1 (solitario)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div><div id="plRows"></div><div class="row" id="heroMore" hidden><select id="heroSel2"></select> <select id="heroSel3"></select> <select id="heroSel4"></select></div><div class="row"><button id="seedMake">Crear semilla</button> <input id="seedTxt" placeholder="Código de partida" size="22" autocomplete="off" spellcheck="false"> <button id="seedPaste">Pegar</button> <button id="seedCopy">Copiar</button> <button id="seedUse">Usar semilla</button> <button id="seedOff" hidden>Quitar semilla</button></div><p id="seedMsg" class="sub" hidden></p><div class="opts"><button id="backBtn">Volver</button><button class="primary" id="goBtn">Empezar la partida</button></div>', 'setup');
       $('backBtn').onclick = () => { ui._close(); res(null); };
       let seed = null; /* { code, seed } cuando hay un código de partida activo */
       let civhSel = null, teamExtra = [];  /* Civil Heroico elegido a mano; Héroes elegidos de más en cooperativo (los primeros van a los jugadores) */
@@ -851,6 +951,7 @@ const ui = {
         G.expSel = [1, 2, 3, 4, 5].filter(k => $('x' + k) && $('x' + k).checked); const pool = n === 0 ? [] : heroPoolFor(n);
         sels().forEach((e, i) => { e.innerHTML = n === 0 ? '<option value="">(los 4 Héroes básicos)</option>' : '<option value="">' + (i ? 'Héroe ' + (i + 1) + ': al azar' : 'Al azar') + '</option>' + pool.map(k => '<option value="' + k + '">' + HEROES[k].name + '</option>').join(''); if (pool.includes(keep[i])) e.value = keep[i]; });
         teamExtra = teamExtra.filter(k => pool.includes(k)); if (n === 0 || (civhSel && !civhPool(n).includes(civhSel))) civhSel = null; $('teamBtn').disabled = n === 0; teamTxt();
+        $('modeSel').disabled = n === 0; if (n === 0) $('modeSel').value = 'normal';
         $('heroAll').disabled = n === 0; $('heroMore').hidden = n === 0 || !$('heroAll').checked; $('heroLbl').firstChild.textContent = $('heroAll').checked ? 'Héroe 1: ' : 'Héroe personal: ';
         /* Cooperativo: cada jugador pone su nombre y elige su Héroe Personal (los selectores de un solo jugador se ocultan). */
         const np = +$('nPl').value, prev = [...document.querySelectorAll('#plRows .plname')].map(e => e.value), prevH = [...document.querySelectorAll('#plRows .plhero')].map(e => e.value);
@@ -861,8 +962,8 @@ const ui = {
       };
       const players = () => { const np = +$('nPl').value; if (np < 2) return null; const nm = [...document.querySelectorAll('#plRows .plname')], hs = [...document.querySelectorAll('#plRows .plhero')]; return Array.from({ length: np }, (_, i) => ({ name: (nm[i] && nm[i].value.trim()) || 'Jugador ' + (i + 1), hero: (hs[i] && hs[i].value) || '' })); };
       const picked = () => { const n = +b.querySelector('input[name=lv]:checked').value; if (n === 0) return []; if (+$('nPl').value > 1) return teamExtra.slice(); const v = sels().slice(0, $('heroAll').checked ? 4 : 1).map(e => e.value).filter(Boolean); return v; };
-      const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4, 5].filter(k => $('x' + k).checked), heroes: picked(), civh: civhSel });
-      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #x5, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4, #teamBtn').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
+      const form = () => ({ level: +b.querySelector('input[name=lv]:checked').value, len: +$('lenSel').value, exps: [1, 2, 3, 4, 5].filter(k => $('x' + k).checked), heroes: picked(), civh: civhSel, mode: $('modeSel').value });
+      const lock = on => { b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #x5, #lenSel, #heroAll, #heroSel, #heroSel2, #heroSel3, #heroSel4, #teamBtn, #modeSel').forEach(e => e.disabled = on); $('seedMake').disabled = on; $('seedUse').hidden = on; $('seedPaste').hidden = on; $('seedTxt').hidden = on; $('seedOff').hidden = !on; if (!on) upd(); };
       const msg = (t, bad) => { $('seedMsg').hidden = !t; $('seedMsg').textContent = t || ''; $('seedMsg').style.color = bad ? '#ff8a7a' : ''; };
       b.querySelectorAll('input[name=lv], #x1, #x2, #x3, #x4, #x5, #heroAll, #nPl').forEach(i => i.onchange = upd); upd();
       $('teamBtn').onclick = async () => {
@@ -902,7 +1003,7 @@ const ui = {
       $('goBtn').onclick = () => {
         const f = form(), pls = players(), ph = pls ? pls.map(p => p.hero).filter(Boolean) : [], dup = (f.heroes.length > 1 && new Set(f.heroes).size !== f.heroes.length) || new Set(ph).size !== ph.length; if (dup) { msg('Hay héroes repetidos.', true); return; }
         DEBUG_DICE = !!ui.dbgDice; ui._close();
-        res({ level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), players: pls, exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null, civh: civhSel || null });
+        res({ mode: f.mode, level: f.level, len: f.len, hero: f.heroes.length > 1 ? f.heroes : (f.heroes[0] || null), players: pls, exps: f.exps, seed: seed ? seed.seed : null, seedCode: seed ? seed.code : null, civh: civhSel || null });
       };
     });
   },
@@ -957,11 +1058,18 @@ const ui = {
       const done = () => { t.remove(); document.body.classList.remove('booting'); res(); };
       t.onclick = () => {
         t.onclick = null; const p0 = t.querySelector('p'); if (p0) p0.remove();
-        this.musicOn();
+        try { this.musicOn(); } catch (e) { }
         const v = document.createElement('video'); v.id = 'openVid'; v.src = 'assets/opening.mp4'; v.playsInline = true;
         v.onended = done; v.onerror = done; t.appendChild(v);
-        const p = v.play(); if (p && p.catch) p.catch(done);
+        /* Si el vídeo no arranca (carga atascada, códec o reproducción bloqueada) no se deja al jugador en la pantalla inicial; un clic sobre el vídeo también lo salta. */
+        /* Con ratón, un doble clic (o un clic repetido) caía sobre el vídeo recién creado y lo saltaba al instante: solo se puede saltar cuando ya lleva medio segundo reproduciéndose. */
+        v.onclick = () => { if (v.currentTime > .5) done(); }; const wd = setTimeout(() => { if (v.currentTime < .1) done(); }, 6000); v.onplaying = () => clearTimeout(wd);
+        /* Si el navegador bloquea el vídeo con sonido, se reintenta sin sonido antes de rendirse. */
+        const fallo = () => { v.muted = true; try { const q = v.play(); if (q && q.catch) q.catch(done); } catch (e) { done(); } };
+        try { const p = v.play(); if (p && p.catch) p.catch(fallo); } catch (e) { done(); }
       };
+      /* Si el jugador ya pulsó mientras cargaba el juego, arranca sin pedirle otro clic. */
+      if (window.__introClick) t.onclick();
     });
   },
   musicStop() {
@@ -1188,7 +1296,8 @@ const ui = {
     $('chrBack').onclick = () => { this._modal(this._endHtml); this._bindEnd(); };
   }
 };
-function payFire(u) {
+const payFire = extensible('payFire', basePayFire);
+function basePayFire(u) {
   if (G.turn.mercs) return;
   if (u.key === 'jones' || isPetra(u)) { G.supplies--; return; }
   if ((u.key === 'staub' || u.key === 'division12') && !G.firstFreeUsed[u.key]) { G.firstFreeUsed[u.key] = true; return; }

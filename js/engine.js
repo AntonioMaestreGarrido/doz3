@@ -4,6 +4,16 @@
 const G = {};
 let UI = null;
 function bindUI(u) { UI = u; }
+/* Puntos de extensión: las funciones que las expansiones amplían se declaran con extensible() y se amplían con extend() (expansions.js, expansions2.js).
+   extend(nombre, fn): fn recibe como primer argumento la versión anterior de la función (la base o la ampliación registrada antes) y después los argumentos
+   de la llamada. La última ampliación registrada es la que se ejecuta primero. */
+const EXT = {};
+function extensible(name, base) {
+  const ws = EXT[name] = [];
+  const call = (k, args) => k < 0 ? base(...args) : ws[k]((...a) => call(k - 1, a), ...args);
+  return (...args) => call(ws.length - 1, args);
+}
+function extend(name, fn) { if (!EXT[name]) throw new Error('extend: «' + name + '» no es un punto de extensión'); EXT[name].push(fn); }
 /* Generador con semilla (mulberry32): su estado se guarda con la partida para que repetir una acción dé las mismas tiradas. */
 let RNG_S = 1;
 function rngSeed(v) { RNG_S = v >>> 0; }
@@ -23,6 +33,8 @@ function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i +
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const LOG = (m, c) => UI && UI.log(m, c);
+/* La acción en curso ha revelado información oculta (una carta, un mazo): ya no se puede deshacer, aunque no haya tirado dados. */
+function noUndo() { if (UI) UI._noUndo = true; }
 
 /* ================= TABLERO ================= */
 function buildBoard() {
@@ -73,7 +85,7 @@ const isCrypt = id => sp(id).kind === 'crypt';
 /* ================= UNIDADES ================= */
 let UID = 1;
 function newUnit(o) { const u = Object.assign({ id: 'u' + (UID++), hits: 0, flipped: false, space: null, free: 0, hf: 1, hr: 1 }, o); G.units[u.id] = u; return u; }
-let strength = u => (u.flipped ? u.red : u.full) + (u.trained ? 2 : 0);
+const strength = extensible('strength', u => (u.flipped ? u.red : u.full) + (u.trained ? 2 : 0));
 const isZedSide = u => u.side === 'zed';
 const isPetra = u => !!u && u.skey === 'petra';   /* Ángeles de Petra (su tipo en SPECIALS es civh) */
 const isFighter = u => u.side === 'pl' && !['refugee', 'aldeano', 'train'].includes(u.type);  /* los Trenes (exp. 3) no combaten, no se retiran ni sufren Impactos */
@@ -81,7 +93,8 @@ const isSoft = u => u.type === 'refugee' || u.type === 'aldeano';
 const isHero = u => u.type === 'hero';
 const isCiv = u => u.type === 'civ';
 /* why (opcional): causa concreta de la colocación (p. ej. «Brote»); si no, vale la causa en curso. */
-function putUnit(u, id, why) {
+const putUnit = extensible('putUnit', basePutUnit);
+function basePutUnit(u, id, why) {
   const from = u.space;
   if (u.space && G.spaces[u.space]) { const o = sp(u.space); o.units = o.units.filter(x => x !== u.id); }
   u.space = id; if (id && G.spaces[id]) sp(id).units.push(u.id);
@@ -99,8 +112,10 @@ function removeUnit(u) {
 function unitsAt(id) { return sp(id).units.map(x => G.units[x]).filter(Boolean); }
 const zedsAt = id => unitsAt(id).filter(isZedSide);
 /* Nombres inequívocos para preguntas: un Zed o una Horda, con su fuerza y su espacio. */
-function zedGroupName(zs, id) { return (zs.length > 1 ? 'Horda de ' + zs.length + ' Zeds (fuerza ' + zs.map(strength).join('+') + ')' : zs[0].name + ' (fuerza ' + strength(zs[0]) + ')') + ' en ' + spaceLabel(id); }
-function zedLabel(z) { return z.name + ' (fuerza ' + strength(z) + ')' + (z.hits ? ' ' + '♥'.repeat(z.hits) : '') + (z.flipped ? ' · cara reducida' : '') + ' en ' + spaceLabel(z.space); }
+/* Fuerza de un Zed en texto: completa/reducida (p. ej. 9/3). Los Zeds siempre muestran las dos caras. */
+const zF = u => u.side === 'zed' ? u.full + '/' + u.red : strength(u);
+function zedGroupName(zs, id) { return (zs.length > 1 ? 'Horda de ' + zs.length + ' Zeds (fuerza ' + zs.map(zF).join('+') + ')' : zs[0].name + ' (fuerza ' + zF(zs[0]) + ')') + ' en ' + spaceLabel(id); }
+function zedLabel(z) { return z.name + ' (fuerza ' + zF(z) + ')' + (z.hits ? ' ' + '♥'.repeat(z.hits) : '') + (z.flipped ? ' · cara reducida' : '') + ' en ' + spaceLabel(z.space); }
 const normalZedsAt = id => zedsAt(id).filter(u => u.type !== 'spreader');
 const plAt = id => unitsAt(id).filter(isFighter);
 const softAt = id => unitsAt(id).filter(isSoft);
@@ -133,7 +148,8 @@ function playerRoom(id, u) {
   if (s.route === 'T' && s.kind !== 'crypt' && s.i !== lastOf('T')) return here === 0 && !zedsAt(id).length;
   return here < playerCap(id);
 }
-function terrainOf(id) {
+const terrainOf = extensible('terrainOf', baseTerrainOf);
+function baseTerrainOf(id) {
   if (G.turn.noTerrain) return 0;
   const s = sp(id); let t = 0;
   if (s.kind === 'city' || s.kind === 'centro') t = 2; else if (s.kind === 'pueblo' || s.kind === 'named' || (s.route && s.name && s.kind !== 'init')) t = 1;
@@ -261,7 +277,8 @@ async function cordonSanitario(n, space) {
   }
   LOG('Cordón sanitario: ' + b.name + ' reduce la subida de Infección de +' + n + ' a +' + r + '.', 'good'); return r;
 }
-function meleeInfection(zs, h) {
+const meleeInfection = extensible('meleeInfection', baseMeleeInfection);
+function baseMeleeInfection(zs, h) {
   let n = 1;
   for (const z of zs) { if (z.toxic) n = Math.max(n, 3); if (z.key === 'supurador') n = Math.max(n, 3); if (z.key === 'lobo') n = Math.max(n, 2); }
   if (h && (h.key === 'horacio' || h.key === 'antidist' || h.key === 'bender')) return 0;
@@ -290,7 +307,7 @@ async function hitZed(t) {
   const r = hitUnitOnce(t); EVT('zhit', ACTOR, { z: t.name, r });
   if (r === 'flip') { LOG(t.name + ' queda con Fuerza reducida (' + t.red + ').'); await UI.fxFlip(t, before); }
   else if (r === 'dead') await zedDies(t);
-  else { LOG('Impacto a ' + t.name + ' ' + strength(t) + ' (' + t.hits + ').'); await UI.fxHit(t); }
+  else { LOG('Impacto a ' + t.name + ' ' + zF(t) + ' (' + t.hits + ').'); await UI.fxHit(t); }
   UI.redraw();
 }
 async function zedDies(t) {
@@ -353,6 +370,8 @@ function saveBonus() {
 }
 async function unitDown(u) {
   const where = u.space;
+  /* Saqueadores y la Banda de Bubba no tienen tirada de Salvación: se eliminan sin tirar dados. */
+  if (u.side === 'raid') { await sendCemetery(u, 'es eliminada'); return; }
   if (G.lv.infection && u.side === 'pl') { const v = await UI.choose({ title: 'Último Impacto: ' + u.name, text: '¿Haces la tirada de Salvación (4-6: al Hospital, +1 Infección) o la mandas directamente al Cementerio?', options: [{ label: 'Tirada de Salvación', value: 'y' }, { label: 'Al Cementerio', value: 'n' }] }); if (v === 'n') { await sendCemetery(u, 'renuncia a la tirada de Salvación'); return; } }
   let r;
   if (DEBUG_DICE) { /* con Debug, la tirada se muestra con Continuar y el botón Debug para cambiar los dados */
@@ -365,7 +384,6 @@ async function unitDown(u) {
     else r = await zen1(r, 'Tirada de Salvación');
   }
   const tot = r + saveBonus();
-  if (u.side === 'raid') { await sendCemetery(u, 'es eliminada'); return; }
   LOG(u.name + ' recibe su último Impacto. Tirada de Salvación: ' + r + (saveBonus() ? '+' + saveBonus() : '') + '.', 'bad');
   await UI.fxSave(u, r, tot > 3, saveBonus());
   if (tot <= 3) { await sendCemetery(u, 'no se salva'); return; }
@@ -401,7 +419,7 @@ async function unitDown2(u, where) {
   if (G.turn.outbreakLocal && wasCiv && where && isRouteSp(where)) await brotLocalZed(where);
 }
 async function dischargeSomeone(forceCem, o) {
-  const cands = BEDS.map(b => unitsAt(b)[0]).filter(Boolean);
+  const cands = BEDS.map(b => G.spaces[b] && unitsAt(b)[0]).filter(Boolean);
   if (!cands.length) return false;
   const v = await UI.chooseCards({ title: (o && o.title) || 'Dar de alta', text: (o && o.text) || 'Elige la unidad a dar de alta (sin ECG: al Centro; con ECG: Cementerio).', options: cands.map(u => unitOpt(u, u.ecg ? ' (coma → Cementerio)' : '')), extra: o && o.none ? [{ label: o.none, value: null }] : null });
   if (v === null) return false;
@@ -435,9 +453,10 @@ async function retreatZeds(zeds, startId) {
   const landed = {};
   for (const z of sorted) {
     let i = s0.i;
-    while (i >= 0 && (z.type !== 'spreader') && (normalZedsAt(s0.route + i).length >= zedCap(s0.route + i) && sp(s0.route + i).kind !== 'crypt' || blocked(s0.route + i))) i--;
+    /* El propio Zed no cuenta para el límite: si la retirada empieza en su espacio (está en un Inicial), se queda donde está. */
+    while (i >= 0 && (z.type !== 'spreader') && (normalZedsAt(s0.route + i).filter(x => x !== z).length >= zedCap(s0.route + i) && sp(s0.route + i).kind !== 'crypt' || blocked(s0.route + i))) i--;
     if (i < 0) { const f = firstOpenInitial(); if (f) { putUnit(z, f); LOG('Un Zed retirado se coloca en ' + spaceLabel(f) + '.'); } else { returnZed(z); } continue; }
-    const d = s0.route + i; putUnit(z, d); z.moved = true; LOG(z.name + ' (' + strength(z) + ') se retira a ' + spaceLabel(d) + '.');
+    const d = s0.route + i; putUnit(z, d); z.moved = true; LOG(z.name + ' (' + zF(z) + ') se retira a ' + spaceLabel(d) + '.');
     (landed[d] = landed[d] || []).push(z);
   }
   UI.redraw();
@@ -481,7 +500,7 @@ function hasPart(k) { return G.weapon && G.weapon.parts.includes(k); }
 function weaponFor(u, k) { return hasPart(k) && !(u && u.type === 'guard' && !u.reachedC && !(u.space && G.spaces[u.space] && isCity(u.space))); }
 function zedShifts(zs, o) {
   const s = [];
-  const by = f => zs.filter(f).map(z => z.name + ' ' + strength(z)).join(', ');
+  const by = f => zs.filter(f).map(z => z.name + ' ' + zF(z)).join(', ');
   if (zs.some(z => z.smart)) s.push({ label: 'Inteligentes', v: -1, by: by(z => z.smart) });
   if (zs.some(z => z.leader)) s.push({ label: 'Líder Zed', v: -1, by: by(z => z.leader) });
   if (G.turn.flamed && zs.some(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id))) s.push({ label: 'Zeds flambeados', v: -2, by: by(z => G.turn.flamedUnits && G.turn.flamedUnits.includes(z.id)) });
@@ -527,9 +546,16 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if (!zeds.length || !hum.length) return {};
   const attackerHuman = o.attacker === 'h';
   const space = o.space;
-  let fighter = hum[0];
-  if (!attackerHuman && hum.length > 1) {
-    const v = await UI.choose({ title: 'Elige la unidad defensora', text: 'Varias unidades en ' + spaceLabel(space) + '. La elegida recibe todos los Impactos.', options: hum.map(u => ({ label: u.name + ' (Fuerza ' + strength(u) + ')', value: u.id })) });
+  /* Defensoras posibles: las que pueden combatir (no Refugiados, Aldeanos ni Trenes), salvo que no quede ninguna. */
+  const defs = hum.filter(isFighter).length ? hum.filter(isFighter) : hum;
+  let fighter = defs[0];
+  /* Grupo que llega (p. ej. un Héroe montado con el General Lee): el jugador elige quién combate. */
+  if (attackerHuman && hum.length > 1) {
+    const v = await UI.choose({ title: 'Elige quién combate', text: 'Van juntos en ' + spaceLabel(space) + '. Solo combate la unidad que elijas.', options: hum.map(u => ({ label: u.name + ' (Fuerza ' + strength(u) + ')', value: u.id })) });
+    fighter = G.units[v] || fighter;
+  }
+  if (!attackerHuman && defs.length > 1) {
+    const v = await UI.choose({ title: 'Elige la unidad defensora', text: 'Varias unidades en ' + spaceLabel(space) + '. La elegida recibe todos los Impactos.', options: defs.map(u => ({ label: u.name + ' (Fuerza ' + strength(u) + ')', value: u.id })) });
     fighter = G.units[v];
   }
   if (!attackerHuman) for (const u of unitsAt(space)) if (u.resist && (fighter.side === 'pl')) { u.resist = false; LOG(u.name + ' deja de estar Resistiendo.'); }
@@ -562,6 +588,10 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
       const r = await rollShownFor(fighter, 'Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido' : '<b>' + r + '</b>: combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos: ' + r);
       if (r >= 2) { LOG('Pepinillos pasa desapercibido.', 'good'); return await sigue(); }
     }
+    if (fighter.key === 'snake') {
+      const r = await rollShownFor(fighter, 'Infiltración (Solid Snake)', r => r >= 3 ? '<b>' + r + '</b>: pasa desapercibido' : '<b>' + r + '</b>: combate Cuerpo a Cuerpo'); LOG('Infiltración de Solid Snake: ' + r);
+      if (r >= 3) { LOG('Solid Snake pasa desapercibido.', 'good'); return await sigue(); }
+    }
     if (fighter.key === 'darling') {
       const r = await rollShownFor(fighter, 'Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r);
       if (r >= 3) { o.assassin = true; o.noInf = true; }
@@ -569,7 +599,11 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
     }
     if (fighter.key === 'alia' && sp(space).route && space !== 'C') {
       const bk = nextToward(space);
-      if (bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter) && await UI.choose({ title: 'Evasión (Alia)', text: 'Un Zed entra en el espacio de Alia. ¿Intenta evadirlo? (tira 1 dado: con 4-6 se retira gratis 1 espacio hacia el Centro antes del combate).', options: [{ label: 'Intentar evadirlo', value: 'y' }, { label: 'Combatir', value: 'n' }] }) === 'y') {
+      /* Evasión opcional (tirada): junto a ella se puede cambiar la unidad defensora si hay varias en el espacio (la tirada es voluntaria; las automáticas no). */
+      const evOpts = [{ label: 'Intentar evadirlo', value: 'y' }, { label: 'Combatir', value: 'n' }].concat(defs.length > 1 ? [{ label: 'Cambiar defensora', value: 'c' }] : []);
+      const evV = bk && !blocked(bk) && !zedsAt(bk).length && !raidAt(bk).length && playerRoom(bk, fighter) ? await UI.choose({ title: 'Evasión (Alia)', text: 'Un Zed entra en el espacio de Alia. ¿Intenta evadirlo? (tira 1 dado: con 4-6 se retira gratis 1 espacio hacia el Centro antes del combate).', options: evOpts }) : 'n';
+      if (evV === 'c') return await melee(Object.assign({}, o));
+      if (evV === 'y') {
         const r = await rollShownFor(fighter, 'Evasión (Alia)', r => r >= 4 ? '<b>' + r + '</b>: se retira 1 espacio hacia el Centro antes del combate' : '<b>' + r + '</b>: no se retira (necesita 4-6)'); LOG('Evasión de Alia: ' + r);
         if (r >= 4) { LOG('Alia se escabulle antes del combate.', 'good'); await retreatAndFight([fighter], 'C'); return await sigue(); }
       }
@@ -589,7 +623,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   if (!UI.fast) { if (zeds.length > 1) Sfx.horde(); else Sfx.growl(); }
   await UI.fxClash(space, attackerHuman ? fighter : zeds[0], attackerHuman ? zeds[0] : fighter);
   let initialCard = 0;
-  const zStr = zeds.reduce((a, z) => a + strength(z), 0), pStr = strength(fighter) + meleeStrengthBonus(fighter, { attacking: attackerHuman });
+  const zStr = zeds.reduce((a, z) => a + strength(z), 0), zShow = zeds.length === 1 ? zF(zeds[0]) : zeds.reduce((a, z) => a + z.full, 0) + '/' + zeds.reduce((a, z) => a + z.red, 0), pStr = strength(fighter) + meleeStrengthBonus(fighter, { attacking: attackerHuman });
   const betty = fighter.key === 'betty' && zeds.every(z => isZedSide(z));
   const initCol = betty ? bettyCol(fighter) : ratioCol(zStr, pStr);
   const shifts = betty ? (weaponFor(fighter, 'nudillos') && attackerHuman ? [{ label: 'Nudillos Zeds', v: 1 }] : []) : humanShifts(fighter, { attacking: attackerHuman, vsPlayers: false });
@@ -597,8 +631,12 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   const zs = betty ? [] : zedShifts(zeds, o); for (const s of zs) shifts.push(s);
   if (!attackerHuman && !betty) {
     const sal = zeds.some(z => z.key === 'saltarin');
-    const t = (G.lv.n >= 0 && !sal) ? terrainOf(space) : 0;
+    /* El Terreno del espacio y el bono de los trenes (exp. 3, +1 cada uno) se muestran por separado. */
+    const tAll = (G.lv.n >= 0 && !sal) ? terrainOf(space) : 0;
+    const tTren = tAll && !G.turn.noTerrain ? trainsAt(space).length : 0;
+    const t = tAll - tTren;
     if (t) shifts.push({ label: 'Terreno (' + spaceLabel(space) + ')', v: t });
+    if (tTren) shifts.push({ label: 'Tren (' + spaceLabel(space) + ')', v: tTren });
   }
   if (o.assassin && !betty) shifts.push({ label: 'Ataque asesino (Darling)', v: 2 });
   if (attackerHuman && fighter.key === 'alia' && o.from && sp(o.from) && sp(space).route && sp(o.from).route === sp(space).route && sp(space).i > sp(o.from).i) shifts.push({ label: 'Emboscada (Alia)', v: 2 });
@@ -616,7 +654,7 @@ async function melee(o) { // { zeds, hum, space, attacker:'z'|'h', from, forceCo
   /* Cordón sanitario (Brigada de Contención Sanitaria): la subida de Infección de un combate en su espacio baja 1 gratis (el pago opcional se ofrece al final del combate). */
   const infBase = !G.lv.infection ? null : o.noInf || vsPl ? 0 : meleeInfection(zeds, fighter);
   const infGain = infBase > 0 && brigadaEn(space) ? infBase - 1 : infBase;
-  const cinfo = { canUndo: !!o.undoable && attackerHuman, title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, pStr, initCol, shifts, finalCol, extraDice, infGain, cards: combatCards(fighter, attackerHuman) };
+const cinfo = { canUndo: !!o.undoable && attackerHuman, title: attackerHuman ? 'Combate: ' + fighter.name + ' ataca' : 'Combate: ataque a ' + spaceLabel(space), zeds, fighter, zStr, zShow, pStr, initCol, shifts, finalCol, extraDice, infGain, cards: combatCards(fighter, attackerHuman) };
   cinfo.useCard = async c => { if (c.cancel) { cinfo.cancelled = true; return; } if (playCombatCard(c, fighter, o, shifts)) { finalCol = recalcCol(); cinfo.finalCol = finalCol; } };
   const h = UI.combatOpen(cinfo);
   let dice = await h.roll(extraDice);
@@ -733,7 +771,8 @@ async function convertAldeanos(space) {
     const nx = nextToward(space); if (nx !== 'C' && !zedsAt(nx).length) putUnit(u, nx); else if (nx === 'C') await refugeeArrives(u);
   }
 }
-async function refugeeArrives(u) {
+const refugeeArrives = extensible('refugeeArrives', baseRefugeeArrives);
+async function baseRefugeeArrives(u) {
   await infUp(1); putUnit(u, 'CAMP'); LOG(u.name + ' llega al Campo de Refugiados.', 'good');
   if (u.vip) await vipBenefit(u);
 }
@@ -769,7 +808,8 @@ function shortcuts(u, cur) {
   const n = spaceNum(cur);
   return SHORT_ADJ[s.route].filter(r => G.routes.includes(r)).map(r => r + (lastOf(r) - n)).filter(id => G.spaces[id]);
 }
-function reachable(u, extra) {
+const reachable = extensible('reachable', baseReachable);
+function baseReachable(u, extra) {
   /* Las unidades del Campo de Refugiados ya han llegado: no vuelven a moverse (si no, cada «llegada» repetida sumaría Infección, Rumores y beneficios V.I.P.). */
   const out = {}; if (!canAct(u) || u.resist || u.type === 'aldeano' || sp(u.space).kind === 'camp') return out;
   if (G.turn.noSurfaceMove && isSurface(u.space)) return out;
@@ -797,20 +837,22 @@ function reachable(u, extra) {
   }
   for (const id in best) if (id !== u.space && canStop(u, id)) out[id] = best[id];
   Object.defineProperty(out, 'prev', { value: prev, enumerable: false });
-  if (u.key === 'alia') {
-    const st = stealthReach(u, mp), paths = {};
+  if (u.key === 'alia' || u.key === 'snake') {
+    const st = stealthReach(u, mp, u.key === 'snake'), paths = {};
     for (const id in st) if (out[id] === undefined || st[id].cost < out[id]) { out[id] = st[id].cost; paths[id] = st[id].path; }
     Object.defineProperty(out, 'stealthPath', { value: paths, enumerable: false });
   }
   return out;
 }
 /* Alia, Sigilo: atraviesa espacios con Zeds sin combatir (sin coste extra de Movimiento, ignora el Caos) y debe acabar en un espacio libre de Zeds.
+   Solid Snake, Infiltración: igual (sin ignorar el Caos), pero puede acabar en un espacio con Zeds (endInZeds) tirando el dado de Infiltración al llegar.
    Devuelve solo los destinos que obligan a atravesar Zeds, con su coste y recorrido. */
-function stealthReach(u, mp) {
+function stealthReach(u, mp, endInZeds) {
   const key = (id, f) => id + ':' + f, best = { [key(u.space, 0)]: 0 }, prev = {}, q = [[u.space, 0]], res = {};
   while (q.length) {
     const [cur, f] = q.shift(), cb = best[key(cur, f)];
     if (cur !== u.space && raidAt(cur).length) continue;
+    if (endInZeds && cur !== u.space && sp(cur).chaos) continue;  /* Snake no ignora el Caos (Alia sí) */
     const hasZ = cur !== u.space && zedsAt(cur).length > 0;
     for (const n of neighbors(cur).concat(shortcuts(u, cur))) {
       const s = sp(n);
@@ -826,7 +868,7 @@ function stealthReach(u, mp) {
   }
   for (const k in best) {
     const [id, f] = k.split(':'); if (f !== '1' || id === u.space) continue;
-    if (zedsAt(id).length || raidAt(id).length || !canStop(u, id)) continue;
+    if ((!endInZeds && (zedsAt(id).length || raidAt(id).length)) || !canStop(u, id)) continue;  /* Solid Snake sí puede acabar entre Zeds (tira Infiltración al llegar) */
     if (res[id] && res[id].cost <= best[k]) continue;
     const path = [id]; let c = k; for (let i = 0; i < 60 && prev[c]; i++) { c = prev[c]; path.push(c.split(':')[0]); }
     res[id] = { cost: best[k], path: path.reverse() };
@@ -847,24 +889,35 @@ async function doMove(u, dest, path, undoable) {
   if (u.space && G.spaces[u.space] && sp(u.space).kind === 'crypt' && !u.dr && !wAtajo && !(await cryptRollPlayer(u))) return;
   const from = u.space, back = path && path.length > 1 ? path.slice(0, -1).reverse() : null, prevSp = back ? back[0] : from; putUnit(u, dest); EVT('move', u.id, { from, to: dest }); LOG(u.name + ' se mueve a ' + spaceLabel(dest) + '.'); UI.redraw(); await UI.settle();
   if (isSoft(u)) { if (dest === 'C') await refugeeArrives(u); return; }
+  /* El General Lee llega al Centro con su jinete: el jinete puede bajarse en el Centro o pasar a una cama libre del Hospital. */
+  if (u.key === 'lee' && dest === 'C' && u.rider && G.units[u.rider]) await leeArrivesCentro(u);
   const zs = zedsAt(dest), rs = raidAt(dest);
   if (u.key === 'pepinillos' && (zs.length || rs.length)) {
     const r = await rollShownFor(u, 'Sigilo de Pepinillos', r => r >= 2 ? '<b>' + r + '</b>: pasa desapercibido, convive con ellos sin combate' : '<b>' + r + '</b>: lo descubren, combate Cuerpo a Cuerpo'); LOG('Sigilo de Pepinillos al entrar en ' + spaceLabel(dest) + ': ' + r);
     if (r >= 2) { LOG('Pepinillos pasa desapercibido.', 'good'); return; }
   }
+  if (u.key === 'snake' && (zs.length || rs.length)) {
+    const r = await rollShownFor(u, 'Infiltración (Solid Snake)', r => r >= 3 ? '<b>' + r + '</b>: pasa desapercibido, convive con ellos sin combate' : '<b>' + r + '</b>: lo descubren, combate Cuerpo a Cuerpo'); LOG('Infiltración de Solid Snake al entrar en ' + spaceLabel(dest) + ': ' + r);
+    if (r >= 3) { LOG('Solid Snake pasa desapercibido.', 'good'); return; }
+  }
   if (zs.length) {
     let assassin = false;
     if (u.key === 'darling') { const r = await rollShownFor(u, 'Ataque asesino (Alyssa Darling)', r => r >= 3 ? '<b>' + r + '</b>: ataque asesino (2 columnas a favor, sin Infección ni daño)' : r === 1 ? '<b>' + r + '</b>: combate normal' : '<b>' + r + '</b>: puede retroceder o luchar'); LOG('Ataque asesino: ' + r); if (r >= 3) assassin = true; else if (r === 1) {/* combate normal */} else { const v = await UI.choose({ title: 'Darling', text: 'Puedes retroceder o luchar.', options: [{ label: 'Retroceder', value: 'b' }, { label: 'Luchar', value: 'f' }] }); if (v === 'b') { putUnit(u, from); return; } } }
-    const rr0 = await melee({ zeds: zs, hum: [u], space: dest, attacker: 'h', from: prevSp, back, assassin, noInf: assassin, undoable: undoable && rngState() === rng0 });
+    /* Un jinete va con su caballo (General Lee): ambos forman el grupo que llega y se elige cuál combate. */
+    const grupo = [u].concat(u.rider && G.units[u.rider] && G.units[u.rider].space === u.space ? [G.units[u.rider]] : []);
+    const rr0 = await melee({ zeds: zs, hum: grupo, space: dest, attacker: 'h', from: prevSp, back, assassin, noInf: assassin, undoable: undoable && rngState() === rng0 });
     if (rr0.undone) { UI._undoRequested = true; return; }
     if (u.key === 'betty' && rr0.humanWon) await bettyChain(u);
-  } else if (rs.length) { await melee({ zeds: rs, hum: [u], space: dest, attacker: 'h', from: prevSp, back }); }
+  } else if (rs.length) { const grupo = [u].concat(u.rider && G.units[u.rider] && G.units[u.rider].space === u.space ? [G.units[u.rider]] : []); await melee({ zeds: rs, hum: grupo, space: dest, attacker: 'h', from: prevSp, back }); }
 }
 
 /* ================= DISPARO ================= */
 function fireRange(u) { if (u.nofire || u.key === 'furias' || u.type === 'refugee' || u.type === 'aldeano') return 0; if (u.space && sp(u.space).route === 'T') return 1; return u.key === 'piazza' ? 3 : (u.key === 'hunt' || u.key === 'caza' || u.type === 'marine') ? 2 : 1; }
-function fireTargets(u) {
+const fireTargets = extensible('fireTargets', baseFireTargets);
+function baseFireTargets(u) {
   const out = {}; const r = fireRange(u); if (!r || !u.space || isInit(u.space)) return out;
+  /* Solid Snake, Disparo silenciado: alcance 0, solo a los Zeds de su propio espacio. */
+  if (u.key === 'snake') { if (zedsAt(u.space).length) out[u.space] = 0; return out; }
   const s = sp(u.space);
   const add = (id, d) => { if (id && sp(id) && (zedsAt(id).length) && !isInit(id) && (!out[id] || out[id] > d)) out[id] = d; };
   for (let d = 1; d <= r; d++) {
@@ -879,10 +932,26 @@ function fireStrength(u, d) {
   if (u.key === 'staub' && u.flipped) return 2;
   return strength(u);
 }
+/* Solid Snake, Despedida silenciosa: cuando un grupo de Zeds sale del espacio que comparte con él, puede dispararles sin gastar Acción (1 Munición, que recupera si elimina al objetivo).
+   Es un disparo reactivo: sin riesgo de ser detectado. Si elimina al objetivo, 1 Acción gratis de Mover en su próxima fase de Acciones (carryM: el Mantenimiento borra las gratis). Devuelve los Zeds del grupo que siguen en el espacio. */
+async function tiroOportunidad(u, from, go) {
+  if (!u || u.space !== from || G.over) return go;
+  const zs = go.filter(z => z.space === from && G.units[z.id]); if (!zs.length) return go;
+  if (fireTargets(u)[from] === undefined) return go;  /* respeta los eventos que impiden disparar */
+  if (!G.turn.mercs && G.ammo < 1) return go;
+  const v = await UI.choose({ title: 'Despedida silenciosa', text: 'Los Zeds de ' + spaceLabel(from) + ' se van. ¿Solid Snake les dispara (1 Munición, sin Acción; la recupera si elimina al objetivo)?', options: [{ label: 'Disparar', value: 'y' }, { label: 'Dejarlos ir', value: 'n' }] });
+  if (v !== 'y') return go;
+  const ammo0 = G.ammo, o = { targets: zs, reactive: true };
+  await payFire(u); const gastada = ammo0 - G.ammo;
+  await doFire(u, from, 0, o);
+  if (o.killed && gastada > 0) { G.ammo = Math.min(20, G.ammo + gastada); UI.updateStats(); LOG('Despedida silenciosa: la baja devuelve la Munición.', 'good'); }
+  if (o.killed) { u.carryM = (u.carryM || 0) + 1; LOG('Despedida silenciosa: Solid Snake tendrá 1 Acción gratis de Mover en su próxima fase de Acciones.', 'good'); }
+  return go.filter(z => z.space === from && G.units[z.id]);
+}
 async function doFire(u, targetId, dist, opts) {
   opts = opts || {};
   await UI.fxShot(u, targetId, dist);
-  const zs = zedsAt(targetId); let target = zs[0];
+  const zs = opts.targets || zedsAt(targetId); let target = zs[0];
   if (zs.length > 1) { const v = await UI.askZeds({ title: 'Objetivo', text: 'Elige la unidad Zed objetivo.', spaces: zs.map(z => z.space), options: zs.map(z => ({ label: zedLabel(z), value: z.id })) }); target = G.units[v]; }
   let str = opts.str || fireStrength(u, dist); const shifts = [];
   if (G.turn.combineFire && !opts.str) { const mates = unitsAt(u.space).filter(x => x !== u && isFighter(x) && !x.nofire && fireRange(x) >= dist); if (mates.length) { str += mates.reduce((a, x) => a + fireStrength(x, dist), 0); LOG('Plan de guerra negro: ' + mates.map(x => x.name).join(', ') + ' suman su Fuerza (' + str + ').', 'good'); } }
@@ -895,6 +964,7 @@ async function doFire(u, targetId, dist, opts) {
   if (u.key === 'samcarter') shifts.push({ label: 'Oficial de la USAF (Carter)', v: 1 });
   if (u.key === 'frank' && !unitsAt(u.space).some(x => x !== u && isHero(x))) shifts.push({ label: 'Tirador implacable (Frank)', v: 1 });
   if (u.key === 'johnson') shifts.push({ label: 'Armas (Johnson)', v: 2 });
+  if (u.key === 'snake' && dist === 0) shifts.push({ label: 'Disparo silenciado (Solid Snake)', v: 2 });
   if (u.type === 'marine' && dist > 1) shifts.push({ label: 'Largo Alcance', v: -1 });
   if (u.key === 'hunt' && dist === 2) shifts.push({ label: 'Largo Alcance (Hunt)', v: -1 });
   if (weaponFor(u, 'rifle') && u.side === 'pl') shifts.push({ label: 'Rifle Hipno-Z', v: 1 });
@@ -915,6 +985,13 @@ async function doFire(u, targetId, dist, opts) {
   EVT('shot', u.id, { to: targetId, d: dist, hits });
   if (hits) { ACTOR = u.id; try { await applyZedHits([target], hits); } finally { ACTOR = null; } if (u.key === 'caza' && target && (!G.units[target.id] || !target.space)) { G.ammo = Math.min(20, G.ammo + 1); LOG('Trofeo: el Club de Caza recupera 1 Munición.', 'good'); UI.updateStats(); } if (hits >= 2 && weaponFor(u, 'balas')) { const left = zedsAt(targetId); if (left.length) await retreatZeds(left, zedOrigin(left[0])); } }
   else LOG('El disparo no impacta.');
+  /* Solid Snake: 0 Impactos = lo detectan (combate Cuerpo a Cuerpo con los Zeds del espacio); si elimina al objetivo, 1 Acción gratis de Mover. */
+  if (opts.reactive) opts.killed = !!hits && (!target || !G.units[target.id] || !target.space);
+  if (u.key === 'snake' && dist === 0 && u.space && !G.over && !opts.reactive) {
+    const killed = !target || !G.units[target.id] || !target.space;
+    if (!hits) { const left = zedsAt(targetId); if (left.length) { LOG('Solid Snake ha sido detectado: combate Cuerpo a Cuerpo.', 'bad'); await melee({ zeds: left, hum: [u], space: targetId, attacker: 'h' }); } }
+    else if (killed) { u.freeM = (u.freeM || 0) + 1; LOG('Baja silenciosa: Solid Snake recibe 1 Acción gratis de Mover.', 'good'); UI.redraw(); }
+  }
   if (u.key === 'piazza' && u.space && u.space !== 'C' && !opts.noVig) {
     // Retroceder = alejarse del objetivo, es decir, hacia el Centro (índice mayor en la ruta).
     const s = sp(u.space); let back = s.route ? nextToward(u.space) : null;

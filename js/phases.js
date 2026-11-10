@@ -45,7 +45,8 @@ function perimeterBlocks(from, dest) {
   const near = [k.space].concat(adjacentIds(k.space));
   return near.includes(dest);
 }
-async function zedsOccupy(zs, id) {
+const zedsOccupy = extensible('zedsOccupy', baseZedsOccupy);
+async function baseZedsOccupy(zs, id) {
   const here = zs.filter(z => z.space === id); if (!here.length) return;
   const hadChaos = sp(id).chaos > 0;
   if (G.lv.fourR && !isInit(id) && isNamed(id) && id !== 'C' && !sp(id).chaos && sp(id).kind !== 'crypt') await placeChaos(id);
@@ -95,7 +96,8 @@ async function moveGroup(movers, from, opts) {
       LOG('¡Los Zeds llegan al Centro! El Mensajero del Clarín los obliga a luchar.', 'bad');
       putUnit(movers[0], 'C'); movers.slice(1).forEach(z => putUnit(z, 'C'));
       const r = await melee({ zeds: movers, hum: plAt('C'), space: 'C', attacker: 'z', from });
-      if (r.zedWon || !movers.some(z => z.space)) { G.over = 'lose'; G.loseWhy = 'zeds'; }
+      /* Se pierde si los Zeds ganan o si, tras el combate (p. ej. la defensora lo evade), queda algún Zed en el Centro. Si mueren todos o se retiran, la partida sigue. */
+      if (r.zedWon || movers.some(z => G.units[z.id] && z.space === 'C')) { G.over = 'lose'; G.loseWhy = 'zeds'; }
       return { moved: true, won: r.zedWon };
     }
     movers.forEach(z => putUnit(z, 'C')); LOG('¡Un Zed entra en el Centro de la Ciudad!', 'bad'); UI.focus('C', 1.5); UI.redraw(); await UI.announce('¡UN ZED HA ENTRADO EN EL CENTRO!', '#ff3b2a', 1200, true); G.over = 'lose'; G.loseWhy = 'zeds'; return { moved: true };
@@ -140,16 +142,19 @@ async function moveGroup(movers, from, opts) {
   if (sp(dest).bar === 1 && G.turn.smash) { sp(dest).bar = 0; LOG('Los Zeds destruyen la Barricada de ' + spaceLabel(dest) + '.', 'bad'); }
   /* ¡Los urbanistas contraatacan!: se puede jugar al avanzar un Zed hacia un espacio de Ciudad, antes del combate. */
   if (isCity(dest) && G.hand.includes('urbanistas') && go.length) {
-    const r = await UI.choose({ title: DEST.urbanistas.name, text: (go.length > 1 ? 'Una Horda Zed' : go[0].name + ' (Fuerza ' + strength(go[0]) + ')') + ' en ' + spaceLabel(from) + ' intenta entrar en ' + spaceLabel(dest) + '. ¿Juegas la carta para eliminar una unidad Zed?', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
+    const r = await UI.choose({ title: DEST.urbanistas.name, text: (go.length > 1 ? 'Una Horda Zed' : go[0].name + ' (Fuerza ' + zF(go[0]) + ')') + ' en ' + spaceLabel(from) + ' intenta entrar en ' + spaceLabel(dest) + '. ¿Juegas la carta para eliminar una unidad Zed?', options: [{ label: 'Jugarla', value: 'y' }, { label: 'No', value: 'n' }] });
     if (r === 'y') {
       const t = go.length === 1 ? go[0] : G.units[await UI.pickUnit(go, 'Urbanistas: elige la unidad Zed que se elimina.')];
       G.hand.splice(G.hand.indexOf('urbanistas'), 1); G.destDiscard.push('urbanistas'); zenPlayed(); UI.updateHand();
-      LOG('¡Los urbanistas contraatacan! Se elimina ' + t.name + ' (Fuerza ' + strength(t) + ').', 'good'); await zedDies(t);
+      LOG('¡Los urbanistas contraatacan! Se elimina ' + t.name + ' (Fuerza ' + zF(t) + ').', 'good'); await zedDies(t);
       go = go.filter(z => z.space && G.units[z.id]); if (!go.length) { UI.redraw(); return { moved: true }; }
     }
   }
+  /* Solid Snake, Despedida silenciosa: dispara a los Zeds que salen del espacio que comparte con ellos. */
+  const snk = unitsAt(from).find(u => u.key === 'snake');
+  if (snk && go.length) { go = await tiroOportunidad(snk, from, go); if (!go.length) { UI.redraw(); return { moved: true }; } }
   UI.focus(dest); for (const z of go) { putUnit(z, dest); z.moved = true; }
-  LOG((go.length > 1 ? 'Horda Zed (' + go.map(strength).join('+') + ')' : go[0].name + ' (' + strength(go[0]) + ')') + ' avanza a ' + spaceLabel(dest) + '.', 'zed');
+  LOG((go.length > 1 ? 'Horda Zed (' + go.map(zF).join('+') + ')' : go[0].name + ' (' + zF(go[0]) + ')') + ' avanza a ' + spaceLabel(dest) + '.', 'zed');
   UI.redraw(); await UI.settle();
   if (G.turn.flamed) G.turn.flamedUnits = (G.turn.flamedUnits || []).concat(go.filter(z => leavingChaos || sp(dest).chaos).map(z => z.id));
   await mineAttack(dest, go);
@@ -245,7 +250,7 @@ async function activateRoute(r, cer) {
 async function routeOrder(rem) {
   const out = [];
   while (rem.length > 1) {
-    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar, o activa el resto en orden aleatorio:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color, focus: routeSpaces(r) })).concat([{ label: 'Aleatorio (resto)', value: 'rnd' }]) });
+    const v = await UI.choose({ title: 'Orden de las rutas', text: 'Elige la ' + (out.length + 1) + '.ª ruta a activar (sus Zeds avanzan en ese orden), o activa el resto en orden aleatorio:', options: rem.map(r => ({ label: ROUTES[r].name, value: r, color: ROUTES[r].color, focus: routeSpaces(r) })).concat([{ label: 'Aleatorio (resto)', value: 'rnd' }]) });
     if (v === 'rnd') { const a = rem.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return out.concat(a); }
     out.push(v); rem = rem.filter(x => x !== v);
   }
@@ -264,9 +269,9 @@ async function phaseZeds() {
     else if (x === 'D2') { const dr = await drawDestiny(); if (dr) { list.push(dr.route, dr.route); await resolveTwist(dr); } }
     else if (G.routes.includes(x)) list.push(x);
   }
-  if (ev.z.includes('MIN2')) { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Ruta con menos Zeds: se activa 2 veces.'); list.push(r, r); }
+  if (ev.z.includes('MIN2')) { const c = G.routes.map(r => [r, routeZeds(r).length]); const m = Math.min(...c.map(x => x[1])); const r = await chooseRoute(c.filter(x => x[1] === m).map(x => x[0]), 'Ruta con menos Zeds: elige la ruta que se activa 2 veces (sus Zeds avanzan dos veces).'); list.push(r, r); }
   for (const r of list) { await conCausa(ROUTES[r].name, () => activateRoute(r, false)); if (G.over) return; }
-  if (anyOther) { const rest = G.routes.filter(r => !list.includes(r)); if (rest.length) { const r = await chooseRoute(rest, 'Cualquier otra: elige la ruta que se activa.'); await conCausa(ROUTES[r].name, () => activateRoute(r, false)); } }
+  if (anyOther) { const rest = G.routes.filter(r => !list.includes(r)); if (rest.length) { const r = await chooseRoute(rest, 'Cualquier otra: elige la ruta que se activa (sus Zeds avanzan).'); await conCausa(ROUTES[r].name, () => activateRoute(r, false)); } }
 }
 
 /* ---------- 4R ---------- */
@@ -308,10 +313,11 @@ async function phase4R() {
       const tcands = trainsOn(), jt = jonesDests();
       if (!cands.length && !tcands.length && !jt.length) break;
       if (tcands.length || jt.length) { /* Expansión 3: una activación «R» puede usarse para activar 1 Tren en lugar de 1 unidad de Refugiados */
-        const v = await UI.choose({ title: 'Fase 4R: activación ' + (k + 1) + '/' + n, text: 'Gasta esta activación «R» en un Refugiado' + (tcands.length ? ' o en un Tren' : '') + (jt.length ? ' (o Jones se traslada)' : '') + '.', options: tcands.map(t => ({ label: 'Mover el ' + t.name, value: t.id })).concat(cands.length ? [{ label: 'Mover Refugiados', value: 'r' }] : []).concat(jt.length ? [{ label: 'Jones se traslada', value: 'j' }] : []).concat([{ label: 'No usarla', value: '' }]) });
+        const v = await UI.choose({ title: 'Fase 4R: activación ' + (k + 1) + '/' + n, text: 'Gasta esta activación «R» en un Refugiado' + (tcands.length ? ' o en un Tren' : '') + (jt.length ? ' (o Jones se traslada)' : '') + '.', options: tcands.flatMap(t => [{ label: 'Mover el ' + t.name + ' (' + t.routes.map(r => ROUTES[r].short).join(' y ') + ')', value: t.id, focus: t.space }].concat(t.space !== 'C' && !controlled(t.space) ? [{ label: 'Dar la vuelta al ' + t.name + ' (' + (t.state === 'leaving' ? 'volver' : 'salir') + ')', value: 'flip:' + t.id, focus: t.space }] : [])).concat(cands.length ? [{ label: 'Mover Refugiados', value: 'r', focus: cands.map(c => c.space) }] : []).concat(jt.length ? [{ label: 'Jones se traslada', value: 'j', focus: (alive('jones') || {}).space }] : []).concat([{ label: 'No usarla', value: '' }]) });
         if (!v) continue;
-        if (v === 'j') { const d = await UI.pickSpace(jt, 'Jones: elige el espacio de destino.', true); if (d == null) continue; const j = alive('jones'); putUnit(j, d); LOG('Jones se traslada a ' + spaceLabel(d) + ' (activación de Refugiados).', 'good'); UI.focus(d, 1.7); UI.redraw(); await UI.settle(); continue; }
-        if (v !== 'r') { const t = G.units[v]; t.movedR = true; const extra = await doTrainAction(t, 'tmove', { free: true }); if (extra) k++; continue; }
+        if (typeof v === 'string' && v.startsWith('flip:')) { const t = G.units[v.slice(5)]; if (t) { t.movedR = true; t.state = t.state === 'leaving' ? 'returning' : 'leaving'; LOG(t.name + ' da la vuelta en la fase 4R (activación «R»).', 'good'); UI.redraw(); } continue; }
+        if (v === 'j') { const d = await UI.pickSpace(jt, 'Jones: elige el espacio de destino.', true); if (d == null) { k--; continue; } /* cancelar no gasta la activación: se vuelve a preguntar */ const j = alive('jones'); putUnit(j, d); LOG('Jones se traslada a ' + spaceLabel(d) + ' (activación de Refugiados).', 'good'); UI.focus(d, 1.7); UI.redraw(); await UI.settle(); continue; }
+        if (v !== 'r') { const t = G.units[v]; const extra = await doTrainAction(t, 'tmove', { free: true }); if (extra === null) { k--; continue; } /* cancelado o sin destino: no gasta la activación ni cuenta como movido; se vuelve a preguntar */ t.movedR = true; if (extra) k++; continue; }
       }
       const w = cands.length === 1 ? cands[0].id : await UI.pickUnit(cands, 'Refugiados 4R: elige la unidad que huye ' + (k + 1) + '/' + n + '.');
       const u = G.units[w]; u.movedR = true; const nx = nextToward(u.space);
@@ -434,6 +440,12 @@ async function freeWindow() {
   for (const u of Object.values(G.units)) if (u.side === 'pl') { u.free = 0; u.freeM = 0; u.freeMF = 0; }
   G.freeWin = false; G.phase = prev;
 }
+/* Un Zed en un espacio de Ciudad o Pueblo sin unidades de jugador, o adyacente a uno, recupera 1 Impacto (cartas «Campanas» y «No dejéis de comer»). */
+function zedRecuperaJuntoAPoblado(z) {
+  const nb = adjacentIds(z.space).concat([z.space]);
+  if (!nb.some(i => (sp(i).kind === 'city' || sp(i).kind === 'pueblo') && !plAt(i).length)) return;
+  if (z.hits > 0) z.hits--; else if (z.flipped) { z.flipped = false; z.hits = 2; }
+}
 /* Efecto propio de la carta (el mismo para cualquier fase: se llama desde eventStart o eventAtPhase). */
 async function eventEffect(ev) {
   const id = ev.id;
@@ -455,20 +467,20 @@ async function eventEffect(ev) {
     case 'keepcalm': { const hs = allUnits(x => x.type === 'hero' && x.space); if (hs.length) { const v = await UI.pickUnit(hs, '«Keep calm»: elige un Héroe (2 columnas a favor al atacar).'); G.units[v].keepCalm = true; } break; }
     case 'mina': { const mid = 'M3'; G.turn.block.push(mid); for (const u of plAt(mid)) { await hitPlayer(u, 1); if (u.space === mid) retreatPlayers([u], 'C'); }
       for (const z of zedsAt(mid).slice()) { if (!G.units[z.id] || z.space !== mid) continue; await hitZed(z); if (G.units[z.id] && z.space === mid) await retreatZeds([z], zedOrigin(z)); } break; }
-    case 'resistentes': { await placeZedAt('M0', 'Zeds Resistentes'); const t = strongestNormalZed(); if (t) { t.zresist = true; LOG('Resistentes en un Zed de Fuerza ' + strength(t) + '.', 'bad'); } break; }
+    case 'resistentes': { await placeZedAt('M0', 'Zeds Resistentes'); const t = strongestNormalZed(); if (t) { t.zresist = true; LOG('Resistentes en un Zed de Fuerza ' + zF(t) + '.', 'bad'); } break; }
     case 'cerebros_b1': case 'cerebros_b2': break;
     case 'agua': await lossChoice(await rollShown('Agua contaminada: pérdidas', v => '<b>' + v + '</b>: pierdes ' + v + ' (Suministros o Impactos).'), ['s', 'p']); break;
     case 'marines': { const dr = await drawDestiny(); if (dr) { const t = dr.route + '0'; const m = makeSpecial('marines', t); removeUnit(m); await UI.superIntro(m, t, 'assets/cartas/u_marines.jpg', SPECIALS.marines.txt.join(' ')); putUnit(m, t); UI.redraw(); G.ammo = Math.min(20, G.ammo + 4); LOG('Llegan los Marines (+4 Munición).', 'good'); await resolveTwist(dr); } break; }
     case 'toxicos': { await placeZedAt('A0', 'Zeds Tóxicos'); const t = strongestNormalZed(); if (t) t.toxic = true; break; }
     case 'rapidos': { await placeZedAt('B0', 'Zeds Rápidos'); const t = strongestNormalZed(); if (t) t.fast = true; break; }
     case 'turba': { const dr = await drawDestiny(); if (dr) { if (G.inf >= 8) await placeZedInitial(dr.route, await makeSuperA()); else { makeSpecial('vip', dr.route + '0', { name: 'Supervivientes V.I.P.', type: 'refugee' }); LOG('Aparecen los Supervivientes V.I.P.', 'good'); } await resolveTwist(dr); } break; }
-    case 'saqueadores': { const rs = SURFACE.map(r => [r, Array.from({ length: lastOf(r) + 1 }, (_, i) => sp(r + i).chaos).reduce((a, b) => a + b, 0)]); const m = Math.max(...rs.map(x => x[1])); const r = await chooseRoute(rs.filter(x => x[1] === m).map(x => x[0]), 'Saqueadores: ruta con más Caos.'); makeSpecial('saqueadores', r + '0'); LOG('¡Aparecen Saqueadores en ' + ROUTES[r].name + '!', 'bad'); break; }
+    case 'saqueadores': { const rs = SURFACE.map(r => [r, Array.from({ length: lastOf(r) + 1 }, (_, i) => sp(r + i).chaos).reduce((a, b) => a + b, 0)]); const m = Math.max(...rs.map(x => x[1])); const r = await chooseRoute(rs.filter(x => x[1] === m).map(x => x[0]), 'Saqueadores: ruta con más Caos. Elige la ruta donde aparecen los Saqueadores (en su espacio Inicial).'); makeSpecial('saqueadores', r + '0'); LOG('¡Aparecen Saqueadores en ' + ROUTES[r].name + '!', 'bad'); break; }
     case 'helicoptero': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && !isInit(x.space) && sp(x.space).route !== 'T').map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, 'Helicóptero: elige un espacio con Zeds.'); const r = d6() + d6(); const n = r <= 5 ? 1 : r <= 9 ? 2 : 3; LOG('Helicóptero: ' + r + ' → ' + n + ' Impacto(s).', 'good'); await applyZedHits(zedsAt(t), n); } break; }
     case 'eficiencia': case 'jornada': case 'monstruo': G.turn.specials.push(mkSpecial(id)); break;
     case 'oh_malo': { const dr = await drawDestiny(); if (dr) { await placeZedAt(dr.route + '1', 'Oh, esto es malo'); await resolveTwist(dr); } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'que_demonios': { await wildOutbreakNow(); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'donde_todos': { for (const r of G.routes) for (let i = 1; i <= lastOf(r); i++) if (sp(r + i).kind === 'pueblo' && controlled(r + i)) await placeZedAt(r + i, '¿De dónde salen todos?'); for (const z of allUnits(isZedSide)) z.hits = 0; break; }
-    case 'guardia': { const dr = await drawDestiny(); if (dr) { let r = dr.route; if (r === 'T') r = await chooseRoute(SURFACE, 'La Guardia Nacional solo puede ir a la superficie: elige ruta.'); const g = makeSpecial('guardia', r + '0'); g.name = 'Guardia Nacional'; await resolveTwist(dr); } break; }
+    case 'guardia': { const dr = await drawDestiny(); if (dr) { let r = dr.route; if (r === 'T') r = await chooseRoute(SURFACE, 'La carta indica el Túnel, pero la Guardia Nacional solo va a la superficie: elige la ruta para activarla y colocar la Guardia en su espacio Inicial.'); const g = makeSpecial('guardia', r + '0'); g.name = 'Guardia Nacional'; await resolveTwist(dr); } break; }
     case 'noelle': { const dr = await drawDestiny(); if (dr) { await placeZedInitial(dr.route, spawnSpreader('noelle')); await resolveTwist(dr); } break; }
     case 'tsunami': for (const r of G.routes) await placeZedInitial(r); break;
     case 'catastrofe': { const id2 = 'A4'; for (const u of plAt(id2)) { await hitPlayer(u, 2); if (u.space === id2) retreatPlayers([u], 'C'); } await placeChaos(id2, 1); G.turn.block.push(id2); break; }
@@ -476,14 +488,14 @@ async function eventEffect(ev) {
     case 'moteros': { makeSpecial('petra', 'C'); G.supplies = Math.max(0, G.supplies - 1); LOG('Llegan Los Ángeles de Petra.', 'good'); break; }
     case 'que_diablos': { for (const z of allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && isNamed(x.space))) { z.flipped = false; } for (const z of allUnits(isZedSide)) z.hits = 0; break; }
     case 'crisis': { const hs = allUnits(x => x.type === 'hero' && x.space && (x.space === 'C' || neighbors('C').includes(x.space)) && sp(x.space).kind !== 'bed'); if (hs.length) { const v = await UI.pickUnit(hs, 'Crisis nerviosa: elige un Héroe.'); const r = d6(); await hitPlayer(G.units[v], r === 1 ? 2 : r <= 5 ? 1 : 0); } break; }
-    case 'campanas': { for (const z of allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space))) { const nb = adjacentIds(z.space).concat([z.space]); if (nb.some(i => (sp(i).kind === 'city' || sp(i).kind === 'pueblo') && !plAt(i).length)) { if (z.hits > 0) z.hits--; else if (z.flipped) { z.flipped = false; z.hits = 2; } } } break; }
+    case 'campanas': { for (const z of allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space))) zedRecuperaJuntoAPoblado(z); break; }
     case 'frenesi': case 'super_enloq': break;
     case 'misiles': { const c = allUnits(x => isZedSide(x) && x.space && isRouteSp(x.space) && sp(x.space).route !== 'T').map(x => x.space).filter((v, i, a) => a.indexOf(v) === i); if (c.length) { const t = await UI.pickSpace(c, 'Misiles: elige un espacio con Zeds.'); const r = d6(); const n = r <= 2 ? 1 : r <= 4 ? 2 : 3; await applyZedHits(zedsAt(t), n); } break; }
     case 'contaminacion': case 'doc_problema': { let n = 0; for (const b of BEDS) if (G.spaces[b]) n += unitsAt(b).length; for (const o of ['O1', 'O2']) if (G.spaces[o]) n += unitsAt(o).length; await infUp(n); if (G.berra) { G.berra = false; LOG('Se retira a Elwood Berra.', 'bad'); } break; }
     case 'accidente': case 'experimentos': { const r = await rollShown(id === 'experimentos' ? 'Experimentos: investigación' : 'Accidente: investigación', v => v <= 5 ? '<b>' + v + '</b>: se aplica el efecto de investigación' : '<b>' + v + '</b>: sin efecto'); if (r <= 5) pushInitialResearch(1); if (id === 'experimentos') await infUp(await rollShown('Experimentos: Infección', v => '<b>' + v + '</b>: +' + v + ' de Infección')); break; }
     case 'elwood': G.berra = true; LOG('Elwood Berra reduce la Infección 1 cada turno.', 'good'); break;
     case 'hace_falta': { const c = allUnits(x => (x.type === 'refugee' || x.type === 'aldeano' || x.type === 'civ') && x.space && isRouteSp(x.space) && sp(x.space).route !== 'T'); if (c.length) { const v = await UI.pickUnit(c, 'Hace falta un Pueblo: elige la unidad que será sustituida por un Zed.'); const u = G.units[v], w = u.space; putUnit(u, 'C'); const z = await makeZedA(); if (z) putUnit(z, w); const bed = freeBed(); if (bed && u.type !== 'aldeano') { putUnit(u, bed); u.flipped = true; u.ecg = true; } else if (u.type === 'aldeano') { removeUnit(u); delete G.units[u.id]; } else putUnit(u, 'C'); } break; }
-    case 'no_comer': { for (const z of allUnits(x => x.type === 'zed' && x.space && isRouteSp(x.space))) { const nb = adjacentIds(z.space).concat([z.space]); if (nb.some(i => (sp(i).kind === 'city' || sp(i).kind === 'pueblo') && !plAt(i).length)) { if (z.hits > 0) z.hits--; else if (z.flipped) { z.flipped = false; z.hits = 2; } } } break; }
+    case 'no_comer': { for (const z of allUnits(x => x.type === 'zed' && x.space && isRouteSp(x.space))) zedRecuperaJuntoAPoblado(z); break; }
     case 'misterioso': { const held = G.hand.filter(k => DEST[k]); const pick = held.length > 1 ? await UI.chooseCards({ title: 'El misterioso Dr. Marteuse', text: 'Tienes que descartar una carta de Destino guardada (sin jugarla).', options: held.map(k => ({ value: k, label: DEST[k].name, img: destImg(k) })) }) : held[0]; const i = pick ? G.hand.indexOf(pick) : -1; if (i >= 0) { LOG('Descartas ' + DEST[G.hand[i]].name + '.', 'bad'); G.destDiscard.push(G.hand.splice(i, 1)[0]); UI.updateHand(); } await infUp(d6()); for (const r of G.routes) await placeZedInitial(r); break; }
     case 'civ_heroicos': { const k = pickCivh(); if (k) await spawnHero(k, 'C'); break; }
     case 'murcielagos': { const us = allUnits(x => isFighter(x) && x.space && isRouteSp(x.space) && sp(x.space).route === 'T').sort((a, b) => sp(a.space).i - sp(b.space).i); if (us.length) { const u = us[0]; await infUp(1); await hitPlayer(u, 1); if (u.space && isRouteSp(u.space)) retreatPlayers([u], 'C'); } break; }
@@ -493,7 +505,7 @@ async function eventEffect(ev) {
       const zs = allUnits(x => x.type === 'zed' && isRouteSp(x.space)); if (!zs.length) break; const m = Math.max(...zs.map(strength)), top = zs.filter(z => strength(z) === m);
       const t = top.length === 1 ? top[0] : G.units[await UI.pickUnit(top, '¡Oh, no! ¡Otra vez no!: elige el Zed Normal más fuerte que recibe la ficha.')];
       const kinds = [...new Set(pool)]; const k = kinds.length === 1 ? kinds[0] : await UI.choose({ title: '¡Oh, no! ¡Otra vez no!', text: 'Elige la ficha de Mejora Zed que se coloca en el Zed Normal más fuerte:', options: kinds.map(x => ({ label: ZED_UPGRADES[x], value: x })) });
-      pool.splice(pool.indexOf(k), 1); t[k] = true; LOG('Ficha de Mejora Zed «' + ZED_UPGRADES[k] + '» sobre un Zed de Fuerza ' + strength(t) + '.', 'bad'); break; }
+      pool.splice(pool.indexOf(k), 1); t[k] = true; LOG('Ficha de Mejora Zed «' + ZED_UPGRADES[k] + '» sobre un Zed de Fuerza ' + zF(t) + '.', 'bad'); break; }
     case 'desde_lab': { const t = 'T4'; if (G.routes.includes('T')) { const sup = allUnits(x => x.type === 'super').length; await placeZedAt(t, 'Desde el laboratorio', sup ? await makeZedA() : await makeSuperA()); } break; }
     case 'hinchados': { const dr = await drawDestiny(); if (dr) { const all = routeZeds(dr.route); if (all.length) {
       const mi = Math.max(...all.map(z => sp(z.space).i)), top = all.filter(z => sp(z.space).i === mi);
@@ -543,7 +555,7 @@ async function pressureMove(n) {
 }
 async function pressureSpawn(n) {
   for (let k = 0; k < n && !G.over; k++) {
-    const r = await chooseRoute(destRoutes('less'), 'Presión Zed (Ƶ): ruta con menos Zeds. Los jugadores eligen en caso de empate.');
+    const r = await chooseRoute(destRoutes('less'), 'Presión Zed (Ƶ): elige la ruta con menos Zeds para activarla. En caso de empate, eliges tú.');
     LOG('Presión Zed (Ƶ): nuevo Zed en ' + ROUTES[r].name + '.', 'zed'); await placeZedInitial(r);
   }
 }

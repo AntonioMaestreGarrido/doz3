@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 14:23
+
+### Recuperado
+- **Exp. 5 (jefe final) integrada con `main`:** se fusiona la rama de la Exp. 5 con todos los cambios de `main` hasta el 10/11 (selector de modo de partida, resumen inicial y correcciones). La casilla «Exp. 5 · Jefe final: la Banda de Bubba» convive con el nuevo selector «Tipo» del menú de creación. Caché v102.
+
 ## 2026-11-10 14:21
 
 ### Cambios
@@ -70,6 +75,174 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
   - **No combate con los Zeds:** comparte espacio con ellos, como Noelle, y no cuenta para el límite de agrupamiento.
   - **Movimiento:** cada turno, tras la fase 4R, avanza 1 espacio hacia el Centro y arrastra a los Zeds de su espacio con las reglas normales de movimiento (límite de agrupamiento, combate, Barricadas…). Si llega al Centro, pierdes, como con cualquier Zed. No se mueve además con la activación de su ruta ni suma Infección.
   - Archivos nuevos: `js/jefe.js` y `assets/jefe/bubba_arte.webp` (recorte de la carta). Caché v72.
+
+## 2026-11-10 02:00
+
+### Fixes
+- **Mensajero del Clarín:** eliminar a todos los Zeds que entraban en el Centro hacía perder la partida. Ahora solo se pierde si los Zeds ganan el combate o si queda alguno en el Centro.
+- **Retirada de Zeds en un espacio Inicial:** dos Zeds que perdían un combate en un Inicial podían saltar al Inicial de otra ruta o volver a la reserva. Ahora se quedan en su espacio.
+- **Lluvia:** un Zed que avanzaba y perdía el combate se «retiraba» al mismo espacio y atacaba otra vez. Ahora se retira al espacio del que venía.
+- **Saqueadores y Banda de Bubba:** ya no hacen tirada de Salvación al ser eliminados (consumía dados sin efecto).
+- **Base aérea secreta:** la Investigación gratis cobra el Suministro de la carta cuando lo pide, y no se ofrece si no puedes pagarlo.
+- **Deshacer:** una acción que revela información (mirar la carta de Evento con Wright, Visiones de Wilson, robar una carta de Destino o de Investigación) ya no se puede deshacer para recuperar la acción.
+- **Acción que falla por un error:** se vuelve al estado anterior a la acción en vez de guardar la partida a medias.
+- **Recursos al entrar en juego:** Horacio y el Ejército de Salvación respetan el tope de 20 Suministros en la preparación, y la segunda Civil Heroica que trae el Mensajero del Clarín aporta sus recursos.
+- **Cartas en niveles sin Túnel, Hospital o Laboratorio:** «Expediente», «Cama de hospital» y «Atajos» ya no pueden dar error si el espacio no existe.
+- **Modo de prueba automática (`?bot=`):** solo funciona en local; un enlace a la web publicada ya no puede activarlo ni borrar partidas guardadas.
+
+### Mejoras
+- **Guardado más ligero:** en mitad del turno solo se guardan los eventos nuevos del registro, no el registro entero en cada acción.
+- **Interno:** las expansiones amplían las reglas mediante puntos de extensión declarados (`extensible` / `extend`) en lugar de reasignar funciones globales.
+- **Catálogo de cartas** regenerado con los datos actuales.
+
+## 2026-11-09 17:00
+
+### Fixes
+- **Pantalla inicial en PC (pantallas anchas):** con 1500 px de ancho o más el arranque fallaba al montar el panel de móvil (`actbox` está en la columna izquierda) y la intro no lanzaba el vídeo; ahora se inserta bien.
+- **Vídeo de apertura con ratón:** un doble clic ya no lo salta al instante, y si el navegador bloquea el sonido se reintenta sin sonido.
+- **Service worker:** las peticiones con `Range` (vídeo/audio) van directas a la red.
+
+## 2026-11-09 12:00
+
+### Fixes
+- **Pantalla inicial en PC con ratón:** si el vídeo de apertura no arranca o falla, se salta solo a los 6 s, y un clic sobre el vídeo también lo salta.
+
+## 2026-11-08 10:00
+
+### Fixes
+- **Expansiones 1 y 2, cartas de Evento:** las cartas de la expansión entran en el pool y sustituyen al azar a cartas base del mismo acto y tipo (normal o especial). Ya no alargan la partida: la duración tiene siempre el mismo número de cartas (p. ej. Corta = 22 en el Nivel V).
+
+## 2026-11-07 20:00
+
+### Fixes
+- **Draft:** el equipo inicial salía siempre igual, porque el generador de azar arrancaba con la misma semilla al cargar la página. Ahora el draft usa un azar nuevo (o la semilla de la partida, si hay código).
+
+## 2026-11-07 19:45
+
+### Cambios
+- **Cartas de Destino con elección de ruta:** la pregunta incluye el efecto concreto de la carta («Elige la ruta donde se aplica: …»), para saber qué pasará en la ruta elegida.
+
+## 2026-11-07 19:30
+
+### Cambios
+- **Preguntas de ruta con su finalidad:** cada pregunta de elegir ruta dice para qué se elige (activar, dónde aparece, qué se aplica). Por ejemplo, la Guardia Nacional: «elige la ruta para activarla y colocar la Guardia en su espacio Inicial».
+
+## 2026-11-07 19:00
+
+### Cambios
+- **Carta del General Lee (arte alternativo):** Instinto equino ya no menciona el «Galope al Hospital» y dice lo de la llegada al Centro con jinete. Ilustración, cabecera y fichas no cambian (`tools/generar_lee.mjs`). La carta de arte por defecto aún no.
+
+## 2026-11-07 18:40
+
+### Cambios
+- **General Lee:** se quita la acción «Galope al Hospital». Ahora el jinete se baja al llegar al Centro (pregunta de llegada). El texto de la carta de Instinto equino se actualiza en las reglas del juego; la carta ilustrada aún no.
+
+## 2026-11-07 18:30
+
+### Cambios
+- **General Lee y su jinete:** cuando Lee llega al Centro con un jinete, se pregunta si el jinete se baja en el Centro o pasa a una cama libre del Hospital (la segunda opción solo aparece si hay una cama libre).
+
+## 2026-11-07 18:00
+
+### Fixes
+- **Héroe montado con el General Lee:** al moverse juntos a un espacio con Zeds, ya no combate siempre Lee. Aparece «Elige quién combate» y eliges cuál de los dos combate.
+
+## 2026-11-07 11:00
+
+### Nuevo
+- **Tipos de partida** (selector «Tipo» en Nueva partida; no aplica al Juego Básico):
+  - **Normal:** como hasta ahora.
+  - **Equilibrada:** el equipo tiene siempre exactamente un científico (Agee, Carter, Doc Brown, Seaver, Jones, Wright y MacGyver).
+  - **Draft 1, 2 y 3:** antes de empezar, cada jugador puede rechazar hasta 1, 2 o 3 unidades del equipo inicial (4 Héroes y 1 Civil Heroico). Las rechazadas se sustituyen al azar por otras del mismo tipo que no estén ya en el equipo.
+- El tipo de partida aparece en el resumen de inicio.
+
+## 2026-11-06 10:50
+
+### Cambios
+- **Colocar un Rumor:** el mapa enfoca el espacio, una ventana dice dónde se coloca boca abajo (el espacio con más Zeds de la ruta) y el espacio se marca con un pulso y un aviso, igual que al aparecer un Zed.
+
+## 2026-11-06 10:20
+
+### Cambios
+- **Resumen de inicio:** el mapa del nivel (A o B) queda de fondo, con un velo oscuro para que se lean las cartas y el texto.
+
+## 2026-11-06 10:00
+
+### Nuevo
+- **Resumen al empezar la partida:** sustituye al aviso de inicio. Muestra todas las cartas de Héroe y Civil Heroico en juego a la vez, los bonos de inicio de cada una (solo los que se obtienen al entrar en juego), y un resumen con nivel, duración, expansiones, jugadores, Suministros y Munición iniciales, Infección, Caos, rutas y cartas de Evento necesarias para ganar, con la condición de derrota.
+
+## 2026-11-05 18:40
+
+### Cambios
+- **Bono de los trenes en combate:** en la ventana de combate, el bono de cada tren aparece como una línea aparte («Tren (espacio) +1») y el Terreno del espacio como otra («Terreno (espacio) +1»). La suma no cambia.
+
+## 2026-11-05 18:20
+
+### Cambios
+- **Trenes en la fase 4R:** la opción «Mover el Tren…» indica entre paréntesis las rutas de su línea (por ejemplo, «Mover el Tren de Mercancías (Bosque y Autovía)»). Sustituye a la lista de espacios.
+
+## 2026-11-05 18:00
+
+### Cambios
+- **Trenes en la fase 4R:** la opción «Mover el Tren…» indica entre paréntesis hacia qué espacios va la línea en la que circula el tren (por ejemplo, «hacia Afueras n.º 6»).
+
+## 2026-11-05 17:30
+
+### Fixes
+- **Trenes en la fase 4R:** la activación «R» también puede usarse para dar la vuelta a un tren (salir o volver), sin coste de Acción. Antes solo se podía mover. No se puede dar la vuelta en el Centro ni en un espacio con Zeds o Caos.
+
+## 2026-11-05 17:00
+
+### Cambios
+- **Elegir tren, pasajeros y Refugiados en la fase 4R:** al elegir un tren o un pasajero, tocarlo mueve la cámara y resalta su espacio; «Aceptar» confirma. Igual que elegir espacio o unidad.
+
+## 2026-11-05 16:30
+
+### Cambios
+- **Fuerza de los Zeds en el texto:** donde antes se leía «fuerza 9», ahora se lee la fuerza de las dos caras, completa y reducida (p. ej. «9/3»): en el registro, en la ventana de combate, en las hordas («9/3+5/3») y en los avisos de avance, retirada, impactos y cartas. Las insignias de la ficha siguen mostrando la fuerza actual.
+
+## 2026-11-05 16:00
+
+### Cambios
+- **Elegir espacio:** al pedir un espacio, tocarlo lo selecciona y mueve la cámara; el botón «Aceptar» (en el aviso superior) confirma. Antes se confirmaba al tocar. Igual que al elegir unidad.
+
+## 2026-11-05 15:30
+
+### Fixes
+- **Móvil, ventanas de trenes y rutas:** las ventanas de paradas de trenes, de pasajeros, de activación de la fase 4R y de orden de las rutas aparecen abajo, en el panel, y no tapan el mapa.
+
+## 2026-11-05 15:00
+
+### Cambios
+- **Paradas especiales de los trenes:** al llegar a una parada (Universidad, Granja, Mina o Central Nuclear) se muestra una ventana con el beneficio antes de aplicarlo.
+
+## 2026-11-05 14:00
+
+### Cambios
+- **Doc Brown:** +1 a las tiradas de Investigar (máx. 6), como Profesora Agee y la Dra. Carter. Carta de arte alternativo regenerada con el nuevo texto (`tools/generar_doc.mjs`); la carta de arte por defecto todavía no lo menciona.
+
+## 2026-11-05 13:00
+
+### Fixes
+- **Retirada de la defensora:** se quita el botón «↶ Retroceder» que se había añadido en los combates provocados por los Zeds. No formaba parte de las reglas que se pidieron.
+
+## 2026-11-05 12:30
+
+### Nuevo
+- **Cambiar defensora:** cuando hay varias unidades que pueden defender en un espacio atacado por Zeds, Alia puede cambiar la unidad defensora junto a su evasión opcional («Cambiar defensora»). Solo aparece si hay más de una defensora posible; los Refugiados, Aldeanos y Trenes no cuentan.
+
+## Nuevo
+- **Retroceder en combates provocados por los Zeds:** si los Zeds atacan a una unidad de jugador en una ruta, la ventana de combate muestra «↶ Retroceder» junto a «Tirar dados» mientras no se haya tirado ningún dado. La unidad se retira 1 espacio hacia el Centro, si ese espacio está libre de Zeds, y no hay combate para ella. Si quedan otras unidades en el espacio, los Zeds las atacan. Cuando atacas tú, sigue estando «Deshacer el movimiento».
+
+## 2026-11-05 11:20
+
+### Fixes
+- **¡Llegó la ayuda! (rumor):** igual que con «Llega un Héroe», primero se revela la unidad elegida (Héroe o Civil Heroico) y después se elige el espacio de entrada.
+
+## 2026-11-05 11:00
+
+### Fixes
+- **Llega un Héroe (carta de Destino, fase de Acciones):** primero se revela qué Héroe llega y después se elige el espacio de entrada. Antes se elegía el espacio sin saber quién era.
 
 ## 2026-11-03 10:40
 

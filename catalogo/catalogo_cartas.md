@@ -1,12 +1,12 @@
 # Catálogo de cartas y unidades
 
-Generado por `tools/generar_catalogo.mjs` (`npm run catalogo`) a partir de los datos del juego (build 2026-10-15 13:24). **No se edita a mano.**
+Generado por `tools/generar_catalogo.mjs` (`npm run catalogo`) a partir de los datos del juego (build 2026-11-09 17:00). **No se edita a mano.**
 
 Cómo buscar: Ctrl+F por nombre, por `id` (el nombre interno que usa el código) o por una palabra del texto. El buscador visual está en `catalogo_cartas.html`.
 
 La **fase** de cada Evento es la columna cuya pestaña se extiende hasta el texto en la carta original; el texto da el momento exacto dentro de la fase. Se define en la tabla `EV_FASE` de `js/expansions.js`.
 
-**246 entradas** — Evento: 100 · Destino: 48 · Investigación: 25 · Héroe: 23 · Civiles Heroicos: 9 · Unidad especial: 9 · Súper Zed: 9 · Propagador: 2 · Rumor: 16 · Súper Arma: 5
+**257 entradas** — Evento: 100 · Destino: 48 · Investigación: 25 · Héroe: 31 · Civiles Heroicos: 12 · Unidad especial: 9 · Súper Zed: 9 · Propagador: 2 · Rumor: 16 · Súper Arma: 5
 
 ## Eventos por fase
 
@@ -892,9 +892,9 @@ Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
 ![super_enloq](../assets/cartas/e_super_enloq.jpg)
 
 ### toxicos — Zeds Tóxicos
-Verde (Nivel II) · Acto 2 · **Fase de Acciones** · 4R: 1 · Infección: tirada de Brote · Alimentación: 1 · Zeds: Autovía → Autovía · Acciones: 2
+Verde (Nivel II) · Acto 2 · **Fase de Acciones** · 4R: 1 · Infección: tirada de Brote · Alimentación: 1 · Zeds: Bosque → Bosque · Acciones: 2
 
-> Al inicio: 1. Coloca un nuevo Zed en el Inicial de la Autovía. 2. Pon la ficha de Tóxicos en el Zed Normal más fuerte: sus combates (y los de su Horda) suben la Infección +3 en vez de +1 hasta que sea eliminado.
+> Al inicio: 1. Coloca un nuevo Zed en el Inicial de la Autovía. 2. Pon la ficha de Tóxicos en la unidad de Zeds Normales más fuerte (a tu elección si hay empate): sus combates Cuerpo a Cuerpo contra esta unidad suben la Infección +3 en vez de +1 hasta que sea eliminada.
 
 Resuelve el código: phases.js › eventEffect: al inicio de la fase de Acciones
 
@@ -1368,7 +1368,7 @@ Inicial · Umbral 5+
 ### heroe_c — Llega un Héroe Científico
 adv · Umbral 5+ y 1 Suministro
 
-> Coge una nueva unidad de Héroe Científico al azar y colócala en el Centro de la Ciudad.
+> Elige una nueva unidad de Héroe Científico disponible y colócala en el Centro de la Ciudad.
 
 ![heroe_c](../assets/cartas/i_heroe_c.jpg)
 
@@ -1448,9 +1448,23 @@ Científica · Fuerza 2 / 1 · Mov. 4 · Nivel 3
 ### alia — Alia «Ghost (of Tsushima)»
 Ciudadana · Fuerza 4 / 2 · Mov. 5 · Nivel 2 · Expansión 4
 
-> Sigilo: puede atravesar espacios con Zeds sin combatir; cada uno cuesta 2 de Movimiento. Debe acabar en un espacio libre de Zeds e ignora el Caos al moverse. Emboscada (katana): +2 columnas al atacar Cuerpo a Cuerpo a Zeds situados más cerca del Centro que ella en la misma ruta (se compara su posición antes del ataque). Evasión: al entrar un Zed en su espacio, tira 1 dado. Con 4-6 se retira gratis 1 espacio hacia el Centro, si está libre de Zeds, antes de combatir. Parada perfecta: +1 columna al defender Cuerpo a Cuerpo. Una vez por turno repite una tirada defensiva; vale el segundo resultado. Ya no es hora de estar en la calle: Acción de Personaje, 1 vez por fase de Acciones: mueve gratis hasta 2 espacios hacia el Centro a una unidad de Civiles (normales o heroicos) o Refugiados en su espacio o adyacente. A que voy yo y lo encuentro: al Buscar, tira 2 dados y elige el mejor resultado (con dobles naturales busca dos veces, como un Rapiñador).
+> Sigilo: puede atravesar espacios con Zeds sin combatir, sin coste extra de Movimiento. Debe acabar en un espacio libre de Zeds e ignora el Caos al moverse. Emboscada (katana): +2 columnas al atacar Cuerpo a Cuerpo a Zeds situados más cerca del Centro que ella en la misma ruta (se compara su posición antes del ataque). Evasión: al entrar un Zed en su espacio, puedes intentar evadirlo (opcional): tira 1 dado. Con 4-6 se retira gratis 1 espacio hacia el Centro, si está libre de Zeds, antes de combatir. Parada perfecta: +1 columna al defender Cuerpo a Cuerpo. Una vez por turno repite una tirada defensiva; vale el segundo resultado. Ya no es hora de estar en la calle: Acción de Personaje, 1 vez por fase de Acciones: mueve gratis hasta 2 espacios hacia el Centro a una unidad de Civiles (normales o heroicos) o Refugiados en su espacio o adyacente. A que voy yo y lo encuentro: al Buscar, tira 2 dados y elige el mejor resultado (con dobles naturales busca dos veces, como un Rapiñador).
 
 ![alia](../assets/cartas/h_alia.jpg)
+
+### ash — Ash Williams «El Jefe»
+Cazador · Fuerza 4 / 2 · Mov. 3 · Nivel 2 · Expansión 4
+
+> «¡Traga plomo!» (Disparo Defensivo): cuando una unidad o Horda Zed entra en su espacio, puedes disparar antes del combate Cuerpo a Cuerpo (1 Munición). Si los Zeds sobreviven, el combate procede normalmente. «Groovy» (Maestría en Combate 1►): en cualquier combate Cuerpo a Cuerpo en el que participe, atacando o defendiendo, obtiene 1 columna a favor.
+
+![ash](../assets/cartas/h_ash.jpg)
+
+### bender — Bender Bending Rodríguez
+Robot · Fuerza 4 / 2 · Mov. 4 · Nivel 1 · Expansión 4
+
+> Cuerpo de Titanio: recibe 2 Impactos por cara. Resistente: al recibir un Impacto tira 1 dado; con 1-3 el Impacto se cancela. Sus combates Cuerpo a Cuerpo nunca suben la Infección. Reparación Alcohólica: las unidades médicas no pueden curarlo de forma habitual. Si sufre su último Impacto y supera la Salvación, va al Hospital con ficha de ECG. La primera Curación en el Hospital le retira el ECG. Después solo puede curarse en el Centro, gastando 1 Suministro y una vez por turno. Abstinencia Robótica: si hay Escasez de Suministros en la Alimentación, Bender no sufre Impactos: durante el siguiente turno tiene 1 columna en contra en sus ataques y defensas.
+
+![bender](../assets/cartas/h_bender.jpg)
 
 ### betty — Betty «Saltarina» Bolívar
 Ciudadana · Fuerza 3 / 2 · Mov. 4 · Nivel 1 · Expansión 2
@@ -1473,12 +1487,33 @@ Ciudadana · Fuerza 3 / 2 · Mov. 5 · Nivel 3
 
 ![darling](../assets/cartas/h_darling.jpg)
 
+### doc — Dr. Emmett «Doc» Brown
+Científico · Fuerza 2 / 1 · Mov. 4 · Nivel 3 · Expansión 4
+
+> Científico: puede entrar en el Laboratorio, donde puede Investigar. +1 a las tiradas de Investigar (máx. 6). Mr. Fusion: si al Buscar no encuentra nada, obtiene 1 Suministro. Salto temporal: Acción de Personaje (3 Suministros), una vez por turno, solo desde el Centro. Doc, con una unidad agrupada con él si quiere, viaja a un espacio de ruta de superficie sin Zeds que no sea Inicial. La unidad acompañante puede quedarse allí (no pueden acompañarlo Pepinillos, Horacio, el General Lee ni Carter). Doc vuelve al Centro al final del turno, tras el Mantenimiento, y puede volver solo, con la unidad que llevó o con otra que esté en su espacio. Paradoja: si Doc está en un espacio con Caos durante el Mantenimiento, restaurar el orden allí no sube la Infección.
+
+![doc](../assets/cartas/h_doc.jpg)
+
+### frank — Frank «El Castigador» Castle
+Militar · Fuerza 4 / 3 · Mov. 4 · Nivel 3 · Expansión 4
+
+> Arsenal privado: al entrar en juego obtienes 4 de Munición y 2 Suministros. Tirador implacable: 1 columna a favor al disparar. Una vez por turno puede repetir una tirada de disparo (la segunda es definitiva). Sin piedad: si gana un combate Cuerpo a Cuerpo, la Infección no sube. Lobo solitario: solo en su espacio, 1 columna a favor al defender. Agrupado con otros Héroes pierde esa columna y la de Tirador implacable. Trampa explosiva: Acción de Personaje (1 Suministro): coloca una trampa en su espacio o en uno adyacente de una ruta (también en el Túnel), sin Zeds y no Inicial. Solo una por ruta. Cuando un Zed intenta entrar en ese espacio, cada unidad Zed que entraba sufre 1 Impacto y su movimiento se cancela. La trampa se retira. Resistente: ignora Impactos con 4-6.
+
+![frank](../assets/cartas/h_frank.jpg)
+
 ### hauser — Otto «Sargento» Hauser
 Militar · Fuerza 3 / 2 · Mov. 4 · Nivel 4
 
 > Entrenar: como una Acción: una unidad de Civiles Normales en su espacio o adyacente recibe +2 de Fuerza (hasta ser eliminada). Reclutar: en el Centro, como una Acción y por 1 Munición retira 1 Impacto a unas Civiles Normales del mapa (no del Hospital). Buscar: +1 a sus tiradas de Buscar. Resistente: ignora Impactos con 4-6.
 
 ![hauser](../assets/cartas/h_hauser.jpg)
+
+### heli — Sgto. Lena «Rotor» Kowalski (Helicóptero Medevac)
+Aeronave · Fuerza 2 / 1 · Mov. 3 · Nivel 2 · Expansión 4
+
+> Combustible de reserva: al entrar en juego obtienes 3 Suministros. Vuelo: su Movimiento es *: no usa la Acción de Mover, solo se mueve volando. Acción de Personaje (1 Suministro), una vez por turno: el helicóptero y un Héroe de su espacio despegan y quedan en el aire, y eliges qué ruta patrullan el resto del turno. Aterrizan después, gratis, donde quieran (cualquier espacio de superficie sin Zeds que no sea Inicial), o siguen en el aire. No pueden llevar a Pepinillos, Horacio, el General Lee ni Carter. Patrulla: al despegar eliges la ruta que patrulla el resto del turno (nunca el Túnel: es subterráneo y no puede aterrizar allí). Al inicio de cada turno siguiente, tras revelar el Evento, si sigue en el aire paga 1 Suministro y vuelve a elegir ruta, o aterriza gratis. Mira la siguiente carta de Evento. En esa ruta, todo el turno: Maniobra de distracción (reacción, una vez por turno: antes de que una unidad o Horda Zed se mueva, tira 1 dado; con 3-6 no se mueve, y si falla no puede reintentarlo) y los Zeds tienen 1 columna en contra en todos los combates. Despegue de emergencia: cuando una unidad Zed entra en su espacio, tira 1 dado antes del combate: 1 combate normal y no despega; 2 combate normal y, si sigue vivo, despega; 3-6 despega sin combate. Al despegar paga 1 Suministro, puede llevarse al Héroe de su espacio y eliges qué ruta patrulla el resto del turno. En el aire: ni el helicóptero ni su Héroe pueden ser atacados ni realizar Acciones. Aterrizaje: gratis en cualquier momento de la fase de Acciones, en un espacio de superficie sin Zeds que no sea Inicial. Puede dejar al Héroe en una Cama libre del Hospital (sin ECG ni Infección); si aterriza en un espacio, el Héroe recibe 1 Acción gratis. Mantenimiento: recibe 2 Impactos por cara. Las unidades médicas no pueden repararlo de forma habitual: si cae al Hospital, una Curación le retira el ECG; después solo se repara en el Centro, pagando 1 Suministro, una vez por turno. No dispara.
+
+![heli](../assets/cartas/h_heli.jpg)
 
 ### hernandez — Alcalde Hernández
 Ciudadano · Fuerza 2 / 1 · Mov. 4 · Nivel 1
@@ -1525,9 +1560,16 @@ Militar · Fuerza 3 / 2 · Mov. 4 · Nivel 2
 ### lee — General Lee
 Equino · Fuerza 2 / 1 · Mov. 6 · Nivel 2 · Expansión 1
 
-> Ensillar: puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento. Carga de caballería: cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir. Purasangre: recibe 1 Acción de Mover gratis por fase de Acciones. Instinto equino: cuando no transporta a un jinete, no puede entrar voluntariamente en un espacio con Caos ni en la ruta del Túnel. Puede llevar a un herido al Hospital («Galope al Hospital»). Un caballo es un caballo: no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.
+> Ensillar: puede llevar a un Héroe humano o primate no montado como parte de 1 Acción de Mover (viaje gratis para el jinete). Cuentan como una sola unidad para el agrupamiento. Carga de caballería: cualquier Héroe agrupado con Lee suma 1 de Fuerza y no sube la Infección al combatir. Purasangre: recibe 1 Acción de Mover gratis por fase de Acciones. Instinto equino: cuando no transporta a un jinete, no puede entrar voluntariamente en un espacio con Caos ni en la ruta del Túnel. Al llegar al Centro con un jinete, este puede bajarse allí o pasar a una cama libre del Hospital. Un caballo es un caballo: no sube la Infección, no dispara, construye, usa vehículos, restaura ni arresta. Puede elegir retirarse antes de ser atacado.
 
 ![lee](../assets/cartas/h_lee.jpg)
+
+### macgyver — Angus MacGyver
+Ciudadano · Fuerza 3 / 2 · Mov. 4 · Nivel 2 · Expansión 4
+
+> Pacifista: no dispara con armas de fuego. Ingeniero: puede entrar en el Laboratorio, donde puede Investigar. Si la tirada falla por 1, puede gastar 1 Suministro para sumarle +1. Con lo que hay: Acción de Personaje (1 vez por turno): convierte 1 Suministro en 2 Munición. Cinta americana: construye Barricadas por 1 Suministro. Siempre hay otra salida: al ser atacado por Zeds en una ruta, tira 1 dado: con 4-6 se retira gratis 1 espacio hacia el Centro antes del combate.
+
+![macgyver](../assets/cartas/h_macgyver.jpg)
 
 ### may — Sra. May Hauser
 Ciudadana · Fuerza 3 / 1 · Mov. 4 · Nivel 1 · Expansión 1
@@ -1557,6 +1599,13 @@ Ciudadano · Fuerza 5 / 3 · Mov. 4 · Nivel 1 · Expansión 4
 
 ![porter](../assets/cartas/h_porter.jpg)
 
+### samcarter — Dra. Samantha Carter
+Científica · Fuerza 3 / 2 · Mov. 4 · Nivel 3 · Expansión 4
+
+> Científica: puede entrar en el Laboratorio, donde puede Investigar. Teoría del campo unificado: +1 a la tirada de Investigar (máx. 6). Contramedidas: el primer intento de Investigar de cada turno, con éxito o no, reduce la Infección en 2. Oficial de la USAF: 1 columna a favor al disparar. En el último segundo: una vez por partida, cuando la Infección vaya a subir 2 o más (o a llegar a 13), cancela hasta 5 de esa subida.
+
+![samcarter](../assets/cartas/h_samcarter.jpg)
+
 ### santana — Miguel «El Toro Loco» Santana
 Luchador · Fuerza 6 / 4 · Mov. 3 · Nivel 2
 
@@ -1577,6 +1626,13 @@ Científico · Fuerza 3 / 1 · Mov. 4 · Nivel 3
 > Científico: puede entrar en las Oficinas del Hospital y en el Laboratorio (donde puede Investigar). Médico: una vez por fase de Acciones, en una Oficina, cura (Acción de Personaje) a cualquier unidad del Hospital. Primeros Auxilios (1 Suministro): una vez por fase cura a una unidad en su espacio o adyacente (incluso a sí mismo). Estando en una Oficina o en el Centro puede curar a una unidad del Hospital. Administración del Hospital: en una Oficina admite un cuarto paciente, que puede quedarse aunque se vaya.
 
 ![seaver](../assets/cartas/h_seaver.jpg)
+
+### snake — Solid Snake
+Militar · Fuerza 3 / 2 · Mov. 5 · Nivel 1 · Expansión 4
+
+> Infiltración: puede atravesar espacios con Zeds sin combatir ni tirar, y sin coste extra de Movimiento. Al coincidir con Zeds o Saqueadores (porque acaba su movimiento en el espacio o porque entran ellos en el suyo) tira 1 dado: 1-2 combate normal; 3-6 pasa desapercibido y convive con ellos sin combatir. Disparo silenciado: solo dispara a los Zeds de su propio espacio con los que coexiste sin combatir (alcance 0), con 2 columnas a favor. Si el disparo hace 0 Impactos, lo detectan: pierde el sigilo y hay combate Cuerpo a Cuerpo. Si elimina al objetivo, recibe 1 Acción gratis de Mover. Reflejos de élite: una Acción de Personaje por fase de Acciones, solo para su unidad: 1 Acción gratis, de la clase que elijas al gastarla.
+
+![snake](../assets/cartas/h_snake.jpg)
 
 ### staub — Rusty Staub
 Ciudadano · Fuerza 4 / 5 · Mov. 4 · Nivel 2
@@ -1623,6 +1679,20 @@ Civiles Heroicos · Fuerza 3 / 2 · Mov. 3 · Nivel 2
 
 ![bomberos](../assets/cartas/h_bomberos.jpg)
 
+### brigada — Brigada de Contención Sanitaria
+Civiles Heroicos · Fuerza 2 / 1 · Mov. 3 · Nivel 1 · Expansión 4
+
+> Desinfección: Acción de Personaje (1 Acción), sin límite por turno: la Infección baja 2. Cordón sanitario: en los combates Cuerpo a Cuerpo de su espacio, si la Infección fuese a subir 1, no sube; si fuese a subir 2 o más, sube 1 menos, y pagando 1 Suministro no sube nada. Frágil: no dispara y tiene 1 columna en contra en combates Cuerpo a Cuerpo.
+
+![brigada](../assets/cartas/h_brigada.jpg)
+
+### caza — Club de Caza de Farmingdale
+Civiles Heroicos · Fuerza 3 / 2 · Mov. 3 · Nivel 2 · Expansión 4
+
+> Puesto de caza: disparan a 2 espacios sin penalización de columna. Trofeo: cuando su disparo elimina a una unidad Zed, recuperan 1 Munición. Presa marcada: Acción de Personaje (1 Acción), una vez por turno: marcan una unidad Zed a su alcance. Los disparos de cualquier unidad de jugador contra ella tienen 1 columna a favor hasta que sea eliminada o termine el turno. A campo abierto: tienen 1 columna en contra en combates Cuerpo a Cuerpo.
+
+![caza](../assets/cartas/h_caza.jpg)
+
 ### clarin — Mensajero del Clarín
 Civiles Heroicos · Fuerza 1 / 1 · Mov. 3 · Nivel 3
 
@@ -1658,6 +1728,13 @@ Civiles Heroicos · Fuerza 2 / 1 · Mov. 3 · Nivel 1
 
 ![salvacion](../assets/cartas/h_salvacion.jpg)
 
+### sar — Búsqueda y Rescate (SAR)
+Civiles Heroicos · Fuerza 2 / 1 · Mov. 3 · Nivel 2 · Expansión 4
+
+> Despejar: Acción de Personaje (1 Acción), una vez por turno, aunque haya Caos en su espacio: en el Mantenimiento quita 2 fichas de Caos de ese espacio sin subir la Infección. Escudo humano: 1 columna a favor en combates Cuerpo a Cuerpo y al disparar mientras haya Refugiados o Aldeanos en su espacio. Cada vida cuenta: empieza débil (Fuerza 2/1), pero gana +1 de Fuerza por cada Refugiados en el Campamento.
+
+![sar](../assets/cartas/h_sar.jpg)
+
 ### wzed — WZED Farmingdale
 Civiles Heroicos · Fuerza 1 / 1 · Mov. 3 · Nivel 3
 
@@ -1686,7 +1763,7 @@ Fuerza 4 / 3 · Mov. 3
 ### guardia — Guardia Nacional
 Fuerza 10 / 6 · Mov. 1
 
-> Soporta 6 Impactos. Mueve 1 espacio en 4R y 1 por Acción de Mover (solo superficie). Cada disparo cuesta 2 Munición.
+> Soporta 6 Impactos. Mueve 1 espacio en 4R y 1 por Acción de Mover (solo superficie). Cada disparo cuesta 2 Munición. No puede usar la Súper Arma hasta llegar a un espacio de Ciudad o al Centro de la Ciudad (después la conserva).
 
 ![guardia](../assets/cartas/u_guardia.jpg)
 
@@ -1725,63 +1802,63 @@ Fuerza 7 / 4
 
 > Si atacan y ganan, avanzan de inmediato otro espacio (se repite), separándose de la Horda.
 
-![berserker](../assets/tokens/sz_berserker.png)
+![berserker](../assets/tokens/sz_berserker.webp)
 
 ### condenado — Condenados
 Fuerza 7 / 5
 
 > Quien combate contra ellos pierde automáticamente y se retira (los Impactos se aplican igualmente).
 
-![condenado](../assets/tokens/sz_condenado.png)
+![condenado](../assets/tokens/sz_condenado.webp)
 
 ### devastador — Devastadores
 Fuerza 1 / 8
 
 > Fuerza 1 intactos… pero al ser heridos pasan a Fuerza 8.
 
-![devastador](../assets/tokens/sz_devastador.png)
+![devastador](../assets/tokens/sz_devastador.webp)
 
 ### ferreo — Férreos
 Fuerza 10 / 5
 
 > Resistentes: cada Impacto se cancela con 1-3 en un dado.
 
-![ferreo](../assets/tokens/sz_ferreo.png)
+![ferreo](../assets/tokens/sz_ferreo.webp)
 
 ### gigante — Gigantes
 Fuerza 12 / 6
 
 > Sin habilidades especiales: simplemente enormes.
 
-![gigante](../assets/tokens/sz_gigante.png)
+![gigante](../assets/tokens/sz_gigante.webp)
 
 ### lobo — Zeds-Lobo
 Fuerza 5 / 3
 
 > Combatir contra ellos sube la Infección +2 (en vez de +1). Tras mover, intentan un segundo movimiento (solos).
 
-![lobo](../assets/tokens/sz_lobo.png)
+![lobo](../assets/tokens/sz_lobo.webp)
 
 ### reanimador — Reanimadores
 Fuerza 4 / 3
 
 > Cada vez que se activan retiran 1 Impacto de sí mismos antes de mover.
 
-![reanimador](../assets/tokens/sz_reanimador.png)
+![reanimador](../assets/tokens/sz_reanimador.webp)
 
 ### saltarin — Saltarines
 Fuerza 4 / 2
 
 > Sus defensores no reciben Modificador por Terreno (ni siquiera Bastión).
 
-![saltarin](../assets/tokens/sz_saltarin.png)
+![saltarin](../assets/tokens/sz_saltarin.webp)
 
 ### supurador — Supuradores
 Fuerza 5 / 3
 
 > Todo combate Cuerpo a Cuerpo contra ellos (o su Horda) sube la Infección +3 en vez de +1.
 
-![supurador](../assets/tokens/sz_supurador.png)
+![supurador](../assets/tokens/sz_supurador.webp)
 
 
 ## Propagadors
@@ -1804,112 +1881,112 @@ Se guarda
 
 > Úsala en la fase de Acciones: coloca un Héroe o Civiles Heroicos disponible en el Centro o en un Inicial.
 
-![ayuda](../assets/tokens/rumores/ayuda.png)
+![ayuda](../assets/tokens/rumores/ayuda.webp)
 
 ### base — Base aérea secreta
 Se coloca
 
 > Colócala en un espacio n.º 1 de la superficie. Al final de cada fase de Acciones con una unidad tuya allí: 1 Curación gratis, 1 Investigación gratis o 1 Acción de Evento.
 
-![base](../assets/tokens/rumores/base.png)
+![base](../assets/tokens/rumores/base.webp)
 
 ### cementerio — Cementerio ancestral
 Se coloca
 
 > Colócalo en cualquier espacio sin nombre (incluidas Criptas): cada unidad Zed que ocupe ese espacio sufre 2 Impactos.
 
-![cementerio](../assets/tokens/rumores/cementerio.png)
+![cementerio](../assets/tokens/rumores/cementerio.webp)
 
 ### cristal — Cristal verde radiante
 Se une
 
 > La unidad que lo porta recibe 1 Acción gratis cada turno.
 
-![cristal](../assets/tokens/rumores/cristal.png)
+![cristal](../assets/tokens/rumores/cristal.webp)
 
 ### deposito — Depósito de armas de la policía
 Se guarda
 
 > Úsalo en cualquier momento: +5 Munición.
 
-![deposito](../assets/tokens/rumores/deposito.png)
+![deposito](../assets/tokens/rumores/deposito.webp)
 
 ### diario — Diario del Dr. Marteuse
 Se guarda
 
 > Úsalo en la fase de Acciones: devuelve 1 Súper Zed en juego a la reserva y revela gratis una carta de Investigación (sin contar como Investigar).
 
-![diario](../assets/tokens/rumores/diario.png)
+![diario](../assets/tokens/rumores/diario.webp)
 
 ### ferreteria — Gran superficie de ferretería
 Se guarda
 
 > Úsala en cualquier momento: +7 Suministros.
 
-![ferreteria](../assets/tokens/rumores/ferreteria.png)
+![ferreteria](../assets/tokens/rumores/ferreteria.webp)
 
 ### medallon — Medallón místico
 Se une
 
 > Una vez por turno, cualquier dado (o un dado de una tirada de varios) de esta unidad puede cambiarse a 6.
 
-![medallon](../assets/tokens/rumores/medallon.png)
+![medallon](../assets/tokens/rumores/medallon.webp)
 
 ### muerte — Rumores de nuestra muerte
 Se guarda
 
 > Úsalos en la fase de Acciones: recupera hasta 2 unidades del Cementerio en el Centro con Fuerza reducida.
 
-![muerte](../assets/tokens/rumores/muerte.png)
+![muerte](../assets/tokens/rumores/muerte.webp)
 
 ### plan — Plan de guerra negro
 Se guarda
 
 > Úsalo en la fase de Acciones: +2 Munición y +1 Suministro.
 
-![plan](../assets/tokens/rumores/plan.png)
+![plan](../assets/tokens/rumores/plan.webp)
 
 ### registro — Registro federal de armas
 Se coloca
 
 > Colócalo en el Centro de la Ciudad: los resultados de 1 y 2 en las tiradas de Buscar en espacios de Ciudad o Pueblo te otorgan 1 de Munición.
 
-![registro](../assets/tokens/rumores/registro.png)
+![registro](../assets/tokens/rumores/registro.webp)
 
 ### sirena — Sirena para Zeds
 Se une
 
 > La unidad que lo porta puede usar 1 Acción y tirar 2 dados: si el total ≥ Fuerza de un Zed adyacente, retrocede 1 espacio (dobles: desaparece). Se agota tras 2 usos.
 
-![sirena](../assets/tokens/rumores/sirena.png)
+![sirena](../assets/tokens/rumores/sirena.webp)
 
 ### tallmart — Centro de distribución de Tall-Mart
 Se coloca
 
 > Colócalo en un espacio sin nombre (no Inicial): pasa a tener nombre. Al final de cada Mantenimiento con una unidad allí: 2 Suministros o 1 Munición.
 
-![tallmart](../assets/tokens/rumores/tallmart.png)
+![tallmart](../assets/tokens/rumores/tallmart.webp)
 
 ### telefono — El teléfono rojo
 Se guarda
 
 > Úsalo en la fase de Acciones: bombardeo de napalm sobre un espacio de la superficie (no Inicial) y otro adyacente: todo lo que haya se elimina; Caos en cada uno y «No Pasar» en el más lejano del Centro.
 
-![telefono](../assets/tokens/rumores/telefono.png)
+![telefono](../assets/tokens/rumores/telefono.webp)
 
 ### tesis — Tesis: ¿Qué hemos aprendido?
 Se guarda
 
 > Úsala en cualquier momento: recupera hasta 3 cartas «Guardar para más tarde» del descarte de Destino; pasan a tu mano y puedes volver a usarlas.
 
-![tesis](../assets/tokens/rumores/tesis.png)
+![tesis](../assets/tokens/rumores/tesis.webp)
 
 ### traje — Traje de batalla DARPA
 Se une
 
 > La unidad que lo porta inflige 2 Impactos adicionales en sus combates Cuerpo a Cuerpo y es doblemente Resistente.
 
-![traje](../assets/tokens/rumores/traje.png)
+![traje](../assets/tokens/rumores/traje.webp)
 
 
 ## Súper Armas

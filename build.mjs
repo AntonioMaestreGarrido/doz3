@@ -7,7 +7,8 @@ import { createHash } from 'node:crypto';
 
 const OUT = 'dist';
 const html = readFileSync('index.html', 'utf8');
-const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1]);
+/* js/bot.js (modo de prueba automática) no entra en el build de producción. */
+const srcs = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(m => m[1]).filter(s => s !== 'js/bot.js');
 if (!srcs.length) throw new Error('No se encontraron scripts en index.html');
 
 rmSync(OUT, { recursive: true, force: true });

@@ -585,6 +585,24 @@ body.mob #mapwrap,body.mob #mapwrap *{touch-action:none}
 /* Los avisos sobre la portada (p. ej. «máximo de partidas guardadas» al pulsar Nueva partida) reciben los toques; el fondo transparente no. */
 body:has(#title.bgrank) #modalbox,body:has(#title.bgnew) #modalbox{pointer-events:auto}
 
+/* Elegir espacio: el botón Aceptar dentro del aviso debe recibir toques. */
+#banner button{pointer-events:auto;margin-left:8px;padding:4px 12px;font-size:13px;border-radius:12px}
+#banner button:disabled{opacity:.45}
+
+/* Resumen al empezar la partida: todas las cartas en juego y el resumen de condiciones. */
+#modalbox.startsum{width:min(980px,96vw);max-height:94vh;overflow:auto}
+#modalbox.startsum .sumcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:8px 0}
+#modalbox.startsum .sc{text-align:center}
+#modalbox.startsum .sc img{width:100%;border-radius:8px;display:block}
+#modalbox.startsum .scn{font-size:12px;font-weight:700;margin-top:3px;color:var(--ink)}
+#modalbox.startsum .sumtab{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 14px;font-size:14px;margin:6px 0}
+#modalbox.startsum .sumtab div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding:3px 0}
+#modalbox.startsum .sumtab span{color:var(--mut)}
+#modalbox.startsum .sumtab b{text-align:right}
+#modalbox.startsum h3{font-size:14px;color:var(--gold);margin:10px 0 4px;text-transform:uppercase;letter-spacing:1px}
+#modalbox.startsum ul.sumb{margin:0 0 6px 18px;padding:0;font-size:13px;line-height:1.4}
+#modalbox.startsum ul.sumb li{margin:2px 0}
+
 /* Jefe final (exp. 5): arte a pantalla completa */
 .bossfx{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;animation:bfxIn .6s ease both}
 .bossfx .bfx-bg{position:absolute;inset:-5%;background-size:cover;background-position:center;filter:blur(26px) brightness(.45);transform:scale(1.1)}

@@ -169,7 +169,7 @@ const Preview = {
       }
       case 'zed_alfa': {
         const zs = routeZeds(R).filter(z => z.type === 'zed');
-        L.push(zs.length ? 'El Zed más fuerte de ' + rn + ' (Fuerza ' + Math.max(...zs.map(strength)) + ') pasa a ser Zed Líder y se activa la ruta.' : 'No hay Zeds normales en ' + rn + ': solo se activa la ruta.'); break;
+        L.push(zs.length ? 'El Zed más fuerte de ' + rn + ' (Fuerza ' + zF(zs.reduce((a, b) => strength(b) > strength(a) ? b : a)) + ') pasa a ser Zed Líder y se activa la ruta.' : 'No hay Zeds normales en ' + rn + ': solo se activa la ruta.'); break;
       }
       case 'hedor': L.push(routeZeds(R).some(z => z.type === 'zed') ? 'Una ficha de Pestilentes se pone sobre un Zed de ' + rn + '.' : 'No hay Zeds normales en ' + rn + ': sin efecto.'); break;
       case 'florecimiento': {
