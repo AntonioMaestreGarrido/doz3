@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 13:51
+
+### Cambios
+- **Exp. 5, cartas de compensación:** las Acciones de Evento de las 5 cartas bajan de 4 a **3**. Cartas regeneradas. Caché v77.
+
 ## 2026-11-10 13:49
 
 ### Cambios
