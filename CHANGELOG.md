@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 18:10
+
+### Recuperado
+- **Cartas de Rumor integradas en `main`:** estaban en una rama aparte y no se veían. Ya tienen carta completa los 16 Rumores (arte alternativo; sin él se ve la ficha), y en la mano de Destino y Rumores el botón «Usar» pasa a ser «Ver» (abre la carta y dentro está «Usar», solo si se puede jugar). Caché v109.
+
 ## 2026-11-10 17:35
 
 ### Nuevo

@@ -233,10 +233,10 @@ const ui = {
     const h = $('hand'); h.innerHTML = '';
     for (const k of G.hand) {
       const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'd:' + k; d.innerHTML = '<b>' + DEST[k].name + '</b>';
-      if (handUsable(k) && !G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useHandCard(k)); d.appendChild(b); }
+      if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Ver'; b.onclick = () => ui.viewCard('d:' + k, handUsable(k) ? () => useHandCard(k) : null); d.appendChild(b); }
       h.appendChild(d);
     }
-    for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.webp" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Usar'; b.onclick = () => ui.guard(() => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
+    for (const k of (G.rumorsHeld || [])) { const d = document.createElement('div'); d.className = 'hc'; d.dataset.zoom = 'k:' + k; d.innerHTML = '<img class="rumthumb" src="assets/tokens/rumores/' + k + '.webp" alt=""><b>Rumor: ' + RUMORS[k].name + '</b>'; if (!G.busy) { const b = document.createElement('button'); b.textContent = 'Ver'; b.onclick = () => ui.viewCard('k:' + k, () => useRumor(k)); d.appendChild(b); } h.appendChild(d); }
   },
   _undo: [],
   _undoRequested: false,
@@ -687,6 +687,16 @@ const ui = {
       this._modal('<h2>' + title + '</h2><div class="cardrow">' + im + '<div><p>' + (text || '') + '</p></div></div><div class="opts"><button class="primary" id="ackb">Continuar</button></div>');
       $('ackb').onclick = () => { ui._pkCapture(); ui._close(); res(); }; $('ackb').focus();
     });
+  },
+  /* Ver una carta de la mano (Destino o Rumor): imagen y texto; «Usar» (si se puede) está dentro. use = función que juega la carta, o null si no se puede usar ahora. */
+  viewCard(spec, use) {
+    if (G.busy) return;
+    let info; try { info = zoomInfo(spec); } catch (err) { info = null; } if (!info) return;
+    this.zoomHide();
+    this._modal('<h2>' + info.title + '</h2><div class="cardrow">' + (info.img ? '<img src="' + info.img + '" alt="">' : '') + '<div>' + info.html + '</div></div><div class="opts">' + (use ? '<button class="primary" id="vcuse">Usar</button>' : '') + '<button id="vcclose">Cerrar</button></div>');
+    $('vcclose').onclick = () => ui._close();
+    if (use) $('vcuse').onclick = () => { ui._close(); ui.guard(use); };
+    (use ? $('vcuse') : $('vcclose')).focus();
   },
   /* Elegir unidad: panel inferior que no tapa el mapa. Un toque sobre una opción (o sobre la unidad en el mapa) la resalta y centra la cámara;
      solo el botón Aceptar confirma. */
