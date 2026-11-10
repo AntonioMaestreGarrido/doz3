@@ -251,6 +251,7 @@ body:has(#title.bg) #modalbox.setup{background:rgba(14,11,8,.62)}
 #intro p{margin:18px 0 0;font:700 15px "Segoe UI",system-ui,sans-serif;letter-spacing:2px;text-transform:uppercase;color:var(--mut);animation:introBlink 1.4s infinite}
 #intro video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;background:#000;cursor:default}
 @keyframes introBlink{50%{opacity:.3}}
+#intro .introBuild{display:block;margin-top:10px;font:600 12px "Segoe UI",system-ui,sans-serif;letter-spacing:1px;color:var(--mut);opacity:.7}
 
 /* Panel de sonido: un canal por fila, con interruptor y volumen */
 #modalbox.sound{max-width:min(520px,96vw)}

@@ -1054,10 +1054,10 @@ const ui = {
       try { const skip = sessionStorage.getItem('doz3.skipIntro') === '1'; sessionStorage.removeItem('doz3.skipIntro'); if (skip) { document.body.classList.remove('booting'); const old = document.getElementById('intro'); if (old) old.remove(); return res(); } } catch (e) { }
       /* La intro ya está en el HTML (visible desde el primer dibujo); si no existe, se crea aquí. */
       let t = document.getElementById('intro');
-      if (!t) { t = document.createElement('div'); t.id = 'intro'; t.innerHTML = '<img src="assets/intro.png" alt=""><p>Pulsa para empezar</p>'; document.body.appendChild(t); }
+      if (!t) { t = document.createElement('div'); t.id = 'intro'; t.innerHTML = '<img src="assets/intro.png" alt=""><p>Pulsa para empezar</p><small class="introBuild">Build ' + BUILD_TIME + '</small>'; document.body.appendChild(t); }
       const done = () => { t.remove(); document.body.classList.remove('booting'); res(); };
       t.onclick = () => {
-        t.onclick = null; const p0 = t.querySelector('p'); if (p0) p0.remove();
+        t.onclick = null; const p0 = t.querySelector('p'); if (p0) p0.remove(); const b0 = t.querySelector('.introBuild'); if (b0) b0.remove();
         try { this.musicOn(); } catch (e) { }
         const v = document.createElement('video'); v.id = 'openVid'; v.src = 'assets/opening.mp4'; v.playsInline = true;
         v.onended = done; v.onerror = done; t.appendChild(v);

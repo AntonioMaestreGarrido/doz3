@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 14:26
+
+### Nuevo
+- **Pantalla inicial:** debajo de «Pulsa para empezar» aparece ahora la build (por ejemplo, «Build 2026-11-10 14:26»), la misma que se ve en Créditos y en el registro. Desaparece al pulsar. Caché v103.
+
 ## 2026-11-10 14:23
 
 ### Recuperado
