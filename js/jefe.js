@@ -6,7 +6,7 @@
      3. Cuando quedan BOSS_AT cartas por revelar, el arte de Bubba aparece a pantalla completa y suena su canción
         (assets/sonidos/musica/musica_bubba.mp3; si el archivo no existe, la música normal sigue sonando).
      4. Si se acaba el mazo con el jefe vivo, se siguen sacando cartas de Nivel IV (bossOvertime, llamado desde revealEvent).
-     5. Bubba es una unidad de Propagador (como Noelle) con 3 Impactos por cara y Fuerza 6/3: comparte espacio con los Zeds
+     5. Bubba es una unidad de Propagador (como Noelle) con 3 Impactos por cara y Fuerza 6/3: comparte espacio con los Zeds (y no se le puede dañar mientras haya Zeds en su casilla)
         sin combatir con ellos y no cuenta para el límite de agrupamiento.
      6. Cada turno, tras la fase 4R, se mueve 1 espacio hacia el Centro y arrastra a los Zeds de su espacio con las reglas
         normales de movimiento (límite de agrupamiento, combate, Barricadas…).
@@ -39,17 +39,17 @@ async function bossSync() {
   await bossDefeated();
 }
 
-/* Al empezar el turno: si toca, aparece el jefe (arte, canción y ficha en el Inicial de la ruta de superficie con menos Zeds). */
+/* Al empezar el turno: si toca, aparece el jefe (arte, canción y ficha en el Inicial de la ruta de superficie con más Zeds, para arrastrar a cuantos más mejor). */
 async function bossCheck() {
   if (!expOn(5) || !G.boss) return;
   await bossSync(); if (G.over) return;
   if (G.boss.state !== 'wait') return;
   if (G.eventDeck.length > Math.min(BOSS_AT, G.totalEvents - 3)) return;
   G.boss.state = 'active';
-  const c = G.routes.filter(r => r !== 'T').map(r => [r, routeZeds(r).length]), m = Math.min(...c.map(x => x[1]));
+  const c = G.routes.filter(r => r !== 'T').map(r => [r, routeZeds(r).length]), m = Math.max(...c.map(x => x[1]));
   const cand = c.filter(x => x[1] === m), r = cand[rnd(cand.length)][0];
   UI.bossMusic(true);
-  await UI.bossIntro({ img: BOSS_ART, title: '¡La Banda de Bubba!', text: 'Bubba DeNardo y su banda llegan por ' + ROUTES[r].name + ' arrastrando a los Zeds que encuentran. Comparten espacio con ellos sin luchar. No hay carta de Fin: solo ganas si los eliminas, y pierdes si llegan al Centro.' });
+  await UI.bossIntro({ img: BOSS_ART, title: '¡La Banda de Bubba!', text: 'Bubba DeNardo y su banda llegan por ' + ROUTES[r].name + ' arrastrando a los Zeds que encuentran. Comparten espacio con ellos sin luchar y no se les puede dañar mientras haya Zeds en su casilla: primero hay que eliminar a los Zeds. No hay carta de Fin: solo ganas si los eliminas, y pierdes si llegan al Centro.' });
   const u = spawnSpreader('bubba');
   await placeZedInitial(r, u);
   LOG('¡Aparece Bubba DeNardo y su banda en ' + spaceLabel(u.space || r + '0') + '!', 'bad');

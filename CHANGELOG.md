@@ -2,6 +2,16 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 20:30
+
+### Cambios
+- **Exp. 5, Bubba:** no se le puede dañar mientras haya otras unidades Zed en su casilla; los Impactos que lo alcancen se pierden (se avisa en el registro) y no se ofrece como objetivo. Hay que eliminar antes a los Zeds que lo acompañan. Se indica en su ficha y en la pantalla de aparición. Caché v112.
+
+## 2026-11-10 20:10
+
+### Cambios
+- **Exp. 5, aparición de Bubba:** ahora entra por el Inicial de la ruta de superficie con **más** Zeds (antes, con menos), para arrastrar a cuantos más mejor. Con empate, al azar. Caché v112.
+
 ## 2026-11-10 19:30
 
 ### Recuperado

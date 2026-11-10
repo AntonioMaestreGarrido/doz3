@@ -292,6 +292,7 @@ async function applyZedHits(zeds, n) {
   for (let k = 0; k < n; k++) {
     zeds = zeds.filter(z => G.units[z.id] && z.space);
     if (!zeds.length) break;
+    zeds = zeds.filter(z => !bossShielded(z)); if (!zeds.length) { LOG('Bubba no puede ser dañado mientras haya Zeds en su casilla: hay que eliminar antes a los Zeds.', 'bad'); break; }
     let pool = zeds.filter(z => z.type !== 'spreader'); if (!pool.length) pool = zeds;
     let t = pool[0];
     if (pool.length > 1) {
@@ -301,7 +302,10 @@ async function applyZedHits(zeds, n) {
     await hitZed(t);
   }
 }
+/* Jefe final (Exp. 5): no se le puede dañar mientras haya otras unidades Zed en su casilla. */
+const bossShielded = z => !!(z.boss && z.space && zedsAt(z.space).some(x => x.id !== z.id));
 async function hitZed(t) {
+  if (bossShielded(t)) { LOG('Bubba no puede ser dañado mientras haya Zeds en su casilla.', 'bad'); return; }
   if (t.zresist || t.resistZ) { const r = d6(); if (r <= 3) { LOG('Resistente: el Impacto se cancela (dado ' + r + ').'); await UI.fxResist(t, r); return; } }
   const before = { flipped: t.flipped, hits: t.hits };
   const r = hitUnitOnce(t); EVT('zhit', ACTOR, { z: t.name, r });
