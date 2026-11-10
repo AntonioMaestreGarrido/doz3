@@ -532,6 +532,7 @@ const ui = {
   bossIntro(o) {
     return new Promise(res => {
       if (this.fast) { res(); return; }
+      this._mapZoom = false; this.zoomHide();   /* si el ratón estaba sobre una ficha, su aviso no debe quedar tapando el arte */
       const ov = document.createElement('div'); ov.className = 'bossfx';
       ov.innerHTML = '<div class="bfx-bg" style="background-image:url(' + o.img + ')"></div><img class="bfx-art" src="' + o.img + '" alt=""><div class="bfx-info"><h2>' + o.title + '</h2><p>' + o.text + '</p><button class="primary" id="bfxOk">¡Adelante!</button></div>';
       document.body.appendChild(ov);

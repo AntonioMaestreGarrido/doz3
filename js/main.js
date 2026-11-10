@@ -2,6 +2,7 @@
 'use strict';
 
 async function revealEvent() {
+  await bossOvertime();   /* Exp. 5: si se acaba el mazo con el jefe vivo, se siguen sacando cartas de Nivel IV (jefe.js) */
   const id = G.eventDeck.shift(); const ev = EV[id];
   G.event = ev; G.eventsRevealed++; G.turnNo++; G.turn = newTurn(); EVT('turn', null, { ev: ev.name });
   if (G.turnNo > 1) Voz.say('turno');

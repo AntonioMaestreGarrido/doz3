@@ -108,6 +108,12 @@ ev('no_escapatoria', 'No hay escapatoria', 'r', 3, 0, 'B', 'd', ['A','F','T','T'
 ev('conductos', 'Conexión por los conductos del vapor', 'r', 3, 1, 'B', 0, ['A','A','B','B'], 3, ['Al inicio de esta fase. Por cada unidad Zed en un espacio de Cripta, tira 1 dado: 1-2 = intenta entrar en la Central Nuclear; 3-5 = intenta entrar en la Granja (primero tira en la tabla de Cripta); 6 = no pasa nada. Si no hay sitio, se queda donde está.'], { vents: 1 });
 ev('caos_control', 'El caos se extiende sin control', 'r', 3, 1, 0, 0, ['M','T','A'], 2, ['Cada espacio con nombre que pase a estar controlado por Zeds este turno recibe 2 fichas de Caos (en lugar de 1). Solo puedes retirar 1 ficha por turno, como es habitual, durante la fase de Mantenimiento (ver sección 7.2).'], { chaos2: 1 });
 ev('fin_r', 'Por fin ha terminado la larga pesadilla', 'r', 5, 0, 'B', 2, ['*','*'], 0, ['¡Habéis ganado!', 'Ninguno de los supervivientes volverá a ser el mismo…'], { fin: 1 });
+/* ---- EXPANSIÓN 5 · Jefe final (la Banda de Bubba): cartas de compensación. Se barajan como cartas de Nivel IV (naranjas) y solo entran con la Exp. 5. ---- */
+ev('boss_heroe', 'Refuerzos: llega un Héroe', 'o', 2, 1, 0, 0, ['A','T'], 2, ['Al inicio: elige un nuevo Héroe disponible y colócalo en el Centro de la Ciudad o en cualquier espacio Inicial.'], { exp: 5, fase: 'a' });
+ev('boss_cargamento', 'Cargamento aéreo', 'o', 2, 1, 0, 0, ['B','T'], 2, ['Al inicio: +5 de Munición y +5 de Suministros.'], { exp: 5, fase: 'a' });
+ev('boss_brigada', 'Brigada civil', 'o', 3, 1, 0, 0, ['M','A'], 2, ['Al inicio: elige una nueva unidad de Civiles Heroicos disponible y colócala en el Centro de la Ciudad.'], { exp: 5, fase: 'a' });
+ev('boss_medico', 'Puesto médico de campaña', 'o', 3, 1, 0, 0, ['F','T'], 2, ['Al inicio: retira todas las fichas de Impacto a las unidades de jugador del Centro de la Ciudad y recuperan su cara de Fuerza completa. −2 de Infección.'], { exp: 5, fase: 'a' });
+ev('boss_adrenalina', 'Adrenalina colectiva', 'o', 4, 1, 0, 0, ['A','F'], 2, ['Al inicio: cada Héroe y cada Civil Heroico en juego recibe 1 Acción gratis este turno.'], { exp: 5, fase: 'a' });
 /* Las cartas del Jugador Zed y el texto «En Versus» de «¡Aquí está el Doctor!» (Dr. Marteuse) son solo del modo Versus (no incluido); el efecto en solitario de esa carta sí está. */
 
 /* orden estable de nombres de archivo de imagen = id */

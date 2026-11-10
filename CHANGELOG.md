@@ -2,6 +2,23 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-10 13:33
+
+### Nuevo
+- **Exp. 5 (jefe final): 5 cartas de compensación.** Se barajan por Actos como cartas de Nivel IV y solo entran con la Exp. 5:
+  - **Refuerzos: llega un Héroe:** eliges un Héroe disponible y dónde entra (Centro o un Inicial).
+  - **Cargamento aéreo:** +5 de Munición y +5 de Suministros.
+  - **Brigada civil:** eliges un Civil Heroico disponible y entra en el Centro.
+  - **Puesto médico de campaña:** las unidades de jugador del Centro recuperan todos los Impactos y su cara completa; −2 de Infección.
+  - **Adrenalina colectiva:** cada Héroe y Civil Heroico en juego recibe 1 Acción gratis ese turno.
+  - Las ilustraciones de carta son provisionales (`assets/cartas/e_boss_*.jpg`).
+
+### Cambios
+- **Exp. 5, el mazo:** ya **no lleva carta de Fin**. La partida acaba cuando Bubba muere (ganas) o llega al Centro (pierdes). La Guardia Nacional, si sale, sube 5 cartas (queda a 14 del final) por las 5 cartas extra.
+- **Exp. 5, aparición:** Bubba aparece cuando quedan **10 cartas** por revelar (antes 9).
+- **Exp. 5, mazo sin fin:** si se acaba el mazo con Bubba vivo, se siguen sacando cartas de Nivel IV al azar (las cartas extra incluidas) hasta que caiga o llegue al Centro. Si el jefe desaparece de otra forma, también cuenta como derrotado.
+- **Exp. 5, pantalla de aparición:** nueva ilustración horizontal a pantalla completa (`assets/jefe/bubba_arte.webp`); si el ratón estaba sobre una ficha, su aviso ya no tapa el arte. Canción «Saints of Modern Decay» (`assets/sonidos/musica/musica_bubba.mp3`). Caché v73.
+
 ## 2026-11-10 13:17
 
 ### Nuevo
