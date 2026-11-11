@@ -5,6 +5,11 @@ Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. 
 ## 2026-11-11 20:51
 
 ### Cambios
+- **Exp. 5, «Puesto médico de campaña»:** «la Ciudad» incluye ahora el Centro, los espacios de Ciudad, las **Camas de Hospital, las Oficinas del Personal y el Laboratorio**. Siguen fuera el Campo de Refugiados, «En el aire» y las rutas. Carta regenerada. Caché v117.
+
+## 2026-11-11 20:51
+
+### Cambios
 - **Exp. 5, «Puesto médico de campaña»:** ahora cura solo a las unidades de jugador que estén **en la Ciudad** (el Centro y los espacios de Ciudad), en lugar de a todas las del tablero. Retira todos sus Impactos, recuperan la cara completa y −2 de Infección. Carta regenerada. Caché v116.
 
 ## 2026-11-11 20:19
