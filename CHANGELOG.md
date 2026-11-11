@@ -2,6 +2,11 @@
 
 Registro de cambios por publicación (push a `main`). Lo más reciente, arriba. Cada entrada lleva la misma fecha y hora que `BUILD_TIME` de `js/version.js`.
 
+## 2026-11-11 20:19
+
+### Cambios
+- **Exp. 5, Bubba sale con escolta:** al aparecer, Bubba lleva siempre **2 Zeds** en su casilla (si ya había alguno en ese Inicial, se completan hasta 2; el Inicial admite 2 como máximo). Así nunca aparece solo ni vulnerable, y no depende de los Zeds que hubiera por casualidad en la ruta. El número es `BOSS_ESCOLTA` en `js/jefe.js`. Caché v115.
+
 ## 2026-11-10 22:32
 
 ### Fixes

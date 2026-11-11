@@ -8,6 +8,7 @@
      4. Si se acaba el mazo con el jefe vivo, se siguen sacando cartas de Nivel IV (bossOvertime, llamado desde revealEvent).
      5. Bubba es una unidad de Propagador (como Noelle) con 3 Impactos por cara y Fuerza 6/3: comparte espacio con los Zeds (y no se le puede dañar mientras haya Zeds en su casilla)
         sin combatir con ellos y no cuenta para el límite de agrupamiento.
+     5b. Bubba sale siempre con BOSS_ESCOLTA Zeds de escolta en su casilla (así nunca aparece solo ni vulnerable).
      6. Cada turno la ruta donde está Bubba se activa siempre (si la carta no lo hace, se activa al final de la fase de los Zeds: bossEnsure).
         Bubba avanza dentro de esa activación y arrastra a TODOS los Zeds de su espacio (sin límite de agrupamiento; combate, Barricadas… normales).
    La partida acaba solo cuando Bubba muere (ganas) o llega al Centro (pierdes, como con cualquier Zed).
@@ -15,6 +16,7 @@
 'use strict';
 const BOSS_AT = 10;   /* cartas por revelar cuando aparece Bubba («10 cartas antes del final»); súbelo para probar antes */
 const BOSS_ART = 'assets/jefe/bubba_arte.webp';
+const BOSS_ESCOLTA = 2;   /* Zeds con los que sale Bubba en su casilla (si ya había alguno, se completa hasta esta cifra; el Inicial admite 2 como máximo) */
 const BOSS_GUARDIA_AT = 14;   /* la Guardia Nacional queda a estas cartas del final (de serie 9, +5 por las cartas extra) */
 const BOSS_CARDS = ['boss_heroe', 'boss_cargamento', 'boss_brigada', 'boss_medico', 'boss_adrenalina'];
 const bossUnit = () => allUnits(u => u.boss)[0] || null;
@@ -51,10 +53,15 @@ async function bossCheck() {
   const c = G.routes.filter(r => r !== 'T').map(r => [r, routeZeds(r).length]), m = Math.max(...c.map(x => x[1]));
   const cand = c.filter(x => x[1] === m), r = cand[rnd(cand.length)][0];
   UI.bossMusic(true);
-  await UI.bossIntro({ img: BOSS_ART, title: '¡La Banda de Bubba!', text: 'Bubba DeNardo y su banda llegan por ' + ROUTES[r].name + ' arrastrando a los Zeds que encuentran: su ruta se activa siempre cada turno y se llevan a todos los de su casilla. Comparten espacio con ellos sin luchar y no se les puede dañar mientras haya Zeds en su casilla: primero hay que eliminar a los Zeds. No hay carta de Fin: solo ganas si los eliminas, y pierdes si llegan al Centro.' });
+  await UI.bossIntro({ img: BOSS_ART, title: '¡La Banda de Bubba!', text: 'Bubba DeNardo y su banda llegan por ' + ROUTES[r].name + ' arrastrando a los Zeds que encuentran: su ruta se activa siempre cada turno y se llevan a todos los de su casilla. Salen con 2 Zeds de escolta. Comparten espacio con ellos sin luchar y no se les puede dañar mientras haya Zeds en su casilla: primero hay que eliminar a los Zeds. No hay carta de Fin: solo ganas si los eliminas, y pierdes si llegan al Centro.' });
   const u = spawnSpreader('bubba');
   await placeZedInitial(r, u);
   LOG('¡Aparece Bubba DeNardo y su banda en ' + spaceLabel(u.space || r + '0') + '!', 'bad');
+  /* Escolta: sale con BOSS_ESCOLTA Zeds en su casilla (se completan los que falten; si no caben, no se colocan en otro sitio). */
+  for (let k = 0; u.space && normalZedsAt(u.space).length < BOSS_ESCOLTA && k < BOSS_ESCOLTA && !G.over; k++) {
+    const z = await placeZedAt(u.space, 'Escolta de Bubba');
+    if (!z || z.space !== u.space) break;
+  }
 }
 
 /* Al acabar la fase de los Zeds: la ruta donde está Bubba se activa siempre. Si la carta del turno no la activó, se activa ahora (sus Zeds avanzan
